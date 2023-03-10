@@ -7,7 +7,8 @@ import copy
 import os
 
 # this is part of redistributable
-ASPERA_SSH_BYPASS_ABS_PATH = os.path.join(os.environ['CONFIG_SDK_ROOT'], 'aspera_ssh_bypass_rsa.pem')
+ASPERA_SSH_BYPASS_ABS_PATH = os.path.join(
+    os.environ['CONFIG_SDK_ROOT'], 'aspera_ssh_bypass_rsa.pem')
 
 
 def is_processed(t_spec, t_field):
@@ -47,18 +48,24 @@ def ts_to_order(t_spec):
     opt_copy(xfer_opts, 'destination_root', t_spec, 'destination_root')
     opt_copy(xfer_opts, 'min_rate_kbps', t_spec, 'min_rate_kbps')
     opt_copy(xfer_opts, 'target_rate_kbps', t_spec, 'target_rate_kbps')
-    opt_copy(xfer_opts, 'delete_before_transfer', t_spec, 'delete_before_transfer')
+    opt_copy(xfer_opts, 'delete_before_transfer',
+             t_spec, 'delete_before_transfer')
     opt_copy(xfer_opts, 'exclude_older_than', t_spec, 'exclude_older_than')
     opt_copy(xfer_opts, 'exclude_newer_than', t_spec, 'exclude_newer_than')
-    opt_copy(xfer_opts, 'multi_session_threshold', t_spec, 'multi_session_threshold')
-    opt_copy(xfer_opts, 'precalculate_job_size', t_spec, 'precalculate_job_size')
+    opt_copy(xfer_opts, 'multi_session_threshold',
+             t_spec, 'multi_session_threshold')
+    opt_copy(xfer_opts, 'precalculate_job_size',
+             t_spec, 'precalculate_job_size')
     opt_copy(xfer_opts, 'preserve_access_time', t_spec, 'preserve_access_time')
     opt_copy(xfer_opts, 'preserve_acls', t_spec, 'preserve_acls')
-    opt_copy(xfer_opts, 'preserve_creation_time', t_spec, 'preserve_creation_time')
-    opt_copy(xfer_opts, 'preserve_modification_time', t_spec, 'preserve_modification_time')
-    opt_copy(xfer_opts, 'remove_empty_directories', t_spec, 'remove_empty_directories')
+    opt_copy(xfer_opts, 'preserve_creation_time',
+             t_spec, 'preserve_creation_time')
+    opt_copy(xfer_opts, 'preserve_modification_time',
+             t_spec, 'preserve_modification_time')
+    opt_copy(xfer_opts, 'remove_empty_directories',
+             t_spec, 'remove_empty_directories')
     opt_copy(xfer_opts, 'symlink_policy', t_spec, 'symlink_policy')
-    
+
     # some have different name
     opt_copy(xfer_opts, 'source_prefix', t_spec, 'source_root')
     opt_copy(xfer_opts, 'policy', t_spec, 'rate_policy')
@@ -67,50 +74,70 @@ def ts_to_order(t_spec):
     opt_copy(xfer_opts, 'check_ssh_fingerprint', t_spec, 'sshfp')
     opt_copy(xfer_opts, 'create_dirs', t_spec, 'create_dir')
     opt_copy(xfer_opts, 'datagram_size', t_spec, 'dgram_size')
-    opt_copy(xfer_opts, 'move_after_transfer_path', t_spec, 'move_after_transfer')
+    opt_copy(xfer_opts, 'move_after_transfer_path',
+             t_spec, 'move_after_transfer')
     opt_copy(xfer_opts, 'overwrite_policy', t_spec, 'overwrite')
     opt_copy(xfer_opts, 'preserve_dates', t_spec, 'preserve_times')
     opt_copy(xfer_opts, 'resume_check', t_spec, 'resume_policy')
-    
+
     # no transfer spec standard for the following options
-    opt_copy(xfer_opts, 'alternate_config_filename', t_spec, 'EX_alternate_config_filename')
-    opt_copy(xfer_opts, 'apply_local_docroot', t_spec, 'EX_apply_local_docroot')
-    opt_copy(xfer_opts, 'auto_detect_capacity', t_spec, 'EX_auto_detect_capacity')
-    opt_copy(xfer_opts, 'encryption', t_spec, 'EX_encryption')  # true/false, use "cipher"node/...
+    opt_copy(xfer_opts, 'alternate_config_filename',
+             t_spec, 'EX_alternate_config_filename')
+    opt_copy(xfer_opts, 'apply_local_docroot',
+             t_spec, 'EX_apply_local_docroot')
+    opt_copy(xfer_opts, 'auto_detect_capacity',
+             t_spec, 'EX_auto_detect_capacity')
+    # true/false, use "cipher"node/...
+    opt_copy(xfer_opts, 'encryption', t_spec, 'EX_encryption')
     opt_copy(xfer_opts, 'file_checksum', t_spec, 'EX_file_checksum')
-    opt_copy(xfer_opts, 'file_manifest_format', t_spec, 'EX_file_manifest_format')
+    opt_copy(xfer_opts, 'file_manifest_format',
+             t_spec, 'EX_file_manifest_format')
     opt_copy(xfer_opts, 'file_manifest_path', t_spec, 'EX_file_manifest_path')
     opt_copy(xfer_opts, 'ignore_host_key', t_spec, 'EX_ignore_host_key')
     opt_copy(xfer_opts, 'local_log_dir', t_spec, 'EX_local_log_dir')
     opt_copy(xfer_opts, 'remote_log_dir', t_spec, 'EX_remote_log_dir')
-    opt_copy(xfer_opts, 'partial_file_suffix', t_spec, 'EX_partial_file_suffix')
-    opt_copy(xfer_opts, 'pre_post_command_path', t_spec, 'EX_pre_post_command_path')
-    opt_copy(xfer_opts, 'preserve_file_owner_gid', t_spec, 'EX_preserve_file_owner_gid')
-    opt_copy(xfer_opts, 'preserve_file_owner_uid', t_spec, 'EX_preserve_file_owner_uid')
-    opt_copy(xfer_opts, 'preserve_source_access_time', t_spec, 'EX_preserve_source_access_time')
+    opt_copy(xfer_opts, 'partial_file_suffix',
+             t_spec, 'EX_partial_file_suffix')
+    opt_copy(xfer_opts, 'pre_post_command_path',
+             t_spec, 'EX_pre_post_command_path')
+    opt_copy(xfer_opts, 'preserve_file_owner_gid',
+             t_spec, 'EX_preserve_file_owner_gid')
+    opt_copy(xfer_opts, 'preserve_file_owner_uid',
+             t_spec, 'EX_preserve_file_owner_uid')
+    opt_copy(xfer_opts, 'preserve_source_access_time',
+             t_spec, 'EX_preserve_source_access_time')
     opt_copy(xfer_opts, 'preserve_xattrs', t_spec, 'EX_preserve_xattrs')
     opt_copy(xfer_opts, 'read_size', t_spec, 'EX_read_size')
-    opt_copy(xfer_opts, 'remote_preserve_acls', t_spec, 'EX_remote_preserve_acls')
-    opt_copy(xfer_opts, 'remote_preserve_xattrs', t_spec, 'EX_remote_preserve_xattrs')
-    opt_copy(xfer_opts, 'remove_empty_source_dir', t_spec, 'EX_remove_empty_source_dir')
-    opt_copy(xfer_opts, 'remove_files_after_transfer', t_spec, 'EX_remove_files_after_transfer')
-    opt_copy(xfer_opts, 'retransmission_request_max_size', t_spec, 'EX_retransmission_request_max_size')
+    opt_copy(xfer_opts, 'remote_preserve_acls',
+             t_spec, 'EX_remote_preserve_acls')
+    opt_copy(xfer_opts, 'remote_preserve_xattrs',
+             t_spec, 'EX_remote_preserve_xattrs')
+    opt_copy(xfer_opts, 'remove_empty_source_dir',
+             t_spec, 'EX_remove_empty_source_dir')
+    opt_copy(xfer_opts, 'remove_files_after_transfer',
+             t_spec, 'EX_remove_files_after_transfer')
+    opt_copy(xfer_opts, 'retransmission_request_max_size',
+             t_spec, 'EX_retransmission_request_max_size')
     opt_copy(xfer_opts, 'retry_timeout', t_spec, 'EX_retry_timeout')
-    opt_copy(xfer_opts, 'save_before_overwrite', t_spec, 'EX_save_before_overwrite')
-    opt_copy(xfer_opts, 'skip_dir_traversal_dups', t_spec, 'EX_skip_dir_traversal_dups')
+    opt_copy(xfer_opts, 'save_before_overwrite',
+             t_spec, 'EX_save_before_overwrite')
+    opt_copy(xfer_opts, 'skip_dir_traversal_dups',
+             t_spec, 'EX_skip_dir_traversal_dups')
     opt_copy(xfer_opts, 'skip_special_files', t_spec, 'EX_skip_special_files')
     opt_copy(xfer_opts, 'source_base', t_spec, 'EX_source_base')
     opt_copy(xfer_opts, 'exclude_patterns', t_spec, 'EX_exclude_patterns')
     opt_copy(xfer_opts, 'write_size', t_spec, 'EX_write_size')
     opt_copy(xfer_opts, 'chunk_size', t_spec, 'EX_chunk_size')
-    opt_copy(xfer_opts, 'content_protection_passphrase', t_spec, 'EX_content_protection_passphrase')
+    opt_copy(xfer_opts, 'content_protection_passphrase',
+             t_spec, 'EX_content_protection_passphrase')
     opt_copy(xfer_opts, 'extra_options', t_spec, 'EX_ascp_args')
     # for "tags" use EX_ascp_args = ['--tags64','base64 of tags']
     if 'tags' in t_spec and t_spec["tags"] is not None:
         if not 'extra_options' in xfer_opts:
             xfer_opts['extra_options'] = []
         xfer_opts['extra_options'].append('--tags64')
-        xfer_opts['extra_options'].append(base64.b64encode(json.dumps(t_spec['tags']).encode('ascii')))
+        xfer_opts['extra_options'].append(base64.b64encode(
+            json.dumps(t_spec['tags']).encode('ascii')))
     ignore_field(t_spec, 'tags')
     if 'destination' in t_spec['paths'][0]:
         order_args['dest_paths'] = []
@@ -132,12 +159,18 @@ def ts_to_order(t_spec):
         if t_spec['http_fallback']:
             http_fb_opts = {}
             opt_copy(http_fb_opts, 'http_port', t_spec, 'http_fallback_port')
-            opt_copy(http_fb_opts, 'https_key_filename', t_spec, 'EX_https_key_filename')
-            opt_copy(http_fb_opts, 'https_cert_filename', t_spec, 'EX_https_cert_filename')
-            opt_copy(http_fb_opts, 'http_proxy_address_host', t_spec, 'EX_http_proxy_address_host')
-            opt_copy(http_fb_opts, 'http_proxy_address_port', t_spec, 'EX_http_proxy_address_port')
-            opt_copy(http_fb_opts, 'encode_all_as_jpeg', t_spec, 'EX_http_transfer_jpeg')
-            xfer_opts['http_fallback_options'] = faspmanager.HttpFallbackOptions(**http_fb_opts)
+            opt_copy(http_fb_opts, 'https_key_filename',
+                     t_spec, 'EX_https_key_filename')
+            opt_copy(http_fb_opts, 'https_cert_filename',
+                     t_spec, 'EX_https_cert_filename')
+            opt_copy(http_fb_opts, 'http_proxy_address_host',
+                     t_spec, 'EX_http_proxy_address_host')
+            opt_copy(http_fb_opts, 'http_proxy_address_port',
+                     t_spec, 'EX_http_proxy_address_port')
+            opt_copy(http_fb_opts, 'encode_all_as_jpeg',
+                     t_spec, 'EX_http_transfer_jpeg')
+            xfer_opts['http_fallback_options'] = faspmanager.HttpFallbackOptions(
+                **http_fb_opts)
         ignore_field(t_spec, 'http_fallback')
     # no direction, as the call is directly FileUpload or FileDownload
     if t_spec['direction'] == 'send':

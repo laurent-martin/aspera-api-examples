@@ -11,7 +11,8 @@ public class ServerFileUploadV1Example {
 		// get simplified testing environment
 		final TestEnvironment test_environment = new TestEnvironment();
 		// get test server address and credentials
-		final Map<String, String> server_conf = (Map<String, String>) test_environment.config.get("server");
+		final Map<String, String> server_conf =
+				(Map<String, String>) test_environment.config.get("server");
 		final URI fasp_url = new URI(server_conf.get("url"));
 		// transfer spec version 1 (JSON)
 		final JSONObject transferSpecV1 = new JSONObject()//

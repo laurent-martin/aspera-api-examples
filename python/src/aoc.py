@@ -54,7 +54,8 @@ def get_bearer(scope):
 
     response = requests.post(
         url=AOC_API_BASE + 'oauth2/' + config['org'] + '/token',
-        auth=requests.auth.HTTPBasicAuth(config['client_id'], config['client_secret']),
+        auth=requests.auth.HTTPBasicAuth(
+            config['client_id'], config['client_secret']),
         data=data,
         headers={
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -76,7 +77,8 @@ request_headers = {
 # response = requests.get(AOC_API_BASE + 'self', headers=request_headers)
 
 # Get workspace information
-response = requests.get(url=AOC_API_BASE + 'workspaces', headers=request_headers, params={'q': config['workspace']})
+response = requests.get(url=AOC_API_BASE + 'workspaces',
+                        headers=request_headers, params={'q': config['workspace']})
 response.raise_for_status()
 response_data = response.json()
 logging.debug(response_data)
@@ -103,13 +105,15 @@ package_creation = {
 }
 
 #  create a new package container
-response = requests.post(url=AOC_API_BASE + 'packages', headers=request_headers, json=package_creation)
+response = requests.post(url=AOC_API_BASE + 'packages',
+                         headers=request_headers, json=package_creation)
 response.raise_for_status()
 package_info = response.json()
 logging.debug(package_info)
 
 #  get node information for the node on which package must be created
-response = requests.get(AOC_API_BASE + "nodes/%s" % package_info['node_id'], headers=request_headers)
+response = requests.get(AOC_API_BASE + "nodes/%s" %
+                        package_info['node_id'], headers=request_headers)
 response.raise_for_status()
 node_info = response.json()
 logging.debug(node_info)

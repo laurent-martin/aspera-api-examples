@@ -10,7 +10,8 @@ public class COSFileUploadExample {
 		// get simplified testing environment
 		final TestEnvironment test_environment = new TestEnvironment();
 		// get test COS bucket credentials
-		final Map<String, String> icos_conf = (Map<String, String>) test_environment.config.get("cos");
+		final Map<String, String> icos_conf =
+				(Map<String, String>) test_environment.config.get("cos");
 
 		// build transfer spec version 2 (JSON)
 		final JSONObject transferSpecV2 = new JSONObject()//

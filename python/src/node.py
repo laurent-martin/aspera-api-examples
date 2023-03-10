@@ -9,15 +9,16 @@ import sys
 
 # get file to upload from command line
 files_to_upload = sys.argv[1:]
-destination_folder='/Upload'
+destination_folder = '/Upload'
 
 # get node information from config file
-config=test_environment.CONFIG['node']
+config = test_environment.CONFIG['node']
 
 # prepare node API request for upload_setup
-upload_setup_request = {'transfer_requests':[{'transfer_request':{'paths':[{'destination':destination_folder}]}}]}
+upload_setup_request = {'transfer_requests': [
+    {'transfer_request': {'paths': [{'destination': destination_folder}]}}]}
 
-request_headers={
+request_headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
 }
@@ -40,7 +41,7 @@ t_spec = response_data['transfer_specs'][0]['transfer_spec']
 # add file list in transfer spec
 t_spec['paths'] = []
 for f in files_to_upload:
-    t_spec['paths'].append({'source':f})
+    t_spec['paths'].append({'source': f})
 logging.debug(t_spec)
 
 # start transfer, here we use the FASP Manager, but the newer Transfer SDK can be used as well

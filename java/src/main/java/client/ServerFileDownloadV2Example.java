@@ -11,7 +11,8 @@ public class ServerFileDownloadV2Example {
 		// get simplified testing environment
 		final TestEnvironment test_environment = new TestEnvironment();
 		// get test server address and credentials
-		final Map<String, String> server_conf = (Map<String, String>) test_environment.config.get("server");
+		final Map<String, String> server_conf =
+				(Map<String, String>) test_environment.config.get("server");
 		final URI fasp_url = new URI(server_conf.get("url"));
 		// transfer spec version 2 (JSON)
 		final JSONObject transferSpecV2 = new JSONObject()//

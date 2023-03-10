@@ -34,7 +34,8 @@ CONFIG = yaml.load(open(os.environ['CONFIG_YAML']), Loader=yaml.FullLoader)
 if CONFIG['misc']['client_sdk'] == 'transfer_sdk':
     assert 'CONFIG_TRSDK_DIR_ARCH' in os.environ, 'env var CONFIG_TRSDK_DIR_ARCH is missing'
     assert 'CONFIG_TRSDK_DIR_GENERIC' in os.environ, 'env var CONFIG_TRSDK_DIR_GENERIC is missing'
-    sys.path.insert(1, os.path.join(os.environ['CONFIG_TRSDK_DIR_GENERIC'], 'connectors', 'python'))
+    sys.path.insert(1, os.path.join(
+        os.environ['CONFIG_TRSDK_DIR_GENERIC'], 'connectors', 'python'))
     import helper_aspera_transfer_sdk
 
     helper_aspera_transfer_sdk.set_grpc_url(CONFIG['misc']['trsdk_url'])
@@ -57,5 +58,6 @@ elif CONFIG['misc']['client_sdk'] == 'faspmanager':
 
 else:
     logging.debug('no transfer method')
+
     def start_transfer_and_wait(t_spec):
         logging.debug('start_transfer_and_wait not implemented')

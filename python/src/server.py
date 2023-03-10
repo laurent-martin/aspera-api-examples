@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 assert 'server' in test_environment.CONFIG, 'server config is missing'
 
-server_url=urlparse(test_environment.CONFIG['server']['url'])
+server_url = urlparse(test_environment.CONFIG['server']['url'])
 assert server_url.scheme == 'ssh', 'expecting SSH scheme for server URL'
 
 remote_host = server_url.hostname
@@ -21,14 +21,14 @@ remote_pass = test_environment.CONFIG['server']['pass']
 # direction is relative to us, client, i.e. receive = download
 logging.debug('======Test 1: download')
 t_spec_download = {
-    'remote_host':remote_host,
-    'ssh_port':remote_port,
-    'remote_user':remote_user,
-    'remote_password':remote_pass,
-    'direction':'receive',
-    'destination_root':test_environment.tmp_folder,
-    'paths':[
-        {'source':'/aspera-test-dir-tiny/200KB.1'}
+    'remote_host': remote_host,
+    'ssh_port': remote_port,
+    'remote_user': remote_user,
+    'remote_password': remote_pass,
+    'direction': 'receive',
+    'destination_root': test_environment.tmp_folder,
+    'paths': [
+        {'source': '/aspera-test-dir-tiny/200KB.1'}
     ]
 }
 test_environment.start_transfer_and_wait(t_spec_download)
@@ -39,17 +39,17 @@ local_file = os.path.join(test_environment.tmp_folder, '200KB.1')
 # Example 2: upload: single file upload to existing folder.
 logging.debug('======Test 2: upload file')
 t_spec_upload = {
-    'remote_host':remote_host,
-    'ssh_port':remote_port,
-    'remote_user':remote_user,
-    'remote_password':remote_pass,
-    'direction':'send',
-    'destination_root':'/Upload',
+    'remote_host': remote_host,
+    'ssh_port': remote_port,
+    'remote_user': remote_user,
+    'remote_password': remote_pass,
+    'direction': 'send',
+    'destination_root': '/Upload',
     # 'create_dir':True, # destination root is folder, else it assumes (one source) it is dest file name
-    'paths':[
-        {'source':local_file}
+    'paths': [
+        {'source': local_file}
     ],
-    'tags':{'mysample_tag':'hello'}
+    'tags': {'mysample_tag': 'hello'}
 }
 test_environment.start_transfer_and_wait(t_spec_upload)
 # check file is uploaded by connecting to: http://demo.asperasoft.com/aspera/user/ with same creds
@@ -68,7 +68,6 @@ logging.debug('======Test 4: upload file and rename')
 t_spec_upload['destination_root'] = '/Upload'
 del t_spec_upload['create_dir']
 t_spec_upload['paths'] = [
-        {'source':local_file, 'destination':'xxx/newfilename.ext'}
-    ]
+    {'source': local_file, 'destination': 'xxx/newfilename.ext'}
+]
 test_environment.start_transfer_and_wait(t_spec_upload)
-

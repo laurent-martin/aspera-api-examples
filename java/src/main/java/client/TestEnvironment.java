@@ -13,11 +13,12 @@ import java.util.Iterator;
 
 // read configuration file and provide interface for transfer
 public class TestEnvironment {
+	static final String SDK_URL = "trsdk_url";
 	// config filer loaded from yaml
 	public Map<String, Map<String, String>> config;
 	// Aspera client
 	public TransferServiceGrpc.TransferServiceBlockingStub client;
-	// several transfer session may be startedm but for the example we use only one
+	// several transfer session may be started but for the example we use only one
 	public String transferId;
 
 	public String getProp(final String name) {
@@ -35,13 +36,14 @@ public class TestEnvironment {
 			throw new Error(e.getMessage());
 		}
 		try {
-			final URI grpc_url = new URI(config.get("misc").get("trsdk_url"));
+			final URI grpc_url = new URI(config.get("misc").get(SDK_URL));
 			// create channel to socket
-			final ManagedChannel channel = ManagedChannelBuilder.forAddress(grpc_url.getHost(), grpc_url.getPort()).usePlaintext().build();
+			final ManagedChannel channel = ManagedChannelBuilder
+					.forAddress(grpc_url.getHost(), grpc_url.getPort()).usePlaintext().build();
 			// create a connection to the transfer sdk daemon
 			client = TransferServiceGrpc.newBlockingStub(channel);
 		} catch (final java.net.URISyntaxException e) {
-			throw new Error("trsdk_url: " + e.getMessage());
+			throw new Error(SDK_URL + ": " + e.getMessage());
 		}
 		boolean isStarted = false;
 		int remaining_try = 2;
@@ -56,10 +58,9 @@ public class TestEnvironment {
 				try {
 					final String daemon_filepath = getProp("daemon");
 					final String sdk_conf_path = getProp("config_daemon");
-					System.out.println("Starting daemon: " + daemon_filepath + " -c " + sdk_conf_path);
-					Runtime.getRuntime().exec(new String[] {
-						daemon_filepath, "-c", sdk_conf_path
-					});
+					System.out.println(
+							"Starting daemon: " + daemon_filepath + " -c " + sdk_conf_path);
+					Runtime.getRuntime().exec(new String[] {daemon_filepath, "-c", sdk_conf_path});
 					Thread.sleep(5000);
 				} catch (final IOException e2) {
 					System.out.println("FAILED: cannot start daemon: " + e2.getMessage());
@@ -71,27 +72,32 @@ public class TestEnvironment {
 			--remaining_try;
 		}
 		if (!isStarted) {
-			System.out.println("FAILED: API daemon did not start.Please start it manually by executing \"make startdaemon\" in a separate terminal from the top folder.");
+			System.out.println(
+					"FAILED: API daemon did not start.Please start it manually by executing \"make startdaemon\" in a separate terminal from the top folder.");
 			System.exit(1);
 		}
 	}
 
-	public void start_transfer(final String transferSpec, final Transfer.TransferType aTransferType) {
+	public void start_transfer(final String transferSpec,
+			final Transfer.TransferType aTransferType) {
 		// send start transfer request to transfer sdk daemon
-		final Transfer.StartTransferResponse transferResponse = client.startTransfer(
-			Transfer.TransferRequest.newBuilder()
-			.setTransferType(aTransferType)
-			.setConfig(Transfer.TransferConfig.newBuilder().build())
-			.setTransferSpec(transferSpec).build());
+		final Transfer.StartTransferResponse transferResponse = client
+				.startTransfer(Transfer.TransferRequest.newBuilder().setTransferType(aTransferType)
+						.setConfig(Transfer.TransferConfig.newBuilder().build())
+						.setTransferSpec(transferSpec).build());
 		transferId = transferResponse.getTransferId();
-		System.out.println(String.format("transfer session started with id %s / %d", transferId, transferResponse.getStatus().getNumber()));
+		System.out.println(String.format("transfer session started with id %s / %d", transferId,
+				transferResponse.getStatus().getNumber()));
 	}
 
 	public void wait_transfer() {
 		System.out.println("L: Getting session events");
-		final Iterator<Transfer.TransferResponse> monitorTransferResponse = client.monitorTransfers(
-			Transfer.RegistrationRequest.newBuilder()
-			.addFilters(Transfer.RegistrationFilter.newBuilder().setOperator(Transfer.RegistrationFilterOperator.OR).addTransferId(transferId).build()).build());
+		final Iterator<Transfer.TransferResponse> monitorTransferResponse =
+				client.monitorTransfers(Transfer.RegistrationRequest.newBuilder()
+						.addFilters(Transfer.RegistrationFilter.newBuilder()
+								.setOperator(Transfer.RegistrationFilterOperator.OR)
+								.addTransferId(transferId).build())
+						.build());
 
 		// monitor transfer until it finishes
 		while (monitorTransferResponse.hasNext()) {
@@ -104,9 +110,9 @@ public class TestEnvironment {
 			System.out.println("L: message: " + response.getMessage());
 			System.out.println("L: err: " + response.getError());
 
-			if (status == Transfer.TransferStatus.FAILED ||
-				status == Transfer.TransferStatus.COMPLETED) {
-				//|| response.getTransferEvent() == Transfer.TransferEvent.FILE_STOP) {
+			if (status == Transfer.TransferStatus.FAILED
+					|| status == Transfer.TransferStatus.COMPLETED) {
+				// || response.getTransferEvent() == Transfer.TransferEvent.FILE_STOP) {
 				System.out.println("L: upload finished, received: " + status.toString());
 				break;
 			}
