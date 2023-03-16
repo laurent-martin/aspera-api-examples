@@ -27,6 +27,8 @@ t3: $(JARFILE)
 	java -cp $(JARFILE) $(JAVA_PROPS) client.COSFileUploadExample
 t4: $(JARFILE)
 	java -cp $(JARFILE) $(JAVA_PROPS) client.PersistentUploadExample 100 100
+t5: $(JARFILE)
+	java -cp $(JARFILE) $(JAVA_PROPS) client.Faspex5Send
 clean: stop
 	gradle clean $(GRADLE_PROPS)
 	rm -fr .gradle

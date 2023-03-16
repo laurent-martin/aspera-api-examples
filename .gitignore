@@ -21,3 +21,4 @@ dist/
 web/conf.js
 gradle.properties
 java/bin
+Gemfile.lock

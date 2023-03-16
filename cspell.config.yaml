@@ -1,0 +1,40 @@
+version: "0.2"
+ignorePaths:
+  - "**/*.pptx"
+  - "**/*.lock"
+  - "**/*.gem"
+  - "**/*.log"
+  - "**/*.html"
+  - "**/*.pdf"
+  - "coverage/**"
+  - "/tmp/**"
+  - ".rspec_status/**"
+  - "local/**"
+  - ".secrets.baseline"
+dictionaryDefinitions:
+  - name: aspera
+    path: aspera.dict
+    addWords: true
+dictionaries:
+  - aspera
+words: []
+ignoreWords: []
+import: []
+enableFiletypes:
+  - shellscript
+ignoreRegExpList:
+  - Email
+  - >-
+    /ftp:[^\s]*/g
+patterns:
+  - name: markdown_code_block
+    pattern: |
+      /
+          ^(\s*`{3,}).*     # match the ```
+          [\s\S]*?          # the block of code
+          ^\1               # end of the block
+      /gmx
+languageSettings:
+  - languageId: markdown
+    ignoreRegExpList:
+      - markdown_code_block
