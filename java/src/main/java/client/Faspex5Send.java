@@ -58,11 +58,11 @@ public class Faspex5Send {
 					.setAudience(client_id) //
 					.setSubject("user:" + mConfig.get("username")) //
 					.setExpiration(Date.from(now.plusSeconds(600)))//
-					.setNotBefore(Date.from(now.minusSeconds(60)))// remove a few seconds to allow
-																	// some time difference with
-																	// server
+					// remove a few seconds to allow some time difference with server
+					.setNotBefore(Date.from(now.minusSeconds(60)))
 					.setIssuedAt(Date.from(now.minusSeconds(60))) // same
-					.claim("jti", UUID.randomUUID().toString())// must be different each time
+					// must be different each time
+					.claim("jti", UUID.randomUUID().toString())
 					.signWith(EncryptionUtils.loadKey(mConfig.get("private_key")),
 							SignatureAlgorithm.RS256)
 					.compact();
@@ -76,13 +76,13 @@ public class Faspex5Send {
 	// call Faspex 5 auth api and generate bearer token
 	String getBearerToken() {
 		final String client_id = mConfig.get("client_id");
-		final HttpResponse<JsonNode> result =
-				Unirest.post(mTokenUrl).header("Accept", "application/json")
-						.header("Content-Type", "application/x-www-form-urlencoded")
-						.field("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer") //
-						.field("client_id", client_id) //
-						.field("assertion", generateAssertion(client_id)) //
-						.asJson();
+		final HttpResponse<JsonNode> result = Unirest.post(mTokenUrl)//
+				.header("Accept", "application/json")
+				.header("Content-Type", "application/x-www-form-urlencoded")
+				.field("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer") //
+				.field("client_id", client_id) //
+				.field("assertion", generateAssertion(client_id)) //
+				.asJson();
 		LOGGER.log(Level.FINE, ">> {0}", result.getBody().toPrettyString());
 		final String token = result.getBody().getObject().getString("access_token");
 		return token;
@@ -91,6 +91,7 @@ public class Faspex5Send {
 
 	// Send Faspex 5 package with fixed parameters
 	void sendPackage() {
+		// dummy file is sent
 		final String file_to_send = "faux:///10m?10m";
 
 		// REST: prepare environment
@@ -105,7 +106,6 @@ public class Faspex5Send {
 		Unirest.config()//
 				.setDefaultHeader("Authorization", "Bearer " + token) //
 				.setDefaultHeader("Content-Type", "application/json");
-
 
 		// Faspex API: Prepare package creation information
 		final JSONObject package_create_params = new JSONObject()//
