@@ -11,7 +11,8 @@ JARFILE=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar
 JAVA_PROPS=\
 -Ddaemon=$(CONFIG_TRSDK_DIR_ARCH)/asperatransferd \
 -Dconfig_daemon=$(CONFIG_TRSDK_CONFIG) \
--Dconfig_yaml=$(CONFIG_YAML)
+-Dconfig_yaml=$(CONFIG_YAML) \
+-Djava.util.logging.config.file="logging.properties"
 .PHONY: $(JARFILE)
 $(JARFILE):
 	gradle build

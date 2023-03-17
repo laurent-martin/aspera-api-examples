@@ -9,9 +9,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
-
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class PersistentUploadExample {
+	private static final Logger LOGGER = Logger.getLogger(PersistentUploadExample.class.getName());
 
 	public static class FileUploadTask extends TimerTask {
 
@@ -34,9 +36,9 @@ public class PersistentUploadExample {
 		// this is the recurring task
 		public void run() {
 			try {
-				System.out.println("T: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-				System.out.println(
-						String.format("T: Task %d scheduled ...executing now", mSequenceIndex));
+				LOGGER.log(Level.FINE, "T: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+				LOGGER.log(Level.FINE, "T: Task {0} scheduled ...executing now",
+						Integer.toString(mSequenceIndex));
 				// generate example file to transfer
 				final String fileName = String.format("file%03d", mSequenceIndex);
 				String filePath = null;
@@ -58,18 +60,18 @@ public class PersistentUploadExample {
 								.addTransferPath(Transfer.TransferPath.newBuilder()
 										.setSource(filePath).setDestination(fileName).build())
 								.build();
-				System.out.println("T: adding transfer path");
+				LOGGER.log(Level.FINE, "T: adding transfer path");
 				// this will add to the transfer queue
 				mTestEnv.client.addTransferPaths(transferPathRequest);
-				System.out.println("T: end task");
+				LOGGER.log(Level.FINE, "T: end task");
 				if (mSequenceIndex == mMax) {
 					// end the persistent session
-					System.out.println("T: Limit reached, locking session. !!!");
+					LOGGER.log(Level.FINE, "T: Limit reached, locking session. !!!");
 					mTestEnv.client.lockPersistentTransfer(Transfer.LockPersistentTransferRequest
 							.newBuilder().setTransferId(mTestEnv.transferId).build());
 				}
 			} catch (final IOException e) {
-				System.out.println("T: ERROR: " + e.getMessage());
+				LOGGER.log(Level.FINE, "T: ERROR: {0}", e.getMessage());
 			}
 		}
 	} // FileUploadTask
@@ -105,6 +107,6 @@ public class PersistentUploadExample {
 		// This loops in getting statuses
 		test_environment.wait_transfer();
 
-		System.out.println("L: exiting program");
+		LOGGER.log(Level.FINE, "L: exiting program");
 	}
 }
