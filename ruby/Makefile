@@ -10,7 +10,7 @@ export CONFIG_TRSDK_DIR_GENERIC
 
 all: faspex
 faspex: .test_env
-	$(SRC)/faspex5.rb $(CONFIG_YAML) $(TMPDIR)This_is_a_test.txt
+	bundle exec $(SRC)/faspex5.rb $(CONFIG_YAML) $(TMPDIR)This_is_a_test.txt
 $(GEMFILE):
 	@echo "run make in upper folder to install transfer SDK"
 	exit 1

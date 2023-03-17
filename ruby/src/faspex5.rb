@@ -16,9 +16,9 @@ tmpdir = ENV['tmp'] || Dir.tmpdir || '.'
 # Set high log level for the example, decrease to :warn usually
 Aspera::Log.instance.level = :debug
 
-Aspera::Fasp::Installation.instance.sdk_folder = File.join(ENV['CONFIG_TRSDK_DIR_GENERIC'],'connectors/ruby')
-
 print(ENV['CONFIG_TRSDK_DIR_GENERIC'])
+
+Aspera::Fasp::Installation.instance.sdk_folder = File.join(ENV['CONFIG_TRSDK_DIR_GENERIC'], 'connectors/ruby')
 
 # Set folder where SDK is installed (mandatory)
 # (if ascp is not there, the lib will try to find in usual locations)
@@ -52,6 +52,7 @@ api_v5 = Aspera::Rest.new(
     auth: {
       type: :oauth2,
       base_url: "#{config['url']}/auth",
+      grant_method: :jwt,
       crtype: :jwt,
       client_id: config['client_id'],
       jwt: {
@@ -80,14 +81,17 @@ package_create_params = {
   "recipients": [{ "name": config['username'] }]
 }
 package = api_v5.create('packages', package_create_params)[:data]
+files_to_transfer = { paths: [{ source: file_to_send }] }
 transfer_spec = api_v5.call(
   operation: 'POST',
   subpath: "packages/#{package['id']}/transfer_spec/upload",
   headers: { 'Accept' => 'application/json' },
   url_params: { transfer_type: 'connect' },
-  json_params: { paths: [{ source: file_to_send }] }
+  json_params: files_to_transfer
 )[:data]
 transfer_spec.delete('authentication')
+transfer_spec.merge!(files_to_transfer)
+Aspera::Log.dump('transfer_spec', transfer_spec)
 # get local agent (ascp), disable ascp output on stdout to not mix with JSON events
 transfer_client = Aspera::Fasp::AgentTrsdk.new({})
 # start transfer (asynchronous)
