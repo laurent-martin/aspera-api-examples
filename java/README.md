@@ -11,4 +11,4 @@ make startdaemon
 
 Samples show logs on terminal.
 
-The gradle file builds generated java classes from the proto file.
+The gradle file builds generated java classes from the proto file for the Transfer SDK.

@@ -83,9 +83,8 @@ public class Faspex5Send {
 				.field("client_id", client_id) //
 				.field("assertion", generateAssertion(client_id)) //
 				.asJson();
-		LOGGER.log(Level.FINE, ">> {0}", result.getBody().toPrettyString());
-		final String token = result.getBody().getObject().getString("access_token");
-		return token;
+		LOGGER.log(Level.FINE, "token>> {0}", result.getBody().toPrettyString());
+		return result.getBody().getObject().getString("access_token");
 	}
 
 
