@@ -10,13 +10,15 @@ This sample application gives the choice to contact the node api either directly
 
 ## References
 
+[Aspera Connect Sample code](https://github.com/IBM/aspera-connect-sdk-js)
+
+[Aspera Connect API Reference](https://ibm.github.io/aspera-connect-sdk-js/)
+
 [Aspera HTTP GW SDK documentation](https://developer.ibm.com/apis/catalog?search=%22aspera%20http%22)
 
 [Aspera Connect SDK documentation](https://developer.ibm.com/apis/catalog?search=%22aspera%20connect%22)
 
 [All Aspera APIs here](https://developer.ibm.com/apis/catalog?search=aspera)
-
-[Aspera Connect API Reference](https://ibm.github.io/aspera-connect-sdk-js/)
 
 ## Configuration
 
