@@ -1,8 +1,8 @@
 # Aspera API use examples
 
-This project provides code examples to use some IBM Aspera APIs and transfer files for various IBM Aspera products using some languages.
+This project provides code examples to transfer files using some of the IBM Aspera APIs for various IBM Aspera products using some languages.
 
-[General access to all IBM Aspera APIs here](https://developer.ibm.com/apis/catalog/?search=aspera)
+[General access to all IBM Aspera APIs here](https://developer.ibm.com/apis/catalog/?search=aspera) or [here](https://developer.ibm.com/?q=aspera&dwcontenttype[0]=APIs)
 
 See [Aspera transfer SDK on IBM site](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22)
 
@@ -144,13 +144,13 @@ To test transfers to COS, you will need:
 
 This is the default in the example.
 
-Or, it is also possible to use:
+Or it is also possible to use:
 
 - bucket name
 - region
 - service credentials: create the file `private/service_creds.json`, follow: [get service credentials](https://www.rubydoc.info/gems/aspera-cli#using-service-credential-file)
 
-Uncomment lines in `cos.py` to use service credential file instead of bare api key.
+Uncomment lines in `cos.py` to use service credential file instead of bare API key.
 
 ## Aspera on Cloud
 
