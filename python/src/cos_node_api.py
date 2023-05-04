@@ -13,8 +13,8 @@ import helper_aspera_cos
 CONFIG = yaml.load(open(os.environ['CONFIG_YAML']), Loader=yaml.FullLoader)
 
 # get Aspera Transfer Service Node information for specified COS bucket
-config=CONFIG['cos']
-node_info=helper_aspera_cos.node(
+config = CONFIG['cos']
+node_info = helper_aspera_cos.node(
     bucket=config['bucket'],
     endpoint=config['endpoint'],
     key=config['key'],
@@ -22,15 +22,15 @@ node_info=helper_aspera_cos.node(
     auth=config['auth'])
 
 # headers for HTTP request
-request_headers={
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    }
+request_headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+}
 
 # update with generated credentials
 request_headers.update(node_info['headers'])
 
-# call Aspera Node API: list transfers that occured in the last day.
+# call Aspera Node API: list transfers that occurred in the last day.
 # filtering options possible.
 response = requests.get(
     node_info['url'] + '/ops/transfers',
