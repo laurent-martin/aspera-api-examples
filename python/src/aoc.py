@@ -12,7 +12,7 @@ import time
 import uuid
 
 # take 5 minutes back to account for time offset
-JWT_NOTBEFORE_OFFSET_SEC = 300
+JWT_NOT_BEFORE_OFFSET_SEC = 300
 # one hour validity
 JWT_EXPIRY_OFFSET_SEC = 3600
 
@@ -41,7 +41,7 @@ def get_bearer(scope):
         'iss': config['client_id'],  # issuer
         'sub': config['user_email'],  # subject
         'aud': 'https://api.asperafiles.com/api/v1/oauth2/token',  # audience
-        'nbf': seconds_since_epoch - JWT_NOTBEFORE_OFFSET_SEC,  # not before
+        'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
         'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
         'org': config['org']
     }
