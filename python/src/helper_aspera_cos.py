@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-import xml.dom.minidom;
-import requests;
-import json;
-import logging;
+import xml.dom.minidom
+import requests
+import json
+import logging
 
 IBM_CLOUD_OAUTH_URL = 'https://iam.cloud.ibm.com/identity/token'
 
@@ -19,9 +19,9 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
     # Get bearer token to access COS S3 API
     # payload to generate auth token
     token_req_data = {
-      'grant_type': 'urn:ibm:params:oauth:grant-type:apikey',
-      'response_type': 'cloud_iam',
-      'apikey': key
+        'grant_type': 'urn:ibm:params:oauth:grant-type:apikey',
+        'response_type': 'cloud_iam',
+        'apikey': key
     }
     response = requests.post(auth, data=token_req_data, headers={
                              'Content-type': 'application/x-www-form-urlencoded'})
@@ -35,14 +35,14 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
         'ibm-service-instance-id': crn,
         'Authorization': bearer_token_info['token_type'] + " " + bearer_token_info['access_token'],
         'Accept': 'application/xml'
-        }
+    }
     response = requests.get(
         endpoint + "/" + bucket, headers=header_auth, params={'faspConnectionInfo': True})
     if response.status_code != 200:
         raise Exception("error accessing endpoint")
     logging.debug(response.content)
     ats_info_root = xml.dom.minidom.parseString(
-        response.content.decode('utf-8'));
+        response.content.decode('utf-8'))
     ats_ak = ats_info_root.getElementsByTagName('AccessKey')[0]
     ats_url = ats_info_root.getElementsByTagName(
         'ATSEndpoint')[0].firstChild.nodeValue
@@ -64,10 +64,11 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
     }
     logging.debug(aspera_storage_credentials)
     return {
-      'url': ats_url,
-      'auth': requests.auth.HTTPBasicAuth(ats_ak_id, ats_ak_secret),
-      'headjava:{'aspera':{'node':{'storage_credentials': aspera_storage_credentials}}}}
+        'url': ats_url,
+        'auth': requests.auth.HTTPBasicAuth(ats_ak_id, ats_ak_secret),
+        'headers': {'aspera': {'node': {'storage_credentials': aspera_storage_credentials}}}
     }
+
 
 def from_service_credentials(*, credentials, region):
     """Return parameters suitable for node given service credential information
