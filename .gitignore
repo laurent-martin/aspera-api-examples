@@ -22,3 +22,4 @@ web/conf.js
 gradle.properties
 java/bin
 Gemfile.lock
+.DS_Store

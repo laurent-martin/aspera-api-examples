@@ -1,4 +1,6 @@
+#!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
+# Helper function to use legacy Fasp Manager for python
 import logging
 import faspmanager
 import json

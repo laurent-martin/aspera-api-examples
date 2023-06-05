@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# laurent.martin.aspera@fr.ibm.com
+# Helper methods to get API environment according to config file
 import sys
 import os
 import yaml
@@ -21,7 +24,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 # debug http: see: https://stackoverflow.com/questions/10588644
 http_client.HTTPConnection.debuglevel = 1
 
-# where transfered files will be stored
+# where transferred files will be stored
 tmp_folder = os.environ['CONFIG_TMPDIR']
 
 # use "ascp" in PATH, add the one from sdk

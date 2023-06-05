@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
+# transfer files with Aspera HSTS using SSH authentication
 import test_environment
 import logging
 import sys

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
+# Upload files to COS using COS embedded Aspera and Aspera Gen3 Node API
 import test_environment
 import helper_aspera_cos
 import requests

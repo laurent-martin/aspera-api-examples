@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# laurent.martin.aspera@fr.ibm.com
+# Helper function to use newer Transfer SDK
 import transfer_pb2 as transfer_manager
 import transfer_pb2_grpc as transfer_manager_grpc
 import grpc

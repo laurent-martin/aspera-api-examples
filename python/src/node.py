@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
+# Upload files using Aspera Node API gen3
 import test_environment
 import requests
 import requests.auth

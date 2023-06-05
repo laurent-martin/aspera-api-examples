@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
+# Aspera on Cloud
+# Send a package to shared inbox (name in config file) in given workspace (name in config file)
 import test_environment
 import requests
 import requests.auth
@@ -19,18 +21,21 @@ JWT_EXPIRY_OFFSET_SEC = 3600
 # AoC API : https://developer.ibm.com/apis/catalog?search=%22aspera%20on%20cloud%20api%22
 AOC_API_BASE = 'https://api.ibmaspera.com/api/v1/'
 
+# Arg1: name of package
 package_name = sys.argv[1]
 
+# Arg2: number of // transfer sessions (typically, 1)
 transfer_sessions = int(sys.argv[2])
 
-# files to send
+# Arg3 and +: list of files to send
 package_files = sys.argv[3:]
 
-# get conf file
+# get configuration parameters from config file
 config = test_environment.CONFIG['aoc']
 
-
 # generate a bearer token for given scope using AoC API
+
+
 def get_bearer(scope):
     with open(config['private_key_path']) as fin:
         private_key_pem = fin.read()
@@ -67,16 +72,18 @@ def get_bearer(scope):
     return 'Bearer ' + response_data['access_token']
 
 
-# authentication for AoC API (bearer token is valid for some time and can (should) be re-used)
+# Headers for authorization to AoC API
+# bearer token is valid for some time and can (should) be re-used, until expired, then refresh it
 request_headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'Authorization': get_bearer('user:all')
 }
 
+# simple api call:
 # response = requests.get(AOC_API_BASE + 'self', headers=request_headers)
 
-# Get workspace information
+# Get workspace information (workspace name in config file)
 response = requests.get(url=AOC_API_BASE + 'workspaces',
                         headers=request_headers, params={'q': config['workspace']})
 response.raise_for_status()
@@ -86,7 +93,7 @@ if len(response_data) != 1:
     raise Exception("Error: length = %s" % len(response_data))
 workspace_info = response_data[0]
 
-# Get dropbox information
+# Get dropbox information (shared inbox name in config file)
 response = requests.get(url=AOC_API_BASE + 'dropboxes', headers=request_headers,
                         params={'current_workspace_id': workspace_info['id'], 'q': config['shared_inbox']})
 response.raise_for_status()
@@ -104,7 +111,7 @@ package_creation = {
     'note': 'My package note'
 }
 
-#  create a new package container
+#  create a new package (this allocates a reception folder on package storage)
 response = requests.post(url=AOC_API_BASE + 'packages',
                          headers=request_headers, json=package_creation)
 response.raise_for_status()
@@ -123,7 +130,8 @@ response = requests.put(AOC_API_BASE + "packages/%s" % package_info['id'], heade
                         json={'sent': True, 'transfers_expected': transfer_sessions})
 response.raise_for_status()
 
-# note we generate a bearer token for the specified node (all tags are not mandatory, but some are, like 'node')
+# Note: generate a bearer token for the node on which package was created
+# (all tags are not mandatory, but some are, like 'node')
 t_spec = {
     'direction': 'send',
     'token': get_bearer("node.%s:user:all" % node_info['access_key']),
@@ -166,4 +174,5 @@ t_spec['paths'] = []
 for f in package_files:
     t_spec['paths'].append({'source': f})
 
+# Finally send files to package folder on server
 test_environment.start_transfer_and_wait(t_spec)

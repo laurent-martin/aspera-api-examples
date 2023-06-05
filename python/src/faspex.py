@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
+# Send a package using Faspex 4 API v3
 import test_environment
 import requests
 import requests.auth

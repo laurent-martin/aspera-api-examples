@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
+# Use Node API with COS credentials
 import requests
 import logging
 import json
