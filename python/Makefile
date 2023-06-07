@@ -13,7 +13,7 @@ export CONFIG_SDK_ROOT CONFIG_FSMGR_DIR CONFIG_TRSDK_DIR_ARCH CONFIG_TRSDK_DIR_G
 PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
 
-all: server faspex node cos cos2 aoc
+all: f5 server faspex node cos cos2 aoc
 server: .test_env
 	$(SRC)/server.py
 faspex: .test_env
@@ -26,6 +26,8 @@ cos2: .test_env
 	$(SRC)/cos2.py $(TMPDIR)This_is_a_test.txt
 aoc: .test_env
 	$(SRC)/aoc.py 'test package' 1 $(TMPDIR)This_is_a_test.txt
+f5: .test_env
+	$(SRC)/faspex5.py 'test package' 1 $(TMPDIR)This_is_a_test.txt
 $(CONFIG_TRSDK_DIR_GENERIC)/connectors/python/requirements.txt:
 	@echo "run make in upper folder to install transfer SDK"
 	exit 1

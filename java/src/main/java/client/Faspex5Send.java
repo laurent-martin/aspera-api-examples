@@ -112,6 +112,7 @@ public class Faspex5Send {
 				.put("recipients", new JSONArray()//
 						.put(new JSONObject()//
 								.put("name", mConfig.get("username")))); // we send to ourselves
+		LOGGER.log(Level.FINE, "req>> {0}", package_create_params);
 
 		// Faspex REST API: Create package and get creation information
 		final JSONObject package_info = new JSONObject(Unirest.post(url("packages"))
