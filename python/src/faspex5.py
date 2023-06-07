@@ -78,8 +78,9 @@ def get_bearer():
     return 'Bearer ' + response_data['access_token']
 
 
-# Headers for authorization to AoC API
+# Headers for authorization to Faspex 5 API
 # bearer token is valid for some time and can (should) be re-used, until expired, then refresh it
+# in this example we generate a new bearer token for each script invocation
 request_headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -90,19 +91,18 @@ request_headers = {
 # Faspex 5 package creation information
 package_creation = {
     "title": "test title",
-    'recipients': [{'name': config['username']}]  # send to myself
+    'recipients': [{'name': config['username']}]  # send to myself (for test)
 }
 
-# create a new package (this allocates a reception folder on package storage)
+# create a new package with Faspex 5 API (this allocates a reception folder on package storage)
 response = requests.post(url=f5_url('packages'),
                          headers=request_headers, json=package_creation)
 response.raise_for_status()
 package_info = response.json()
 logging.debug(package_info)
 
-files_to_send = {
-    "paths": []
-}
+# build payload to specify files to send
+files_to_send = {"paths": []}
 for f in package_files:
     files_to_send['paths'].append({'source': f})
 
@@ -112,6 +112,7 @@ response.raise_for_status()
 t_spec = response.json()
 logging.debug(t_spec)
 
+# optional: multi session
 if transfer_sessions != 1:
     t_spec['multi_session'] = transfer_sessions
     t_spec['multi_session_threshold'] = 500000
