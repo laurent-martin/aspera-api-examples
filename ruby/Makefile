@@ -6,15 +6,15 @@ TMPDIR=$(CONFIG_TMPDIR)rubytst/
 RUBY_CONNECTORS=$(CONFIG_TRSDK_DIR_GENERIC)/connectors/ruby
 GEMFILE=$(CONFIG_TRSDK_DIR_GENERIC)/connectors/ruby/Gemfile
 
-export CONFIG_TRSDK_DIR_GENERIC
+export CONFIG_TRSDK_DIR_GENERIC TMPDIR
 
-all: faspex
-faspex: .test_env
-	bundle exec $(SRC)/faspex5.rb $(CONFIG_YAML) $(TMPDIR)This_is_a_test.txt
+all: node.test faspex5.test server.test faspex4.test
+%.test: .is_installed_tmp .is_installed_libs
+	bundle exec $(SRC)/$$(basename $@ .test).rb $(CONFIG_YAML) $(TMPDIR)This_is_a_test.txt
+	touch $@
 $(GEMFILE):
 	@echo "run make in upper folder to install transfer SDK"
 	exit 1
-.test_env: .is_installed_tmp .is_installed_libs
 tmp: .is_installed_tmp
 .is_installed_tmp:
 	mkdir -p $(TMPDIR)
@@ -28,5 +28,5 @@ libs: .is_installed_libs
 	touch $@
 # TODO: remove when transfersdk fixed: the "ln -s" is because of bug in transfer sdk: it requires "etc" even if property "etc" is set in config file
 clean:
-	rm -f .is_installed_libs .is_installed_tmp
+	rm -f .is_installed_libs .is_installed_tmp .*.test
 	rm -fr $(TMPDIR)
