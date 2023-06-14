@@ -18,9 +18,9 @@ JWT_NOT_BEFORE_OFFSET_SEC = 60
 # take some validity for the JWT
 JWT_EXPIRY_OFFSET_SEC = 600
 # base path for v5 api
-BASE_API_V5 = "/api/v5"
+BASE_API_V5 = '/api/v5'
 # path for oauth2 token generation
-TOKEN_PATH = "/auth/token"
+TOKEN_PATH = '/auth/token'
 
 # Arg1: name of package
 package_name = sys.argv[1]
@@ -37,7 +37,7 @@ config = test_environment.CONFIG['faspex5']
 
 def f5_url(path):
     """return the full url for a given path"""
-    return config['url'] + BASE_API_V5 + "/" + path
+    return config['url'] + BASE_API_V5 + '/' + path
 
 
 def get_bearer():
@@ -50,7 +50,7 @@ def get_bearer():
     jwt_payload = {
         'iss': config['client_id'],  # issuer
         'aud': config['client_id'],  # audience
-        'sub': "user:"+config['username'],  # subject
+        'sub': 'user:'+config['username'],  # subject
         'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
         'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
         'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
@@ -61,10 +61,10 @@ def get_bearer():
     data = {
         'client_id': config['client_id'],
         'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        'assertion': jwt.encode(jwt_payload, private_key_pem, algorithm='RS256', headers={"typ": "JWT"})}
+        'assertion': jwt.encode(payload=jwt_payload, key=private_key_pem, algorithm='RS256', headers={'typ': 'JWT'})}
 
     response = requests.post(
-        url=config['url'] + "/auth/token",
+        url=config['url'] + '/auth/token',
         auth=requests.auth.HTTPBasicAuth(
             config['client_id'], config['client_secret']),
         data=data,
@@ -90,7 +90,7 @@ request_headers = {
 
 # Faspex 5 package creation information
 package_creation = {
-    "title": "test title",
+    'title': 'test title',
     'recipients': [{'name': config['username']}]  # send to myself (for test)
 }
 
@@ -102,11 +102,11 @@ package_info = response.json()
 logging.debug(package_info)
 
 # build payload to specify files to send
-files_to_send = {"paths": []}
+files_to_send = {'paths': []}
 for f in package_files:
     files_to_send['paths'].append({'source': f})
 
-response = requests.post(url=f5_url("packages/" + package_info["id"] + "/transfer_spec/upload?transfer_type=connect"),
+response = requests.post(url=f5_url('packages/' + package_info['id'] + '/transfer_spec/upload?transfer_type=connect'),
                          headers=request_headers, json=files_to_send)
 response.raise_for_status()
 t_spec = response.json()
