@@ -2,11 +2,12 @@
 
 This application shows how to start a file transfer in a web browser using both the Aspera Connect SDK and Aspera HTTP Gateway SDK.
 
-In both case, starting a transfer consists in building a "transfer spec".
+In both case, starting a transfer consists in building a **transfer spec**.
 
-In this example, the transfer spec is build either for a direct transfer to a server or using node API.
+In this example, the transfer spec is build either:
 
-This sample application gives the choice to contact the node api either directly from the browser or through a local web server (express).
+- using SSH credentials
+- or using a broker app (server), node API and an Aspera Transfer token (AT)
 
 ## References
 

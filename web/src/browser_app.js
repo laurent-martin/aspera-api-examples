@@ -16,6 +16,33 @@ function app_error(message) {
     alert(`ERROR: ${message}`)
 }
 
+// @return the provided number with magnitude qualifier
+function app_readableBytes(bytes) {
+    const magnitude = Math.floor(Math.log(bytes) / Math.log(1024))
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+    return `${(bytes / Math.pow(1024, magnitude)).toFixed(2) * 1} ${sizes[magnitude]}`
+}
+
+// Called after page full download
+function app_initialize() {
+    if (document.location.protocol === 'file:') {
+        app_error(`ERROR: This page requires use of the nodejs server.`)
+    }
+    // initialize values in UI from config file
+    document.getElementById('httpgw_url').value = config.httpgw.url
+    document.getElementById('server_url').value = config.server.url
+    document.getElementById('server_user').value = config.server.user
+    document.getElementById('server_pass').value = config.server.pass
+    document.getElementById('download_file').value = config.server.download_file
+    document.getElementById('upload_folder').value = config.server.upload_folder
+    // Event listener when user click on UI
+    document.querySelectorAll('input[type=radio]').forEach(item => item.addEventListener('change', () => app_updateUi()))
+    document.querySelectorAll('input[type=checkbox]').forEach(item => item.addEventListener('change', () => app_updateUi()))
+    document.getElementById('use_connect').addEventListener('click', () => { app_updateUi() })
+    document.getElementById('action_download').addEventListener('click', () => { app_updateUi() })
+    app_updateUi()
+}
+
 // initializes Aspera Connect: check if extension and client are installed, else ask to install
 function app_initialize_connect() {
     // object to interact with connect
@@ -55,39 +82,47 @@ function app_initialize_connect() {
     return connect_object
 }
 
-
-// @return the provided number with magnitude qualifier
-function app_readableBytes(bytes) {
-    const magnitude = Math.floor(Math.log(bytes) / Math.log(1024))
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-    return `${(bytes / Math.pow(1024, magnitude)).toFixed(2) * 1} ${sizes[magnitude]}`
+// Generates a transfer spec without calling node API: authorization with bare SSH credentials
+// this is for demo only, usually it would not be the case
+function app_getTransferSpecSSH(params) {
+    // replace ssh, as browser will not parse ssh as scheme
+    const serverUrl = new URL(document.getElementById('server_url').value.replace(/^ssh:/g, 'http://'))
+    const transferSpec = {
+        remote_host: serverUrl.hostname,
+        ssh_port: serverUrl.port,
+        remote_user: document.getElementById('server_user').value,
+        remote_password: document.getElementById('server_pass').value,
+        paths: []
+    }
+    // build list of source files suitable for transfer spec
+    for (const file of params.sources) {
+        transferSpec['paths'].push({ source: file })
+    }
+    if (params.operation === 'upload') {
+        transferSpec['direction'] = 'send'
+        transferSpec['destination_root'] = params.destination
+    } else {
+        transferSpec['direction'] = 'receive'
+    }
+    return transferSpec
 }
 
 // Generate transfer spec for specified transfer operation (upload/download) and files
-// either call directly the node api, or call the web server who will forward to node
-function app_getTransferSpec(params) {
+// call the app server who will forward to node
+// @return transfer spec with token by calling the local express server
+function app_getTransferSpecFromServer(params) {
     console.log(`Transfer requested: ${params.operation}`)
-    if (!document.getElementById('use_server').checked) {
-        // call directly node api in browser (returns a promise)
-        return common.get_transfer_spec_direct(params)
-    } else {
-        // @return transfer spec with token by calling the local express server
-        const server_url = window.location.href
-        if (!server_url.startsWith('http://')) {
-            app_error('Cannot detect server URL if page is loaded from file')
-            throw 'Cannot detect server URL if page is loaded from file'
-        }
-        return new Promise((resolve) => {
-            // get transfer spec from server
-            fetch(`${server_url}tspec`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(params)
-            })
-                .then((response) => { return response.json() })
-                .then((ts) => { return resolve(ts) })
+    const app_server_url = window.location.href
+    return new Promise((resolve) => {
+        // get transfer spec from server
+        fetch(`${app_server_url}tspec`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(params)
         })
-    }
+            .then((response) => { return response.json() })
+            .then((ts) => { return resolve(ts) })
+    })
 }
 
 // start transfer for specified transfer type and files
@@ -135,19 +170,13 @@ function handleTransferEvents(transfers) {
 // update dynamic elements in UI
 // initialize selected SDK for transfer: Connect or HTTPGW
 function app_updateUi() {
+    console.log('update UI')
     document.getElementById('upload_files').innerHTML = selected_upload_files.join(', ')
-    document.getElementById('node_info').style.display = document.getElementById('use_server').checked ? 'none' : 'block'
-    if (document.getElementById('use_connect').checked && document.location.protocol === 'file:') {
-        alert(`ERROR: Cannot use the connect SDK with page loaded as file: use the npm server provided.`)
-        document.getElementById('use_connect').checked = false
-    }
     if (document.getElementById('use_connect').checked) {
         // Connect
         document.getElementById('connect_info').style.display = 'block'
         document.getElementById('httpgw_info').style.display = 'none'
-        document.getElementById('httpgw_version').style.display = 'none'
-        document.getElementById('server_download').style.display = 'block'
-        document.getElementById('server_info').style.display = 'block'
+        document.getElementById('div_ssh_creds_selector').style.display = 'block'
         if (!this.client) {
             this.client = app_initialize_connect()
             // optionally for the sample: follow transfer progress in page
@@ -157,9 +186,12 @@ function app_updateUi() {
         // HTTPGW
         document.getElementById('connect_info').style.display = 'none'
         document.getElementById('httpgw_info').style.display = 'block'
-        document.getElementById('httpgw_version').style.display = 'block'
-        document.getElementById('server_download').style.display = 'none'
-        document.getElementById('server_info').style.display = 'none'
+        document.getElementById('div_ssh_creds_selector').style.display = 'none'
+        // SSH creds are not supported by HTTPGW
+        if (document.querySelector("input[type='radio'][name=transfer_auth]:checked").value === "ssh_creds") {
+            document.getElementById('ssh_creds_radio').checked = false
+            document.getElementById('aspera_token_radio').checked = true
+        }
         if (!httpGwMonitorId) {
             asperaHttpGateway.initHttpGateway(document.getElementById('httpgw_url').value + '/v1')
                 .then(response => {
@@ -174,61 +206,42 @@ function app_updateUi() {
                 })
         }
     }
-}
-
-function app_update_node_config_on_change(part) {
-    element = document.getElementById('node_' + part)
-    element.value = config.node[part]
-    element.addEventListener('input', (e) => {
-        config.node[part] = element.value
-        console.log(`Updated node config ${part}`)
-    })
-}
-
-// Called after page full download
-function app_initialize() {
-    // initialize values from config file
-    // node api parameters are also used in "common", so if used on browser: need bidirectional updates
-    app_update_node_config_on_change('url')
-    app_update_node_config_on_change('user')
-    app_update_node_config_on_change('pass')
-    // other parameters are directly read from the element
-    document.getElementById('httpgw_url').value = config.httpgw.url
-    document.getElementById('server_url').value = config.server.url
-    document.getElementById('server_user').value = config.server.user
-    document.getElementById('server_pass').value = config.server.pass
-    document.getElementById('download_file').value = config.server.download_file
-    document.getElementById('upload_folder').value = config.server.upload_folder
-    document.getElementById('use_connect').addEventListener('click', () => { app_updateUi() })
-    document.getElementById('use_server').addEventListener('click', () => { app_updateUi() })
-    app_updateUi()
-}
-
-// Button: Download from server with SSH credentials
-function app_download_ssh_creds() {
-    // replace ssh, as browser will not parse ssh as scheme
-    const serverUrl = new URL(document.getElementById('server_url').value.replace(/^ssh:/g, 'http://'))
-    // build manually the transfer spec
-    const transferSpec = {
-        remote_host: serverUrl.hostname,
-        ssh_port: serverUrl.port,
-        remote_user: document.getElementById('server_user').value,
-        remote_password: document.getElementById('server_pass').value,
-        direction: 'receive',
-        paths: [{ source: document.getElementById('download_file').value }]
+    if (document.querySelector("input[type='radio'][name=transfer_auth]:checked").value === "ssh_creds") {
+        document.getElementById('hsts_ssh_info').style.display = 'block'
+    } else {
+        document.getElementById('hsts_ssh_info').style.display = 'none'
     }
-    console.log(`Transfer requested: download`)
-    app_startTransfer(transferSpec)
+    if (document.getElementById('action_download').checked) {
+        document.getElementById('download_selection').style.display = 'block'
+        document.getElementById('upload_selection').style.display = 'none'
+    } else {
+        document.getElementById('download_selection').style.display = 'none'
+        document.getElementById('upload_selection').style.display = 'block'
+    }
 }
 
-// Button: Download from server with Node API credentials (using Aspera or Basic token)
-function app_download_with_token(use_basic) {
-    app_getTransferSpec({ operation: 'download', sources: [document.getElementById('download_file').value] })
-        .then((transferSpec) => {
-            if (use_basic) { transferSpec.token = 'Basic ' + btoa(document.getElementById('node_user').value + ':' + document.getElementById('node_pass').value) }
-            app_startTransfer(transferSpec)
-        }).catch((message) => { app_error(message) })
+function app_start_transfer() {
+    var params = null
+    if (document.getElementById('action_download').checked) {
+        params = { operation: 'download', sources: [document.getElementById('download_file').value] }
+    } else {
+        params = { operation: 'upload', sources: selected_upload_files, destination: document.getElementById('upload_folder').value }
+        app_resetSelection()
+    }
+    var download_type = document.querySelector("input[type='radio'][name=transfer_auth]:checked").value
+    if (download_type === "ssh_creds") {
+        app_startTransfer(app_getTransferSpecSSH(params))
+    } else {
+        // this calls the nodejs server which calls the node api
+        app_getTransferSpecFromServer(params)
+            .then((transferSpec) => {
+                // for basic token, we normally do not need to call the node api, but that is safer to get actual transfer addresses and a pre-filled transfer spec
+                if (download_type === "basic_token") { transferSpec.token = 'Basic ' + btoa(document.getElementById('node_user').value + ':' + document.getElementById('node_pass').value) }
+                app_startTransfer(transferSpec)
+            }).catch((message) => { app_error(message) })
+    }
 }
+
 
 // callback after files are selected
 function app_storeFileNames(selection) {
@@ -250,13 +263,4 @@ function app_pick_files() {
     } else {
         asperaHttpGateway.getFilesForUpload((selection) => { app_storeFileNames(selection) }, HTTPGW_FORM_ID)
     }
-}
-
-// Button: Upload selected files
-function app_upload() {
-    app_getTransferSpec({ operation: 'upload', sources: selected_upload_files, destination: document.getElementById('upload_folder').value })
-        .then((transferSpec) => {
-            app_startTransfer(transferSpec)
-            app_resetSelection()
-        }).catch((message) => { app_error(message) })
 }
