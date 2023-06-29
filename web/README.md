@@ -1,13 +1,13 @@
-# Aspera transfers in web app using Connect and HTTP Gateway
+# Aspera transfers in web app using Connect or HTTP Gateway and Node API
 
-This application shows how to start a file transfer in a web browser using both the Aspera Connect SDK and Aspera HTTP Gateway SDK.
+This application shows how to start a file transfer in a web browser using either the Aspera Connect SDK or the Aspera HTTP Gateway SDK.
 
 In both case, starting a transfer consists in building a **transfer spec**.
 
 In this example, the transfer spec is build either:
 
-- using SSH credentials
-- or using a broker app (server), node API and an Aspera Transfer token (AT)
+- Using a broker app (server) which in turn calls the HSTS node API (and then uses a token)
+- using SSH credentials (demo only, do not do that)
 
 ## Configuration
 
@@ -32,8 +32,8 @@ This YAML will generate the equivalent file `conf.js` which is used by the serve
 
 ## Setup and Run
 
-Install nodeJS (v>=17, with `fetch`).
-Check with:
+Install [nodeJS](https://nodejs.org/) (v>=17, with `fetch`).
+Check version with:
 
 ```bash
 node --version
@@ -45,7 +45,7 @@ Then execute:
 make
 ```
 
-This will install packages and run the server.
+This will install nodejs packages and run the express web server.
 
 Then open a browser to:
 
@@ -62,4 +62,3 @@ Then open a browser to:
 [Aspera Connect SDK documentation](https://developer.ibm.com/apis/catalog?search=%22aspera%20connect%22)
 
 [All Aspera APIs here](https://developer.ibm.com/apis/catalog?search=aspera)
-
