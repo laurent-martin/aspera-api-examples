@@ -24,7 +24,6 @@ unless ARGV.length.eql?(2)
 end
 
 config_yaml = ARGV[0]
-files_to_send = [ARGV[1]]
 
 all_config = YAML.load_file(config_yaml)
 server_conf = all_config['server']
@@ -67,7 +66,7 @@ transfer_agent.add_listener(MyListener.new)
 
 ##############################################################
 # download using SSH credentials
-server_uri=URI.parse(server_conf['url'])
+server_uri = URI.parse(server_conf['url'])
 # manually build transfer spec
 transfer_spec = {
   'remote_host' => server_uri.host,
