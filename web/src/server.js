@@ -20,6 +20,10 @@ const config = yaml.load(fs.readFileSync(yamlConfFile, 'utf8'))
 // web server
 const app = express()
 
+// generate configuration for web client
+const config_js = "config="+JSON.stringify(yaml.load(fs.readFileSync(process.argv[2], 'utf8')))
+fs.writeFile(staticFolder+"/conf.js", config_js, err => {if (err) {console.error(err)}})
+
 // use this source folder to serve static content
 app.use(express.static(staticFolder))
 
@@ -30,47 +34,57 @@ app.use(bodyParser.json())
 // for demo, ignore self-signed cert on Node API
 const ignoreCertAgent = new https.Agent({ rejectUnauthorized: false })
 
-// expose API: get transfer authorization by calling node API
+// expose API:
+// get transfer authorization by calling node API
+// @param operation: upload or download
+// @param sources: list of files to transfer
+// @param destination: destination path for upload
 app.post('/tspec', (req, res) => {
-  console.log('params:', req.body)
-  // requested path for authorization, depends on transfer direction
-  let request_paths = null
-  const source_paths = []
+  // retrieve parameters sent by client
+  const params = req.body
+  console.log('params:', params)
   // build list of source files suitable for transfer spec
-  for (const file of req.body.sources) {
-    source_paths.push({ source: file })
+  const ts_source_paths = []
+  for (const file of params.sources) {
+    ts_source_paths.push({ source: file })
   }
-  if (req.body.operation === 'upload') {
-    request_paths = [{ destination: req.body.destination }]
-  } else if (req.body.operation === 'download') {
-    request_paths = source_paths
+  // requested transfer spec for authorization, depends on transfer direction
+  const request_ts = { paths: null }
+  if (params.operation === 'upload') {
+    // for upload, authorization is on upload target folder
+    // we may alternatively set field "destination_root"
+    request_ts['paths'] = [{ destination: params.destination }]
+  } else if (params.operation === 'download') {
+    // for download, authorization is on download source files
+    request_ts['paths'] = ts_source_paths
   } else {
-    return res.status(500).send(`Wrong operation parameter: ${req.body.operation}`)
+    return res.status(500).send(`Wrong operation parameter: ${params.operation}`)
   }
-  // call HSTS node API (with a single transfer request)
-  fetch(config.node.url + `/files/${req.body.operation}_setup`, {
+  // call HSTS Node API (with a single transfer request)
+  fetch(config.node.url + `/files/${params.operation}_setup`, {
     method: 'POST',
     headers: { Authorization: 'Basic ' + btoa(config.node.user + ':' + config.node.pass) },
-    body: JSON.stringify({ transfer_requests: [{ transfer_request: { paths: request_paths } }] }),
+    body: JSON.stringify({ transfer_requests: [{ transfer_request: request_ts }] }),
     agent: ignoreCertAgent
   }).then((response) => {
     if (!response.ok) {
       return res.status(500).send(`Node API: ${response.statusText}`)
     }
+    // if OK, then parse the JSON for next step
     return response.json()
   }).then((result) => {
+    // we posted a single transfer request, so we shall get a single result
     const result0 = result.transfer_specs[0]
+    // error occurred ?
     if (result0.error) {
       return res.status(500).send(result0.error.user_message)
     }
-    // one request was made, so one answer is received (assume no error)
+    // no error, so we have the transfer spec
     const transferSpec = result0.transfer_spec
-    // set paths of files to transfer
-    transferSpec.paths = source_paths
-    // add auth for HTTPGW or connect to use Aspera SSH keys
-    transferSpec.authentication = 'token'
-    console.log('result ts:', transferSpec)
-    // call resolve callback with resulting transfer spec
+    // set paths of files to transfer (for upload, we did not set the paths, so it's not in the generated ts)
+    transferSpec.paths = ts_source_paths
+    console.log('result:', transferSpec)
+    // send result
     return res.send(transferSpec)
   })
 })

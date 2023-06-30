@@ -19,6 +19,7 @@ local
 .idea
 dist/
 web/conf.js
+web/http-gateway.js
 gradle.properties
 java/bin
 Gemfile.lock

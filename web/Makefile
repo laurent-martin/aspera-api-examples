@@ -1,23 +1,18 @@
 all::
-# run make to start server
-# this retrieves javascript libs for http gateway client
-dist/http-gateway.js:
-	mkdir -p dist
-	npm --prefix dist install --save @ibm-aspera/http-gateway-sdk-js
-	mv dist/node_modules/@ibm-aspera/http-gateway-sdk-js/js/http-gateway.js* dist
-	rm -fr dist/node_modules dist/package*.json
-node_modules:
-	npm install
-conf.js: ../config.yaml node_modules
-	node script/convert.js ../config.yaml > $@
+WEB_FOLDER=.
+# retrieve javascript libs for http gateway client
+http-gateway.js:
+	mkdir -p tmp_node
+	npm --prefix tmp_node install --save @ibm-aspera/http-gateway-sdk-js
+	mv tmp_node/node_modules/@ibm-aspera/http-gateway-sdk-js/js/http-gateway.js $(WEB_FOLDER)
+	rm -fr tmp_node
 # run the server
-all:: node_modules dist/http-gateway.js conf.js
-	PATH="/opt/homebrew/bin:$$PATH" node --trace-warnings src/server.js ../config.yaml 3000 .
-	@echo "open "
+all:: http-gateway.js
+	npm install
+	node --trace-warnings src/server.js ../config.yaml 3000 $(WEB_FOLDER)
 clean:
-	rm -f package-lock.json conf.js
+	rm -f package-lock.json conf.js http-gateway.js
 	rm -f aspera-httpgw-example.zip
-	rm -fr dist node_modules
-	-killall asperatransferd
+	rm -fr node_modules
 zip:
 	zip aspera-httpgw-example.zip $$(git ls-files)

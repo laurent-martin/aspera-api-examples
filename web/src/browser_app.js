@@ -237,6 +237,8 @@ function app_start_transfer() {
             .then((transferSpec) => {
                 // for basic token, we normally do not need to call the node api, but that is safer to get actual transfer addresses and a pre-filled transfer spec
                 if (download_type === "basic_token") { transferSpec.token = 'Basic ' + btoa(document.getElementById('node_user').value + ':' + document.getElementById('node_pass').value) }
+                // for HTTPGW or Connect SDK to use Aspera SSH keys for token, specify this in transfer spec
+                transferSpec.authentication = 'token'
                 app_startTransfer(transferSpec)
             }).catch((message) => { app_error(message) })
     }
