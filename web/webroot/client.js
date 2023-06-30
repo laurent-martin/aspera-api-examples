@@ -234,11 +234,11 @@ function client_start_transfer() {
     if (download_type === "ssh_creds") {
         my_startTransfer(my_getTransferSpecSSH(params))
     } else {
+        // this is for demo only, do not use basic token in production
+        params["basic_token"] = (download_type === "basic_token")
         // this calls the nodejs server which calls the node api
         my_getTransferSpecFromServer(params)
             .then((transferSpec) => {
-                // for basic token, we normally do not need to call the node api, but that is safer to get actual transfer addresses and a pre-filled transfer spec
-                if (download_type === "basic_token") { transferSpec.token = 'Basic ' + btoa(document.getElementById('node_user').value + ':' + document.getElementById('node_pass').value) }
                 // for HTTPGW or Connect SDK to use Aspera SSH keys for token, specify this in transfer spec
                 transferSpec.authentication = 'token'
                 my_startTransfer(transferSpec)

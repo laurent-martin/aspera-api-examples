@@ -62,10 +62,11 @@ app.post('/tspec', (req, res) => {
   } else {
     return res.status(500).send(`Wrong operation parameter: ${params.operation}`)
   }
+  const basic_auth = 'Basic ' + btoa(config.node.user + ':' + config.node.pass)
   // call HSTS Node API (with a single transfer request)
   fetch(config.node.url + `/files/${params.operation}_setup`, {
     method: 'POST',
-    headers: { Authorization: 'Basic ' + btoa(config.node.user + ':' + config.node.pass) },
+    headers: { Authorization: basic_auth },
     body: JSON.stringify({ transfer_requests: [{ transfer_request: request_ts }] }),
     agent: ignoreCertAgent
   }).then((response) => {
@@ -87,8 +88,12 @@ app.post('/tspec', (req, res) => {
     const transferSpec = result0.transfer_spec
     // set paths of files to transfer (for upload, we did not set the paths, so it's not in the generated ts)
     transferSpec.paths = ts_source_paths
-    console.log('result:', transferSpec)
+    // this is for demo only, do not use basic token in production
+    // for basic token, we could just build a transfer spec ourselves without getting parameters from node api
+    // but that is safer to get actual transfer addresses and a pre-filled transfer spec
+    if (params["basic_token"]) { transferSpec.token = basic_auth }
     // send result
+    console.log('result:', transferSpec)
     return res.send(transferSpec)
   })
 })
