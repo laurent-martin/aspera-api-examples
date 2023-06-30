@@ -18,8 +18,8 @@ local
 .vscode
 .idea
 dist/
-web/conf.js
-web/http-gateway.js
+web/webroot/conf.js
+web/webroot/http-gateway.js
 gradle.properties
 java/bin
 Gemfile.lock
