@@ -1,17 +1,31 @@
 # Aspera transfers in web app using Connect or HTTP Gateway and Node API
 
-This application shows how to start a file transfer in a web browser using either the Aspera Connect SDK or the Aspera HTTP Gateway SDK.
+This application shows how to build an Aspera-transfer-enabled web application using the Aspera Connect SDK and Aspera HTTP Gateway SDK.
 
 In both case, starting a transfer consists in building a **transfer spec**.
 
+The transfer spec is Aspera's structure that contains everything to start a transfer:
+
+- the HSTS server address and port
+- authorization (token, ssh key or password, etc...)
+- source files and destination folder
+- optional parameters such as resume policy or target rate ,etc...
+
+Web servers shall use the "token" authorization scheme, using either of those types:
+
+- Aspera Transfer token (a string that starts with either `ATM` or `ATB` and ends with the same letters reverse)
+- an OAuth 2.0 bearer token (a string that begins with `Bearer`)
+
 In this example, the transfer spec is build either:
 
-- Using a broker app (server) which in turn calls the HSTS node API (and then uses a token)
-- using SSH credentials (demo only, do not do that)
+- Using a broker app (server) which in turn calls the HSTS node API
+  - it generates an Aspera Transfer token : this is the recommended way
+  - or it uses a Basic token (for testing purpose only, do not expose node credentials)
+- Using SSH credentials (for testing purpose only, do not expose transfer user credentials) : in that case, HSTS node api is not used.
 
 The application is split in two parts:
 
-- <webroot/client.js> runs in the browser, started by <webroot/index.html>
+- <webroot/client.js> runs in the browser, started by the main application page <webroot/index.html>
 - <src/server.js> runs in nodejs and is called by the client. It calls the Node API of HSTS.
 
 ![diagram](diagram.png)
@@ -56,6 +70,7 @@ make
 ```
 
 This will:
+
 - install nodejs packages for the server
 - download the http gateway client SDK
 - generate the client config file `webroot/conf.js` from YAML
@@ -63,9 +78,9 @@ This will:
 
 ## Execution of server, manual
 
-If you do not have `make`, you may refer to the Makefile for the command, which are as follows:
+If you do not have `make`, you may refer to the `Makefile` for the procedure:
 
-- install nodejs packages
+- install nodejs packages for server
 
   ```bash
   npm install
@@ -77,9 +92,11 @@ If you do not have `make`, you may refer to the Makefile for the command, which 
   node --trace-warnings src/server.js ../config.yaml 3000 webroot/
   ```
 
+> **Note:** In addition to this the Makefile installs the HTTPGW SDK library.
+
 ## Using the client
 
-Once the server is started, it shall display the address to open a browser to, which shall be: <http://localhost:3000>
+Once the server is started, it shall display the URL of the server, which shall be: <http://localhost:3000>
 
 The client app proposes various cases, using connect versus HTTP GW.
 For those two it will try to connect and retrieve the version.
