@@ -15,14 +15,16 @@ const yamlConfFile = process.argv[2]
 const port = Number(process.argv[3])
 const staticFolder = process.argv[4]
 
+if (!staticFolder.endsWith("/")) { throw new Error("staticFolder must end with /") }
+
 // read config file (node credentials ...) 
 const config = yaml.load(fs.readFileSync(yamlConfFile, 'utf8'))
 // web server
 const app = express()
 
 // generate configuration for web client
-const config_js = "config="+JSON.stringify(yaml.load(fs.readFileSync(process.argv[2], 'utf8')))
-fs.writeFile(staticFolder+"/conf.js", config_js, err => {if (err) {console.error(err)}})
+const config_js = "config=" + JSON.stringify(yaml.load(fs.readFileSync(process.argv[2], 'utf8')))
+fs.writeFile(staticFolder + "conf.js", config_js, err => { if (err) { console.error(err) } })
 
 // use this source folder to serve static content
 app.use(express.static(staticFolder))
@@ -68,6 +70,7 @@ app.post('/tspec', (req, res) => {
     agent: ignoreCertAgent
   }).then((response) => {
     if (!response.ok) {
+      console.log(`ERROR: Node API: ${response.statusText}`)
       return res.status(500).send(`Node API: ${response.statusText}`)
     }
     // if OK, then parse the JSON for next step
@@ -77,6 +80,7 @@ app.post('/tspec', (req, res) => {
     const result0 = result.transfer_specs[0]
     // error occurred ?
     if (result0.error) {
+      console.log(`ERROR: ${result0.error.user_message}`)
       return res.status(500).send(result0.error.user_message)
     }
     // no error, so we have the transfer spec

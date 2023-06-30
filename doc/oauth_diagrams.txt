@@ -42,3 +42,21 @@ note right of Client: close listening port after use
 Client->+AoC API: GET oauth/token(grant_type=code)
 AoC API-->-Client: Bearer token
 Client-->AoC API: use APIs with Authorization=Bearer
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+title Aspera Connect + Node example
+Actor User
+User->Browser: open on server address
+participant ConnectClient
+participant <-Client/Server->
+Browser->NodeExpressServer: load index.html and client.js
+Browser->Browser: javascript client app initializes
+Browser->*ConnectClient: start
+User->Browser: click on "start transfer"
+Browser->+NodeExpressServer: call /tspec
+NodeExpressServer->+HSTS: call /files/*setup
+HSTS-->-NodeExpressServer: return transfer spec
+NodeExpressServer-->-Browser: return transfer spec
+Browser->ConnectClient: call startTransfer with transfer spec
+ConnectClient<->HSTS: file transfer
+
