@@ -8,10 +8,10 @@
   <script src="https://d3gcli72yxqn2z.cloudfront.net/@ibm-aspera/connect-sdk-js/latest/connect-sdk.js"></script>
   <script src="http-gateway.js"></script>
   <script src="conf.js"></script>
-  <script src="src/browser_app.js"></script>
+  <script src="src/client.js"></script>
 </head>
 
-<body onload="app_initialize()">
+<body onload="client_initialize()">
   <header>
     <div class="content">
       <nav>
@@ -66,7 +66,7 @@
   <fieldset>
     <legend>Source and destination:</legend>
     <div id="upload_selection">
-      <button onclick="app_pick_files()">Select Files to Upload</button>
+      <button onclick="client_pick_files()">Select Files to Upload</button>
       <p>Locally selected files:
       <div id="upload_files"></div>
       </p>
@@ -76,7 +76,7 @@
       <p>File to download: <input type="text" id="download_file"></p>
     </div>
   </fieldset>
-  <button onclick="app_start_transfer()">Start transfer</button><br />
+  <button onclick="client_start_transfer()">Start transfer</button><br />
   <fieldset>
     <legend>Transfer status:</legend>
     <pre id="status"></p>
