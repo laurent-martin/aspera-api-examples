@@ -45,9 +45,12 @@ function client_initialize() {
     my_updateUi()
 }
 
-// initializes Aspera Connect: check if extension and client are installed, else ask to install
+// initializes Aspera Connect SDK:
+// - create the Connect object
+// - check if aspera browser extension is installed, and if not: popup window to propose to install it
+// - check if aspera connect client is installed, and if not: popup window to propose to install it
 function my_initialize_connect() {
-    // object to interact with connect
+    // object to interact with Aspera Connect
     var connect_object = new AW4.Connect({
         minVersion: '4.2.0',
         connectMethod: 'extension'
