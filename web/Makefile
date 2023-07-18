@@ -1,6 +1,6 @@
 all::
 # must have trailing slash
-WEB_ROOT=./webroot/
+WEB_ROOT=./src/
 # retrieve javascript libs for http gateway client
 http-gateway.js:
 	mkdir -p tmp_node
@@ -12,7 +12,7 @@ all:: http-gateway.js
 	npm install
 	node --trace-warnings src/server.js ../config.yaml 3000 $(WEB_ROOT)
 clean:
-	rm -f package-lock.json conf.js $(WEB_ROOT)http-gateway.js
+	rm -f package-lock.json $(WEB_ROOT)conf.js $(WEB_ROOT)http-gateway.js
 	rm -f aspera-httpgw-example.zip
 	rm -fr node_modules
 zip:
