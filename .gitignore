@@ -18,10 +18,9 @@ local
 .vscode
 .idea
 dist/
-web/webroot/conf.js
-web/webroot/http-gateway.js
 gradle.properties
 java/bin
 Gemfile.lock
 .DS_Store
 *.test
+csharp

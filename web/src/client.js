@@ -1,18 +1,23 @@
 // sample client web application
 // See reference: https://ibm.github.io/aspera-connect-sdk-js/
-// functions starting with "my_" are used locally
+// functions starting with "my_" are used locally only
 // functions starting with "client_" are called by the UI
 
-// files selected by user for upload
-var selected_upload_files = []
-// HTTPGW upload monitor, initialized when HTTPGW is accessible
-var httpGwMonitorId
+// Global values:
+// this.connectClient: object to interact with Aspera Connect
+// this.selectedUploadFiles: files selected by user for upload
+// this.httpGwMonitorId: identifier of activity monitor for HTTPGW transfers
+
 // identifier used by HTTPGW SDK
 const HTTPGW_FORM_ID = 'send-panel'
 // location of Connect SDK in CDN
 const CONNECT_SDK_CDN_LOCATION = '//d3gcli72yxqn2z.cloudfront.net/downloads/connect/latest'
 
-// UI feedback on error
+// =================================================================================================
+// private functions
+
+
+// UI display error
 function my_error(message) {
     console.error(`ERROR: ${message}`)
     alert(`ERROR: ${message}`)
@@ -25,23 +30,39 @@ function my_readableBytes(bytes) {
     return `${(bytes / Math.pow(1024, magnitude)).toFixed(2) * 1} ${sizes[magnitude]}`
 }
 
-// Called after page full download
-function client_initialize() {
-    if (document.location.protocol === 'file:') {
-        my_error(`ERROR: This page requires use of the nodejs server.`)
+// callback for connect client initialization progress
+function my_handleStatusEvents(connectInstaller, eventInfo) {
+    console.log(`Connect Event: STATUS: ${eventInfo}`)
+    if (eventInfo == AW4.Connect.STATUS.INITIALIZING) {
+        connectInstaller.showLaunching()
+    } else if (eventInfo == AW4.Connect.STATUS.EXTENSION_INSTALL) {
+        connectInstaller.showExtensionInstall()
+    } else if (eventInfo == AW4.Connect.STATUS.FAILED) {
+        connectInstaller.showDownload()
+    } else if (eventInfo == AW4.Connect.STATUS.OUTDATED) {
+        connectInstaller.showUpdate()
+    } else if (eventInfo == AW4.Connect.STATUS.RUNNING) {
+        connectInstaller.connected()
+        // (optional) Update UI with Connect version, that also validates that communication works
+        this.connectClient.version({
+            success: (info) => { document.getElementById('connect_info').innerHTML = `Connect Version ${info.version}` },
+            error: () => { document.getElementById('connect_info').innerHTML = 'Cannot get connect version' }
+        })
     }
-    // initialize values in UI from config file
-    document.getElementById('httpgw_url').value = config.httpgw.url
-    document.getElementById('server_url').value = config.server.url
-    document.getElementById('server_user').value = config.server.user
-    document.getElementById('server_pass').value = config.server.pass
-    document.getElementById('download_file').value = config.server.download_file
-    document.getElementById('upload_folder').value = config.server.upload_folder
-    // Event listener when user click on UI
-    document.querySelectorAll('input[type=radio]').forEach(item => item.addEventListener('change', () => my_updateUi()))
-    document.querySelectorAll('input[type=checkbox]').forEach(item => item.addEventListener('change', () => my_updateUi()))
-    document.getElementById('use_connect').addEventListener('click', () => { my_updateUi() })
-    document.getElementById('action_download').addEventListener('click', () => { my_updateUi() })
+}
+
+// callback for feedback on transfer (Connect or HTTPGW)
+function my_handleTransferEvents(transfers) {
+    transfers.forEach(transfer => {
+        const status = `Event:
+    - Id:         ${transfer.uuid},
+    - Status:     ${transfer.status},
+    - Percent:    ${(transfer.percentage * 100).toFixed(2)}%,
+    - Data Sent:  ${my_readableBytes(transfer.bytes_written)},
+    - Data Total: ${my_readableBytes(transfer.bytes_expected)}`
+        console.log(status)
+        document.getElementById('status').innerHTML = status
+    })
     my_updateUi()
 }
 
@@ -51,7 +72,7 @@ function client_initialize() {
 // - check if aspera connect client is installed, and if not: popup window to propose to install it
 function my_initialize_connect() {
     // object to interact with Aspera Connect
-    var connect_object = new AW4.Connect({
+    this.connectClient = new AW4.Connect({
         minVersion: '4.2.0',
         connectMethod: 'extension'
     })
@@ -61,34 +82,20 @@ function my_initialize_connect() {
         style: 'carbon',
         correlationId: 'testapp'
     })
-    // register callback when connect changes status, and trigger installer if necessary
-    connect_object.addEventListener(AW4.Connect.EVENT.STATUS, (eventType, eventInfo) => {
-        console.log(`Connect Event: ${eventInfo}`)
-        if (eventInfo == AW4.Connect.STATUS.INITIALIZING) {
-            connect_installer.showLaunching()
-        } else if (eventInfo == AW4.Connect.STATUS.EXTENSION_INSTALL) {
-            connect_installer.showExtensionInstall()
-        } else if (eventInfo == AW4.Connect.STATUS.FAILED) {
-            connect_installer.showDownload()
-        } else if (eventInfo == AW4.Connect.STATUS.OUTDATED) {
-            connect_installer.showUpdate()
-        } else if (eventInfo == AW4.Connect.STATUS.RUNNING) {
-            connect_installer.connected()
-            // (optional) Update UI with Connect version, that also validates that communication works
-            connect_object.version({
-                success: (info) => { document.getElementById('connect_info').innerHTML = `Connect Version ${info.version}` },
-                error: () => { document.getElementById('connect_info').innerHTML = 'Cannot get connect version' }
-            })
-        }
-    })
-    // try to start connect, else trigger installer
-    var my_info = connect_object.initSession()
+    // See event types: https://ibm.github.io/aspera-connect-sdk-js/global.html#EVENT
+    // we could also register type ALL, and check eventType value, but my_handleTransferEvents is used by both Connect and HTTPGW
+    // Get notification on Connect Client status changes (eventType is STATUS), propose install if necessary
+    this.connectClient.addEventListener(AW4.Connect.EVENT.STATUS, (eventType, eventInfo) => { my_handleStatusEvents(connect_installer, eventInfo) })
+    // Get notification on transfer progress (eventType is TRANSFER), show UI feedback
+    this.connectClient.addEventListener(AW4.Connect.EVENT.TRANSFER, (eventType, eventInfo) => { my_handleTransferEvents(eventInfo.transfers) })
+    // try to establish a communication with Connect Client
+    // status change will be notified by callback: my_handleStatusEvents, which triggers installer if necessary
+    var my_info = this.connectClient.initSession()
     console.log('app info=', my_info)
-    return connect_object
 }
 
 // Generates a transfer spec without calling node API: authorization with bare SSH credentials
-// this is for demo only, usually it would not be the case
+// this is for demo only, usually it would not be the case: a token would be used for authorization
 function my_getTransferSpecSSH(params) {
     // replace ssh, as browser will not parse ssh as scheme
     const serverUrl = new URL(document.getElementById('server_url').value.replace(/^ssh:/g, 'http://'))
@@ -113,13 +120,13 @@ function my_getTransferSpecSSH(params) {
 }
 
 // Generate transfer spec for specified transfer operation (upload/download) and files
-// call the app server who will forward to node
-// @return transfer spec with token by calling the local express server
+// by calling the app server who will forward to node
+// @return transfer spec with token
 function my_getTransferSpecFromServer(params) {
     console.log(`Transfer requested: ${params.operation}`)
     const server_url = window.location.href
     return new Promise((resolve) => {
-        // get transfer spec from server
+        // get transfer spec from REST call to from express server
         fetch(`${server_url}tspec`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -133,9 +140,9 @@ function my_getTransferSpecFromServer(params) {
 // start transfer for specified transfer type and files
 // using either connect SDK or HTTP HW SDK
 function my_startTransfer(transferSpec) {
-    console.log('With ts=', transferSpec)
+    console.log('startTransfer ts=', transferSpec)
     if (document.getElementById('use_connect').checked) {
-        this.client.startTransfer(transferSpec)
+        this.connectClient.startTransfer(transferSpec)
     } else {
         // transfer spec specific to http gw:
         //transferSpec.download_name='project_files'
@@ -153,22 +160,7 @@ function my_startTransfer(transferSpec) {
 
 // reset file selection for upload to empty file list
 function my_resetSelection() {
-    selected_upload_files = []
-    my_updateUi()
-}
-
-// callback for feedback on transfer (Connect or HTTPGW)
-function handleTransferEvents(transfers) {
-    transfers.forEach(transfer => {
-        const status = `Event:
-    - Id:         ${transfer.uuid},
-    - Status:     ${transfer.status},
-    - Percent:    ${(transfer.percentage * 100).toFixed(2)}%,
-    - Data Sent:  ${my_readableBytes(transfer.bytes_written)},
-    - Data Total: ${my_readableBytes(transfer.bytes_expected)}`
-        console.log(status)
-        document.getElementById('status').innerHTML = status
-    })
+    this.selectedUploadFiles = []
     my_updateUi()
 }
 
@@ -176,16 +168,14 @@ function handleTransferEvents(transfers) {
 // initialize selected SDK for transfer: Connect or HTTPGW
 function my_updateUi() {
     console.log('update UI')
-    document.getElementById('upload_files').innerHTML = selected_upload_files.join(', ')
+    document.getElementById('upload_files').innerHTML = this.selectedUploadFiles.join(', ')
     if (document.getElementById('use_connect').checked) {
         // Connect
         document.getElementById('connect_info').style.display = 'block'
         document.getElementById('httpgw_info').style.display = 'none'
         document.getElementById('div_ssh_creds_selector').style.display = 'block'
-        if (!this.client) {
-            this.client = my_initialize_connect()
-            // optionally for the sample: follow transfer progress in page
-            this.client.addEventListener(AW4.Connect.EVENT.TRANSFER, (eventType, eventInfo) => { handleTransferEvents(eventInfo.transfers) })
+        if (!this.connectClient) {
+            my_initialize_connect()
         }
     } else {
         // HTTPGW
@@ -197,13 +187,13 @@ function my_updateUi() {
             document.getElementById('ssh_creds_radio').checked = false
             document.getElementById('aspera_token_radio').checked = true
         }
-        if (!httpGwMonitorId) {
+        if (!this.httpGwMonitorId) {
             asperaHttpGateway.initHttpGateway(document.getElementById('httpgw_url').value + '/v1')
                 .then(response => {
                     console.log('HTTP Gateway SDK started', response)
                     document.getElementById('httpgw_version').innerHTML = `HTTP GW v${response.version}`
                     // register a transfer monitor
-                    httpGwMonitorId = asperaHttpGateway.registerActivityCallback((result) => { handleTransferEvents(result.transfers) })
+                    this.httpGwMonitorId = asperaHttpGateway.registerActivityCallback((result) => { my_handleTransferEvents(result.transfers) })
                 })
                 .catch(error => {
                     document.getElementById('httpgw_version').innerHTML = `HTTP GW ${error.message}`
@@ -211,11 +201,13 @@ function my_updateUi() {
                 })
         }
     }
+    // update UI for transfer auth type
     if (document.querySelector("input[type='radio'][name=transfer_auth]:checked").value === "ssh_creds") {
         document.getElementById('hsts_ssh_info').style.display = 'block'
     } else {
         document.getElementById('hsts_ssh_info').style.display = 'none'
     }
+    // update UI for transfer type
     if (document.getElementById('action_download').checked) {
         document.getElementById('download_selection').style.display = 'block'
         document.getElementById('upload_selection').style.display = 'none'
@@ -225,12 +217,57 @@ function my_updateUi() {
     }
 }
 
+// callback after files are selected
+function my_storeFileNames(selection) {
+    for (const file of selection.dataTransfer.files) {
+        this.selectedUploadFiles.push(file.name)
+    }
+    console.log('Files picked', this.selectedUploadFiles)
+    my_updateUi()
+}
+
+// =====================
+// public functions
+
+// Called on page load
+function client_initialize() {
+    this.selectedUploadFiles = []
+    if (document.location.protocol === 'file:') {
+        my_error(`ERROR: This page requires use of the nodejs server.`)
+    }
+    // initialize values in UI from config file
+    document.getElementById('httpgw_url').value = config.httpgw.url
+    document.getElementById('server_url').value = config.server.url
+    document.getElementById('server_user').value = config.server.user
+    document.getElementById('server_pass').value = config.server.pass
+    document.getElementById('download_file').value = config.server.download_file
+    document.getElementById('upload_folder').value = config.server.upload_folder
+    // Event listener when user click on UI
+    document.querySelectorAll('input[type=radio]').forEach(item => item.addEventListener('change', () => my_updateUi()))
+    document.querySelectorAll('input[type=checkbox]').forEach(item => item.addEventListener('change', () => my_updateUi()))
+    document.getElementById('use_connect').addEventListener('click', () => { my_updateUi() })
+    document.getElementById('action_download').addEventListener('click', () => { my_updateUi() })
+    my_updateUi()
+}
+// Button: Select files for upload
+function client_pick_files() {
+    // for the sample: a new select deletes already selected files
+    my_resetSelection()
+    if (document.getElementById('use_connect').checked) {
+        this.connectClient.showSelectFileDialogPromise({ allowMultipleSelection: false })
+            .then((selection) => { my_storeFileNames(selection) })
+            .catch(() => { console.error('Unable to select files') })
+    } else {
+        asperaHttpGateway.getFilesForUpload((selection) => { my_storeFileNames(selection) }, HTTPGW_FORM_ID)
+    }
+}
+// Button: Start transfer
 function client_start_transfer() {
     var params = null
     if (document.getElementById('action_download').checked) {
         params = { operation: 'download', sources: [document.getElementById('download_file').value] }
     } else {
-        params = { operation: 'upload', sources: selected_upload_files, destination: document.getElementById('upload_folder').value }
+        params = { operation: 'upload', sources: this.selectedUploadFiles, destination: document.getElementById('upload_folder').value }
         my_resetSelection()
     }
     var download_type = document.querySelector("input[type='radio'][name=transfer_auth]:checked").value
@@ -249,25 +286,3 @@ function client_start_transfer() {
     }
 }
 
-
-// callback after files are selected
-function my_storeFileNames(selection) {
-    for (const file of selection.dataTransfer.files) {
-        selected_upload_files.push(file.name)
-    }
-    console.log('Files picked', selected_upload_files)
-    my_updateUi()
-}
-
-// Button: Select files for upload
-function client_pick_files() {
-    // for the sample: a new select deletes already selected files
-    my_resetSelection()
-    if (document.getElementById('use_connect').checked) {
-        this.client.showSelectFileDialogPromise({ allowMultipleSelection: false })
-            .then((selection) => { my_storeFileNames(selection) })
-            .catch(() => { console.error('Unable to select files') })
-    } else {
-        asperaHttpGateway.getFilesForUpload((selection) => { my_storeFileNames(selection) }, HTTPGW_FORM_ID)
-    }
-}
