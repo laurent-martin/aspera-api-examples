@@ -24,7 +24,7 @@
     </div>
   </header>
   <fieldset>
-    <legend>Select transfer agent:</legend>
+    <legend>Select transfer agent</legend>
     <label class="toggle">
       <input type="checkbox" id="use_connect" checked>
       <div class="labels" data-on="Connect" data-off="HTTPGW"></div>
@@ -36,14 +36,14 @@
     <div id="connect_info"></div>
   </fieldset>
   <fieldset>
-    <legend>Select transfer operation:</legend>
+    <legend>Select transfer operation</legend>
     <label class="toggle">
       <input type="checkbox" id="action_download" checked>
       <div class="labels" data-on="Download" data-off="Upload"></div>
     </label>
   </fieldset>
   <fieldset>
-    <legend>Select transfer authentication:</legend>
+    <legend>Select transfer authentication</legend>
     <div>
       <input type="radio" id="aspera_token_radio" name="transfer_auth" value="aspera_token" checked>
       <label for="aspera_token">Token: Aspera Transfer (ATM/ATB)</label>
@@ -58,13 +58,13 @@
     </div>
   </fieldset>
   <fieldset id="hsts_ssh_info">
-    <legend>HSTS SSH credentials:</legend>
+    <legend>HSTS SSH credentials</legend>
     <p>URL: <input type="text" id="server_url" /></p>
     <p>User: <input type="text" id="server_user" /></p>
     <p>Pass: <input type="password" id="server_pass" /></p>
   </fieldset>
   <fieldset>
-    <legend>Source and destination:</legend>
+    <legend>Source and destination</legend>
     <div id="upload_selection">
       <button onclick="client_pick_files()">Select Files to Upload</button>
       <p>Locally selected files:
@@ -78,7 +78,7 @@
   </fieldset>
   <button onclick="client_start_transfer()">Start transfer</button><br />
   <fieldset>
-    <legend>Transfer status:</legend>
+    <legend>Transfer status</legend>
     <pre id="status"></p>
       </fieldset>
   </body>

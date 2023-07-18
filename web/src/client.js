@@ -142,7 +142,10 @@ function my_getTransferSpecFromServer(params) {
 function my_startTransfer(transferSpec) {
     console.log('startTransfer ts=', transferSpec)
     if (document.getElementById('use_connect').checked) {
-        this.connectClient.startTransfer(transferSpec)
+        // https://ibm.github.io/aspera-connect-sdk-js/AW4.Connect.html#startTransfer
+        // https://ibm.github.io/aspera-connect-sdk-js/global.html#ConnectSpec
+        // allow_dialogs=false : hide connect client, we will follow the transfer progress in the web UI
+        this.connectClient.startTransfer(transferSpec, { "allow_dialogs": false })
     } else {
         // transfer spec specific to http gw:
         //transferSpec.download_name='project_files'
