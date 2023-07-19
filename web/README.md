@@ -2,30 +2,32 @@
 
 This application shows how to build an Aspera-transfer-enabled web application using the Aspera Connect SDK and Aspera HTTP Gateway SDK.
 
-In both case, starting a transfer consists in building a **transfer spec**.
+In both case, starting a transfer consists in building a **transfer spec** and then calling the browser-side javascript `startTransfer` SDK's API.
 
-The transfer spec is Aspera's structure that contains everything to start a transfer:
+The transfer spec is Aspera's structure that contains all information to start a transfer:
 
-- the HSTS server address and port
+- the HSTS server address, TCP method (SSH or HTTPS), TCP and UDP ports
 - authorization (token, ssh key or password, etc...)
-- source files and destination folder
+- transfer direction, source files and destination folder
 - optional parameters such as resume policy or target rate ,etc...
 
-Web servers shall use the "token" authorization scheme, using either of those types:
+Web applications shall use the "token" authorization scheme, using either of those types:
 
 - Aspera Transfer token (a string that starts with either `ATM` or `ATB` and ends with the same letters reverse)
 - an OAuth 2.0 bearer token (a string that begins with `Bearer`)
+
+> **Note:** The SSH-based transfer authorization is not recommended for web applications, as users shall be authorized through the web app. The legacy Aspera "Connect Server" web app was using SSH auth, but is deprecated.
 
 In this example, the transfer spec is build either:
 
 - Using a broker app (server) which in turn calls the HSTS node API
   - it generates an Aspera Transfer token : this is the recommended way
   - or it uses a Basic token (for testing purpose only, do not expose node credentials)
-- Using SSH credentials (for testing purpose only, do not expose transfer user credentials) : in that case, HSTS node api is not used.
+- Using SSH credentials (do not do that: for testing purpose only) : in that case, HSTS node api is not used, but SSH user's credentials must be known, and that transfer user must be authorized on the HSTS server without token. For example this is not possible on AoC/ATS SaaS Aspera transfer servers.
 
 The application is split in two parts:
 
-- <webroot/client.js> runs in the browser, started by the main application page <webroot/index.html>
+- <src/client.js> runs in the browser, started by the main application page <src/index.html>
 - <src/server.js> runs in nodejs and is called by the client. It calls the Node API of HSTS.
 
 ![diagram](diagram.png)
@@ -51,6 +53,8 @@ server:
     upload_folder: /Upload
 ```
 
+> **Note:** Node credentials can be either a node user, or an access key. As use of SSH credentials is not recommended, you may ignore the `server` section. The `httpgw`can also be ignored if you do not want to use HTTP GW.
+
 ## Environment Setup
 
 The server uses [nodeJS](https://nodejs.org/) (v>=17, with `fetch`).
@@ -73,7 +77,7 @@ This will:
 
 - install nodejs packages for the server
 - download the http gateway client SDK
-- generate the client config file `webroot/conf.js` from YAML
+- generate the client config file `src/conf.js` from YAML
 - run the express web server.
 
 ## Execution of server, manual
@@ -89,10 +93,10 @@ If you do not have `make`, you may refer to the `Makefile` for the procedure:
 - start the server
 
   ```bash
-  node --trace-warnings src/server.js ../config.yaml 3000 webroot/
+  node --trace-warnings src/server.js ../config.yaml 3000 src/
   ```
 
-> **Note:** In addition to this the Makefile installs the HTTPGW SDK library.
+> **Note:** In addition to this the `Makefile` installs the HTTPGW SDK library.
 
 ## Using the client
 
