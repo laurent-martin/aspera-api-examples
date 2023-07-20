@@ -6,7 +6,7 @@ import requests
 import json
 import logging
 
-IBM_CLOUD_OAUTH_URL = 'https://iam.cloud.ibm.com/identity/token'
+IBM_CLOUD_OAUTH_URL = "https://iam.cloud.ibm.com/identity/token"
 
 
 def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
@@ -21,12 +21,15 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
     # Get bearer token to access COS S3 API
     # payload to generate auth token
     token_req_data = {
-        'grant_type': 'urn:ibm:params:oauth:grant-type:apikey',
-        'response_type': 'cloud_iam',
-        'apikey': key
+        "grant_type": "urn:ibm:params:oauth:grant-type:apikey",
+        "response_type": "cloud_iam",
+        "apikey": key,
     }
-    response = requests.post(auth, data=token_req_data, headers={
-                             'Content-type': 'application/x-www-form-urlencoded'})
+    response = requests.post(
+        auth,
+        data=token_req_data,
+        headers={"Content-type": "application/x-www-form-urlencoded"},
+    )
     if response.status_code != 200:
         raise Exception("error")
     bearer_token_info = response.json()
@@ -34,41 +37,51 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
 
     # Get Aspera connection information for the bucket
     header_auth = {
-        'ibm-service-instance-id': crn,
-        'Authorization': bearer_token_info['token_type'] + " " + bearer_token_info['access_token'],
-        'Accept': 'application/xml'
+        "ibm-service-instance-id": crn,
+        "Authorization": bearer_token_info["token_type"]
+        + " "
+        + bearer_token_info["access_token"],
+        "Accept": "application/xml",
     }
     response = requests.get(
-        endpoint + "/" + bucket, headers=header_auth, params={'faspConnectionInfo': True})
+        endpoint + "/" + bucket,
+        headers=header_auth,
+        params={"faspConnectionInfo": True},
+    )
     if response.status_code != 200:
         raise Exception("error accessing endpoint")
     logging.debug(response.content)
-    ats_info_root = xml.dom.minidom.parseString(
-        response.content.decode('utf-8'))
-    ats_ak = ats_info_root.getElementsByTagName('AccessKey')[0]
-    ats_url = ats_info_root.getElementsByTagName(
-        'ATSEndpoint')[0].firstChild.nodeValue
-    ats_ak_id = ats_ak.getElementsByTagName('Id')[0].firstChild.nodeValue
-    ats_ak_secret = ats_ak.getElementsByTagName(
-        'Secret')[0].firstChild.nodeValue
+    ats_info_root = xml.dom.minidom.parseString(response.content.decode("utf-8"))
+    ats_ak = ats_info_root.getElementsByTagName("AccessKey")[0]
+    ats_url = ats_info_root.getElementsByTagName("ATSEndpoint")[0].firstChild.nodeValue
+    ats_ak_id = ats_ak.getElementsByTagName("Id")[0].firstChild.nodeValue
+    ats_ak_secret = ats_ak.getElementsByTagName("Secret")[0].firstChild.nodeValue
 
     # Get delegated token to access the node api
-    token_req_data['response_type'] = 'delegated_refresh_token'
-    token_req_data['receiver_client_ids'] = 'aspera_ats'
-    response = requests.post(auth, data=token_req_data, headers={
-                             'Content-type': 'application/x-www-form-urlencoded'})
+    token_req_data["response_type"] = "delegated_refresh_token"
+    token_req_data["receiver_client_ids"] = "aspera_ats"
+    response = requests.post(
+        auth,
+        data=token_req_data,
+        headers={"Content-type": "application/x-www-form-urlencoded"},
+    )
     if response.status_code != 200:
         raise Exception("error when generating token")
     delegated_token_info = response.json()
-    aspera_storage_credentials = {
-        'type': 'token',
-        'token': delegated_token_info
-    }
+    aspera_storage_credentials = {"type": "token", "token": delegated_token_info}
     logging.debug(aspera_storage_credentials)
+
     return {
-        'url': ats_url,
-        'auth': requests.auth.HTTPBasicAuth(ats_ak_id, ats_ak_secret),
-        'headers': {'aspera': {'node': {'storage_credentials': aspera_storage_credentials}}}
+        "url": ats_url,
+        "auth": requests.auth.HTTPBasicAuth(ats_ak_id, ats_ak_secret),
+        "headers": {
+            "X-Aspera-Storage-Credentials": json.dumps(aspera_storage_credentials)
+        },
+        "tspec": {
+            "tags": {
+                "aspera": {"node": {"storage_credentials": aspera_storage_credentials}}
+            }
+        },
     }
 
 
@@ -81,19 +94,20 @@ def from_service_credentials(*, credentials, region):
     # read and check format of service credentials
     if not isinstance(credentials, dict):
         raise Exception("service creds must be a dict")
-    for k in ['apikey', 'endpoints', 'resource_instance_id']:
+    for k in ["apikey", "endpoints", "resource_instance_id"]:
         if not k in credentials:
             raise Exception("missing key: " + k)
     logging.debug(credentials)
 
     # read endpoints from url in service credentials
-    response = requests.get(credentials['endpoints'])
+    response = requests.get(credentials["endpoints"])
     if response.status_code != 200:
         raise Exception("error")
 
     # return parameters
     return {
-        'endpoint': "https://" + response.json()['service-endpoints']['regional'][region]['public'][region],
-        'key': credentials['apikey'],
-        'crn': credentials['resource_instance_id']
+        "endpoint": "https://"
+        + response.json()["service-endpoints"]["regional"][region]["public"][region],
+        "key": credentials["apikey"],
+        "crn": credentials["resource_instance_id"],
     }
