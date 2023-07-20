@@ -243,8 +243,8 @@ function client_initialize() {
     document.getElementById('server_url').value = config.server.url
     document.getElementById('server_user').value = config.server.user
     document.getElementById('server_pass').value = config.server.pass
-    document.getElementById('download_file').value = config.server.download_file
-    document.getElementById('upload_folder').value = config.server.upload_folder
+    document.getElementById('file_to_download').value = config.server_paths.file_download
+    document.getElementById('folder_for_upload').value = config.server_paths.folder_upload
     // Event listener when user click on UI
     document.querySelectorAll('input[type=radio]').forEach(item => item.addEventListener('change', () => my_updateUi()))
     document.querySelectorAll('input[type=checkbox]').forEach(item => item.addEventListener('change', () => my_updateUi()))
@@ -268,9 +268,9 @@ function client_pick_files() {
 function client_start_transfer() {
     var params = null
     if (document.getElementById('action_download').checked) {
-        params = { operation: 'download', sources: [document.getElementById('download_file').value] }
+        params = { operation: 'download', sources: [document.getElementById('file_to_download').value] }
     } else {
-        params = { operation: 'upload', sources: this.selectedUploadFiles, destination: document.getElementById('upload_folder').value }
+        params = { operation: 'upload', sources: this.selectedUploadFiles, destination: document.getElementById('folder_for_upload').value }
         my_resetSelection()
     }
     var download_type = document.querySelector("input[type='radio'][name=transfer_auth]:checked").value

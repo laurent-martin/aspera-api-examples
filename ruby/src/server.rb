@@ -27,6 +27,7 @@ config_yaml = ARGV[0]
 
 all_config = YAML.load_file(config_yaml)
 server_conf = all_config['server']
+paths_conf = all_config['server_paths']
 
 ##############################################################
 # generic initialization : configuration of FaspManager
@@ -75,7 +76,7 @@ transfer_spec = {
   'remote_password' => server_conf['pass'],
   'direction' => 'receive',
   'destination_root' => ENV['TMPDIR'],
-  'paths' => [{ 'source' => server_conf['download_file'] }]
+  'paths' => [{ 'source' => paths_conf['file_download'] }]
 }
 # start transfer in separate thread
 # method returns as soon as transfer thread is created

@@ -1,6 +1,6 @@
 # Aspera API use examples
 
-This project provides code examples to transfer files using some of the IBM Aspera APIs for various IBM Aspera products using some languages.
+This public repository provides code examples to transfer files using some of the IBM Aspera APIs for various IBM Aspera products using some languages.
 
 [General access to all IBM Aspera APIs here](https://developer.ibm.com/apis/catalog/?search=aspera) or [here](https://developer.ibm.com/?q=aspera&dwcontenttype[0]=APIs)
 
@@ -21,9 +21,9 @@ In order to run the samples, the address of servers as well as credentials are n
 Also, in order to not duplicate the information, the configuration information is centralized in the file `config.yaml`.
 Sample programs will use the information from this YAML file.
 
-`Makefile`s are made for Unix-like systems, Windows users: no luck.
+`Makefile`s are made for Unix-like systems, Windows users: well...
 
-This repo is tested on macOS ARM.
+This repo was tested on macOS ARM.
 
 ## Quick start
 
@@ -102,15 +102,16 @@ Example (with random credentials):
     user: aspera
     pass: demoaspera
     url: ssh://demo.asperasoft.com:33001
-    download_file: /aspera-test-dir-small/10MB.1
-    upload_folder: /Upload
-  faspex:
-    url: https://faspex.example.com/aspera/faspex
-    user: faxpex_user
-    pass: _the_password_here_
+  server_paths:
+    file_download: /aspera-test-dir-small/10MB.1
+    folder_upload: /Upload
   node:
     url: https://node.example.com:9092
     user: node_user
+    pass: _the_password_here_
+  faspex:
+    url: https://faspex.example.com/aspera/faspex
+    user: faxpex_user
     pass: _the_password_here_
   cos:
     endpoint: https://s3.eu-de.cloud-object-storage.appdomain.cloud
@@ -132,6 +133,37 @@ Example (with random credentials):
     shared_inbox: TheSharedInbox
 ```
 
+## HSTS Node API credentials
+
+Refer to the [HSTS documentation](https://www.ibm.com/docs/en/ahts/4.4?topic=linux-set-up-hsts-node-api) to create a user and get the credentials.
+
+Typically, a node api user is created like this:
+
+```bash
+/opt/aspera/bin/asnodeadmin -a -u my_node_username -p my_node_password -x my_transfer_user
+```
+
+> **Note:** Access key credentials (id and secret) can also be used for the node api user.
+
+## Aspera on Cloud
+
+For Aspera on Cloud, several items are required:
+
+- `org` : The AoC Organization, i.e. the name before `.ibmaspera.com` in the URL
+- `user_email` : The user's IBMid
+- `private_key_path` : The path to the PEM file containing the user's private key. The user configured the associated public key in his AoC User's profile.
+- `client_id` : (see below) The client app identifier
+- `client_secret` : (see below) The client app secret
+
+`client_id` and `client_secret` can be:
+
+- either a specific application credential created in the admin interface of AoC (Integrations)
+- or one of the two global client id : the one of aspera connect/drive or the one of the legacy `aspera` CLI :
+  - `aspera.global-cli-client`
+  - `frpmsRsG4mjZ0PlxCgdJlvONqBg4Vlpz_IX7gXmBMAfsgMLy2FO6CXLodKfKAuhqnCqSptLbe_wdmnm9JRuEPO-PpFqpq_Kb`
+
+For example to extract the ones of Aspera Connect (Drive): `strings asperaconnect|grep -B1 '^aspera\.drive$'`
+
 ## COS service credentials
 
 To test transfers to COS, you will need:
@@ -152,21 +184,3 @@ Or it is also possible to use:
 
 Uncomment lines in `cos.py` to use service credential file instead of bare API key.
 
-## Aspera on Cloud
-
-For Aspera on Cloud, several items are required:
-
-- `org` : The AoC Organization, i.e. the name before `.ibmaspera.com` in the URL
-- `user_email` : The user's IBMid
-- `private_key_path` : The path to the PEM file containing the user's private key. The user configured the associated public key in his AoC User's profile.
-- `client_id` : (see below) The client app identifier
-- `client_secret` : (see below) The client app secret
-
-`client_id` and `client_secret` can be:
-
-- either a specific application credential created in the admin interface of AoC (Integrations)
-- or one of the two global client id : the one of aspera connect/drive or the one of the legacy `aspera` CLI :
-  - `aspera.global-cli-client`
-  - `frpmsRsG4mjZ0PlxCgdJlvONqBg4Vlpz_IX7gXmBMAfsgMLy2FO6CXLodKfKAuhqnCqSptLbe_wdmnm9JRuEPO-PpFqpq_Kb`
-
-For example to extract the ones of Aspera Connect (Drive): `strings asperaconnect|grep -B1 '^aspera\.drive$'`

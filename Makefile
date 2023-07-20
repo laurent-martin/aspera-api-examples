@@ -71,5 +71,7 @@ $(CONFIG_TRSDK_DIR_ARCH)/asperatransferd: $(CONFIG_TRSDK_ROOT)/transfer_sdk.zip
 template: config.yaml
 	sed '/^#/ d;s/^\(    [^:]*:\).*/\1 your_value_here/' < config.yaml > config.tmpl
 config.yaml:
-	@echo "Create a file: $@ from config.tmpl, see manual"
+	@echo "Create a file: $@ from config.tmpl, refer to README.md"
+	@echo "cp config.tmpl config.yaml"
+	@echo "vi config.yaml"
 	@exit 1

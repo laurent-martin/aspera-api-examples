@@ -29,7 +29,7 @@ files_to_send = [ARGV[1]]
 
 all_config = YAML.load_file(config_yaml)
 node_conf = all_config['node']
-destination_folder = all_config['server']['upload_folder']
+destination_folder = all_config['server_paths']['folder_upload']
 
 ##############################################################
 # generic initialization : configuration of FaspManager
