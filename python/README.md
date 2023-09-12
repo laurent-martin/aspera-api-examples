@@ -33,6 +33,8 @@ If you prefer to test a single application, you may configure only the appropria
 make cos2
 ```
 
+> **Note:** If the daemon does not start, you make first try to stop it: `make stop`, and then run the sample again.
+
 ## Required external components
 
 When `make` is invoked (Quick Start), it will check and install required python modules.
