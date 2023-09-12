@@ -78,7 +78,7 @@ def start_daemon():
             break
     if sdk_server is None:
         print(
-            "ERROR: daemon not started or cannot be started. Check the logs: daemon.err and daemon.out."
+            "ERROR: daemon not started or cannot be started. Check the logs: daemon.err and daemon.out (see paths above)."
         )
         exit(1)
     return sdk_server

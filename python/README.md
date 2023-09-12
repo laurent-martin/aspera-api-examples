@@ -22,20 +22,20 @@ cd python
 make
 ```
 
-This will:
+This will run sample programs with sample files using servers as configured in the config file.
 
-* Check and Download FaspManager
-* Check and Install required python modules
-* Run sample programs with sample files using servers as configured in the config file.
+<!--* Check and Download FaspManager
+* Check and Install required python modules-->
 
-If you prefer to test a single application, you may configure only the appropriate section in the config file , have a look to the [`Makefile`](Makefile) to check how example is invoked and execute just the example relevant to you.
+If you prefer to test a single application, you may configure only the appropriate section in the config file , have a look to the [`Makefile`](Makefile) to check how example is invoked and execute just the example relevant to you. Then run only one example:
+
+```bash
+make cos2
+```
 
 ## Required external components
 
-When `make` is invoked (Quick Start), it will check and install:
-
-* Required python modules
-* Aspera FaspManager (Legacy SDK)
+When `make` is invoked (Quick Start), it will check and install required python modules.
 
 Check the [`Makefile`](Makefile) for details.
 
@@ -68,3 +68,5 @@ Transfer fails if `http_fallback` is `True`.
 ## COS official documentation for Aspera SDK
 
 <https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-aspera>
+
+Uncomment lines in `cos.py` to use service credential file instead of bare API key.

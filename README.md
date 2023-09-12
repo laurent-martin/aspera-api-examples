@@ -74,7 +74,7 @@ cp config.tmpl config.yaml
 vi config.yaml
 ```
 
-Set the parameter `system_type` to the architecture used:
+Set the parameter `misc.system_type` to the architecture used:
 
 - `windows-x86_64`
 - `osx-x86_64`
@@ -85,8 +85,14 @@ Set the parameter `system_type` to the architecture used:
 
 > **Note:** for macOS ARM, use `osx-x86_64`
 
-The parameter `sdk` selects which API will be used to start transfer (current, or legacy).
-Refer to section: [SDK Selection](#sdk), use `transfer` if you don't know.
+The parameter `misc.client_sdk` shall be set to `transfer_sdk`.
+
+The parameter `misc.trsdk_url` can be set to `grpc://127.0.0.1:55002` (specify the local port that sdk will use).
+
+Section `httpgw` is used by the `web` example only.
+
+Other sections are used by the various examples.
+For example, if you want to test only COS transfer with transfer SDK you can set the section `cos` only and leave the other sections empty.
 
 Example (with random credentials):
 
@@ -181,6 +187,4 @@ Or it is also possible to use:
 - bucket name
 - region
 - service credentials: create the file `private/service_creds.json`, follow: [get service credentials](https://www.rubydoc.info/gems/aspera-cli#using-service-credential-file)
-
-Uncomment lines in `cos.py` to use service credential file instead of bare API key.
 
