@@ -41,20 +41,15 @@ Check the [`Makefile`](Makefile) for details.
 
 ## <a id="sdk"></a>SDK Selection
 
-TransferSDK (Legacy) versus FaspManager (Current)
+The current [Transfer SDK](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22) **shall be used** for new developments.
 
-To start transfers, sample code uses either:
+So config parameter `misc.client_sdk` shall be `transfer_sdk`.
 
-* The current [Transfer SDK](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22) which is **recommended** for new developments.
-* Or the legacy [FASPManager API](https://developer.ibm.com/apis/catalog?search=%22fasp%20manager%20sdk%22) together with a helper method that translates the **transfer_spec** into the Legacy FaspManager structure.
-
-In both cases, sample code uses the transfer spec structure, refer to API reference in Transfer SDK.
-
-Use of one or the other is controlled by the configuration parameter: `sdk`, set to either `transfer_sdk` or `faspmanager`
+The legacy [FASPManager API](https://developer.ibm.com/apis/catalog?search=%22fasp%20manager%20sdk%22) is now deprecated and shall not be used for new developments. (`faspmanager`)
 
 ## Structure of examples
 
-Each of the sample programs are strutured like this:
+Each of the sample programs are structured like this:
 
 * `import test_environment` : `test_environment.py` is located in the same folder as the example :
   * it reads the configuration file

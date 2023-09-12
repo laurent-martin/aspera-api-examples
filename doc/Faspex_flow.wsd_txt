@@ -1,0 +1,19 @@
+title Faspex 5 Package Creation
+Actor Sender
+Sender->+Faspex: POST /packages
+Faspex->Faspex: Faspex reserves a folder to receive files
+Faspex-->-Sender: package id
+Sender->+Faspex: POST /packages/:id/transfer_spec/upload
+Faspex->+HSTS: POST /files/upload_setup
+HSTS-->-Faspex: transfer specification
+Faspex-->-Sender: transfer specification
+Sender-->(2)HSTS: FASP/ascp: Transfer files using transfer spec
+Faspex->+HSTS: GET /ops/transfers
+HSTS-->-Faspex: result with transfer completed
+note left of Faspex
+Faspex detects a transfer is complete for a package based on transfer cookie/tags.
+Package is marked failed if no transfer was detected after timeout.
+end note
+Actor Receiver
+Faspex->Receiver: ✉ Send email notification when transfer is complete
+
