@@ -52,7 +52,7 @@ def start_daemon():
                     },
                 },
             }
-            tmp_file_base = os.path.join(os.environ["TMPDIR"], "daemon")
+            tmp_file_base = os.path.join(os.environ["CONFIG_TMPDIR"], "daemon")
             conf_file = tmp_file_base + ".conf"
             with open(conf_file, "w") as the_file:
                 the_file.write(json.dumps(config))

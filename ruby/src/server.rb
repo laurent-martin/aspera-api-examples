@@ -11,6 +11,7 @@ require 'aspera/log'
 require 'aspera/rest'
 require 'aspera/rest_errors_aspera'
 require 'json'
+require 'tmpdir'
 
 # set trace level for sample, set to :debug to see complete list of debug information
 Log = Aspera::Log
@@ -75,7 +76,7 @@ transfer_spec = {
   'remote_user' => server_conf['user'],
   'remote_password' => server_conf['pass'],
   'direction' => 'receive',
-  'destination_root' => ENV['TMPDIR'],
+  'destination_root' => Dir.tmpdir,
   'paths' => [{ 'source' => paths_conf['file_download'] }]
 }
 # start transfer in separate thread
