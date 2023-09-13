@@ -13,7 +13,6 @@ sdk/
 classes
 build
 node_modules
-tmp
 local
 .vscode
 .idea

@@ -5,13 +5,7 @@ import sys
 import os
 import yaml
 import logging
-
-try:
-    # Python 3
-    import http.client as http_client
-except ImportError:
-    # Python 2
-    import httplib as http_client
+from http.client import HTTPConnection
 
 # If the sample script is started individually, set env vars by executing: . ../../config.env
 assert (
@@ -20,13 +14,19 @@ assert (
 assert (
     "CONFIG_TMPDIR" in os.environ
 ), "env var CONFIG_TMPDIR is missing. To load environment execute: . ../../config.env"
+assert (
+    "CONFIG_TRSDK_DIR_ARCH" in os.environ
+), "env var CONFIG_TRSDK_DIR_ARCH is missing. To load environment execute: . ../../config.env"
 
 # set logger for debugging
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 # debug http: see: https://stackoverflow.com/questions/10588644
-http_client.HTTPConnection.debuglevel = 1
+HTTPConnection.debuglevel = 1
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
 
 # where transferred files will be stored
 tmp_folder = os.environ["CONFIG_TMPDIR"]
@@ -39,9 +39,6 @@ CONFIG = yaml.load(open(os.environ["CONFIG_YAML"]), Loader=yaml.FullLoader)
 
 # depending on flag, use new SDK, or old faspmanager
 if CONFIG["misc"]["client_sdk"] == "transfer_sdk":
-    assert (
-        "CONFIG_TRSDK_DIR_ARCH" in os.environ
-    ), "env var CONFIG_TRSDK_DIR_ARCH is missing"
     assert (
         "CONFIG_TRSDK_DIR_GENERIC" in os.environ
     ), "env var CONFIG_TRSDK_DIR_GENERIC is missing"
