@@ -8,7 +8,7 @@ GEMFILE=$(CONFIG_TRSDK_DIR_GENERIC)/connectors/ruby/Gemfile
 
 export CONFIG_TRSDK_DIR_GENERIC
 
-all: node.test faspex5.test server.test faspex4.test
+all: aoc.test node.test faspex5.test server.test faspex4.test
 %.test: .is_installed_tmp .is_installed_libs
 	bundle exec $(SRC)/$$(basename $@ .test).rb $(CONFIG_YAML) $(RBTMP)This_is_a_test.txt
 	touch $@
@@ -30,3 +30,4 @@ libs: .is_installed_libs
 clean:
 	rm -f .is_installed_libs .is_installed_tmp .*.test
 	rm -fr $(RBTMP)
+	rm -f Gemfile.lock

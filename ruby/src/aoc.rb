@@ -6,22 +6,23 @@ require 'aspera/log'
 
 Aspera::Log.instance.level = :debug
 
-unless ARGV.length.eql?(3)
-  Aspera::Log.log.error { "wrong number of args: #{ARGV.length}" }
-  Aspera::Log.log.error { "Usage: #{$PROGRAM_NAME} <aoc URL> <aoc username> <aoc private key content>" }
-  Aspera::Log.log.error { "Example: #{$PROGRAM_NAME} https://myorg.ibmaspera.com john@example.com $(cat /home/john/my_key.pem)" }
+unless ARGV.length.eql?(2)
+  logger.error { "Wrong number of args: #{ARGV.length}" }
+  logger.error { "Usage: #{$PROGRAM_NAME} <config yaml> <file to send>" }
   Process.exit(1)
 end
 
-aoc_url = ARGV[0]
-aoc_user = ARGV[1]
-aoc_key_value = ARGV[2]
+config_yaml = ARGV[0]
+_files_to_send = [ARGV[1]]
+
+all_config = YAML.load_file(config_yaml)
+aoc_conf = all_config['aoc']
 
 aoc_api = Aspera::AoC.new(
-  url: aoc_url,
+  url: "https://#{aoc_conf['org']}.ibmaspera.com",
   auth: :jwt,
-  private_key: aoc_key_value,
-  username: aoc_user,
+  private_key: File.read(aoc_conf['private_key_path']),
+  username: aoc_conf['user_email'],
   scope: 'user:all',
   subpath: 'api/v1'
 )
