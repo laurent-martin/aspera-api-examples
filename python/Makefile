@@ -52,7 +52,7 @@ libs: .is_installed_libs
 #	#ln -s noarch $(CONFIG_TRSDK_ROOT)/etc
 #	touch $@
 # TODO: remove when transfersdk fixed: the "ln -s" is because of bug in transfer sdk: it requires "etc" even if property "etc" is set in config file
-clean:
+clean: stop
 	rm -f .is_installed_libs .is_installed_tmp
 	rm -fr $(PYTMP) $(CONFIG_FSMGR_DIR)
 	find . -name __pycache__ -o -name '*.pyc'|xargs rm -fr
