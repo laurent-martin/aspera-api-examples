@@ -14,10 +14,15 @@ import subprocess
 from http.client import HTTPConnection
 from urllib.parse import urlparse
 
-
+# check mandatory environment variables
+missing_vars = [
+    f"CONFIG_{var}"
+    for var in ["TRSDK_DIR_GENERIC", "TRSDK_DIR_ARCH", "TMPDIR", "YAML"]
+    if f"CONFIG_{var}" not in os.environ
+]
 assert (
-    "CONFIG_TRSDK_DIR_GENERIC" in os.environ
-), "env var CONFIG_TRSDK_DIR_GENERIC is missing"
+    not missing_vars
+), f"Missing environment variables: {', '.join(missing_vars)}. To load environment execute: . ../../config.env"
 
 # tell where to find gRPC stubs: transfer_pb2 and transfer_pb2_grpc
 sys.path.insert(
@@ -27,22 +32,8 @@ sys.path.insert(
 import transfer_pb2 as transfer_manager
 import transfer_pb2_grpc as transfer_manager_grpc
 
-assert (
-    "CONFIG_TRSDK_DIR_ARCH" in os.environ
-), "env var CONFIG_TRSDK_DIR_ARCH is missing. To load environment execute: . ../../config.env"
-
 # use "ascp" in PATH, add the one from SDK
 os.environ["PATH"] += os.environ["CONFIG_TRSDK_DIR_ARCH"]
-
-assert (
-    "CONFIG_TMPDIR" in os.environ
-), "env var CONFIG_TMPDIR is missing. To load environment execute: . ../../config.env"
-
-
-# If the sample script is started individually, set env vars by executing: . ../../config.env
-assert (
-    "CONFIG_YAML" in os.environ
-), "env var CONFIG_YAML is missing. To load environment execute: . ../../config.env"
 
 # configuration from configuration file
 CONFIG = yaml.load(open(os.environ["CONFIG_YAML"]), Loader=yaml.FullLoader)
@@ -64,10 +55,9 @@ TRANSFERD_EXECUTABLE = "asperatransferd"
 
 def start_daemon(sdk_grpc_url):
     global transfer_daemon
-    assert isinstance(sdk_grpc_url, str), "call set_grpc_url to set grpc url"
-    # avoid message: Other threads are currently calling into gRPC, skipping fork() handlers
+    # avoid message: "Other threads are currently calling into gRPC, skipping fork() handlers"
     os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "false"
-    # create a connection to the transfer manager daemon
+    # create a connection to the transfer manager daemon, in case it is running
     grpc_url = urlparse(sdk_grpc_url)
     channel = grpc.insecure_channel(grpc_url.hostname + ":" + str(grpc_url.port))
     sdk_server = None
@@ -80,7 +70,7 @@ def start_daemon(sdk_grpc_url):
             # channel is ok, let's get the stub
             sdk_server = transfer_manager_grpc.TransferServiceStub(channel)
         except grpc.FutureTimeoutError:
-            print("FAILED: trying to start daemon")
+            print("FAILED: to connect\nStarting daemon...")
             # else prepare config and start
             bin_folder = os.environ["CONFIG_TRSDK_DIR_ARCH"]
             config = {
@@ -121,7 +111,7 @@ def start_daemon(sdk_grpc_url):
             break
     if sdk_server is None:
         print(
-            "ERROR: daemon not started or cannot be started. Check the logs: daemon.err and daemon.out (see paths above)."
+            "ERROR: daemon not started or cannot be started.\nCheck the logs: daemon.err and daemon.out (see paths above)."
         )
         exit(1)
     return sdk_server

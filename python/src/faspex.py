@@ -11,42 +11,40 @@ import sys
 # files to send
 package_files = sys.argv[1:]
 
-# package creation information for Faspex API v3
+# package creation information for Faspex API v3 : POST /send
 delivery_info = {
     "delivery": {
         "title": "Sent from python example",
         "recipients": ["admin"],
-        "sources": [{
-            "paths": package_files
-        }]
+        "sources": [{"paths": package_files}],
     }
 }
 
-# create package and get information for file upload
+# create package and get information for file upload (transfer spec)
 response = requests.post(
-    test_environment.CONFIG['faspex']['url'] + '/send',
-    auth=requests.auth.HTTPBasicAuth(test_environment.CONFIG['faspex']['user'],
-                                     test_environment.CONFIG['faspex']['pass']),
+    test_environment.CONFIG["faspex"]["url"] + "/send",
+    auth=requests.auth.HTTPBasicAuth(
+        test_environment.CONFIG["faspex"]["user"],
+        test_environment.CONFIG["faspex"]["pass"],
+    ),
     data=json.dumps(delivery_info),
-    headers={
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-    },
-    verify=False)
+    headers={"Content-Type": "application/json", "Accept": "application/json"},
+    verify=False,
+)
 response_data = response.json()
 
 logging.debug("resp=%s", response_data)
 
-if 'error' in response_data:
-    raise Exception(response_data['error']['internal_message'])
+if "error" in response_data:
+    raise Exception(response_data["error"]["internal_message"])
 
 # get transfer spec returned by Faspex
-t_spec = response_data['xfer_sessions'][0]
+t_spec = response_data["xfer_sessions"][0]
 
 # add file list in transfer spec
-t_spec['paths'] = []
+t_spec["paths"] = []
 for f in package_files:
-    t_spec['paths'].append({'source': f})
+    t_spec["paths"].append({"source": f})
 
 # send files into package
 test_environment.start_transfer_and_wait(t_spec)
