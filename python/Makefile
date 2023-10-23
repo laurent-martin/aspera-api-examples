@@ -1,32 +1,21 @@
-SRC=src
+DIR_TOP=$(shell pwd -P)/../
+include $(DIR_TOP)common.make
+SRC=src/
 PYTMP=$(TMPDIR)/pythontst/
-# avoid incompatibility of version
-#PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-#export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
-
-all: aoc.test cos.test cos2.test cos_node_api.test faspex.test faspex5.test node.test server.test
-%.test: .test_env
-	$(SRC)/$$(basename $@ .test).py $(PYTMP)This_is_a_test.txt
+all: aoc$(T) cos$(T) cos2$(T) cos_node_api$(T) faspex$(T) faspex5$(T) node$(T) server$(T)
+%$(T): .is_initialized
+	$(SRC)$$(basename $@ $(T)).py $(PYTMP)This_is_a_test.txt
 	sleep 2
 	touch $@
-.test_env:
+#pip3 install -r $(CONFIG_TRSDK_DIR_GENERIC)/connectors/python/requirements.txt
+.is_initialized:
+	pip3 install -r $(SRC)requirements.txt
 	mkdir -p $(PYTMP)
 	date > $(PYTMP)This_is_a_test.txt
 	dd of=$(PYTMP)1G.bin bs=1k seek=$$((1024*1024)) count=0
-	#pip3 install -r $(CONFIG_TRSDK_DIR_GENERIC)/connectors/python/requirements.txt
-	pip3 install grpcio protobuf google
-	pip3 install requests PyYAML pyjwt cryptography
 	touch $@
-#sdk: .is_installed_sdk
-#.is_installed_sdk: 
-#	mkdir -p $(CONFIG_FSMGR_DIR)
-#	unzip -d $(CONFIG_FSMGR_DIR) $(CONFIG_FSMGR_DIR)/faspmanager-sdk-python-3.7.2.zip
-#	#ln -s noarch $(CONFIG_TRSDK_ROOT)/etc
-#	touch $@
-# TODO: remove when transfersdk fixed: the "ln -s" is because of bug in transfer sdk: it requires "etc" even if property "etc" is set in config file
 clean:
-	killall asperatransferd || true
-	rm -f *.test
-	rm -f .test_env
+	test -n "$(T)" && rm -f *$(T)
+	rm -f .is_initialized
 	rm -fr $(PYTMP)
 	find . -name __pycache__ -o -name '*.pyc'|xargs rm -fr

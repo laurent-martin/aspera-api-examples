@@ -7,30 +7,25 @@ PROJECT_NAME=javasamples
 PROJECT_VERSION=0.1
 JARFILE=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar
 JAVA_PROPS=\
--Ddaemon=$(CONFIG_TRSDK_DIR_ARCH)/asperatransferd \
+-Ddaemon=$(CONFIG_TRSDK_DIR_ARCH)asperatransferd \
 -Dconfig_daemon=$(CONFIG_TRSDK_CONFIG) \
--Dconfig_yaml=$(CONFIG_YAML) \
+-Dconfig_yaml=$(MAIN_CONFIG) \
 -Djava.util.logging.config.file="logging.properties"
+GRADLE_PROPS=\
+-Psdk_noarch=$(CONFIG_TRSDK_DIR_GENERIC)
 .PHONY: $(JARFILE)
 $(JARFILE):
-	gradle build
+	gradle build $(GRADLE_PROPS)
 
-all:: $(JARFILE)
-
-tests: t1 t2 t3 t4
-t1: $(JARFILE)
-	java -cp $(JARFILE) $(JAVA_PROPS) client.ServerFileUploadV1Example
-t2: $(JARFILE)
-	java -cp $(JARFILE) $(JAVA_PROPS) client.ServerFileDownloadV2Example
-t3: $(JARFILE)
-	java -cp $(JARFILE) $(JAVA_PROPS) client.COSFileUploadExample
-t4: $(JARFILE)
-	java -cp $(JARFILE) $(JAVA_PROPS) client.PersistentUploadExample 100 100
-t5: $(JARFILE)
-	java -cp $(JARFILE) $(JAVA_PROPS) client.Faspex5Send
-clean: stop
+all:: ServerFileUploadV1Example$(T) ServerFileDownloadV2Example$(T) COSFileUploadExample$(T) PersistentUploadExample$(T) Faspex5Send$(T)
+	cd .. && make stopdaemon
+%$(T): $(JARFILE)
+	@echo "== Testing $$(basename $@ $(T)) ==========================="
+	java -cp $(JARFILE) $(JAVA_PROPS) client.$$(basename $@ $(T))
+	sleep 2
+	touch $@
+clean:
 	gradle clean $(GRADLE_PROPS)
 	rm -fr .gradle
 	rm -f file*
-stop:
-	-killall asperatransferd
+	test -n "$(T)" && rm -f *$(T)

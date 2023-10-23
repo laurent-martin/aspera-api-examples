@@ -78,11 +78,17 @@ public class PersistentUploadExample {
 
 	public static void main(String... args)
 			throws Exception, IOException, java.net.URISyntaxException {
-		if (args.length != 2) {
-			throw new Exception("Usage: sample <max files> <delay ms>");
+		if (args.length > 2) {
+			throw new Exception("Usage: PersistentUploadExample [<max files>] [<delay ms>]");
 		}
-		final int max_files = Integer.parseInt(args[0]);
-		final int ms_between_files = Integer.parseInt(args[1]);
+		int max_files = 100;
+		if (args.length > 0) {
+			max_files = Integer.parseInt(args[0]);
+		}
+		int ms_between_files = 100;
+		if (args.length > 1) {
+			ms_between_files = Integer.parseInt(args[1]);
+		}
 		// get simplified testing environment, ensures that transfer daemon is started
 		final TestEnvironment test_environment = new TestEnvironment();
 		// get test server address and credentials from configuration file

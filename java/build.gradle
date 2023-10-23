@@ -47,7 +47,7 @@ sourceSets {
     main {
         proto {
             // shall be: dirname $(CONFIG_TRSDK_PROTO)
-            srcDir "../sdk/trsdk/noarch/connectors/grpc"
+            srcDir "${sdk_noarch}connectors/grpc"
             include 'transfer.proto'
             exclude '*/**/*.proto'
         }

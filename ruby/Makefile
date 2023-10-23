@@ -4,9 +4,9 @@ SRC=src
 RBTMP=$(TMPDIR)/rubytst/
 RUBY_CONNECTORS=$(CONFIG_TRSDK_DIR_GENERIC)/connectors/ruby
 GEMFILE=$(CONFIG_TRSDK_DIR_GENERIC)/connectors/ruby/Gemfile
-all: aoc.test node.test faspex5.test server.test faspex4.test
-%.test: .is_installed_tmp .is_installed_libs
-	bundle exec $(SRC)/$$(basename $@ .test).rb $(RBTMP)This_is_a_test.txt
+all: aoc$(T) node$(T) faspex5$(T) server$(T) faspex4$(T)
+%$(T): .is_installed_tmp .is_installed_libs
+	bundle exec $(SRC)/$$(basename $@ $(T)).rb $(RBTMP)This_is_a_test.txt
 	touch $@
 $(GEMFILE):
 	@echo "run make in upper folder to install transfer SDK"
@@ -24,6 +24,7 @@ libs: .is_installed_libs
 	touch $@
 # TODO: remove when transfersdk fixed: the "ln -s" is because of bug in transfer sdk: it requires "etc" even if property "etc" is set in config file
 clean:
-	rm -f .is_installed_libs .is_installed_tmp .*.test
+	rm -f .is_installed_libs .is_installed_tmp
+	test -n "$(T)" && rm -f *$(T)
 	rm -fr $(RBTMP)
 	rm -f Gemfile.lock

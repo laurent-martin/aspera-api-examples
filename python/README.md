@@ -42,7 +42,7 @@ When `make` is invoked (Quick Start), it will check and install required python 
 
 Check the [`Makefile`](Makefile) for details.
 
-## <a id="sdk"></a>SDK Selection
+## SDK Selection
 
 The examples use the current Aspera SDK: [Transfer SDK](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22).
 It **shall be used** for new developments.
@@ -76,4 +76,4 @@ Uncomment lines in `cos.py` to use service credential file instead of bare API k
 
 ## Windows
 
-Install python 3.11: https://www.python.org/downloads/windows/
+Install python 3.11: <https://www.python.org/downloads/windows/>
