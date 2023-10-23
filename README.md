@@ -17,33 +17,34 @@ This repository is structured like this:
 - `web` : this folder contains an example that shows the use of both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK**
 - other folders show samples in various languages using the **Aspera Transfer SDK** and **Aspera Applications APIs**
 
-In order to run the samples, the address of servers as well as credentials are needed.
-Also, in order to not duplicate the information, the configuration information is centralized in the file `config.yaml`.
+The address of servers and credentials are needed to run the samples.
+The configuration information is centralized in the file `private/config.yaml`.
 Sample programs will use the information from this YAML file.
+This avoid having to duplicate the information in each sample folders.
 
-`Makefile`s are made for Unix-like systems, Windows users: well...
+`Makefile`s are made for Unix-like systems: Linux, macOS, ...
+
+Windows users without `make` can use the `Makefile` as a reference to execute the commands manually.
 
 This repo was tested on macOS ARM.
 
 ## Quick start
 
-1. Create the configuration file `config.yaml` and fill with valid server addresses and credentials, refer to [Configuration File](#config)
+1. Create the configuration file `private/config.yaml` and fill with valid server addresses and credentials, refer to [Configuration File](#config)
 
-1. Setup global environment in main folder:
+1. Initialize the main folder:
 
 ```bash
 make
 ```
 
-This downloads the SDKs and creates the files: `config.mak` and `config.env` which contains information about location of SDK files.
+This downloads the Aspera Transfer SDK.
 
-## No internet access
-
-If you don't have internet access on the system, download the Transfer SDK with a system with internet from:
-
-<https://ibm.biz/aspera_transfer_sdk>
-
-and place the file here: `<main folder>/sdk/trsdk/transfer_sdk.zip`
+> **Note:** If you don't have internet access on the system, download the Transfer SDK with a system with internet from:
+>
+> <https://ibm.biz/aspera_transfer_sdk>
+>
+> and place the file here: `<main folder>/sdk/trsdk/transfer_sdk.zip`
 
 ## Testing individual programs
 
@@ -65,13 +66,13 @@ python src/cos.py datafile
 
 ## <a id="config"></a>Configuration file
 
-A template configuration file is provided: [`config.tmpl`](config.tmpl).
+A template configuration file is provided: [`config/config.tmpl`](config/config.tmpl).
 
-Copy the file `config.tmpl` into `config.yaml` and fill with your own server addresses, credentials and parameters.
+Copy the file `config/config.tmpl` into `private/config.yaml` and fill with your own server addresses, credentials and parameters.
 
 ```bash
-cp config.tmpl config.yaml
-vi config.yaml
+cp config/config.tmpl private/config.yaml
+vi private/config.yaml
 ```
 
 Set the parameter `misc.system_type` to the architecture used:
@@ -184,4 +185,3 @@ Or it is also possible to use:
 - bucket name
 - region
 - service credentials: create the file `private/service_creds.json`, follow: [get service credentials](https://www.rubydoc.info/gems/aspera-cli#using-service-credential-file)
-

@@ -2,6 +2,7 @@ requests
 PyYAML
 pyjwt
 cryptography
+# those come from: <trsdk>/connectors/python/requirements.txt
 grpcio
 protobuf
 google

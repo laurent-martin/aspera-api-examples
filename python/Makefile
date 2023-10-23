@@ -7,7 +7,6 @@ all: aoc$(T) cos$(T) cos2$(T) cos_node_api$(T) faspex$(T) faspex5$(T) node$(T) s
 	$(SRC)$$(basename $@ $(T)).py $(PYTMP)This_is_a_test.txt
 	sleep 2
 	touch $@
-#pip3 install -r $(CONFIG_TRSDK_DIR_GENERIC)/connectors/python/requirements.txt
 .is_initialized:
 	pip3 install -r $(SRC)requirements.txt
 	mkdir -p $(PYTMP)

@@ -2,8 +2,8 @@ DIR_TOP=../
 include $(DIR_TOP)/common.make
 SRC=src
 RBTMP=$(TMPDIR)/rubytst/
-RUBY_CONNECTORS=$(CONFIG_TRSDK_DIR_GENERIC)/connectors/ruby
-GEMFILE=$(CONFIG_TRSDK_DIR_GENERIC)/connectors/ruby/Gemfile
+RUBY_CONNECTORS=$(GLOBAL_TRSDK_NOARCH)/connectors/ruby
+GEMFILE=$(GLOBAL_TRSDK_NOARCH)/connectors/ruby/Gemfile
 all: aoc$(T) node$(T) faspex5$(T) server$(T) faspex4$(T)
 %$(T): .is_installed_tmp .is_installed_libs
 	bundle exec $(SRC)/$$(basename $@ $(T)).rb $(RBTMP)This_is_a_test.txt
