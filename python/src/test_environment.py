@@ -11,32 +11,47 @@ import time
 import json
 import sys
 import subprocess
+import tempfile
 from http.client import HTTPConnection
 from urllib.parse import urlparse
 
-# check mandatory environment variables
-missing_vars = [
-    f"CONFIG_{var}"
-    for var in ["TRSDK_DIR_GENERIC", "TRSDK_DIR_ARCH", "TMPDIR", "YAML"]
-    if f"CONFIG_{var}" not in os.environ
-]
-assert (
-    not missing_vars
-), f"Missing environment variables: {', '.join(missing_vars)}. To load environment execute: . ../../config.env"
+# get project root folder
+top_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+# get project's relative paths
+PATHS = yaml.load(
+    open(os.path.join(top_folder, "config/paths.yaml")), Loader=yaml.FullLoader
+)
+
+
+def get_path(name):
+    return os.path.join(top_folder, PATHS[name])
+
+
+# configuration from configuration file
+CONFIG = yaml.load(open(get_path("mainconfig")), Loader=yaml.FullLoader)
+python_stub_folder = os.path.join(get_path("trsdk_noarch"), "connectors", "python")
+
+assert os.path.exists(python_stub_folder), (
+    "ERROR: python stubs not found in: "
+    + python_stub_folder
+    + "\nPlease check that SDK is installed."
+)
+
+# avoid incompatibility of version
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 # tell where to find gRPC stubs: transfer_pb2 and transfer_pb2_grpc
-sys.path.insert(
-    1, os.path.join(os.environ["CONFIG_TRSDK_DIR_GENERIC"], "connectors", "python")
-)
+sys.path.insert(1, python_stub_folder)
 
 import transfer_pb2 as transfer_manager
 import transfer_pb2_grpc as transfer_manager_grpc
 
-# use "ascp" in PATH, add the one from SDK
-os.environ["PATH"] += os.environ["CONFIG_TRSDK_DIR_ARCH"]
+arch_folder = os.path.join(get_path("sdk_root"), CONFIG["misc"]["system_type"])
 
-# configuration from configuration file
-CONFIG = yaml.load(open(os.environ["CONFIG_YAML"]), Loader=yaml.FullLoader)
+# use "ascp" in PATH, add the one from SDK
+os.environ["PATH"] += arch_folder
+
 
 # set logger for debugging
 logging.basicConfig()
@@ -72,7 +87,7 @@ def start_daemon(sdk_grpc_url):
         except grpc.FutureTimeoutError:
             print("FAILED: to connect\nStarting daemon...")
             # else prepare config and start
-            bin_folder = os.environ["CONFIG_TRSDK_DIR_ARCH"]
+            bin_folder = arch_folder
             config = {
                 "address": grpc_url.hostname,
                 "port": grpc_url.port,
@@ -80,11 +95,11 @@ def start_daemon(sdk_grpc_url):
                     "use_embedded": False,
                     "user_defined": {
                         "bin": bin_folder,
-                        "etc": os.environ["CONFIG_TRSDK_DIR_GENERIC"],
+                        "etc": get_path("trsdk_noarch"),
                     },
                 },
             }
-            tmp_file_base = os.path.join(os.environ["CONFIG_TMPDIR"], "daemon")
+            tmp_file_base = os.path.join(tempfile.gettempdir(), "daemon")
             conf_file = tmp_file_base + ".conf"
             with open(conf_file, "w") as the_file:
                 the_file.write(json.dumps(config))

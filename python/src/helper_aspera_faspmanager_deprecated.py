@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Helper function to use legacy Fasp Manager for python
+# 	curl -s http://download.asperasoft.com/download/sw/sdk/faspmanager/python/faspmanager-sdk-python-3.7.2-d787953b521f059412ad1713afaa38ccbb760a47.zip -o $(CONFIG_FSMGR_DIR)/faspmanager-sdk-python-3.7.2.zip
+# 	openssl rsa -passin pass:743128bf-3bf3-45b5-ab14-4602c67f2950 -in $(CONFIG_TRSDK_DIR_GENERIC)/aspera_tokenauth_id_rsa -out $(CONFIG_SDK_ROOT)/aspera_ssh_bypass_rsa.pem
+
 import logging
 import json
 import base64

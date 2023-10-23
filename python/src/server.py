@@ -3,13 +3,14 @@
 # transfer files with Aspera HSTS using SSH authentication
 import test_environment
 import logging
+import tempfile
 import os
 from urllib.parse import urlparse
 
 assert "server" in test_environment.CONFIG, "server config is missing"
 
 # where transferred files will be stored
-tmp_folder = os.environ["CONFIG_TMPDIR"]
+my_local_folder = tempfile.gettempdir()
 
 server_url = urlparse(test_environment.CONFIG["server"]["url"])
 assert server_url.scheme == "ssh", "expecting SSH scheme for server URL"
@@ -29,13 +30,13 @@ t_spec_download = {
     "remote_user": remote_user,
     "remote_password": remote_pass,
     "direction": "receive",
-    "destination_root": tmp_folder,
+    "destination_root": my_local_folder,
     "paths": [{"source": "/aspera-test-dir-tiny/200KB.1"}],
 }
 test_environment.start_transfer_and_wait(t_spec_download)
 
 # location of downloaded file
-local_file = os.path.join(tmp_folder, "200KB.1")
+local_file = os.path.join(my_local_folder, "200KB.1")
 
 # Example 2: upload: single file upload to existing folder.
 logging.debug("======Test 2: upload file")

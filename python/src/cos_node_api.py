@@ -1,19 +1,12 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Use Node API with COS credentials
-import requests
-import logging
-import json
-import sys
-import yaml
-import os
+import test_environment
 import helper_aspera_cos
-
-# get configuration from config file
-CONFIG = yaml.load(open(os.environ["CONFIG_YAML"]), Loader=yaml.FullLoader)
+import requests
 
 # get Aspera Transfer Service Node information for specified COS bucket
-config = CONFIG["cos"]
+config = test_environment.CONFIG["cos"]
 node_info = helper_aspera_cos.node(
     bucket=config["bucket"],
     endpoint=config["endpoint"],

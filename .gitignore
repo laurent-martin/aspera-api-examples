@@ -4,16 +4,13 @@ __pycache__/
 *$py.class
 .is_*
 # config files with secrets
-config.yaml
-config.mak
-config.env
 package-lock.json
-sdk/
+generated/
 .gradle
 classes
 build
 node_modules
-local
+private
 .vscode
 .idea
 dist/

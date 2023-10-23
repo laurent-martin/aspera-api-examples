@@ -1,16 +1,12 @@
-# run make in upper folder to generate this file
-include ../config.mak
-
+DIR_TOP=../
+include $(DIR_TOP)/common.make
 SRC=src
-RBTMP=$(CONFIG_TMPDIR)/rubytst/
+RBTMP=$(TMPDIR)/rubytst/
 RUBY_CONNECTORS=$(CONFIG_TRSDK_DIR_GENERIC)/connectors/ruby
 GEMFILE=$(CONFIG_TRSDK_DIR_GENERIC)/connectors/ruby/Gemfile
-
-export CONFIG_TRSDK_DIR_GENERIC
-
 all: aoc.test node.test faspex5.test server.test faspex4.test
 %.test: .is_installed_tmp .is_installed_libs
-	bundle exec $(SRC)/$$(basename $@ .test).rb $(CONFIG_YAML) $(RBTMP)This_is_a_test.txt
+	bundle exec $(SRC)/$$(basename $@ .test).rb $(RBTMP)This_is_a_test.txt
 	touch $@
 $(GEMFILE):
 	@echo "run make in upper folder to install transfer SDK"

@@ -1,0 +1,7 @@
+# paths of files and folder relative to the project main folder
+mainconfig: private/config.yaml
+tmpgen: generated
+sdk_root: generated/trsdk
+trsdk_noarch: generated/trsdk/noarch
+proto: generated/trsdk/noarch/connectors/grpc/transfer.proto
+sdk_conf: generated/trsdk/config.conf

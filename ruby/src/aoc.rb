@@ -2,21 +2,10 @@
 # frozen_string_literal: true
 
 require 'aspera/aoc'
-require 'aspera/log'
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+require 'test_environment'
 
-Aspera::Log.instance.level = :debug
-
-unless ARGV.length.eql?(2)
-  logger.error { "Wrong number of args: #{ARGV.length}" }
-  logger.error { "Usage: #{$PROGRAM_NAME} <config yaml> <file to send>" }
-  Process.exit(1)
-end
-
-config_yaml = ARGV[0]
-_files_to_send = [ARGV[1]]
-
-all_config = YAML.load_file(config_yaml)
-aoc_conf = all_config['aoc']
+aoc_conf = TestEnvironment.instance.config['aoc']
 
 aoc_api = Aspera::AoC.new(
   url: "https://#{aoc_conf['org']}.ibmaspera.com",

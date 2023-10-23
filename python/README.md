@@ -73,3 +73,7 @@ Transfer fails if `http_fallback` is `True`.
 <https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-aspera>
 
 Uncomment lines in `cos.py` to use service credential file instead of bare API key.
+
+## Windows
+
+Install python 3.11: https://www.python.org/downloads/windows/

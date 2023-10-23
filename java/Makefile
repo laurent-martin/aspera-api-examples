@@ -1,8 +1,6 @@
+DIR_TOP=$(shell pwd -P)/../
+include $(DIR_TOP)common.make
 all::
-include ../config.mak
-../config.mak:
-	@echo "Run make in upper folder to create config.mak"
-	@exit 1
 # same as in settings.gradle
 PROJECT_NAME=javasamples
 # same as in build.gradle

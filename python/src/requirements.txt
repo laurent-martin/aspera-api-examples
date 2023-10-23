@@ -1,0 +1,8 @@
+pywin32
+requests
+PyYAML
+pyjwt
+cryptography
+grpcio
+protobuf
+google

@@ -4,18 +4,20 @@ const yaml = require('js-yaml');
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const assert = require('assert');
+const os = require('os');
 
-assert(process.env.CONFIG_TRSDK_PROTO, 'CONFIG_TRSDK_PROTO env var is missing');
-assert(process.env.CONFIG_YAML, 'CONFIG_YAML env var is missing');
-assert(process.env.CONFIG_TMPDIR, 'CONFIG_TMPDIR env var is missing');
-
+const top_folder = path.resolve(path.dirname(__filename), '..');
+const paths = yaml.load(fs.readFileSync(path.join(top_folder, "config/paths.yaml"), 'utf8'));
+function get_path(name) {
+	return path.join(top_folder, paths[name]);
+}
+// read config for examples
+const yconf = yaml.load(fs.readFileSync(get_path("mainconfig"), 'utf8'));
 // load definition for the aspera transfer sdk package
 const packageDefinition = protoLoader.loadSync(
-	process.env.CONFIG_TRSDK_PROTO,
+	get_path("proto"),
 	{ keepCase: true, longs: String, enums: String, defaults: true, oneofs: true });
 const transfersdk = grpc.loadPackageDefinition(packageDefinition).transfersdk;
-// read config for examples
-const yconf = yaml.load(fs.readFileSync(process.env.CONFIG_YAML, 'utf8'));
 // create a connection to the transfer manager daemon
 const grpc_url = new URL(yconf['misc']['trsdk_url'])
 assert(grpc_url.protocol === 'grpc:', "Expecting gRPC protocol")
@@ -24,7 +26,7 @@ const client = new transfersdk.TransferService(grpc_url.hostname + ":" + grpc_ur
 
 module.exports = {
 	config: yconf,
-	tmp_folder: process.env.CONFIG_TMPDIR,
+	tmp_folder: os.tmpdir(),
 	wait_for_server: (ready_cb) => {
 		// try connection, allow 5 seconds
 		client.waitForReady((new Date()).getTime() + 5000, (err) => {
