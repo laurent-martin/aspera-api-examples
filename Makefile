@@ -1,5 +1,6 @@
 DIR_TOP=$(shell pwd -P)/
 include $(DIR_TOP)common.make
+CONFIG_TMPL=config/config.tmpl
 all: .is_setup
 clean:
 	cd js && make clean
@@ -44,14 +45,15 @@ $(CONFIG_TRSDK_DIR_ARCH)asperatransferd: $(CONFIG_TRSDK_ROOT)transfer_sdk.zip
 	cp $(CONFIG_TRSDK_DIR_GENERIC)aspera-license $(CONFIG_TRSDK_DIR_ARCH)
 	touch $@
 # create template from actual private config file
-template: $(MAIN_CONFIG)
-	sed '/^#/ d;s/^\(    [^:]*:\).*/\1 your_value_here/' < $(MAIN_CONFIG) > config.tmpl
+template: $(CONFIG_TMPL)
+$(CONFIG_TMPL): $(MAIN_CONFIG)
+	sed '/^#/ d;s/^\(  [^:]*:\).*/\1 your_value_here/' < $(MAIN_CONFIG) > $(CONFIG_TMPL)
 $(MAIN_CONFIG):
-	@echo "Create a file: $@ from config.tmpl, refer to README.md"
-	@echo "cp config.tmpl $(MAIN_CONFIG)"
+	@echo "Create a file: $@ from $(CONFIG_TMPL), refer to README.md"
+	@echo "cp $(CONFIG_TMPL) $(MAIN_CONFIG)"
 	@echo "vi $(MAIN_CONFIG)"
 	@exit 1
-tests: 
+tests:  .is_setup
 	cd js && make
 	cd python && make
 	cd java && make

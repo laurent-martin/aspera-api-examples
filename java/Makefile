@@ -13,7 +13,8 @@ JAVA_PROPS=\
 -Djava.util.logging.config.file="logging.properties"
 GRADLE_PROPS=\
 -Psdk_noarch=$(CONFIG_TRSDK_DIR_GENERIC)
-.PHONY: $(JARFILE)
+# uncomment to trigger build on source change
+#.PHONY: $(JARFILE)
 $(JARFILE):
 	gradle build $(GRADLE_PROPS)
 .is_tested: ServerFileUploadV1Example$(T) ServerFileDownloadV2Example$(T) COSFileUploadExample$(T) PersistentUploadExample$(T) Faspex5Send$(T)
