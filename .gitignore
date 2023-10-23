@@ -1,22 +1,8 @@
-# Byte-compiled
-#__pycache__/
-#*.py[cod]
-#*$py.class
 .is_*
-# config files with secrets
-#package-lock.json
-#generated/
-#*.tested
-#.gradle
-#classes
-#build
-#node_modules
-private
+generated/
+*.tested
+private/
 .vscode
 .idea
-#dist/
-#gradle.properties
-#java/bin
-#Gemfile.lock
 .DS_Store
 csharp

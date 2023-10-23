@@ -1,6 +1,6 @@
 DIR_TOP=$(shell pwd -P)/../
 include $(DIR_TOP)common.make
-all::
+all: .is_tested
 # same as in settings.gradle
 PROJECT_NAME=javasamples
 # same as in build.gradle
@@ -16,9 +16,9 @@ GRADLE_PROPS=\
 .PHONY: $(JARFILE)
 $(JARFILE):
 	gradle build $(GRADLE_PROPS)
-
-all:: ServerFileUploadV1Example$(T) ServerFileDownloadV2Example$(T) COSFileUploadExample$(T) PersistentUploadExample$(T) Faspex5Send$(T)
+.is_tested: ServerFileUploadV1Example$(T) ServerFileDownloadV2Example$(T) COSFileUploadExample$(T) PersistentUploadExample$(T) Faspex5Send$(T)
 	cd .. && make stopdaemon
+	touch $@
 %$(T): $(JARFILE)
 	@echo "== Testing $$(basename $@ $(T)) ==========================="
 	java -cp $(JARFILE) $(JAVA_PROPS) client.$$(basename $@ $(T))
@@ -26,6 +26,7 @@ all:: ServerFileUploadV1Example$(T) ServerFileDownloadV2Example$(T) COSFileUploa
 	touch $@
 clean:
 	gradle clean $(GRADLE_PROPS)
+	rm -f .is_tested
 	rm -fr .gradle
 	rm -f file*
 	test -n "$(T)" && rm -f *$(T)

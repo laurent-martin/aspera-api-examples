@@ -54,5 +54,5 @@ $(MAIN_CONFIG):
 tests: 
 	cd js && make
 	cd python && make
-	cd java && make tests
-	cd web && make tests
+	cd java && make
+	cd web && make test

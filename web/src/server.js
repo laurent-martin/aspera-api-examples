@@ -9,22 +9,28 @@ const express = require('express')
 const https = require('https')
 const yaml = require('js-yaml')
 const fs = require('fs')
+const path = require('path')
+const assert = require('assert')
+const top_folder = path.resolve(path.dirname(__filename), '..', '..');
+const paths = yaml.load(fs.readFileSync(path.join(top_folder, "config/paths.yaml"), 'utf8'));
+function get_path(name) {
+  return path.join(top_folder, paths[name]);
+}
+// read config for examples
+const config = yaml.load(fs.readFileSync(get_path("mainconfig"), 'utf8'));
 
-// command line arguments
-const yamlConfFile = process.argv[2]
-const port = Number(process.argv[3])
-const staticFolder = process.argv[4]
+const grpc_url = new URL(config['misc']['trsdk_url'])
+assert(grpc_url.protocol === 'grpc:', "Expecting gRPC protocol")
 
-if (!staticFolder.endsWith("/")) { throw new Error("staticFolder must end with /") }
+const staticFolder = process.argv[2]
 
-// read config file (node credentials ...) 
-const config = yaml.load(fs.readFileSync(yamlConfFile, 'utf8'))
+assert(fs.statSync(staticFolder).isDirectory(), "parameter is not a folder: " + staticFolder)
+
 // web server
 const app = express()
 
 // generate configuration for web client
-const config_js = "config=" + JSON.stringify(yaml.load(fs.readFileSync(process.argv[2], 'utf8')))
-fs.writeFile(staticFolder + "conf.js", config_js, err => { if (err) { console.error(err) } })
+fs.writeFile(path.join(staticFolder, "conf.js"), "config=" + JSON.stringify(config), err => { if (err) { console.error(err) } })
 
 // use this source folder to serve static content
 app.use(express.static(staticFolder))
@@ -99,6 +105,6 @@ app.post('/tspec', (req, res) => {
 })
 
 // start web server
-app.listen(port, () => {
-  console.log(`Express server running at http://localhost:${port}`)
+app.listen(grpc_url.port, () => {
+  console.log(`Express server running at http://localhost:${grpc_url.port}`)
 })
