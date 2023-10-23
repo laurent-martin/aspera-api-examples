@@ -85,8 +85,6 @@ Set the parameter `misc.system_type` to the architecture used:
 
 > **Note:** for macOS ARM, use `osx-x86_64`
 
-The parameter `misc.client_sdk` shall be set to `transfer_sdk`.
-
 The parameter `misc.trsdk_url` can be set to `grpc://127.0.0.1:55002` (specify the local port that sdk will use).
 
 Section `httpgw` is used by the `web` example only.
@@ -100,7 +98,6 @@ Example (with random credentials):
 ---
   misc:
     system_type: osx-x86_64
-    client_sdk: transfer_sdk
     trsdk_url: grpc://127.0.0.1:55002
   httpgw:
     url: https://1.2.3.4/aspera/http-gwy

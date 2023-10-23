@@ -2,16 +2,20 @@
 # laurent.martin.aspera@fr.ibm.com
 # Helper function to use legacy Fasp Manager for python
 import logging
-import faspmanager
 import json
 import base64
 import copy
 import os
+import faspmanager
 
 # this is part of redistributable
 ASPERA_SSH_BYPASS_ABS_PATH = os.path.join(
     os.environ["CONFIG_SDK_ROOT"], "aspera_ssh_bypass_rsa.pem"
 )
+
+assert "CONFIG_FSMGR_DIR" in os.environ, "env var CONFIG_FSMGR_DIR is missing"
+# tell where to find legacy faspmanager lib
+sys.path.insert(1, os.environ["CONFIG_FSMGR_DIR"])
 
 
 def is_processed(t_spec, t_field):
@@ -228,3 +232,8 @@ def start_transfer_and_wait(t_spec):
         if not result.ok():
             logging.debug("Failure reason: {}".format(result.reason()))
             logging.debug("Failed files: {}".format(result.failed_files()))
+
+
+def start_transfer_and_wait(t_spec):
+    logging.debug(t_spec)
+    helper_aspera_faspmanager.start_transfer_and_wait(t_spec)

@@ -1,6 +1,6 @@
 # Laurent's API examples for Aspera using Python
 
-Tested with Python3 on OSX.
+Tested with Python3 on macOS.
 
 This project provides code examples to use some IBM Aspera APIs and transfer files for various IBM Aspera products using python.
 
@@ -14,7 +14,10 @@ The sample code in `src` shows how to transfer files using:
 
 ## Quick start
 
-Once the main folder has been initialized:
+First, initialize the main folder: execute `make` in the top folder of this repository.
+Follow the main Readme to install the required components.
+
+Then, initialize the python folder:
 
 ```bash
 cd python
@@ -24,10 +27,8 @@ make
 
 This will run sample programs with sample files using servers as configured in the config file.
 
-<!--* Check and Download FaspManager
-* Check and Install required python modules-->
-
-If you prefer to test a single application, you may configure only the appropriate section in the config file , have a look to the [`Makefile`](Makefile) to check how example is invoked and execute just the example relevant to you. Then run only one example:
+If you prefer to test a single application, you may configure only the appropriate section in the config file, have a look to the [`Makefile`](Makefile) to check how the example is invoked and execute just the example relevant to you.
+Then run only one example:
 
 ```bash
 make cos2
@@ -43,11 +44,11 @@ Check the [`Makefile`](Makefile) for details.
 
 ## <a id="sdk"></a>SDK Selection
 
-The current [Transfer SDK](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22) **shall be used** for new developments.
-
-So config parameter `misc.client_sdk` shall be `transfer_sdk`.
+The examples use the current Aspera SDK: [Transfer SDK](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22).
+It **shall be used** for new developments.
 
 The legacy [FASPManager API](https://developer.ibm.com/apis/catalog?search=%22fasp%20manager%20sdk%22) is now deprecated and shall not be used for new developments. (`faspmanager`)
+An adapter is kept for reference, but should not be used.
 
 ## Structure of examples
 
