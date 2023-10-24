@@ -4,15 +4,14 @@
 # Helper methods to get API environment according to config file
 # Simplified function to start transfer and wait for it to finish
 import os
-import yaml
-import logging
-import grpc
-import time
-import json
 import sys
-import subprocess
+import yaml
+import json
+import time
+import grpc
+import logging
 import tempfile
-import signal
+import subprocess
 from http.client import HTTPConnection
 from urllib.parse import urlparse
 
