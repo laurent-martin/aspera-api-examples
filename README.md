@@ -28,14 +28,9 @@ This repo was tested on macOS ARM.
 
 Windows users without `make` can use the `Makefile` as a reference to execute the commands manually.
 
-The main manual configuration steps are:
-
-- create the `private/config.yaml` file from the template `config/config.tmpl` and fill with valid server addresses and credentials, refer to [Configuration File](#config)
-- java and nodejs (but not python, nor ruby) rely on `generated/trsdk/config.conf` created from `config/sdkconf.tmpl`, refer to `Makefile` for details
-
 ## Quick start
 
-1. Create the configuration file `private/config.yaml` and fill with valid server addresses and credentials, refer to [Configuration File](#config)
+1. Copy the file `config/config.tmpl` into `private/config.yaml` and fill, refer to [Configuration File](#config)
 
 1. Initialize the main folder:
 
@@ -50,6 +45,13 @@ This downloads the Aspera Transfer SDK.
 > <https://ibm.biz/aspera_transfer_sdk>
 >
 > and place the file here: `<main folder>/sdk/trsdk/transfer_sdk.zip`
+
+For Windows users, the main manual configuration steps are:
+
+- create `private/config.yaml` from the template `config/config.tmpl` and fill with valid server addresses and credentials, refer to [Configuration File](#config)
+- java and nodejs (but not python, nor ruby) rely on `generated/trsdk/config.conf` created from `config/sdkconf.tmpl`, refer to `Makefile` for details
+- nodejs relies on starting the daemon manually, refer to `Makefile` for details
+- download [the SDK zip](https://ibm.biz/aspera_transfer_sdk) and extract to `generated/trsdk`
 
 ## Testing individual programs
 
