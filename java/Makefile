@@ -6,15 +6,8 @@ PROJECT_NAME=javasamples
 # same as in build.gradle
 PROJECT_VERSION=0.1
 JARFILE=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar
-#-Ddaemon=$(GLOBAL_TRSDK_ARCH)asperatransferd \
-#-Dconfig_daemon=$(GLOBAL_TRSDK_CONFIG) \
-#-Dconfig_yaml=$(GLOBAL_CONFIG)
-JAVA_PROPS=\
--Ddir_top=$(DIR_TOP) \
--D
--Djava.util.logging.config.file="logging.properties"
-GRADLE_PROPS=\
--Psdk_noarch=$(GLOBAL_TRSDK_NOARCH)
+JAVA_PROPS=-Ddir_top=$(DIR_TOP) -Djava.util.logging.config.file="logging.properties"
+GRADLE_PROPS=-Psdk_noarch=$(GLOBAL_TRSDK_NOARCH)
 # uncomment to trigger build on source change
 #.PHONY: $(JARFILE)
 $(JARFILE):
