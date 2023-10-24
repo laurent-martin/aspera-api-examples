@@ -30,6 +30,7 @@ public class TestEnvironment {
 	public String transferId;
 	final String daemon_executable;
 	final String sdk_conf_path;
+	final Process daemon_process;
 
 	public TestEnvironment() {
 		try {
@@ -65,6 +66,7 @@ public class TestEnvironment {
 		}
 		boolean isStarted = false;
 		int remaining_try = 2;
+		Process started_process = null;
 		while (!isStarted && remaining_try > 0) {
 			try {
 				LOGGER.log(Level.FINE, "Checking gRPC connection");
@@ -76,7 +78,7 @@ public class TestEnvironment {
 				try {
 					LOGGER.log(Level.FINE, "Starting daemon: {0} -c {1}",
 							new Object[] {daemon_executable, sdk_conf_path});
-					Runtime.getRuntime()
+					started_process = Runtime.getRuntime()
 							.exec(new String[] {daemon_executable, "-c", sdk_conf_path});
 					Thread.sleep(5000);
 				} catch (final IOException e2) {
@@ -88,6 +90,7 @@ public class TestEnvironment {
 			}
 			--remaining_try;
 		}
+		daemon_process = started_process;
 		if (!isStarted) {
 			LOGGER.log(Level.FINE,
 					"FAILED: API daemon did not start.Please start it manually by executing \"make startdaemon\" in a separate terminal from the top folder.");
@@ -138,8 +141,14 @@ public class TestEnvironment {
 		LOGGER.log(Level.FINE, "L: Finished monitoring loop");
 	}
 
+	public void shutdown() {
+		if (daemon_process != null)
+			daemon_process.destroy();
+	}
+
 	public void start_transfer_and_wait(final String transferSpec) {
 		start_transfer(transferSpec, Transfer.TransferType.FILE_REGULAR);
 		wait_transfer();
+		shutdown();
 	}
 }

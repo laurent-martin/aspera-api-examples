@@ -1,30 +1,35 @@
 DIR_TOP=$(shell pwd -P)/
 include $(DIR_TOP)common.make
-CONFIG_TMPL=config/config.tmpl
-TRANSFER_SDK_ZIP=$(GLOBAL_TRSDK_ROOT)transfer_sdk.zip
+CONFIG_TMPL=$(DIR_TOP)config/config.tmpl
+CONFIG_FILE=$(DIR_TOP)$(shell sed -n -e 's/^mainconfig: //p' < $(GLOBAL_PATHS))
+GENERATED_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^tmpgen: //p' < $(GLOBAL_PATHS))/
+TRSDK_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' < $(GLOBAL_PATHS))/
+TRSDK_CONFIG=$(DIR_TOP)$(shell sed -n -e 's/^sdk_conf: //p' < $(GLOBAL_PATHS))
+TRSDK_ARCH=$(TRSDK_ROOT)$(shell sed -n -e 's/^ *system_type: //p' < $(CONFIG_FILE))/
+TRSDK_ZIP=$(TRSDK_ROOT)transfer_sdk.zip
 all: .is_setup
 clean:
 	cd js && make clean
 	cd python && make clean
 	cd java && make clean
 	cd web && make clean
-	rm -f .is_setup $(GLOBAL_TRSDK_CONFIG)
-	rm -fr $(GLOBAL_GENERATED)
+	rm -f .is_setup $(TRSDK_CONFIG)
+	rm -fr $(GENERATED_ROOT)
 # transfer SDK is installed
-.is_setup: $(GLOBAL_CONFIG) $(GLOBAL_TRSDK_ARCH)asperatransferd $(GLOBAL_TRSDK_CONFIG)
+.is_setup: $(CONFIG_FILE) $(TRSDK_ARCH)asperatransferd $(TRSDK_CONFIG)
 	touch $@
 # start transfer SDK daemon
-startdaemon: $(GLOBAL_TRSDK_CONFIG)
-	$(GLOBAL_TRSDK_ARCH)asperatransferd -c $(GLOBAL_TRSDK_CONFIG)
+startdaemon: $(TRSDK_CONFIG)
+	$(TRSDK_ARCH)asperatransferd -c $(TRSDK_CONFIG)
 stopdaemon:
 	-killall asperatransferd
 # generate transfer SDK config file, need utility `jq`
 # see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
-$(GLOBAL_TRSDK_CONFIG): $(GLOBAL_CONFIG) $(DIR_TOP)config/sdkconf.tmpl
+$(TRSDK_CONFIG): $(CONFIG_FILE) $(DIR_TOP)config/sdkconf.tmpl
 	jq \
-'.address = "'$$(sed -n 's|.*trsdk_url.*//\([^:]*\):.*|\1|p' < $(GLOBAL_CONFIG))'"'\
-' | .port = '$$(sed -n 's|.*trsdk_url.*:\([0-9]*\).*|\1|p' < $(GLOBAL_CONFIG))''\
-' | .fasp_runtime.user_defined.bin = "'$(GLOBAL_TRSDK_ARCH)'"'\
+'.address = "'$$(sed -n 's|.*trsdk_url.*//\([^:]*\):.*|\1|p' < $(CONFIG_FILE))'"'\
+' | .port = '$$(sed -n 's|.*trsdk_url.*:\([0-9]*\).*|\1|p' < $(CONFIG_FILE))''\
+' | .fasp_runtime.user_defined.bin = "'$(TRSDK_ARCH)'"'\
 ' | .fasp_runtime.user_defined.etc = "'$(GLOBAL_TRSDK_NOARCH)'"'\
 ' | .fasp_runtime.log.dir = "'$(TMPDIR)'"'\
 ' | .fasp_runtime.log.level = 0'\
@@ -33,26 +38,26 @@ $(GLOBAL_TRSDK_CONFIG): $(GLOBAL_CONFIG) $(DIR_TOP)config/sdkconf.tmpl
 ' | del(.api_time_settings, .tls, .workers, .authentication, .fasp_management, .fasp_runtime.force_version, .fasp_runtime.extra_config)'\
  $(DIR_TOP)config/sdkconf.tmpl > $@
 # download transfer SDK
-$(TRANSFER_SDK_ZIP):
-	mkdir -p $(GLOBAL_TRSDK_ROOT)
-	curl -L https://ibm.biz/aspera_transfer_sdk -o $(TRANSFER_SDK_ZIP)
+$(TRSDK_ZIP):
+	mkdir -p $(TRSDK_ROOT)
+	curl -L https://ibm.biz/aspera_transfer_sdk -o $(TRSDK_ZIP)
 # extract transfer SDK
-$(GLOBAL_TRSDK_ARCH)asperatransferd: $(TRANSFER_SDK_ZIP)
-	@echo $(GLOBAL_TRSDK_ARCH)
-	unzip -d $(GLOBAL_TRSDK_ROOT) $(TRANSFER_SDK_ZIP)
-	rm -f $(GLOBAL_TRSDK_ARCH)ascp4
-	cp $(GLOBAL_TRSDK_ARCH)ascp $(GLOBAL_TRSDK_ARCH)ascp4
-	echo '<product><name>IBM Aspera SDK</name><version>1.1.1.52</version></product>' > $(GLOBAL_TRSDK_ARCH)product-info.mf
-	cp $(GLOBAL_TRSDK_NOARCH)aspera-license $(GLOBAL_TRSDK_ARCH)
+$(TRSDK_ARCH)asperatransferd: $(TRSDK_ZIP)
+	@echo $(TRSDK_ARCH)
+	unzip -d $(TRSDK_ROOT) $(TRSDK_ZIP)
+	rm -f $(TRSDK_ARCH)ascp4
+	cp $(TRSDK_ARCH)ascp $(TRSDK_ARCH)ascp4
+	echo '<product><name>IBM Aspera SDK</name><version>1.1.1.52</version></product>' > $(TRSDK_ARCH)product-info.mf
+	cp $(GLOBAL_TRSDK_NOARCH)aspera-license $(TRSDK_ARCH)
 	touch $@
 # create template from actual private config file
 template: $(CONFIG_TMPL)
-$(CONFIG_TMPL): $(GLOBAL_CONFIG)
-	sed '/^#/ d;s/^\(  [^:]*:\).*/\1 your_value_here/' < $(GLOBAL_CONFIG) > $(CONFIG_TMPL)
-$(GLOBAL_CONFIG):
+$(CONFIG_TMPL): $(CONFIG_FILE)
+	sed '/^#/ d;s/^\(  [^:]*:\).*/\1 your_value_here/' < $(CONFIG_FILE) > $(CONFIG_TMPL)
+$(CONFIG_FILE):
 	@echo "Create a file: $@ from $(CONFIG_TMPL), refer to README.md"
-	@echo "cp $(CONFIG_TMPL) $(GLOBAL_CONFIG)"
-	@echo "vi $(GLOBAL_CONFIG)"
+	@echo "cp $(CONFIG_TMPL) $(CONFIG_FILE)"
+	@echo "vi $(CONFIG_FILE)"
 	@exit 1
 tests:  .is_setup
 	cd js && make

@@ -10,10 +10,11 @@ JAVA_PROPS=-Ddir_top=$(DIR_TOP) -Djava.util.logging.config.file="logging.propert
 GRADLE_PROPS=-Psdk_noarch=$(GLOBAL_TRSDK_NOARCH)
 # uncomment to trigger build on source change
 #.PHONY: $(JARFILE)
-$(JARFILE):
+$(JARFILE): ../.is_setup
 	gradle build $(GRADLE_PROPS)
+../.is_setup:
+	cd .. && make
 .is_tested: ServerFileUploadV1Example$(T) ServerFileDownloadV2Example$(T) COSFileUploadExample$(T) PersistentUploadExample$(T) Faspex5Send$(T)
-	cd .. && make stopdaemon
 	touch $@
 %$(T): $(JARFILE)
 	@echo "== Testing $$(basename $@ $(T)) ==========================="
