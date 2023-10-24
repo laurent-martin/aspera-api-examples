@@ -62,19 +62,22 @@ requests_log = logging.getLogger("requests.packages.urllib3")
 requests_log.setLevel(logging.DEBUG)
 requests_log.propagate = True
 
-transfer_daemon = None
+transfer_daemon_process = None
+sdk_client = None
+
+shutdown_after_transfer = True
 
 TRANSFERD_EXECUTABLE = "asperatransferd"
 
 
 def start_daemon(sdk_grpc_url):
-    global transfer_daemon
+    global transfer_daemon_process
+    global sdk_client
     # avoid message: "Other threads are currently calling into gRPC, skipping fork() handlers"
     os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "false"
     # create a connection to the transfer manager daemon, in case it is running
     grpc_url = urlparse(sdk_grpc_url)
     channel = grpc.insecure_channel(grpc_url.hostname + ":" + str(grpc_url.port))
-    sdk_server = None
     # try to start daemon a few times if needed
     for i in range(0, 2):
         try:
@@ -82,7 +85,7 @@ def start_daemon(sdk_grpc_url):
             grpc.channel_ready_future(channel).result(timeout=3)
             print("SUCCESS: connected")
             # channel is ok, let's get the stub
-            sdk_server = transfer_manager_grpc.TransferServiceStub(channel)
+            sdk_client = transfer_manager_grpc.TransferServiceStub(channel)
         except grpc.FutureTimeoutError:
             print("FAILED: to connect\nStarting daemon...")
             # else prepare config and start
@@ -113,7 +116,7 @@ def start_daemon(sdk_grpc_url):
             print("Starting: " + " ".join(command))
             print("stderr: " + err_file)
             print("stdout: " + out_file)
-            transfer_daemon = subprocess.Popen(
+            transfer_daemon_process = subprocess.Popen(
                 " ".join(command),
                 shell=True,
                 stdout=open(out_file, "w"),
@@ -121,17 +124,18 @@ def start_daemon(sdk_grpc_url):
             )
             # give time for startup
             time.sleep(1)
-        if sdk_server is not None:
+        if sdk_client is not None:
             break
-    if sdk_server is None:
+    if sdk_client is None:
         print(
             "ERROR: daemon not started or cannot be started.\nCheck the logs: daemon.err and daemon.out (see paths above)."
         )
         exit(1)
-    return sdk_server
+    return sdk_client
 
 
-def start_transfer(sdk_server, transfer_spec):
+def start_transfer(transfer_spec):
+    global sdk_client
     # create a transfer request
     transfer_request = transfer_manager.TransferRequest(
         transferType=transfer_manager.FILE_REGULAR,
@@ -139,17 +143,18 @@ def start_transfer(sdk_server, transfer_spec):
         transferSpec=json.dumps(transfer_spec),
     )
     # send start transfer request to transfer manager daemon
-    transfer_response = sdk_server.StartTransfer(transfer_request)
+    transfer_response = sdk_client.StartTransfer(transfer_request)
     if 4 == transfer_response.status:
         print("ERROR: {0}".format(transfer_response.error.description))
         exit(1)
     return transfer_response.transferId
 
 
-def wait_transfer(sdk_server, transfer_id):
+def wait_transfer(transfer_id):
+    global sdk_client
     print("transfer started with id {0}".format(transfer_id))
     # monitor transfer status
-    for transfer_info in sdk_server.MonitorTransfers(
+    for transfer_info in sdk_client.MonitorTransfers(
         transfer_manager.RegistrationRequest(
             filters=[transfer_manager.RegistrationFilter(transferId=[transfer_id])]
         )
@@ -166,20 +171,24 @@ def wait_transfer(sdk_server, transfer_id):
 
 
 def shutdown():
-    global transfer_daemon
-    if transfer_daemon is not None:
-        transfer_daemon.terminate()
-        transfer_daemon = None
+    global transfer_daemon_process
+    if transfer_daemon_process is not None:
+        transfer_daemon_process.terminate()
+        transfer_daemon_process = None
         print("transfer daemon terminated")
     else:
         print("transfer daemon already terminated")
 
 
 def start_transfer_and_wait(t_spec):
+    global sdk_client
+    global shutdown_after_transfer
     # TODO: remove when transfer sdk bug fixed
     t_spec["http_fallback"] = False
     logging.debug(t_spec)
-    sdk_server = start_daemon(CONFIG["misc"]["trsdk_url"])
-    t_id = start_transfer(sdk_server, t_spec)
-    wait_transfer(sdk_server, t_id)
-    shutdown()
+    if sdk_client is None:
+        sdk_client = start_daemon(CONFIG["misc"]["trsdk_url"])
+    t_id = start_transfer(t_spec)
+    wait_transfer(t_id)
+    if shutdown_after_transfer:
+        shutdown()

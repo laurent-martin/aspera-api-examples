@@ -20,6 +20,9 @@ remote_port = server_url.port
 remote_user = test_environment.CONFIG["server"]["user"]
 remote_pass = test_environment.CONFIG["server"]["pass"]
 
+
+test_environment.shutdown_after_transfer = False
+
 # Example 1: download
 # Instead of using the soon deprecated FaspManager1 Python lib, let's use the transfer spec
 # direction is relative to us, client, i.e. receive = download
@@ -69,3 +72,5 @@ t_spec_upload["destination_root"] = "/Upload"
 del t_spec_upload["create_dir"]
 t_spec_upload["paths"] = [{"source": local_file, "destination": "xxx/newfilename.ext"}]
 test_environment.start_transfer_and_wait(t_spec_upload)
+
+test_environment.shutdown()
