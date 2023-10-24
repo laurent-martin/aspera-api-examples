@@ -29,7 +29,7 @@ package_name = "sample package"
 transfer_sessions = 1
 
 # Arg3 and +: list of files to send
-package_files = sys.argv[1:]
+package_files = test_environment.file_list
 
 # get configuration parameters from config file
 config = test_environment.CONFIG["faspex5"]

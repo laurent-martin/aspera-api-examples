@@ -28,7 +28,7 @@ This repo was tested on macOS ARM.
 
 Windows users without `make` can use the `Makefile` as a reference to execute the commands manually.
 
-## Quick start
+## Quick start (Unix-like systems)
 
 1. Copy the file `config/config.tmpl` into `private/config.yaml` and fill, refer to [Configuration File](#config)
 
@@ -46,12 +46,38 @@ This downloads the Aspera Transfer SDK.
 >
 > and place the file here: `<main folder>/sdk/trsdk/transfer_sdk.zip`
 
-For Windows users, the main manual configuration steps are:
+## Quick start (Windows)
 
-- create `private/config.yaml` from the template `config/config.tmpl` and fill with valid server addresses and credentials, refer to [Configuration File](#config)
-- java and nodejs (but not python, nor ruby) rely on `generated/trsdk/config.conf` created from `config/sdkconf.tmpl`, refer to `Makefile` for details
-- nodejs relies on starting the daemon manually, refer to `Makefile` for details
-- download [the SDK zip](https://ibm.biz/aspera_transfer_sdk) and extract to `generated/trsdk`
+1. Copy file `config/config.tmpl` to `private/config.yaml` and fill, refer to [Configuration File](#config)
+
+    ```dos
+    md private
+    copy config\config.tmpl private\config.yaml
+    ```
+
+   Set the parameter `misc.system_type` to `windows-x86_64`
+
+   Edit required parameters in `private/config.yaml`, for example Faspex connection information.
+
+2. Download [sdk.zip](https://ibm.biz/aspera_transfer_sdk)
+
+3. Prepare the SDK folder and extract its contents to `generated/trsdk`
+
+    ```dos
+    md generated
+    md generated\trsdk
+    mklink /D generated\trsdk\etc noarch
+    ```
+
+    > **Note:** Creation of the link is due to a limitation in `asperatransferd` which does not use the `etc` parameter from its config file.
+
+4. java and nodejs rely on `generated/trsdk/config.conf` created from `config/sdkconf.tmpl`, refer to `Makefile` for details
+
+   `python` samples create their own config file
+
+   `ruby` sample do not use transfer SDK here yes.
+
+5. nodejs relies on starting the daemon manually, refer to [`Makefile`](Makefile) for details
 
 ## Testing individual programs
 

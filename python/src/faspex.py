@@ -9,7 +9,7 @@ import json
 import sys
 
 # files to send
-package_files = sys.argv[1:]
+package_files = test_environment.file_list
 
 # package creation information for Faspex API v3 : POST /send
 delivery_info = {

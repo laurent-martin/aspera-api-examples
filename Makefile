@@ -7,16 +7,16 @@ TRSDK_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' < $(GLOBAL_PATHS))/
 TRSDK_CONFIG=$(DIR_TOP)$(shell sed -n -e 's/^sdk_conf: //p' < $(GLOBAL_PATHS))
 TRSDK_ARCH=$(TRSDK_ROOT)$(shell sed -n -e 's/^ *system_type: //p' < $(CONFIG_FILE))/
 TRSDK_ZIP=$(TRSDK_ROOT)transfer_sdk.zip
-all: .is_setup
+all: $(IS_OK)
 clean:
 	cd js && make clean
 	cd python && make clean
 	cd java && make clean
 	cd web && make clean
-	rm -f .is_setup $(TRSDK_CONFIG)
+	rm -f $(IS_OK) $(TRSDK_CONFIG)
 	rm -fr $(GENERATED_ROOT)
-# transfer SDK is installed
-.is_setup: $(CONFIG_FILE) $(TRSDK_ARCH)asperatransferd $(TRSDK_CONFIG)
+# ensure that SDK is installed and config file are here
+$(IS_OK): $(CONFIG_FILE) $(TRSDK_ARCH)asperatransferd $(TRSDK_CONFIG)
 	touch $@
 # start transfer SDK daemon
 startdaemon: $(TRSDK_CONFIG)
@@ -42,13 +42,12 @@ $(TRSDK_ZIP):
 	mkdir -p $(TRSDK_ROOT)
 	curl -L https://ibm.biz/aspera_transfer_sdk -o $(TRSDK_ZIP)
 # extract transfer SDK
+# Note: create the link: etc because the SDK configuration does not use its "etc" configuration.
 $(TRSDK_ARCH)asperatransferd: $(TRSDK_ZIP)
 	@echo $(TRSDK_ARCH)
 	unzip -d $(TRSDK_ROOT) $(TRSDK_ZIP)
-	rm -f $(TRSDK_ARCH)ascp4
-	cp $(TRSDK_ARCH)ascp $(TRSDK_ARCH)ascp4
 	echo '<product><name>IBM Aspera SDK</name><version>1.1.1.52</version></product>' > $(TRSDK_ARCH)product-info.mf
-	cp $(GLOBAL_TRSDK_NOARCH)aspera-license $(TRSDK_ARCH)
+	ln -s noarch $(TRSDK_ROOT)etc
 	touch $@
 # create template from actual private config file
 template: $(CONFIG_TMPL)
@@ -59,7 +58,7 @@ $(CONFIG_FILE):
 	@echo "cp $(CONFIG_TMPL) $(CONFIG_FILE)"
 	@echo "vi $(CONFIG_FILE)"
 	@exit 1
-tests:  .is_setup
+tests:  $(IS_OK)
 	cd js && make
 	cd python && make
 	cd java && make

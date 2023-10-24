@@ -9,7 +9,7 @@ import json
 import sys
 
 # get file to upload from command line
-files_to_upload = sys.argv[1:]
+files_to_upload = test_environment.file_list
 destination_folder = "/Upload"
 
 # get node information from config file

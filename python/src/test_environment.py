@@ -12,6 +12,7 @@ import json
 import sys
 import subprocess
 import tempfile
+import signal
 from http.client import HTTPConnection
 from urllib.parse import urlparse
 
@@ -24,18 +25,21 @@ PATHS = yaml.load(open(os.path.join(top_folder, PATHS_FILE)), Loader=yaml.FullLo
 
 
 def get_path(name):
-    return os.path.join(top_folder, PATHS[name])
+    """Get con figuration sub-path in project's root folder"""
+    item_path = os.path.join(top_folder, *PATHS[name].split("/"))
+    assert os.path.exists(
+        item_path
+    ), f"ERROR: {item_path} not found, check configuration file: {PATHS_FILE}"
+    return item_path
 
 
 # configuration from configuration file
 CONFIG = yaml.load(open(get_path("mainconfig")), Loader=yaml.FullLoader)
 python_stub_folder = os.path.join(get_path("trsdk_noarch"), "connectors", "python")
 
-assert os.path.exists(python_stub_folder), (
-    "ERROR: python stubs not found in: "
-    + python_stub_folder
-    + "\nPlease check that SDK is installed."
-)
+assert os.path.exists(
+    python_stub_folder
+), f"ERROR: python stubs not found in: {python_stub_folder}\nPlease check that SDK is installed."
 
 # avoid incompatibility of version
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
@@ -47,7 +51,9 @@ import transfer_pb2 as transfer_manager
 import transfer_pb2_grpc as transfer_manager_grpc
 
 arch_folder = os.path.join(get_path("sdk_root"), CONFIG["misc"]["system_type"])
-
+assert os.path.exists(
+    arch_folder
+), f"ERROR: SDK not found in: {arch_folder}\nPlease check check configuration file."
 # use "ascp" in PATH, add the one from SDK
 os.environ["PATH"] += arch_folder
 
@@ -62,10 +68,13 @@ requests_log = logging.getLogger("requests.packages.urllib3")
 requests_log.setLevel(logging.DEBUG)
 requests_log.propagate = True
 
+# global vars
 transfer_daemon_process = None
 sdk_client = None
-
 shutdown_after_transfer = True
+file_list = sys.argv[1:]
+
+assert file_list, f"ERROR: Usage: {sys.argv[0]} <files to send>"
 
 TRANSFERD_EXECUTABLE = "asperatransferd"
 
@@ -81,13 +90,15 @@ def start_daemon(sdk_grpc_url):
     # try to start daemon a few times if needed
     for i in range(0, 2):
         try:
-            print(f"Connecting to {TRANSFERD_EXECUTABLE} using gRPC...")
+            print(
+                f"Connecting to {TRANSFERD_EXECUTABLE} using gRPC: {grpc_url.hostname} {grpc_url.port}..."
+            )
             grpc.channel_ready_future(channel).result(timeout=3)
             print("SUCCESS: connected")
             # channel is ok, let's get the stub
             sdk_client = transfer_manager_grpc.TransferServiceStub(channel)
         except grpc.FutureTimeoutError:
-            print("FAILED: to connect\nStarting daemon...")
+            print("ERROR: Failed to connect\nStarting daemon...")
             # else prepare config and start
             bin_folder = arch_folder
             config = {
@@ -122,8 +133,9 @@ def start_daemon(sdk_grpc_url):
                 stdout=open(out_file, "w"),
                 stderr=open(err_file, "w"),
             )
+            transfer_daemon_process.poll()
             # give time for startup
-            time.sleep(1)
+            time.sleep(5)
         if sdk_client is not None:
             break
     if sdk_client is None:
@@ -173,11 +185,14 @@ def wait_transfer(transfer_id):
 def shutdown():
     global transfer_daemon_process
     if transfer_daemon_process is not None:
-        transfer_daemon_process.terminate()
+        # transfer_daemon_process.send_signal(signal.CTRL_C_EVENT)
+        # transfer_daemon_process.terminate()
+        transfer_daemon_process.kill()
+        transfer_daemon_process.wait()
         transfer_daemon_process = None
-        print("transfer daemon terminated")
+        print("transfer daemon has been terminated")
     else:
-        print("transfer daemon already terminated")
+        print("transfer daemon not started by this process, or already terminated")
 
 
 def start_transfer_and_wait(t_spec):
@@ -186,9 +201,11 @@ def start_transfer_and_wait(t_spec):
     # TODO: remove when transfer sdk bug fixed
     t_spec["http_fallback"] = False
     logging.debug(t_spec)
-    if sdk_client is None:
-        sdk_client = start_daemon(CONFIG["misc"]["trsdk_url"])
-    t_id = start_transfer(t_spec)
-    wait_transfer(t_id)
-    if shutdown_after_transfer:
-        shutdown()
+    try:
+        if sdk_client is None:
+            sdk_client = start_daemon(CONFIG["misc"]["trsdk_url"])
+        t_id = start_transfer(t_spec)
+        wait_transfer(t_id)
+    finally:
+        if shutdown_after_transfer:
+            shutdown()
