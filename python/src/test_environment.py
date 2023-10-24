@@ -17,11 +17,10 @@ from urllib.parse import urlparse
 
 # get project root folder
 top_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+PATHS_FILE = "config/paths.yaml"
 
 # get project's relative paths
-PATHS = yaml.load(
-    open(os.path.join(top_folder, "config/paths.yaml")), Loader=yaml.FullLoader
-)
+PATHS = yaml.load(open(os.path.join(top_folder, PATHS_FILE)), Loader=yaml.FullLoader)
 
 
 def get_path(name):
