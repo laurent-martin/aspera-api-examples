@@ -1,4 +1,6 @@
-# Aspera API use examples
+# Aspera SDK sample apps
+
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 This public repository provides code examples to transfer files using some of the IBM Aspera APIs for various IBM Aspera products using some languages.
 
@@ -6,7 +8,7 @@ This public repository provides code examples to transfer files using some of th
 
 See [Aspera transfer SDK on IBM site](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22)
 
-Code examples are provided as part of the SDK itself.
+Other code examples are provided as part of the Transfer SDK itself.
 
 [Video about Transfer SDK](https://higherlogicstream.s3.amazonaws.com/IMWUC/d5b91301-6aa1-5741-e083-2a9121d9d8a7_file.mp4)
 
@@ -20,35 +22,45 @@ This repository is structured like this:
 The address of servers and credentials are needed to run the samples.
 The configuration information is centralized in the file `private/config.yaml`.
 Sample programs will use the information from this YAML file.
-This avoid having to duplicate the information in each sample folders.
 
-`Makefile`s are made for Unix-like systems: Linux, macOS, ...
+Once the configuration file is created, sample programs can be run directly.
+
+Sample programs use a common library: "test environment" which takes care of starting the API daemon and creating its configuration file.
+Nevertheless, developers may choose another method for daemon startup.
+
+Unix-like systems: Linux, macOS... `Makefile` is provided to run the samples.
+
+Windows: Refer to the Quick start for Windows below as `make` is not available, and use the `Makefile` as a reference to execute the commands manually.
 
 This repo was tested on macOS ARM.
 
-Windows users without `make` can use the `Makefile` as a reference to execute the commands manually.
-
 ## Quick start (Unix-like systems)
 
-1. Copy the file `config/config.tmpl` into `private/config.yaml` and fill, refer to [Configuration File](#config)
+If you use macOS, or Linux, AIX, etc...
 
-1. Initialize the main folder:
+1. Refer to [Configuration File](#config): Copy the file `config/config.tmpl` into `private/config.yaml` and fill values.
 
-```bash
-make
-```
+    ```bash
+    mkdir private
+    cp config/config.tmpl private/config.yaml
+    vi private/config.yaml
+    ```
 
-This downloads the Aspera Transfer SDK.
+2. Initialize the main folder:
 
-> **Note:** If you don't have internet access on the system, download the Transfer SDK with a system with internet from:
->
-> <https://ibm.biz/aspera_transfer_sdk>
->
-> and place the file here: `<main folder>/sdk/trsdk/transfer_sdk.zip`
+    ```bash
+    make
+    ```
+
+    This downloads the Aspera Transfer SDK and extract it to the expected folder.
+
+    > **Note:** If you don't have internet access on the system, download the Transfer SDK with a system with internet from: <https://ibm.biz/aspera_transfer_sdk> and place the file here: `<main folder>/sdk/trsdk/transfer_sdk.zip`
+
+3. Run the samples: see next section.
 
 ## Quick start (Windows)
 
-1. Copy file `config/config.tmpl` to `private/config.yaml` and fill, refer to [Configuration File](#config)
+1. Refer to [Configuration File](#config): Copy the file `config/config.tmpl` into `private/config.yaml` and fill values.
 
     ```dos
     md private
@@ -59,9 +71,9 @@ This downloads the Aspera Transfer SDK.
 
    Edit required parameters in `private/config.yaml`, for example Faspex connection information.
 
-2. Download [sdk.zip](https://ibm.biz/aspera_transfer_sdk)
+   > **Note:** Yes, you can also drap and drop, and click, and copy/paste, and edit the file with Notepad, etc...
 
-3. Prepare the SDK folder and extract its contents to `generated/trsdk`
+2. Prepare the SDK folder
 
     ```dos
     md generated
@@ -71,11 +83,13 @@ This downloads the Aspera Transfer SDK.
 
     > **Note:** Creation of the link is due to a limitation in `asperatransferd` which does not use the `etc` parameter from its config file.
 
+3. Download [sdk.zip](https://ibm.biz/aspera_transfer_sdk) and extract its contents to `generated/trsdk`
+
 4. Run the samples: see next section.
 
-## Testing individual programs
+## Running sample programs
 
-Scripts rely on relative paths defined in [`config/paths.yaml`](config/paths.yaml) and the main configuration file: [`private/config.yaml`](private/config.yaml).
+Samples rely on relative paths defined in [`config/paths.yaml`](config/paths.yaml) and the main configuration file: [`private/config.yaml`](private/config.yaml).
 
 For example to execute an individual script:
 
