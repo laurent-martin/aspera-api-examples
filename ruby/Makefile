@@ -1,30 +1,25 @@
 DIR_TOP=../
 include $(DIR_TOP)/common.make
-SRC=src
+SRC=src/
 RBTMP=$(TMPDIR)/rubytst/
-RUBY_CONNECTORS=$(GLOBAL_TRSDK_NOARCH)/connectors/ruby
+TSTFILE=$(RBTMP)This_is_a_test.txt
 GEMFILE=$(GLOBAL_TRSDK_NOARCH)/connectors/ruby/Gemfile
 all: aoc$(T) node$(T) faspex5$(T) server$(T) faspex4$(T)
-%$(T): .is_installed_tmp .is_installed_libs
-	bundle exec $(SRC)/$$(basename $@ $(T)).rb $(RBTMP)This_is_a_test.txt
+%$(T): $(IS_OK)
+	bundle exec $(SRC)$$(basename $@ $(T)).rb $(TSTFILE)
 	touch $@
-$(GEMFILE):
-	@echo "run make in upper folder to install transfer SDK"
-	exit 1
-tmp: .is_installed_tmp
-.is_installed_tmp:
-	mkdir -p $(RBTMP)
-	date > $(RBTMP)This_is_a_test.txt
-	dd of=$(RBTMP)1G.bin bs=1k seek=$$((1024*1024)) count=0
-	touch $@
-libs: .is_installed_libs
-.is_installed_libs: $(GEMFILE)
+# ensure SDK is there
+../$(IS_OK):
+	cd .. && make
+$(IS_OK): ../$(IS_OK)
 	bundle install --gemfile=$(GEMFILE)
 	bundle install
+	mkdir -p $(RBTMP)
+	date > $(TSTFILE)
+	dd of=$(RBTMP)1G.bin bs=1k seek=$$((1024*1024)) count=0
 	touch $@
-# TODO: remove when transfersdk fixed: the "ln -s" is because of bug in transfer sdk: it requires "etc" even if property "etc" is set in config file
 clean:
-	rm -f .is_installed_libs .is_installed_tmp
 	test -n "$(T)" && rm -f *$(T)
+	rm -f $(IS_OK)
 	rm -fr $(RBTMP)
 	rm -f Gemfile.lock
