@@ -65,18 +65,21 @@ const test4 = (success_cb) => {
 }
 
 // test runner is sequentially called after success of each test
-var index = 0;
-const test_runner = (success_cb) => {
+var index = -1;
+const test_runner = () => {
 	++index;
 	switch (index) {
+		case 0: test_environment.connect_to_api(test_runner); break;
 		case 1: test1(test_runner); break;
 		case 2: test2(test_runner); break;
 		case 3: test3(test_runner); break;
 		case 4: test4(test_runner); break;
-		case 5: console.log('Finished all tests!'); break;
+		case 5: test_environment.shutdown_api(test_runner); break;
+		case 6: console.log('Finished all tests!'); process.exit(0); break;
 		default: throw 'Error: shall not reach here'
 	}
 }
 
 // wait for server and start test 1
-test_environment.wait_for_server(test_runner);
+test_runner()
+console.log('Waiting for test completion...')

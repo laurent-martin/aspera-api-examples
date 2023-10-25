@@ -73,9 +73,7 @@ This downloads the Aspera Transfer SDK.
 
 4. Language specifics:
 
-    - java samples rely on `generated/trsdk/config.conf` created from `config/sdkconf.tmpl`, refer to `Makefile` for details.
-
-    - nodejs also requires `generated/trsdk/config.conf` and relies on starting the daemon manually.
+    - `nodejs` and `java` : rely on `generated/trsdk/config.conf` created from `config/sdkconf.tmpl`, refer to `Makefile` for details.
 
     - `python` and `ruby`: nothing additional.
 

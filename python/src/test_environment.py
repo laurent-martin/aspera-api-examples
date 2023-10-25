@@ -22,7 +22,9 @@ top_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")
 PATHS_FILE = "config/paths.yaml"
 
 # read project's relative paths config file
-PATHS = yaml.load(open(os.path.join(top_folder, PATHS_FILE)), Loader=yaml.FullLoader)
+PATHS = yaml.load(
+    open(os.path.join(top_folder, *PATHS_FILE.split("/"))), Loader=yaml.FullLoader
+)
 
 # Error hint to help user to fix the issue
 ERROR_HINT = f"\nPlease check: SDK installed in {PATHS['sdk_root']}, configuration file: {PATHS['mainconfig']}"
