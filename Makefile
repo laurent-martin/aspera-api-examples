@@ -15,6 +15,7 @@ clean:
 	rm -f $(IS_OK)
 	rm -fr $(GENERATED_ROOT)
 	find . -name \*.log -exec rm {} \;
+	killall asperatransferd
 # ensure that SDK is installed and config file are here
 $(IS_OK): $(CONFIG_FILE) $(TRSDK_ARCH)asperatransferd 
 	touch $@
