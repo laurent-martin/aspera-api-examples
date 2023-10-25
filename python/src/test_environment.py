@@ -112,11 +112,17 @@ def start_daemon(sdk_grpc_url):
             config = {
                 "address": grpc_url.hostname,
                 "port": grpc_url.port,
+                "log_directory": tempfile.gettempdir(),
+                "log_level": "debug",
                 "fasp_runtime": {
                     "use_embedded": False,
                     "user_defined": {
                         "bin": bin_folder,
                         "etc": get_path("trsdk_noarch"),
+                    },
+                    "log": {
+                        "dir": tempfile.gettempdir(),
+                        "level": 0,
                     },
                 },
             }

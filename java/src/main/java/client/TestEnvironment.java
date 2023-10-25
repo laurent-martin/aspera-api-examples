@@ -5,15 +5,19 @@ import ibm.aspera.transferservice.TransferServiceGrpc;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.ManagedChannel;
 import org.yaml.snakeyaml.Yaml;
+import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.FileWriter;
+import java.io.File;
+import java.nio.file.FileSystems;
+// import java.nio.file.Path;
 import java.net.URI;
 import java.util.Map;
 import java.util.Iterator;
 import java.util.logging.Logger;
 import java.util.logging.Level;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
+
 
 // read configuration file and provide interface for transfer
 public class TestEnvironment {
@@ -31,31 +35,65 @@ public class TestEnvironment {
 	final String daemon_executable;
 	final String sdk_conf_path;
 	final Process daemon_process;
+	final String dir_top;
+	final Map<String, String> paths;
+	final String arch_dir;
+
+	private String getPath(String name) {
+		// by default , we init with the paths reference file
+		String subpath = PATHS_FILES;
+		if (name != null) {
+			// if a name is provided, we use the path from the reference file
+			subpath = paths.get(name);
+		}
+		return FileSystems.getDefault().getPath(dir_top, subpath).toString();
+	}
+
+	private String createConfFile(final URI grpc_url) {
+		// Define the configuration JSON object
+		JSONObject config = new JSONObject() //
+				.put("address", grpc_url.getHost()) //
+				.put("port", grpc_url.getPort()) //
+				.put("log_directory", System.getProperty("java.io.tmpdir")) //
+				.put("log_level", "debug") //
+				.put("fasp_runtime", new JSONObject() //
+						.put("use_embedded", false) //
+						.put("user_defined", new JSONObject() //
+								.put("bin", arch_dir) //
+								.put("etc", getPath("trsdk_noarch"))) //
+						.put("log", new JSONObject() //
+								.put("dir", System.getProperty("java.io.tmpdir")) //
+								.put("level", 0)));
+		// Define the paths
+		String confFile = new File(System.getProperty("java.io.tmpdir"), "daemon.conf").toString();
+		// Write the JSON to a file
+		try (FileWriter fileWriter = new FileWriter(confFile)) {
+			fileWriter.write(config.toString());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return confFile;
+	}
 
 	public TestEnvironment() {
 		try {
-			final String dir_top = System.getProperty("dir_top");
+			dir_top = System.getProperty("dir_top");
 			if (dir_top == null)
 				throw new Error("mandatory property not set: dir_top");
-			final String paths_config_file =
-					FileSystems.getDefault().getPath(dir_top, PATHS_FILES).toString();
-			final Map<String, String> paths =
-					new Yaml().load(new java.io.FileReader(paths_config_file));
-			final String config_filepath =
-					FileSystems.getDefault().getPath(dir_top, paths.get("mainconfig")).toString();
+			final String paths_config_file = getPath(null);
+			paths = new Yaml().load(new java.io.FileReader(paths_config_file));
+			final String config_filepath = getPath("mainconfig");
 			config = new Yaml().load(new java.io.FileReader(config_filepath));
-			daemon_executable =
-					FileSystems.getDefault()
-							.getPath(dir_top, paths.get("sdk_root"),
-									config.get("misc").get("system_type"), TRANSFERD_EXECUTABLE)
-							.toString();
-			sdk_conf_path =
-					FileSystems.getDefault().getPath(dir_top, paths.get("sdk_conf")).toString();
 		} catch (final java.io.FileNotFoundException e) {
 			throw new Error(e.getMessage());
 		}
 		try {
 			final URI grpc_url = new URI(config.get("misc").get(SDK_URL));
+			arch_dir = FileSystems.getDefault()
+					.getPath(getPath("sdk_root"), config.get("misc").get("system_type")).toString();
+			daemon_executable =
+					FileSystems.getDefault().getPath(arch_dir, TRANSFERD_EXECUTABLE).toString();
+			sdk_conf_path = createConfFile(grpc_url);
 			// create channel to socket
 			final ManagedChannel channel = ManagedChannelBuilder
 					.forAddress(grpc_url.getHost(), grpc_url.getPort()).usePlaintext().build();
@@ -93,7 +131,7 @@ public class TestEnvironment {
 		daemon_process = started_process;
 		if (!isStarted) {
 			LOGGER.log(Level.FINE,
-					"FAILED: API daemon did not start.Please start it manually by executing \"make startdaemon\" in a separate terminal from the top folder.");
+					"FAILED: API daemon did not start. Please check the logs and try again.");
 			System.exit(1);
 		}
 	}

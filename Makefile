@@ -4,7 +4,6 @@ CONFIG_TMPL=$(DIR_TOP)config/config.tmpl
 CONFIG_FILE=$(DIR_TOP)$(shell sed -n -e 's/^mainconfig: //p' < $(GLOBAL_PATHS))
 GENERATED_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^tmpgen: //p' < $(GLOBAL_PATHS))/
 TRSDK_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' < $(GLOBAL_PATHS))/
-TRSDK_CONFIG=$(DIR_TOP)$(shell sed -n -e 's/^sdk_conf: //p' < $(GLOBAL_PATHS))
 TRSDK_ARCH=$(TRSDK_ROOT)$(shell sed -n -e 's/^ *system_type: //p' < $(CONFIG_FILE))/
 TRSDK_ZIP=$(TRSDK_ROOT)transfer_sdk.zip
 all: $(IS_OK)
@@ -13,30 +12,13 @@ clean:
 	cd python && make clean
 	cd java && make clean
 	cd web && make clean
-	rm -f $(IS_OK) $(TRSDK_CONFIG)
+	rm -f $(IS_OK)
 	rm -fr $(GENERATED_ROOT)
+	find . -name \*.log -exec rm {} \;
 # ensure that SDK is installed and config file are here
-$(IS_OK): $(CONFIG_FILE) $(TRSDK_ARCH)asperatransferd $(TRSDK_CONFIG)
+$(IS_OK): $(CONFIG_FILE) $(TRSDK_ARCH)asperatransferd 
 	touch $@
-# start transfer SDK daemon
-startdaemon: $(TRSDK_CONFIG)
-	$(TRSDK_ARCH)asperatransferd -c $(TRSDK_CONFIG)
-stopdaemon:
-	-killall asperatransferd
-# generate transfer SDK config file, need utility `jq`
-# see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
-$(TRSDK_CONFIG): $(CONFIG_FILE) $(DIR_TOP)config/sdkconf.tmpl
-	jq \
-'.address = "'$$(sed -n 's|.*trsdk_url.*//\([^:]*\):.*|\1|p' < $(CONFIG_FILE))'"'\
-' | .port = '$$(sed -n 's|.*trsdk_url.*:\([0-9]*\).*|\1|p' < $(CONFIG_FILE))''\
-' | .fasp_runtime.user_defined.bin = "'$(TRSDK_ARCH)'"'\
-' | .fasp_runtime.user_defined.etc = "'$(GLOBAL_TRSDK_NOARCH)'"'\
-' | .fasp_runtime.log.dir = "'$(TMPDIR)'"'\
-' | .fasp_runtime.log.level = 0'\
-' | .log_directory = "'$(TMPDIR)'"'\
-' | .log_level = "debug"'\
-' | del(.api_time_settings, .tls, .workers, .authentication, .fasp_management, .fasp_runtime.force_version, .fasp_runtime.extra_config)'\
- $(DIR_TOP)config/sdkconf.tmpl > $@
+# config file info https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
 # download transfer SDK
 $(TRSDK_ZIP):
 	mkdir -p $(TRSDK_ROOT)

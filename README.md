@@ -71,13 +71,7 @@ This downloads the Aspera Transfer SDK.
 
     > **Note:** Creation of the link is due to a limitation in `asperatransferd` which does not use the `etc` parameter from its config file.
 
-4. Language specifics:
-
-    - `nodejs` and `java` : rely on `generated/trsdk/config.conf` created from `config/sdkconf.tmpl`, refer to `Makefile` for details.
-
-    - `python` and `ruby`: nothing additional.
-
-5. Run the samples: see next section.
+4. Run the samples: see next section.
 
 ## Testing individual programs
 

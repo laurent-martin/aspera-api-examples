@@ -4,4 +4,3 @@ tmpgen: generated
 sdk_root: generated/trsdk
 trsdk_noarch: generated/trsdk/noarch
 proto: generated/trsdk/noarch/connectors/grpc/transfer.proto
-sdk_conf: generated/trsdk/config.conf
