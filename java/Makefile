@@ -8,10 +8,12 @@ JARFILE=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar
 JAVA_PROPS=-Ddir_top=$(DIR_TOP) -Djava.util.logging.config.file=logging.properties
 GRADLE_PROPS=-Psdk_noarch=$(GLOBAL_TRSDK_NOARCH)
 all:: $(T)ServerFileUploadV1Example $(T)ServerFileDownloadV2Example $(T)COSFileUploadExample $(T)PersistentUploadExample $(T)Faspex5Send
-$(T)%: $(JARFILE)
+$(T)%: $(IS_OK)
 	@name='$@' && echo "== Testing $${name#$(T)} ==========================="
 	name='$@' && java -cp $(JARFILE) $(JAVA_PROPS) client.$${name#$(T)}
 	sleep 2
+	touch $@
+$(IS_OK): $(JARFILE)
 	touch $@
 # uncomment to trigger build on source change
 #.PHONY: $(JARFILE)
