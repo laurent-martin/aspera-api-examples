@@ -6,13 +6,12 @@ GENERATED_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^tmpgen: //p' < $(GLOBAL_PATHS))/
 TRSDK_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' < $(GLOBAL_PATHS))/
 TRSDK_ARCH=$(TRSDK_ROOT)$(shell sed -n -e 's/^ *system_type: //p' < $(CONFIG_FILE))/
 TRSDK_ZIP=$(TRSDK_ROOT)transfer_sdk.zip
-all: $(IS_OK)
-clean:
+all:: $(IS_OK)
+clean: clean_flags
 	cd js && make clean
 	cd python && make clean
 	cd java && make clean
 	cd web && make clean
-	rm -f $(IS_OK)
 	rm -fr $(GENERATED_ROOT)
 	find . -name \*.log -exec rm {} \;
 	killall asperatransferd
@@ -37,12 +36,13 @@ template: $(CONFIG_TMPL)
 $(CONFIG_TMPL): $(CONFIG_FILE)
 	sed '/^#/ d;s/^\(  [^:]*:\).*/\1 your_value_here/' < $(CONFIG_FILE) > $(CONFIG_TMPL)
 $(CONFIG_FILE):
-	@echo "Create a file: $@ from $(CONFIG_TMPL), refer to README.md"
-	@echo "cp $(CONFIG_TMPL) $(CONFIG_FILE)"
-	@echo "vi $(CONFIG_FILE)"
+	@echo 'Create file $@ using template $(CONFIG_TMPL), refer to README.md'
+	@echo 'cp $(CONFIG_TMPL) $(CONFIG_FILE)'
+	@echo 'vi $(CONFIG_FILE)'
 	@exit 1
 tests:  $(IS_OK)
 	cd js && make
 	cd python && make
 	cd java && make
+	cd ruby && make
 	cd web && make test

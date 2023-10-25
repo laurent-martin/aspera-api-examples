@@ -7,10 +7,10 @@ PROJECT_VERSION=0.1
 JARFILE=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar
 JAVA_PROPS=-Ddir_top=$(DIR_TOP) -Djava.util.logging.config.file=logging.properties
 GRADLE_PROPS=-Psdk_noarch=$(GLOBAL_TRSDK_NOARCH)
-all: ServerFileUploadV1Example$(T) ServerFileDownloadV2Example$(T) COSFileUploadExample$(T) PersistentUploadExample$(T) Faspex5Send$(T)
-%$(T): $(JARFILE)
-	@echo "== Testing $$(basename $@ $(T)) ==========================="
-	java -cp $(JARFILE) $(JAVA_PROPS) client.$$(basename $@ $(T))
+all:: $(T)ServerFileUploadV1Example $(T)ServerFileDownloadV2Example $(T)COSFileUploadExample $(T)PersistentUploadExample $(T)Faspex5Send
+$(T)%: $(JARFILE)
+	@name='$@' && echo "== Testing $${name#$(T)} ==========================="
+	name='$@' && java -cp $(JARFILE) $(JAVA_PROPS) client.$${name#$(T)}
 	sleep 2
 	touch $@
 # uncomment to trigger build on source change
@@ -20,9 +20,6 @@ $(JARFILE): ../$(IS_OK)
 # ensure SDK is there
 ../$(IS_OK):
 	cd .. && make
-clean:
+clean: clean_flags
 	gradle clean $(GRADLE_PROPS)
-	rm -f .is_tested
 	rm -fr .gradle
-	rm -f file*
-	test -n "$(T)" && rm -f *$(T)

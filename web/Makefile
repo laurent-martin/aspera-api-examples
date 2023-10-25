@@ -4,7 +4,7 @@ include $(DIR_TOP)common.make
 SRC=./src/
 TMP_NPM=tmp_node/
 GW_SDK=@ibm-aspera/http-gateway-sdk-js
-all: $(IS_OK)
+all:: $(IS_OK)
 	node --trace-warnings src/server.js $(SRC)
 # retrieve javascript libs for http gateway client
 $(SRC)http-gateway.js:
@@ -16,15 +16,14 @@ $(SRC)http-gateway.js:
 $(IS_OK): $(SRC)http-gateway.js
 	npm install
 	touch $@
-clean:
+clean: clean_flags
 	rm -f package-lock.json $(SRC)conf.js $(SRC)http-gateway.js
 	rm -f aspera-httpgw-example.zip
 	rm -fr node_modules
-	rm -f $(IS_OK) .is_tested
 zip:
 	zip aspera-httpgw-example.zip $$(git ls-files)
-test: .is_tested
-.is_tested: $(IS_OK)
+test: $(T)webserver
+$(T)webserver: $(IS_OK)
 	make &
 	sleep 5
 	killall node

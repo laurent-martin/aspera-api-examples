@@ -1,8 +1,8 @@
-.is_*
-generated/
-*.tested
-private/
-.vscode
-.idea
 .DS_Store
-csharp
+.is_*
+.tested.*
+generated/
+private/
+.vscode/
+.idea/
+csharp/
