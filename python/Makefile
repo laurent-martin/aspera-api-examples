@@ -8,6 +8,7 @@ all: aoc$(T) cos$(T) cos2$(T) cos_node_api$(T) faspex$(T) faspex5$(T) node$(T) s
 	$(SRC)$$(basename $@ $(T)).py $(TSTFILE)
 	sleep 2
 	touch $@
+# ensure SDK is there
 ../$(IS_OK):
 	cd .. && make
 $(IS_OK): ../$(IS_OK)

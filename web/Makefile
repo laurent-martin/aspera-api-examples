@@ -1,29 +1,31 @@
-all::
 # must have trailing slash
-WEB_ROOT=./src/
+DIR_TOP=$(shell pwd -P)/../
+include $(DIR_TOP)common.make
+SRC=./src/
+TMP_NPM=tmp_node/
+GW_SDK=@ibm-aspera/http-gateway-sdk-js
+all: $(IS_OK)
+	node --trace-warnings src/server.js $(SRC)
 # retrieve javascript libs for http gateway client
-$(WEB_ROOT)http-gateway.js:
-	mkdir -p tmp_node
-	npm --prefix tmp_node install --save @ibm-aspera/http-gateway-sdk-js
-	mv tmp_node/node_modules/@ibm-aspera/http-gateway-sdk-js/js/http-gateway.js $(WEB_ROOT)
-	rm -fr tmp_node
+$(SRC)http-gateway.js:
+	mkdir -p $(TMP_NPM)
+	npm install $(GW_SDK) --save --prefix $(TMP_NPM)
+	mv $(TMP_NPM)node_modules/$(GW_SDK)/js/http-gateway.js $(SRC)
+	rm -fr $(TMP_NPM)
 # run the server
-all:: .is_initialized $(WEB_ROOT)http-gateway.js
-	node --trace-warnings src/server.js $(WEB_ROOT)
-.is_initialized:
+$(IS_OK): $(SRC)http-gateway.js
 	npm install
 	touch $@
 clean:
-	rm -f package-lock.json $(WEB_ROOT)conf.js $(WEB_ROOT)http-gateway.js
+	rm -f package-lock.json $(SRC)conf.js $(SRC)http-gateway.js
 	rm -f aspera-httpgw-example.zip
 	rm -fr node_modules
-	rm -f .is_initialized .is_tested
+	rm -f $(IS_OK) .is_tested
 zip:
 	zip aspera-httpgw-example.zip $$(git ls-files)
 test: .is_tested
-.is_tested: .is_initialized
+.is_tested: $(IS_OK)
 	make &
 	sleep 5
 	killall node
 	touch $@
-
