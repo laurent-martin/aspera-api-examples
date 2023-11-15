@@ -15,6 +15,9 @@ destination_folder = "/Upload"
 # get node information from config file
 config = test_environment.CONFIG["node"]
 
+# verify certificate if not explicitly set to False
+verify_cert = not ('verify' in config and config['verify'] is False)
+
 # prepare node API request for upload_setup
 upload_setup_request = {
     "transfer_requests": [
@@ -31,7 +34,7 @@ response = requests.post(
     auth=requests.auth.HTTPBasicAuth(config["user"], config["pass"]),
     data=json.dumps(upload_setup_request),
     headers=request_headers,
-    verify=False,
+    verify=verify_cert,
 )
 if response.status_code != 200:
     raise Exception("error")

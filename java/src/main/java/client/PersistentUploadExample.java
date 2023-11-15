@@ -92,9 +92,9 @@ public class PersistentUploadExample {
 		// get simplified testing environment, ensures that transfer daemon is started
 		final TestEnvironment test_environment = new TestEnvironment();
 		// get test server address and credentials from configuration file
-		final Map<String, String> server_conf =
-				(Map<String, String>) test_environment.config.get("server");
-		final URI server_ssh_url = new URI(server_conf.get("url"));
+		final Map<String, Object> server_conf =
+				(Map<String, Object>) test_environment.config.get("server");
+		final URI server_ssh_url = new URI(server_conf.get("url").toString());
 		// transfer spec version 1 (JSON)
 		final JSONObject transferSpec = new JSONObject().put("title", "server upload V1")
 				.put("remote_host", server_ssh_url.getHost())

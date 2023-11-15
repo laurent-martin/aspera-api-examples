@@ -145,6 +145,7 @@ Example (with random credentials):
     folder_upload: /Upload
   node:
     url: https://node.example.com:9092
+    verify: false
     user: node_user
     pass: _the_password_here_
   faspex:
@@ -170,6 +171,8 @@ Example (with random credentials):
     workspace: Default
     shared_inbox: TheSharedInbox
 ```
+
+> **Note:** Faspex and node sections have a parameter `verify`: set to `false` to disable certificate verification.
 
 ## HSTS Node API credentials
 

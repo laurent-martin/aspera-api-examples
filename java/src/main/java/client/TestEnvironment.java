@@ -27,7 +27,7 @@ public class TestEnvironment {
 	static final String TRANSFERD_EXECUTABLE = "asperatransferd";
 
 	// config filer loaded from yaml
-	public Map<String, Map<String, String>> config;
+	public Map<String, Map<String, Object>> config;
 	// Aspera client
 	public TransferServiceGrpc.TransferServiceBlockingStub client;
 	// several transfer session may be started but for the example we use only one
@@ -51,7 +51,7 @@ public class TestEnvironment {
 
 	private String createConfFile(final URI grpc_url) {
 		// Define the configuration JSON object
-		JSONObject config = new JSONObject() //
+		JSONObject sdk_config = new JSONObject() //
 				.put("address", grpc_url.getHost()) //
 				.put("port", grpc_url.getPort()) //
 				.put("log_directory", System.getProperty("java.io.tmpdir")) //
@@ -68,7 +68,7 @@ public class TestEnvironment {
 		String confFile = new File(System.getProperty("java.io.tmpdir"), "daemon.conf").toString();
 		// Write the JSON to a file
 		try (FileWriter fileWriter = new FileWriter(confFile)) {
-			fileWriter.write(config.toString());
+			fileWriter.write(sdk_config.toString());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -88,9 +88,9 @@ public class TestEnvironment {
 			throw new Error(e.getMessage());
 		}
 		try {
-			final URI grpc_url = new URI(config.get("misc").get(SDK_URL));
+			final URI grpc_url = new URI(config.get("misc").get(SDK_URL).toString());
 			arch_dir = FileSystems.getDefault()
-					.getPath(getPath("sdk_root"), config.get("misc").get("system_type")).toString();
+					.getPath(getPath("sdk_root"), config.get("misc").get("system_type").toString()).toString();
 			daemon_executable =
 					FileSystems.getDefault().getPath(arch_dir, TRANSFERD_EXECUTABLE).toString();
 			sdk_conf_path = createConfFile(grpc_url);

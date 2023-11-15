@@ -5,6 +5,7 @@ PYTMP=$(TMPDIR)/pythontst/
 TSTFILE=$(PYTMP)This_is_a_test.txt
 all:: $(T)aoc $(T)cos $(T)cos2 $(T)cos_node_api $(T)faspex $(T)faspex5 $(T)node $(T)server
 $(T)%: $(IS_OK)
+	@echo "Running test $@"
 	name='$@' && $(SRC)$${name#$(T)}.py $(TSTFILE)
 	sleep 2
 	touch $@

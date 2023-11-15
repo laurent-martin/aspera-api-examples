@@ -25,7 +25,7 @@ public class Faspex5Send {
 	// get simplified testing environment
 	final TestEnvironment mTestEnv = new TestEnvironment();
 	// config from yaml
-	final Map<String, String> mConfig;
+	final Map<String, Object> mConfig;
 	// base url for api v5
 	final String mApiBaseUrl;
 	// URL for token generation
@@ -33,9 +33,9 @@ public class Faspex5Send {
 
 	Faspex5Send() {
 		// get Faspex 5 parameters from config section in yaml
-		mConfig = (Map<String, String>) mTestEnv.config.get("faspex5");
+		mConfig = (Map<String, Object>) mTestEnv.config.get("faspex5");
 		try {
-			final URI faspex_url = new URI(mConfig.get("url"));
+			final URI faspex_url = new URI(mConfig.get("url").toString());
 			mApiBaseUrl = faspex_url + "/api/v5";
 			mTokenUrl = faspex_url + "/auth/token";
 		} catch (final URISyntaxException e) {
@@ -63,7 +63,7 @@ public class Faspex5Send {
 					.setIssuedAt(Date.from(now.minusSeconds(60))) // same
 					// must be different each time
 					.claim("jti", UUID.randomUUID().toString())
-					.signWith(EncryptionUtils.loadKey(mConfig.get("private_key")),
+					.signWith(EncryptionUtils.loadKey(mConfig.get("private_key").toString()),
 							SignatureAlgorithm.RS256)
 					.compact();
 		} catch (final GeneralSecurityException e) {
@@ -75,7 +75,7 @@ public class Faspex5Send {
 
 	// call Faspex 5 auth api and generate bearer token
 	String getBearerToken() {
-		final String client_id = mConfig.get("client_id");
+		final String client_id = mConfig.get("client_id").toString();
 		final HttpResponse<JsonNode> result = Unirest.post(mTokenUrl)//
 				.header("Accept", "application/json")
 				.header("Content-Type", "application/x-www-form-urlencoded")
@@ -92,10 +92,11 @@ public class Faspex5Send {
 	void sendPackage() {
 		// dummy file is sent
 		final String file_to_send = "faux:///10m?10m";
+		final boolean verify =!(mConfig.containsKey("verify") && (Boolean)mConfig.get("verify") == false);
 
 		// REST: prepare environment
 		Unirest.config()//
-				.verifySsl(false) // assume dev environment
+				.verifySsl(verify)
 				.setDefaultHeader("Accept", "application/json");
 
 		// Faspex REST API: generate OAuth authorization

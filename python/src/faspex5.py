@@ -34,6 +34,8 @@ package_files = test_environment.file_list
 # get configuration parameters from config file
 config = test_environment.CONFIG["faspex5"]
 
+# verify certificate if not explicitly set to False
+verify_cert = not ('verify' in config and config['verify'] is False)
 
 def f5_url(path):
     """return the full url for a given path"""
@@ -77,6 +79,7 @@ def get_bearer():
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json",
         },
+        verify=verify_cert
     )
     response.raise_for_status()
     response_data = response.json()
@@ -102,7 +105,10 @@ package_creation = {
 
 # create a new package with Faspex 5 API (this allocates a reception folder on package storage)
 response = requests.post(
-    url=f5_url("packages"), headers=request_headers, json=package_creation
+    url=f5_url("packages"),
+    headers=request_headers,
+    json=package_creation,
+    verify=verify_cert
 )
 response.raise_for_status()
 package_info = response.json()
@@ -119,6 +125,7 @@ response = requests.post(
     ),
     headers=request_headers,
     json=files_to_send,
+    verify=verify_cert
 )
 response.raise_for_status()
 t_spec = response.json()
