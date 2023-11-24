@@ -6,7 +6,7 @@
 // Global values:
 // this.connectClient: object to interact with Aspera Connect
 // this.selectedUploadFiles: files selected by user for upload
-// this.httpGwMonitorId: identifier of activity monitor for HTTPGW transfers
+// this.httpGwMonitorId: identifier of activity monitor for HTTP Gateway transfers
 
 // identifier used by HTTPGW SDK
 const HTTPGW_FORM_ID = 'send-panel'
@@ -74,7 +74,8 @@ function my_initialize_connect() {
     // object to interact with Aspera Connect
     this.connectClient = new AW4.Connect({
         minVersion: '4.2.0',
-        connectMethod: 'extension'
+        connectMethod: 'extension',
+        dragDropEnabled: true
     })
     // object to propose installation of Connect, in case it is not detected
     var connect_installer = new AW4.ConnectInstaller({
@@ -88,7 +89,9 @@ function my_initialize_connect() {
     this.connectClient.addEventListener(AW4.Connect.EVENT.STATUS, (eventType, eventInfo) => { my_handleStatusEvents(connect_installer, eventInfo) })
     // Get notification on transfer progress (eventType is TRANSFER), show UI feedback
     this.connectClient.addEventListener(AW4.Connect.EVENT.TRANSFER, (eventType, eventInfo) => { my_handleTransferEvents(eventInfo.transfers) })
-    // try to establish a communication with Connect Client
+    // add file drop zone, here we register only to the drop event, so we don't need to test data.event, it will be DragEvent
+    this.connectClient.setDragDropTargets('#drop_area', {drop: true}, (data) => {my_storeFileNames(data.files)})
+    // Establish communication with Connect Client
     // status change will be notified by callback: my_handleStatusEvents, which triggers installer if necessary
     var my_info = this.connectClient.initSession()
     console.log('app info=', my_info)
@@ -219,6 +222,7 @@ function my_updateUi() {
         document.getElementById('upload_selection').style.display = 'block'
     }
 }
+
 
 // callback after files are selected
 function my_storeFileNames(selection) {

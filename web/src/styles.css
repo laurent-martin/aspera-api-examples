@@ -144,3 +144,9 @@ button {
 td {
   vertical-align: top;
 }
+
+#drop_area {
+  width: 500px;
+  height: 100px;
+  background-color: #3498db;
+}
