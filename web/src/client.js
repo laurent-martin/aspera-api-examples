@@ -66,6 +66,23 @@ function my_handleTransferEvents(transfers) {
     my_updateUi()
 }
 
+// call when mouse is over the drop zone, or when files are dropped
+function my_handleDragEvent(data) {
+    console.log('Drag event', data)
+    switch (data.event.type) {
+        case 'drop':
+            my_storeFileNames(data.files)
+            document.getElementById('drop_area').style.backgroundColor = '#3498db';
+            break;
+        case 'dragenter':
+            document.getElementById('drop_area').style.backgroundColor = 'red';
+            break;
+        case 'dragleave':
+            document.getElementById('drop_area').style.backgroundColor = 'green';
+            break;
+    }
+}
+
 // initializes Aspera Connect SDK:
 // - create the Connect object
 // - check if aspera browser extension is installed, and if not: popup window to propose to install it
@@ -89,8 +106,8 @@ function my_initialize_connect() {
     this.connectClient.addEventListener(AW4.Connect.EVENT.STATUS, (eventType, eventInfo) => { my_handleStatusEvents(connect_installer, eventInfo) })
     // Get notification on transfer progress (eventType is TRANSFER), show UI feedback
     this.connectClient.addEventListener(AW4.Connect.EVENT.TRANSFER, (eventType, eventInfo) => { my_handleTransferEvents(eventInfo.transfers) })
-    // add file drop zone, here we register only to the drop event, so we don't need to test data.event, it will be DragEvent
-    this.connectClient.setDragDropTargets('#drop_area', {drop: true}, (data) => {my_storeFileNames(data.files)})
+    // add file drop zone
+    this.connectClient.setDragDropTargets('#drop_area', {dragEnter: true, dragLeave: true, drop: true}, my_handleDragEvent)
     // Establish communication with Connect Client
     // status change will be notified by callback: my_handleStatusEvents, which triggers installer if necessary
     var my_info = this.connectClient.initSession()
