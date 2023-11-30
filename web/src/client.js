@@ -107,7 +107,7 @@ function my_initialize_connect() {
     // Get notification on transfer progress (eventType is TRANSFER), show UI feedback
     this.connectClient.addEventListener(AW4.Connect.EVENT.TRANSFER, (eventType, eventInfo) => { my_handleTransferEvents(eventInfo.transfers) })
     // add file drop zone
-    this.connectClient.setDragDropTargets('#drop_area', {dragEnter: true, dragLeave: true, drop: true}, my_handleDragEvent)
+    this.connectClient.setDragDropTargets('#drop_area', { dragEnter: true, dragLeave: true, drop: true }, my_handleDragEvent)
     // Establish communication with Connect Client
     // status change will be notified by callback: my_handleStatusEvents, which triggers installer if necessary
     var my_info = this.connectClient.initSession()
@@ -244,7 +244,10 @@ function my_updateUi() {
 // callback after files are selected
 function my_storeFileNames(selection) {
     for (const file of selection.dataTransfer.files) {
-        this.selectedUploadFiles.push(file.name)
+        // don't duplicate sources
+        if (!this.selectedUploadFiles.includes(file.name)) {
+            this.selectedUploadFiles.push(file.name)
+        }
     }
     console.log('Files picked', this.selectedUploadFiles)
     my_updateUi()

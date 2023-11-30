@@ -41,6 +41,9 @@ app.use(bodyParser.json())
 
 // for demo, ignore self-signed cert on Node API
 const ignoreCertAgent = new https.Agent({ rejectUnauthorized: false })
+if (!config.node.verify) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+}
 
 // expose API:
 // get transfer authorization by calling node API
