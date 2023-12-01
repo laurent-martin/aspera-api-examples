@@ -1,49 +1,52 @@
+---
 misc:
-  system_type: your_value_here
-  trsdk_url: your_value_here
+  system_type: osx-x86_64
+  trsdk_url: grpc://127.0.0.1:55002
 httpgw:
-  url: your_value_here
+  url: https://httpgw.address.here/aspera/http-gwy
+web:
+  port: 9080
 server:
-  url: your_value_here
-  user: your_value_here
-  pass: your_value_here
+  url: ssh://server.address.here:33001
+  user: _user_here_
+  pass: _pass_here_
 node:
-  url: your_value_here
-  verify: your_value_here
-  user: your_value_here
-  pass: your_value_here
+  url: https://node.address.here
+  verify: false
+  user: _user_here_
+  pass: _pass_here_
 server_paths:
-  file_download: your_value_here
-  folder_upload: your_value_here
+  file_download: "/aspera-test-dir-small/10MB.1"
+  folder_upload: "/Upload"
 cos:
-  endpoint: your_value_here
-  bucket: your_value_here
-  key: your_value_here
-  crn: your_value_here
-  auth: your_value_here
+  endpoint: https://s3.us-south.cloud-object-storage.appdomain.cloud
+  bucket: _bucket_here_
+  key: _key_here_
+  crn: _crn_here_
+  auth: https://iam.cloud.ibm.com/identity/token
 coscreds:
-  bucket: your_value_here
-  service_credential_file: your_value_here
-  region: your_value_here
+  service_credential_file: "/path/to/your/service_credential_file"
+  bucket: _bucket_here_
+  region: eu-de
 faspex:
-  url: your_value_here
-  verify: your_value_here
-  user: your_value_here
-  pass: your_value_here
-  adminuser: your_value_here
-  adminpass: your_value_here
+  url: https://faspex.address.here/aspera/faspex
+  verify: true
+  user: _user_here_
+  pass: _pass_here_
+  adminuser: _adminuser_here_
+  adminpass: _adminpass_here_
 faspex5:
-  url: your_value_here
-  verify: your_value_here
-  username: your_value_here
-  client_id: your_value_here
-  client_secret: your_value_here
-  private_key: your_value_here
+  url: https://faspex5.address.here/aspera/faspex
+  verify: true
+  username: john@example.com
+  client_id: _client_id_here_
+  client_secret: _client_secret_here_
+  private_key: "/path/to/your/private_key"
 aoc:
-  org: your_value_here
-  user_email: your_value_here
-  private_key_path: your_value_here
-  client_id: your_value_here
-  client_secret: your_value_here
-  workspace: your_value_here
-  shared_inbox: your_value_here
+  org: sedemo
+  user_email: john@example.com
+  private_key: "/path/to/your/private_key"
+  client_id: _client_id_here_
+  client_secret: _client_secret_here_
+  workspace: _workspace_here_
+  shared_inbox: _shared_inbox_here_

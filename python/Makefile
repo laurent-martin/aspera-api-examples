@@ -8,7 +8,7 @@ $(T)%: $(IS_OK)
 	@echo "Running test $@"
 	name='$@' && $(SRC)$${name#$(T)}.py $(TSTFILE)
 	sleep 2
-	touch $@
+	@touch $@
 # ensure SDK is there
 ../$(IS_OK):
 	cd .. && make
@@ -17,7 +17,7 @@ $(IS_OK): ../$(IS_OK)
 	mkdir -p $(PYTMP)
 	date > $(TSTFILE)
 	dd of=$(PYTMP)1G.bin bs=1k seek=$$((1024*1024)) count=0
-	touch $@
+	@touch $@
 clean: clean_flags
 	rm -fr $(PYTMP)
 	find . -name __pycache__ -o -name '*.pyc'|xargs rm -fr

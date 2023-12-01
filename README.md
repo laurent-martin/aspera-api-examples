@@ -38,23 +38,25 @@ This repo was tested on macOS ARM.
 
 If you use macOS, or Linux, AIX, etc...
 
-1. Refer to [Configuration File](#config): Copy the file `config/config.tmpl` into `private/config.yaml` and fill values.
-
-    ```bash
-    mkdir private
-    cp config/config.tmpl private/config.yaml
-    vi private/config.yaml
-    ```
-
-2. Initialize the main folder:
+1. Initialize the main folder:
 
     ```bash
     make
     ```
 
-    This downloads the Aspera Transfer SDK and extract it to the expected folder.
+    This will:
+
+    - create an empty configuration file from the template
+    - download the Aspera Transfer SDK
+    - extract the SDK to the expected folder.
 
     > **Note:** If you don't have internet access on the system, download the Transfer SDK with a system with internet from: <https://ibm.biz/aspera_transfer_sdk> and place the file here: `<main folder>/sdk/trsdk/transfer_sdk.zip`
+
+2. Refer to [Configuration File](#config): Edit the file `private/config.yaml` and fill values.
+
+    ```bash
+    vi private/config.yaml
+    ```
 
 3. Run the samples: see next section.
 
@@ -134,6 +136,8 @@ Example (with random credentials):
   misc:
     system_type: osx-x86_64
     trsdk_url: grpc://127.0.0.1:55002
+  web:
+    port: 9080
   httpgw:
     url: https://1.2.3.4/aspera/http-gwy
   server:
@@ -165,7 +169,7 @@ Example (with random credentials):
   aoc:
     org: acme
     user_email: john@example.com
-    private_key_path: /path/to/my_aoc_key
+    private_key: /path/to/my_aoc_key
     client_id: aspera.global-cli-client
     client_secret: frpmsRsG4mjZ0PlxCgdJlvONqBg4Vlpz_IX7gXmBMAfsgMLy2FO6CXLodKfKAuhqnCqSptLbe_wdmnm9JRuEPO-PpFqpq_Kb
     workspace: Default
@@ -192,7 +196,7 @@ For Aspera on Cloud, several items are required:
 
 - `org` : The AoC Organization, i.e. the name before `.ibmaspera.com` in the URL
 - `user_email` : The user's IBMid
-- `private_key_path` : The path to the PEM file containing the user's private key. The user configured the associated public key in his AoC User's profile.
+- `private_key` : The path to the PEM file containing the user's private key. The user configured the associated public key in his AoC User's profile.
 - `client_id` : (see below) The client app identifier
 - `client_secret` : (see below) The client app secret
 

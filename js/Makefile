@@ -7,12 +7,12 @@ all:: $(T)server $(T)server_v2
 $(T)%: $(IS_OK)
 	name='$@' && node $(SRC)$${name#$(T)}.js $(TSTFILE)
 	sleep 2
-	touch $@
+	@touch $@
 ../$(IS_OK):
 	cd .. && make
 $(IS_OK): ../$(IS_OK)
 	npm install
-	touch $@
+	@touch $@
 clean: clean_flags
 	rm -f package-lock.json
 	rm -fr node_modules tmp

@@ -10,7 +10,7 @@ aoc_conf = TestEnvironment.instance.config['aoc']
 aoc_api = Aspera::AoC.new(
   url: "https://#{aoc_conf['org']}.ibmaspera.com",
   auth: :jwt,
-  private_key: File.read(aoc_conf['private_key_path']),
+  private_key: File.read(aoc_conf['private_key']),
   username: aoc_conf['user_email'],
   scope: 'user:all',
   subpath: 'api/v1'

@@ -12,9 +12,9 @@ $(T)%: $(IS_OK)
 	@name='$@' && echo "== Testing $${name#$(T)} ==========================="
 	name='$@' && java -cp $(JARFILE) $(JAVA_PROPS) client.$${name#$(T)}
 	sleep 2
-	touch $@
+	@touch $@
 $(IS_OK): $(JARFILE)
-	touch $@
+	@touch $@
 # uncomment to trigger build on source change
 #.PHONY: $(JARFILE)
 $(JARFILE): ../$(IS_OK)
@@ -23,5 +23,5 @@ $(JARFILE): ../$(IS_OK)
 ../$(IS_OK):
 	cd .. && make
 clean: clean_flags
-	gradle clean $(GRADLE_PROPS)
+	if test -d .gradle;then gradle clean $(GRADLE_PROPS); fi
 	rm -fr .gradle

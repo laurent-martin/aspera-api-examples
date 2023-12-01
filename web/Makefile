@@ -15,7 +15,7 @@ $(SRC)http-gateway.js:
 # run the server
 $(IS_OK): $(SRC)http-gateway.js
 	npm install
-	touch $@
+	@touch $@
 clean: clean_flags
 	rm -f package-lock.json $(SRC)conf.js $(SRC)http-gateway.js
 	rm -f aspera-httpgw-example.zip
@@ -27,4 +27,4 @@ $(T)webserver: $(IS_OK)
 	make &
 	sleep 5
 	killall node
-	touch $@
+	@touch $@

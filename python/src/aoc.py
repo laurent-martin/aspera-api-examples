@@ -35,7 +35,7 @@ config = test_environment.CONFIG["aoc"]
 
 def get_bearer(scope):
     """generate a bearer token for given scope using AoC API"""
-    with open(config["private_key_path"]) as fin:
+    with open(config["private_key"]) as fin:
         private_key_pem = fin.read()
 
     seconds_since_epoch = int(calendar.timegm(time.gmtime()))
