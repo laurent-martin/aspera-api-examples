@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "express": "^4.17.2",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "undici": "^5.0.0"
   }
 }

@@ -38,21 +38,22 @@ app.use(express.static(staticFolder))
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
-// for demo, ignore self-signed cert on Node API
-// https://nodejs.org/api/https.html#new-agentoptions
-var ignoreCertAgent = null
+// ignore self-signed cert on Node API if required for tests
+// alternatively, set env var: NODE_TLS_REJECT_UNAUTHORIZED=0
 if (!config.node.verify) {
-  // Well, I could not make it work with rejectUnauthorized
-  ignoreCertAgent = new https.Agent({ rejectUnauthorized: false })
-  // so for the sake of test only use NODE_TLS_REJECT_UNAUTHORIZED
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+  const { Agent, setGlobalDispatcher } = require('undici');
+  setGlobalDispatcher(new Agent({
+    connect: {
+      rejectUnauthorized: false
+    }
+  }))
 }
 
-// expose API:
-// get transfer authorization by calling node API
+// expose API: /tspec
+// get transfer specification by calling node API
 // @param operation: upload or download
 // @param sources: list of files to transfer
-// @param destination: destination path for upload
+// @param destination: destination path (upload only)
 app.post('/tspec', (req, res) => {
   // retrieve parameters sent by client
   const params = req.body
@@ -79,8 +80,7 @@ app.post('/tspec', (req, res) => {
   fetch(config.node.url + `/files/${params.operation}_setup`, {
     method: 'POST',
     headers: { Authorization: basic_auth },
-    body: JSON.stringify({ transfer_requests: [{ transfer_request: request_ts }] }),
-    ignoreCertAgent
+    body: JSON.stringify({ transfer_requests: [{ transfer_request: request_ts }] })
   }).then((response) => {
     if (!response.ok) {
       console.log(`ERROR: Node API: ${response.statusText}`)
@@ -112,5 +112,5 @@ app.post('/tspec', (req, res) => {
 
 // start web server
 app.listen(http_port, () => {
-  console.log(`Express server running at http://localhost:${http_port}`)
+  console.log(`Express web server running at http://localhost:${http_port}`)
 })
