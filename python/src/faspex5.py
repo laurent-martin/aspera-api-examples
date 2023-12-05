@@ -18,7 +18,7 @@ JWT_NOT_BEFORE_OFFSET_SEC = 60
 # take some validity for the JWT
 JWT_EXPIRY_OFFSET_SEC = 600
 # base path for v5 api
-BASE_API_V5 = "/api/v5"
+API_V5_PATH = "/api/v5"
 # path for oauth2 token generation
 TOKEN_PATH = "/auth/token"
 
@@ -39,7 +39,7 @@ verify_cert = not ('verify' in config and config['verify'] is False)
 
 def f5_url(path):
     """return the full url for a given path"""
-    return config["url"] + BASE_API_V5 + "/" + path
+    return config["url"] + API_V5_PATH + "/" + path
 
 
 def get_bearer():
@@ -72,7 +72,7 @@ def get_bearer():
     }
 
     response = requests.post(
-        url=config["url"] + "/auth/token",
+        url=config["url"] + TOKEN_PATH,
         auth=requests.auth.HTTPBasicAuth(config["client_id"], config["client_secret"]),
         data=data,
         headers={
