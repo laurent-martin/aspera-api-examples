@@ -5,13 +5,12 @@
 
 // Global values:
 // this.connectClient: object to interact with Aspera Connect
+// this.connectInstaller: object to propose installation of Connect, in case it is not detected
 // this.selectedUploadFiles: files selected by user for upload
 // this.httpGwMonitorId: identifier of activity monitor for HTTP Gateway transfers
 
 // identifier used by HTTPGW SDK
 const HTTPGW_FORM_ID = 'send-panel'
-// location of Connect SDK in CDN
-const CONNECT_SDK_CDN_LOCATION = '//d3gcli72yxqn2z.cloudfront.net/downloads/connect/latest'
 
 // =================================================================================================
 // private functions
@@ -31,18 +30,25 @@ function my_readableBytes(bytes) {
 }
 
 // callback for connect client initialization progress
-function my_handleStatusEvents(connectInstaller, eventInfo) {
+function my_handleStatusEvents(eventInfo) {
     console.log(`Connect Event: STATUS: ${eventInfo}`)
+    if (!this.connectInstaller) {
+        // object to propose installation of Connect, in case it is not detected
+        this.connectInstaller = new AW4.ConnectInstaller({
+            style: 'carbon',
+            correlationId: 'testapp'
+        })
+    }
     if (eventInfo == AW4.Connect.STATUS.INITIALIZING) {
-        connectInstaller.showLaunching()
+        this.connectInstaller.showLaunching()
     } else if (eventInfo == AW4.Connect.STATUS.EXTENSION_INSTALL) {
-        connectInstaller.showExtensionInstall()
+        this.connectInstaller.showExtensionInstall()
     } else if (eventInfo == AW4.Connect.STATUS.FAILED) {
-        connectInstaller.showDownload()
+        this.connectInstaller.showDownload()
     } else if (eventInfo == AW4.Connect.STATUS.OUTDATED) {
-        connectInstaller.showUpdate()
+        this.connectInstaller.showUpdate()
     } else if (eventInfo == AW4.Connect.STATUS.RUNNING) {
-        connectInstaller.connected()
+        this.connectInstaller.connected()
         // (optional) Update UI with Connect version, that also validates that communication works
         this.connectClient.version({
             success: (info) => { document.getElementById('connect_info').innerHTML = `Connect Version ${info.version}` },
@@ -94,16 +100,10 @@ function my_initialize_connect() {
         connectMethod: 'extension',
         dragDropEnabled: true
     })
-    // object to propose installation of Connect, in case it is not detected
-    var connect_installer = new AW4.ConnectInstaller({
-        sdkLocation: CONNECT_SDK_CDN_LOCATION,
-        style: 'carbon',
-        correlationId: 'testapp'
-    })
     // See event types: https://ibm.github.io/aspera-connect-sdk-js/global.html#EVENT
     // we could also register type ALL, and check eventType value, but my_handleTransferEvents is used by both Connect and HTTPGW
     // Get notification on Connect Client status changes (eventType is STATUS), propose install if necessary
-    this.connectClient.addEventListener(AW4.Connect.EVENT.STATUS, (eventType, eventInfo) => { my_handleStatusEvents(connect_installer, eventInfo) })
+    this.connectClient.addEventListener(AW4.Connect.EVENT.STATUS, (eventType, eventInfo) => { my_handleStatusEvents(eventInfo) })
     // Get notification on transfer progress (eventType is TRANSFER), show UI feedback
     this.connectClient.addEventListener(AW4.Connect.EVENT.TRANSFER, (eventType, eventInfo) => { my_handleTransferEvents(eventInfo.transfers) })
     // add file drop zone
