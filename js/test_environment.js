@@ -62,6 +62,7 @@ module.exports = {
 		console.log(`Starting: ${daemon_exe} ${args.join(' ')}`)
 		console.log(`stderr: ${err_file}`)
 		console.log(`stdout: ${out_file}`)
+		console.log(`ascp log: ${daemon_conf['log_directory']}/aspera-scp-transfer.log`)
 		sdk_process = spawn(daemon_exe, args, {
 			stdio: ['ignore', fs.openSync(out_file, 'w'), fs.openSync(err_file, 'w')],
 		})
