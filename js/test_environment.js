@@ -54,7 +54,7 @@ module.exports = {
 			},
 		};
 		const tmp_file_base = path.join(os.tmpdir(), 'daemon');
-		const conf_file = path.join(get_path("tmpgen"),'daemon.json');
+		const conf_file = path.join(get_path("tmpgen"), 'daemon.json');
 		fs.writeFileSync(conf_file, JSON.stringify(daemon_conf));
 		const args = ['-c', conf_file]
 		out_file = tmp_file_base + '.out'
@@ -62,7 +62,8 @@ module.exports = {
 		console.log(`Starting: ${daemon_exe} ${args.join(' ')}`)
 		console.log(`stderr: ${err_file}`)
 		console.log(`stdout: ${out_file}`)
-		console.log(`ascp log: ${daemon_conf['log_directory']}/aspera-scp-transfer.log`)
+		console.log(`log: ${daemon_conf['log_directory']}/asperatransferd.log`)
+		console.log(`ascp log: ${daemon_conf['fasp_runtime']['log']['dir']}/aspera-scp-transfer.log`)
 		sdk_process = spawn(daemon_exe, args, {
 			stdio: ['ignore', fs.openSync(out_file, 'w'), fs.openSync(err_file, 'w')],
 		})
