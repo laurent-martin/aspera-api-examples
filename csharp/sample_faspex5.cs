@@ -20,9 +20,9 @@ class SampleFaspex5
             {"oauth_path_token","token"},
         };
         // create REST API object
-        Rest aoc_api = new Rest(api_data);
+        Rest f5_api = new Rest(api_data);
         // first REST call
-        var self_data = aoc_api.read("account/preferences");
-        Log.DebugStruct(self_data);
+        var user_profile = f5_api.read("account/preferences");
+        Log.DebugStruct(user_profile);
     }
 }
