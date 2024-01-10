@@ -27,7 +27,7 @@ class SampleAoc
     // Main program , start here
     public static void start()
     {
-        StringDict aoc_config = TestEnvironment.readConfig();
+        StringDict aoc_config = TestEnvironment.readConfig()["aoc"];
         // configuration: organizational user's specific information
         var api_data = new StringDict(){
             {"oauth_file_private_key",aoc_config["private_key"]},
