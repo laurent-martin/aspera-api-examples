@@ -12,17 +12,17 @@ class SampleAoc
         // configuration: organizational user's specific information
         var api_data = new StringDict(){
             {"base_url","https://api.ibmaspera.com/api/v1"},
-            {"aoc_org",aoc_config["org"]},
             {"type","oauth2"},
             {"oauth_type","jwt"},
-            {"oauth_scope","user:all"},
             {"oauth_file_private_key",aoc_config["private_key"]},
             {"oauth_client_id",aoc_config["client_id"]},
             {"oauth_client_secret",aoc_config["client_secret"]},
             {"oauth_jwt_subject",aoc_config["user_email"]},
-            {"oauth_base_url","https://api.ibmaspera.com/api/v1/oauth2/" + aoc_config["org"]},
             {"oauth_jwt_audience","https://api.asperafiles.com/api/v1/oauth2/token"},
+            {"oauth_base_url","https://api.ibmaspera.com/api/v1/oauth2/" + aoc_config["org"]},
             {"oauth_path_token","token"},
+            {"oauth_scope","user:all"},
+            {"aoc_org",aoc_config["org"]},
         };
         // create REST API object
         Rest aoc_api = new Rest(api_data);
