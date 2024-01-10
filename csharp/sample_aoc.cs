@@ -1,16 +1,13 @@
 // Laurent Martin IBM Aspera 2018
 // Sample to call Aspera On Cloud (AoC) API using .NET
-using ObjectDict = System.Collections.Generic.Dictionary<string, object>;
-using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
 class SampleAoc
 {
     public static void start()
     {
-        StringDict aoc_config = TestEnvironment.readConfig()["aoc"];
+        var aoc_config = TestEnvironment.readConfig()["aoc"];
         Log.log.Debug("aoc saas");
-        // configuration: organizational user's specific information
-        var api_data = new StringDict(){
+        Rest aoc_api = new Rest(new Dictionary<string, string>(){
             {"base_url","https://api.ibmaspera.com/api/v1"},
             {"type","oauth2"},
             {"oauth_type","jwt"},
@@ -23,9 +20,7 @@ class SampleAoc
             {"oauth_path_token","token"},
             {"oauth_scope","user:all"},
             {"aoc_org",aoc_config["org"]},
-        };
-        // create REST API object
-        Rest aoc_api = new Rest(api_data);
+        });
         // Ahhh, first REST call
         var self_data = aoc_api.read("self");
         Log.DebugStruct(self_data);
@@ -34,19 +29,19 @@ class SampleAoc
         // this user must be registered, else different code is needed
         string recipient_email = aoc_config["user_email"];
         // find recipient information
-        var user_lookup = aoc_api.read("contacts", new ObjectDict(){
+        var user_lookup = aoc_api.read("contacts", new Dictionary<string, object>(){
                     {"current_workspace_id",default_workspace_id},
                     {"q",recipient_email},
                 });
         // hopefully we get only one user result
         var recipient_user_id = ((Newtonsoft.Json.Linq.JArray)user_lookup["data"])[0];
         // build list of recipient (list of hash)
-        var recipient_list = new System.Collections.Generic.List<ObjectDict>(){new ObjectDict(){
+        var recipient_list = new System.Collections.Generic.List<Dictionary<string, object>>(){new Dictionary<string, object>(){
             {"id",recipient_user_id["source_id"]},
             {"type",recipient_user_id["source_type"]},
         }};
         // create package container
-        var the_package = (Newtonsoft.Json.Linq.JObject)aoc_api.create("packages", new ObjectDict(){
+        var the_package = (Newtonsoft.Json.Linq.JObject)aoc_api.create("packages", new Dictionary<string, object>(){
             {"workspace_id",default_workspace_id},
             {"name","my package"},
             {"file_names",new System.Collections.Generic.List<string>(){"/file"}},
@@ -54,7 +49,7 @@ class SampleAoc
             {"recipients",recipient_list},
         })["data"];
         // validate package once files have been put inside. This triggers email emission
-        aoc_api.update("packages/" + the_package["id"], new ObjectDict()
+        aoc_api.update("packages/" + the_package["id"], new Dictionary<string, object>()
     {
         { "sent",true},
             { "transfers_expected",0}

@@ -1,18 +1,18 @@
 // Generic REST client with basic and oauth
 // Replace with your best REST client object
+// or use openapi generator to generate stubs
 
-using System.Security.Cryptography;
-using ObjectDict = System.Collections.Generic.Dictionary<string, object>;
-using IObjectHash = System.Collections.Generic.IDictionary<string, object>;
-using StringDict = System.Collections.Generic.Dictionary<string, string>;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using Newtonsoft.Json.Linq;
+using System.Security.Cryptography;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using ObjectDict = System.Collections.Generic.Dictionary<string, object>;
+using IObjectHash = System.Collections.Generic.IDictionary<string, object>;
 
 public class Rest
 {
-    public StringDict mApiData;
+    public Dictionary<string, string> mApiData;
     private HttpClient mHttpClient;
 
     private static RSA readKeyFromFile(string filename)
@@ -39,7 +39,7 @@ public class Rest
         rsa.ImportRSAPrivateKey(der, out _);
         return rsa;
     }
-    public Rest(StringDict api_data)
+    public Rest(Dictionary<string, string> api_data)
     {
         // shallow copy sufficient here
         mApiData = api_data.ToDictionary(entry => entry.Key, entry => entry.Value);
@@ -55,7 +55,7 @@ public class Rest
         var builder = new System.UriBuilder(uri_string);// { Query = collection.ToString() };
         if (call_data.ContainsKey("url_params") && call_data["url_params"] != null)
         {
-            ObjectDict query = (ObjectDict)call_data["url_params"];
+            var query = (ObjectDict)call_data["url_params"];
             //throw new System.Exception("TODO");
             string query_string = "";
             foreach (var key in query.Keys)
@@ -94,7 +94,7 @@ public class Rest
                 Log.log.Debug("payload=" + JsonConvert.SerializeObject(payload, Newtonsoft.Json.Formatting.Indented));
                 var private_key = readKeyFromFile(mApiData["oauth_file_private_key"]);
                 string assertion = Jose.JWT.Encode(payload, private_key, Jose.JwsAlgorithm.RS256, extraHeaders: new Dictionary<string, object> { { "typ", "JWT" } });
-                Rest token_api = new Rest(new StringDict(){
+                Rest token_api = new Rest(new Dictionary<string, string>(){
                                {"base_url",mApiData["oauth_base_url"]},
                                {"type","basic"},
                                {"basic_username",mApiData["oauth_client_id"]},
