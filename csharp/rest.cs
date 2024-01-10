@@ -15,7 +15,6 @@ public class Rest
     public StringDict mApiData;
     private HttpClient mHttpClient;
 
-
     private static RSA readKeyFromFile(string filename)
     {
         string pemContents = System.IO.File.ReadAllText(filename);
@@ -84,6 +83,7 @@ public class Rest
                            { "sub", mApiData["oauth_jwt_subject"]},
                            { "aud", mApiData["oauth_jwt_audience"]},
                            { "nbf", seconds_since_epoch - 60},
+                           { "iat", seconds_since_epoch - 60},
                            { "exp", seconds_since_epoch + 300},
                 };
                 // if client id starts with "aspera", add key "org" to payload
@@ -91,20 +91,26 @@ public class Rest
                 {
                     payload["org"] = mApiData["aoc_org"];
                 }
+                Log.log.Debug("payload=" + JsonConvert.SerializeObject(payload, Newtonsoft.Json.Formatting.Indented));
                 var private_key = readKeyFromFile(mApiData["oauth_file_private_key"]);
-                string assertion = Jose.JWT.Encode(payload, private_key, Jose.JwsAlgorithm.RS256);
+                string assertion = Jose.JWT.Encode(payload, private_key, Jose.JwsAlgorithm.RS256, extraHeaders: new Dictionary<string, object> { { "typ", "JWT" } });
                 Rest token_api = new Rest(new StringDict(){
                                {"base_url",mApiData["oauth_base_url"]},
                                {"type","basic"},
                                {"basic_username",mApiData["oauth_client_id"]},
                                {"basic_password",mApiData["oauth_client_secret"]},
                 });
-                var resp = token_api.create(mApiData["oauth_path_token"], new ObjectDict(){
+                var token_params = new ObjectDict(){
                            {"www_body_params",true},
+                           {"client_id",mApiData["oauth_client_id"]},
                            {"grant_type","urn:ietf:params:oauth:grant-type:jwt-bearer"},
                            {"assertion",assertion},
-                           {"scope",mApiData["oauth_scope"]},
-                });
+                };
+                if (mApiData.ContainsKey("oauth_scope"))
+                {
+                    token_params["scope"] = mApiData["oauth_scope"];
+                }
+                var resp = token_api.create(mApiData["oauth_path_token"], token_params);
                 var data = (Newtonsoft.Json.Linq.JObject)resp["data"];
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", (string)data["access_token"]);
                 break;
