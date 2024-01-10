@@ -3,7 +3,7 @@
 using ObjectDict = System.Collections.Generic.Dictionary<string, object>;
 using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
-class Program
+class SampleAoc
 {
     // fill AoC Specific Rest auth information
     static void fillAocRestInfo(string organization, System.Collections.Generic.IDictionary<string, string> api_data)
@@ -25,7 +25,7 @@ class Program
         api_data["oauth_path_token"] = "token";
     }
     // Main program , start here
-    static void Main(string[] args)
+    public static void start()
     {
         StringDict aoc_config = TestEnvironment.readConfig();
         // configuration: organizational user's specific information
