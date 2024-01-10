@@ -40,33 +40,6 @@ public class Rest
         rsa.ImportRSAPrivateKey(der, out _);
         return rsa;
     }
-
-    static string DumpHttpRequestMessage(HttpRequestMessage request)
-    {
-        // Convert HttpRequestMessage to a string representation
-        string requestDump = $"{request.Method} {request.RequestUri}\n";
-
-        // Dump headers
-        foreach (var header in request.Headers)
-        {
-            requestDump += $"{header.Key}: {string.Join(", ", header.Value)}\n";
-        }
-        if (request.Content != null)
-        {
-            foreach (var header in request.Content.Headers)
-            {
-                requestDump += $"{header.Key}: {string.Join(", ", header.Value)}\n";
-            }
-        }
-
-        // Dump content
-        if (request.Content != null)
-        {
-            requestDump += $"\n{request.Content.ReadAsStringAsync().Result}\n";
-        }
-
-        return requestDump;
-    }
     public Rest(StringDict api_data)
     {
         // shallow copy sufficient here
@@ -161,8 +134,11 @@ public class Rest
             }
         }
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        //Log.log.Debug("req=" + JsonConvert.SerializeObject(request, Newtonsoft.Json.Formatting.Indented));
-        Log.log.Debug("req=" + DumpHttpRequestMessage(request));
+        Log.log.Debug("req=" + JsonConvert.SerializeObject(request, Newtonsoft.Json.Formatting.Indented));
+        if (request.Content != null)
+        {
+            Log.log.Debug($"data={request.Content.ReadAsStringAsync().Result}");
+        }
         var response = mHttpClient.SendAsync(request).Result;
         response.EnsureSuccessStatusCode();
         var resp_str = response.Content.ReadAsStringAsync().Result;
@@ -180,10 +156,6 @@ public class Rest
             }
         }
         return new ObjectDict() { { "data", stuff } };
-
-        //StringDict res = Newtonsoft.Json.JsonConvert.DeserializeObject<StringDict>(resp_str);
-        //Log.log.Debug(">new resp>>>>>>>>>>>>>>>>>"+Newtonsoft.Json.JsonConvert.SerializeObject(result,Newtonsoft.Json.Formatting.Indented));
-        //return result;
     }
     public IObjectHash create(string subpath, IObjectHash json_params)
     {
