@@ -29,7 +29,7 @@ const transfersdk = grpc.loadPackageDefinition(packageDefinition).transfersdk
 var client = null
 var sdk_process = null
 
-
+// set log_level to 'trace' for more info
 module.exports = {
 	config: config,
 	tmp_folder: os.tmpdir(),
