@@ -2,7 +2,7 @@ using Newtonsoft.Json.Linq;
 
 class SampleFaspex5
 {
-    public static void start()
+    public static void start(string[] files)
     {
         var test_env = new TestEnvironment();
         var f5_config = test_env.mConfig["faspex5"];

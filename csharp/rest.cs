@@ -12,6 +12,7 @@ using StringDict = System.Collections.Generic.Dictionary<string, string>;
 public class Rest
 {
     public StringDict mApiData;
+    public Rest mOAuthAPI;
     private HttpClient mHttpClient;
 
     private static RSA readKeyFromFile(string filename)
@@ -48,6 +49,42 @@ public class Rest
             BaseAddress = new Uri(mApiData["base_url"])
         };
     }
+    public string get_bearer_token(string scope)
+    {
+        long seconds_since_epoch = System.DateTimeOffset.Now.ToUnixTimeSeconds();
+        var payload = new JObject{
+                    { "iss", mApiData["oauth_client_id"]},
+                    { "sub", mApiData["oauth_jwt_subject"]},
+                    { "aud", mApiData["oauth_jwt_audience"]},
+                    { "nbf", seconds_since_epoch - 60},
+                    { "iat", seconds_since_epoch - 60},
+                    { "exp", seconds_since_epoch + 300},
+                };
+        // if client id starts with "aspera", add key "org" to payload
+        if (mApiData["oauth_client_id"].StartsWith("aspera."))
+        {
+            payload["org"] = mApiData["aoc_org"];
+        }
+        Log.DumpJObject("payload", payload);
+        var private_key = readKeyFromFile(mApiData["oauth_file_private_key"]);
+        string assertion = Jose.JWT.Encode(JsonConvert.SerializeObject(payload), private_key, Jose.JwsAlgorithm.RS256, extraHeaders: new Dictionary<string, object> { { "typ", "JWT" } });
+        var token_params = new JObject{
+            {"www_body_params",true},
+            {"client_id",mApiData["oauth_client_id"]},
+            {"grant_type","urn:ietf:params:oauth:grant-type:jwt-bearer"},
+            {"assertion",assertion},
+        };
+        if (scope != null)
+        {
+            token_params["scope"] = scope;
+        }
+        var data = mOAuthAPI.create(mApiData["oauth_path_token"], token_params)["data"];
+        return (string)data["access_token"];
+    }
+    public string get_bearer(string scope)
+    {
+        return $"Bearer {get_bearer_token(scope)}";
+    }
     public JObject call(HttpMethod operation, string subpath, JObject json_params = null, JObject url_params = null, StringDict headers = null)
     {
         string uri_string = mApiData["base_url"] + "/" + subpath;
@@ -74,42 +111,18 @@ public class Rest
         switch (mApiData["type"])
         {
             case "oauth2":
-                long seconds_since_epoch = System.DateTimeOffset.Now.ToUnixTimeSeconds();
-                var payload = new JObject{
-                    { "iss", mApiData["oauth_client_id"]},
-                    { "sub", mApiData["oauth_jwt_subject"]},
-                    { "aud", mApiData["oauth_jwt_audience"]},
-                    { "nbf", seconds_since_epoch - 60},
-                    { "iat", seconds_since_epoch - 60},
-                    { "exp", seconds_since_epoch + 300},
-                };
-                // if client id starts with "aspera", add key "org" to payload
-                if (mApiData["oauth_client_id"].StartsWith("aspera."))
-                {
-                    payload["org"] = mApiData["aoc_org"];
-                }
-                Log.DumpJObject("payload", payload);
-                var private_key = readKeyFromFile(mApiData["oauth_file_private_key"]);
-                string assertion = Jose.JWT.Encode(JsonConvert.SerializeObject(payload), private_key, Jose.JwsAlgorithm.RS256, extraHeaders: new Dictionary<string, object> { { "typ", "JWT" } });
-                var token_api = new Rest(new StringDict(){
+                mOAuthAPI = new Rest(new StringDict(){
                     {"base_url",mApiData["oauth_base_url"]},
                     {"type","basic"},
                     {"basic_username",mApiData["oauth_client_id"]},
                     {"basic_password",mApiData["oauth_client_secret"]},
                 });
-                var token_params = new JObject{
-                    {"www_body_params",true},
-                    {"client_id",mApiData["oauth_client_id"]},
-                    {"grant_type","urn:ietf:params:oauth:grant-type:jwt-bearer"},
-                    {"assertion",assertion},
-                };
+                string scope = null;
                 if (mApiData.ContainsKey("oauth_scope"))
                 {
-                    token_params["scope"] = mApiData["oauth_scope"];
+                    scope = mApiData["oauth_scope"];
                 }
-                var resp = token_api.create(mApiData["oauth_path_token"], token_params);
-                var data = (JObject)resp["data"];
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", (string)data["access_token"]);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", get_bearer_token(scope));
                 break;
             case "basic":
                 var encoded = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes($"{mApiData["basic_username"]}:{mApiData["basic_password"]}"));
@@ -142,7 +155,7 @@ public class Rest
         }
         var response = mHttpClient.SendAsync(request).Result;
         var resp_str = response.Content.ReadAsStringAsync().Result;
-        Log.log.Debug("resp=" + resp_str);
+        Log.log.Debug($"resp={resp_str}");
         if (!response.IsSuccessStatusCode)
         {
             throw new System.Exception($"ERROR: {response.StatusCode} {response.ReasonPhrase}");
