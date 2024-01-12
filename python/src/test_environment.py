@@ -27,7 +27,7 @@ PATHS = yaml.load(
 )
 
 # Error hint to help user to fix the issue
-ERROR_HINT = f"\nPlease check: SDK installed in {PATHS['sdk_root']}, configuration file: {PATHS['mainconfig']}"
+ERROR_HINT = f"\nPlease check: SDK installed in {PATHS['sdk_root']}, configuration file: {PATHS['main_config']}"
 
 
 def get_path(name):
@@ -38,7 +38,7 @@ def get_path(name):
 
 
 # Read configuration from configuration file
-CONFIG = yaml.load(open(get_path("mainconfig")), Loader=yaml.FullLoader)
+CONFIG = yaml.load(open(get_path("main_config")), Loader=yaml.FullLoader)
 
 # location of gRPC stubs
 python_stub_folder = os.path.join(get_path("trsdk_noarch"), "connectors", "python")

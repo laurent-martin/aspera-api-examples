@@ -2,6 +2,11 @@ class Program
 {
     static void Main(string[] args)
     {
+        var fileList = args;
+        if (fileList.Length <= 0)
+        {
+            throw new Exception($"ERROR: Usage: Prog <test name> <files to send>");
+        }
         switch (args[0])
         {
             case "aoc":

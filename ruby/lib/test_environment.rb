@@ -53,9 +53,9 @@ class TestEnvironment
   def initialize
     @top_folder = File.join(File.dirname(__FILE__), '..', '..')
     @paths = YAML.load_file(File.join(@top_folder, 'config/paths.yaml'))
-    @config = YAML.load_file(get_path('mainconfig'))
+    @config = YAML.load_file(get_path('main_config'))
     Aspera::Log.dump(:config, @config)
-    raise "Missing config file: #{get_path('mainconfig')}" unless @config['misc']
+    raise "Missing config file: #{get_path('main_config')}" unless @config['misc']
 
     # some required files are generated here (keys, certs)
     Aspera::Fasp::Installation.instance.sdk_folder = File.join(get_path('trsdk_noarch'), 'connectors/ruby')

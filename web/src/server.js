@@ -17,7 +17,7 @@ function get_path(name) {
   return path.join(top_folder, paths[name]);
 }
 // read config for examples
-const config = yaml.load(fs.readFileSync(get_path('mainconfig'), 'utf8'));
+const config = yaml.load(fs.readFileSync(get_path('main_config'), 'utf8'));
 
 const http_port = config['web']['port']
 

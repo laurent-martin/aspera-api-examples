@@ -7,12 +7,11 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ObjectDict = System.Collections.Generic.Dictionary<string, object>;
-using IObjectHash = System.Collections.Generic.IDictionary<string, object>;
+using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
 public class Rest
 {
-    public Dictionary<string, string> mApiData;
+    public StringDict mApiData;
     private HttpClient mHttpClient;
 
     private static RSA readKeyFromFile(string filename)
@@ -39,7 +38,7 @@ public class Rest
         rsa.ImportRSAPrivateKey(der, out _);
         return rsa;
     }
-    public Rest(Dictionary<string, string> api_data)
+    public Rest(StringDict api_data)
     {
         // shallow copy sufficient here
         mApiData = api_data.ToDictionary(entry => entry.Key, entry => entry.Value);
@@ -49,14 +48,13 @@ public class Rest
             BaseAddress = new Uri(mApiData["base_url"])
         };
     }
-    public IObjectHash call(ObjectDict call_data)
+    public JObject call(HttpMethod operation, string subpath, JObject json_params = null, JObject url_params = null, StringDict headers = null)
     {
-        string uri_string = mApiData["base_url"] + "/" + call_data["subpath"];
+        string uri_string = mApiData["base_url"] + "/" + subpath;
         var builder = new System.UriBuilder(uri_string);// { Query = collection.ToString() };
-        if (call_data.ContainsKey("url_params") && call_data["url_params"] != null)
+        if (url_params != null)
         {
-            var query = (ObjectDict)call_data["url_params"];
-            //throw new System.Exception("TODO");
+            var query = url_params.Properties().ToDictionary(p => p.Name, p => p.Value.ToString());
             string query_string = "";
             foreach (var key in query.Keys)
             {
@@ -70,48 +68,47 @@ public class Rest
         }
         HttpRequestMessage request = new HttpRequestMessage
         {
-            Method = (HttpMethod)call_data["operation"],
+            Method = operation,
             RequestUri = builder.Uri
         };
         switch (mApiData["type"])
         {
             case "oauth2":
                 long seconds_since_epoch = System.DateTimeOffset.Now.ToUnixTimeSeconds();
-                var payload = new ObjectDict()
-                {
-                           { "iss", mApiData["oauth_client_id"]},
-                           { "sub", mApiData["oauth_jwt_subject"]},
-                           { "aud", mApiData["oauth_jwt_audience"]},
-                           { "nbf", seconds_since_epoch - 60},
-                           { "iat", seconds_since_epoch - 60},
-                           { "exp", seconds_since_epoch + 300},
+                var payload = new JObject{
+                    { "iss", mApiData["oauth_client_id"]},
+                    { "sub", mApiData["oauth_jwt_subject"]},
+                    { "aud", mApiData["oauth_jwt_audience"]},
+                    { "nbf", seconds_since_epoch - 60},
+                    { "iat", seconds_since_epoch - 60},
+                    { "exp", seconds_since_epoch + 300},
                 };
                 // if client id starts with "aspera", add key "org" to payload
                 if (mApiData["oauth_client_id"].StartsWith("aspera."))
                 {
                     payload["org"] = mApiData["aoc_org"];
                 }
-                Log.log.Debug("payload=" + JsonConvert.SerializeObject(payload, Newtonsoft.Json.Formatting.Indented));
+                Log.DumpJObject("payload", payload);
                 var private_key = readKeyFromFile(mApiData["oauth_file_private_key"]);
-                string assertion = Jose.JWT.Encode(payload, private_key, Jose.JwsAlgorithm.RS256, extraHeaders: new Dictionary<string, object> { { "typ", "JWT" } });
-                Rest token_api = new Rest(new Dictionary<string, string>(){
-                               {"base_url",mApiData["oauth_base_url"]},
-                               {"type","basic"},
-                               {"basic_username",mApiData["oauth_client_id"]},
-                               {"basic_password",mApiData["oauth_client_secret"]},
+                string assertion = Jose.JWT.Encode(JsonConvert.SerializeObject(payload), private_key, Jose.JwsAlgorithm.RS256, extraHeaders: new Dictionary<string, object> { { "typ", "JWT" } });
+                var token_api = new Rest(new StringDict(){
+                    {"base_url",mApiData["oauth_base_url"]},
+                    {"type","basic"},
+                    {"basic_username",mApiData["oauth_client_id"]},
+                    {"basic_password",mApiData["oauth_client_secret"]},
                 });
-                var token_params = new ObjectDict(){
-                           {"www_body_params",true},
-                           {"client_id",mApiData["oauth_client_id"]},
-                           {"grant_type","urn:ietf:params:oauth:grant-type:jwt-bearer"},
-                           {"assertion",assertion},
+                var token_params = new JObject{
+                    {"www_body_params",true},
+                    {"client_id",mApiData["oauth_client_id"]},
+                    {"grant_type","urn:ietf:params:oauth:grant-type:jwt-bearer"},
+                    {"assertion",assertion},
                 };
                 if (mApiData.ContainsKey("oauth_scope"))
                 {
                     token_params["scope"] = mApiData["oauth_scope"];
                 }
                 var resp = token_api.create(mApiData["oauth_path_token"], token_params);
-                var data = (Newtonsoft.Json.Linq.JObject)resp["data"];
+                var data = (JObject)resp["data"];
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", (string)data["access_token"]);
                 break;
             case "basic":
@@ -121,20 +118,18 @@ public class Rest
             default:
                 throw new System.Exception("error");
         }
-        if (call_data.ContainsKey("json_params"))
+        if (json_params != null)
         {
-            var json_params = (ObjectDict)call_data["json_params"];
-            Log.log.Debug("json_params");
-            Log.DebugStruct(json_params);
+            Log.log.Debug($"json_params {json_params}");
             if (json_params.ContainsKey("www_body_params"))
             {
                 json_params.Remove("www_body_params");
-                request.Content = new FormUrlEncodedContent(json_params.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString()));
+                request.Content = new FormUrlEncodedContent(json_params.Properties().ToDictionary(p => p.Name, p => p.Value.ToString()));
             }
             else
             {
                 request.Content = new StringContent(
-                    JsonConvert.SerializeObject(call_data["json_params"]),
+                    JsonConvert.SerializeObject(json_params),
                     System.Text.Encoding.UTF8,
                     "application/json");
             }
@@ -146,41 +141,40 @@ public class Rest
             Log.log.Debug($"data={request.Content.ReadAsStringAsync().Result}");
         }
         var response = mHttpClient.SendAsync(request).Result;
-        response.EnsureSuccessStatusCode();
         var resp_str = response.Content.ReadAsStringAsync().Result;
         Log.log.Debug("resp=" + resp_str);
-        Newtonsoft.Json.Linq.JContainer stuff = null;
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new System.Exception($"ERROR: {response.StatusCode} {response.ReasonPhrase}");
+        }
+        JContainer stuff = null;
         if (resp_str.Length != 0)
         {
             if (resp_str.StartsWith("["))
             {
-                stuff = Newtonsoft.Json.Linq.JArray.Parse(resp_str);
+                stuff = JArray.Parse(resp_str);
             }
             else
             {
-                stuff = Newtonsoft.Json.Linq.JObject.Parse(resp_str);
+                stuff = JObject.Parse(resp_str);
             }
         }
-        return new ObjectDict() { { "data", stuff } };
+        return new JObject { { "data", stuff } };
     }
-    public IObjectHash create(string subpath, IObjectHash json_params)
+    public JObject create(string subpath, JObject json_params)
     {
-        return call(new ObjectDict(){
-        {"operation",HttpMethod.Post},{"subpath",subpath},{"headers",new ObjectDict(){{"Accept","application/json"}}},{"json_params",json_params}});
+        return call(operation: HttpMethod.Post, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } }, json_params: json_params);
     }
-    public IObjectHash read(string subpath, IObjectHash url_params = null)
+    public JObject read(string subpath, JObject url_params = null)
     {
-        return call(new ObjectDict(){
-        {"operation",HttpMethod.Get},{"subpath",subpath},{"headers",new ObjectDict(){{"Accept","application/json"}}},{"url_params",url_params}});
+        return call(operation: HttpMethod.Get, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } }, url_params: url_params);
     }
-    public IObjectHash update(string subpath, IObjectHash json_params)
+    public JObject update(string subpath, JObject json_params)
     {
-        return call(new ObjectDict(){
-        {"operation",HttpMethod.Put},{"subpath",subpath},{"headers",new ObjectDict(){{"Accept","application/json"}}},{"json_params",json_params}});
+        return call(operation: HttpMethod.Put, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } }, json_params: json_params);
     }
-    public IObjectHash delete(string subpath)
+    public JObject delete(string subpath)
     {
-        return call(new ObjectDict(){
-        {"operation",HttpMethod.Delete},{"subpath",subpath},{"headers",new ObjectDict(){{"Accept","application/json"}}}});
+        return call(operation: HttpMethod.Delete, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } });
     }
 }

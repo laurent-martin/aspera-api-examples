@@ -1,8 +1,8 @@
 DIR_TOP=$(shell pwd -P)/
 include $(DIR_TOP)common.make
 CONFIG_TMPL=$(DIR_TOP)config/config.tmpl
-CONFIG_FILE=$(DIR_TOP)$(shell sed -n -e 's/^mainconfig: //p' $(GLOBAL_PATHS))
-GENERATED_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^tmpgen: //p' $(GLOBAL_PATHS))/
+CONFIG_FILE=$(DIR_TOP)$(shell sed -n -e 's/^main_config: //p' $(GLOBAL_PATHS))
+GENERATED_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^temp_gene: //p' $(GLOBAL_PATHS))/
 TRSDK_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' $(GLOBAL_PATHS))/
 TRSDK_ARCH=$(TRSDK_ROOT)$(shell sed -n -e 's/^ *system_type: //p' $(CONFIG_FILE) 2> /dev/null)/
 TRSDK_ZIP=$(TRSDK_ROOT)transfer_sdk.zip

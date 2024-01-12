@@ -1,9 +1,11 @@
+using Newtonsoft.Json.Linq;
 
 class SampleFaspex5
 {
     public static void start()
     {
-        var f5_config = TestEnvironment.readConfig()["faspex5"];
+        var test_env = new TestEnvironment();
+        var f5_config = test_env.mConfig["faspex5"];
         Log.log.Debug("faspex 5");
         Rest f5_api = new Rest(new Dictionary<string, string>(){
             {"base_url",f5_config["url"]+ "/api/v5"},
@@ -18,6 +20,7 @@ class SampleFaspex5
             {"oauth_path_token","token"},
         });
         var user_profile = f5_api.read("account/preferences");
-        Log.DebugStruct(user_profile);
+        Log.log.Debug($"user_profile: {user_profile}");
+        Log.DumpJObject("user_profile",user_profile);
     }
 }

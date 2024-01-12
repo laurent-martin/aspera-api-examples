@@ -82,7 +82,7 @@ public class TestEnvironment {
 				throw new Error("mandatory property not set: dir_top");
 			final String paths_config_file = getPath(null);
 			paths = new Yaml().load(new java.io.FileReader(paths_config_file));
-			final String config_filepath = getPath("mainconfig");
+			final String config_filepath = getPath("main_config");
 			config = new Yaml().load(new java.io.FileReader(config_filepath));
 		} catch (final java.io.FileNotFoundException e) {
 			throw new Error(e.getMessage());

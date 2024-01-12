@@ -27,3 +27,8 @@ macos:
 ```bash
 dotnet build
 ```
+
+dotnet add package Grpc.Tools
+dotnet add package Grpc.Core
+dotnet add package Grpc.Net.Client
+dotnet add package Google.Protobuf

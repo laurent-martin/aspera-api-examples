@@ -14,7 +14,7 @@ function get_path(name) {
 	return path.join(top_folder, paths[name])
 }
 // read config for examples
-const config = yaml.load(fs.readFileSync(get_path("mainconfig"), 'utf8'))
+const config = yaml.load(fs.readFileSync(get_path("main_config"), 'utf8'))
 const arch_folder = path.join(get_path("sdk_root"), config["misc"]["system_type"])
 const daemon_name = "asperatransferd"
 const daemon_exe = path.join(arch_folder, daemon_name)
@@ -54,7 +54,7 @@ module.exports = {
 			},
 		};
 		const tmp_file_base = path.join(os.tmpdir(), 'daemon');
-		const conf_file = path.join(get_path("tmpgen"), 'daemon.json');
+		const conf_file = path.join(get_path("temp_gene"), 'daemon.json');
 		fs.writeFileSync(conf_file, JSON.stringify(daemon_conf));
 		const args = ['-c', conf_file]
 		out_file = tmp_file_base + '.out'
