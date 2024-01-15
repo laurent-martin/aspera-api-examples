@@ -11,7 +11,6 @@ $(T)%: $(IS_OK)
 ../$(IS_OK):
 	cd .. && make
 $(IS_OK): ../$(IS_OK)
-	cp ../generated/trsdk/noarch/connectors/csharp/TransferService/*.cs .
 	@touch $@
 do:
 	dotnet build
