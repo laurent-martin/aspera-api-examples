@@ -1,7 +1,3 @@
-// Generic REST client with basic and oauth
-// Replace with your best REST client object
-// or use openapi generator to generate stubs
-
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -9,6 +5,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
+// Generic REST client with basic and oauth
+// Replace with your best REST client object
+// or use openapi generator to generate stubs
 public class Rest
 {
     public StringDict mApiData;
@@ -148,7 +147,7 @@ public class Rest
             }
         }
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        Log.log.Debug("req=" + JsonConvert.SerializeObject(request, Newtonsoft.Json.Formatting.Indented));
+        Log.DumpJObject("req", request);
         if (request.Content != null)
         {
             Log.log.Debug($"data={request.Content.ReadAsStringAsync().Result}");
