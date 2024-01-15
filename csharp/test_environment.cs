@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 class Log
 {
     public static readonly log4net.ILog log = log4net.LogManager.GetLogger(typeof(Log));
-    public static void DumpJObject(string name, JObject value)
+    public static void DumpJObject(string name, Object value)
     {
         log.Debug($"{name}={Newtonsoft.Json.JsonConvert.SerializeObject(value, Newtonsoft.Json.Formatting.Indented)}");
     }
@@ -21,13 +21,14 @@ public class TestEnvironment
     string mTopFolder;
     System.Diagnostics.Process mTransferDaemonProcess = null;
     Transfersdk.TransferService.TransferServiceClient mSdkClient = null;
-    bool mShutdownAfterTransfer = true;
+    public bool mShutdownAfterTransfer = true;
     List<StreamWriter> mStreams = new List<StreamWriter>();
 
     // config file with sub-paths in project's root folder
     const string pathsFile = "config/paths.yaml";
     const string sdkDaemonExecutable = "asperatransferd";
 
+    // @return absolute path for the named folder from configuration file
     string GetPath(string name)
     {
         // Get configuration sub-path in project's root folder
@@ -63,6 +64,7 @@ public class TestEnvironment
                 .Build().Deserialize<Dictionary<string, Dictionary<string, string>>>(reader);
         }
     }
+    // capture stdout or stderr for the started process (asperatransferd)
     public System.Diagnostics.DataReceivedEventHandler captureStream(string tmpFileBase, string type)
     {
         var logFile = $"{tmpFileBase}.{type}";
@@ -75,7 +77,6 @@ public class TestEnvironment
             {
                 if (!String.IsNullOrEmpty(e.Data))
                 {
-                    Console.WriteLine($"std{type}>>>> {e.Data} ( {logFile} )");
                     logStream.WriteLine(e.Data);
                 }
             });
@@ -165,6 +166,9 @@ public class TestEnvironment
         }
     }
 
+    // Start the specified transfer
+    // @return transfer id
+    // @param aSpecObj transfer specification (JSON Object)
     public string StartTransfer(JObject aSpecObj)
     {
         // Start a transfer and return transfer id
@@ -186,6 +190,7 @@ public class TestEnvironment
         return transferResponse.TransferId;
     }
 
+    // wait until the specified transfer is finished (completed or failed)
     void WaitTransfer(string aTransferId)
     {
         while (true)
@@ -206,6 +211,7 @@ public class TestEnvironment
         }
     }
 
+    // Shutdown transfer manager daemon, if needed
     public void Shutdown()
     {
         // Shutdown transfer manager daemon, if needed
@@ -227,6 +233,8 @@ public class TestEnvironment
         }
     }
 
+    // One-call simplified procedure to start daemon, transfer, and wait for it to finish
+    // @param aSpecObj transfer specification (JSON Object)
     public void StartTransferAndWait(JObject aSpecObj)
     {
         // One-call simplified procedure to start daemon, transfer, and wait for it to finish
