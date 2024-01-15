@@ -46,4 +46,5 @@ tests:  $(IS_OK)
 	cd python && make
 	cd java && make
 	cd ruby && make
+	cd csharp && make
 	cd web && make test

@@ -16,7 +16,10 @@ class Program
             case "faspex5":
                 SampleFaspex5.start(files);
                 break;
-             default:
+            case "server":
+                SampleServerUpload.start(files);
+                break;
+            default:
                 throw new System.Exception("Unknown sample: " + args[0]);
         }
     }

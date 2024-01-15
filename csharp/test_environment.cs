@@ -13,13 +13,16 @@ class Log
 
 public class TestEnvironment
 {
+    // general test configuration parameters
     public Dictionary<string, Dictionary<string, string>> mConfig;
+    // general path structure
     Dictionary<string, string> mPaths;
-    string errorHint;
-    string topFolder;
-    System.Diagnostics.Process transferDaemonProcess = null;
-    Transfersdk.TransferService.TransferServiceClient sdkClient = null;
-    bool shutdownAfterTransfer = true;
+    string mErrorHint;
+    string mTopFolder;
+    System.Diagnostics.Process mTransferDaemonProcess = null;
+    Transfersdk.TransferService.TransferServiceClient mSdkClient = null;
+    bool mShutdownAfterTransfer = true;
+    List<StreamWriter> mStreams = new List<StreamWriter>();
 
     // config file with sub-paths in project's root folder
     const string pathsFile = "config/paths.yaml";
@@ -28,10 +31,10 @@ public class TestEnvironment
     string GetPath(string name)
     {
         // Get configuration sub-path in project's root folder
-        var itemPath = Path.Combine(topFolder, mPaths[name]);
+        var itemPath = Path.Combine(mTopFolder, mPaths[name]);
         if (!Directory.Exists(itemPath))
         {
-            throw new Exception($"ERROR: {itemPath} not found.{errorHint}");
+            throw new Exception($"ERROR: {itemPath} not found.{mErrorHint}");
         }
         return itemPath;
     }
@@ -40,10 +43,10 @@ public class TestEnvironment
         // init logger
         log4net.Config.BasicConfigurator.Configure();
         // get project root folder
-        topFolder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".."));
+        mTopFolder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".."));
 
         // read project's relative paths config file
-        using (var reader = new StreamReader(Path.Combine(topFolder, pathsFile)))
+        using (var reader = new StreamReader(Path.Combine(mTopFolder, pathsFile)))
         {
             mPaths = new YamlDotNet.Serialization.DeserializerBuilder()
                 .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
@@ -51,41 +54,53 @@ public class TestEnvironment
         }
 
         // Error hint to help user fix the issue
-        errorHint = $"\nPlease check: SDK installed in {mPaths["sdk_root"]}, configuration file: {mPaths["main_config"]}";
+        mErrorHint = $"\nPlease check: SDK installed in {mPaths["sdk_root"]}, configuration file: {mPaths["main_config"]}";
         // Read configuration from configuration file
-        using (var reader = new StreamReader(Path.Combine(topFolder, mPaths["main_config"])))
+        using (var reader = new StreamReader(Path.Combine(mTopFolder, mPaths["main_config"])))
         {
             mConfig = new YamlDotNet.Serialization.DeserializerBuilder()
                 .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
                 .Build().Deserialize<Dictionary<string, Dictionary<string, string>>>(reader);
         }
-        // Set logger for debugging
-        //Grpc.Core.GrpcEnvironment.SetLogger(Log.log);
-
-
     }
-    async Task StartDaemon(string sdkGrpcUrl)
+    public System.Diagnostics.DataReceivedEventHandler captureStream(string tmpFileBase, string type)
     {
-        // Start transfer manager daemon if not already running and return gRPC client
-        //GrpcEnvironment.SetEnvironment(new ChannelOption[] { new ChannelOption("GRPC_ENABLE_FORK_SUPPORT", "false") });
-        var grpcUrl = new Uri(sdkGrpcUrl);
-        var channel = GrpcChannel.ForAddress(grpcUrl);
-        var client = new Transfersdk.TransferService.TransferServiceClient(channel);
+        var logFile = $"{tmpFileBase}.{type}";
+        Console.WriteLine($"std{type}: {logFile}");
+        var logStream = new StreamWriter(new FileStream(logFile, FileMode.Append, FileAccess.Write));
+        logStream.WriteLine($"Starting new {type} log");
+        mStreams.Add(logStream);
+        return new System.Diagnostics.DataReceivedEventHandler(
+            (sender, e) =>
+            {
+                if (!String.IsNullOrEmpty(e.Data))
+                {
+                    Console.WriteLine($"std{type}>>>> {e.Data} ( {logFile} )");
+                    logStream.WriteLine(e.Data);
+                }
+            });
+    }
+    // Start transfer manager daemon if not already running and return gRPC client
+    public void StartDaemon(string sdkGrpcUrl)
+    {
+        var confUrl = new Uri(sdkGrpcUrl);
+        var grpcUrl = new Uri($"http://{confUrl.Host}:{confUrl.Port}");
+        AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+        var client = new Transfersdk.TransferService.TransferServiceClient(GrpcChannel.ForAddress(grpcUrl));
 
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 2 && mSdkClient == null; i++)
         {
             try
             {
                 Console.WriteLine($"Connecting to {sdkDaemonExecutable} using gRPC: {grpcUrl.Host} {grpcUrl.Port}...");
-                //await client.Channel.ReadyAsync(DateTime.UtcNow.AddSeconds(3));
+                client.GetAPIVersion(new Transfersdk.APIVersionRequest());
                 Console.WriteLine("SUCCESS: connected");
-                sdkClient = client;
+                mSdkClient = client;
             }
             catch (Exception)
             {
                 Console.WriteLine("ERROR: Failed to connect\nStarting daemon...");
-
-                var binFolder = mPaths["sdk_root"];
+                var binFolder = Path.Combine(GetPath("sdk_root"), mConfig["misc"]["system_type"]);
                 var configData = new
                 {
                     address = grpcUrl.Host,
@@ -98,7 +113,7 @@ public class TestEnvironment
                         user_defined = new
                         {
                             bin = binFolder,
-                            etc = GetPath("TrsdkNoarch"),
+                            etc = GetPath("trsdk_noarch"),
                         },
                         log = new
                         {
@@ -110,61 +125,57 @@ public class TestEnvironment
 
                 var tmpFileBase = Path.Combine(Path.GetTempPath(), "daemon");
                 var confFile = tmpFileBase + ".conf";
-                await File.WriteAllTextAsync(confFile, Newtonsoft.Json.JsonConvert.SerializeObject(configData));
-
-                var command = $"{Path.Combine(binFolder, sdkDaemonExecutable)} --config {confFile}";
-                var outFile = tmpFileBase + ".out";
-                var errFile = tmpFileBase + ".err";
-
-                await Task.Delay(1000);
+                File.WriteAllText(confFile, Newtonsoft.Json.JsonConvert.SerializeObject(configData));
+                var exec_full_path = Path.Combine(binFolder, sdkDaemonExecutable);
+                var exec_args = $"--config {confFile}";
+                var command = $"{exec_full_path} {exec_args}";
+                Thread.Sleep(1000);
                 Console.WriteLine($"Starting: {command}");
-                Console.WriteLine($"stderr: {errFile}");
-                Console.WriteLine($"stdout: {outFile}");
-
-                var psi = new System.Diagnostics.ProcessStartInfo
+                mTransferDaemonProcess = new System.Diagnostics.Process
                 {
-                    FileName = "cmd.exe",
-                    RedirectStandardInput = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    Arguments = $"/c {command}",
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = exec_full_path,
+                        Arguments = exec_args,
+                        RedirectStandardInput = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                    }
                 };
+                mTransferDaemonProcess.OutputDataReceived += captureStream(tmpFileBase, "out");
+                mTransferDaemonProcess.ErrorDataReceived += captureStream(tmpFileBase, "err");
+                mTransferDaemonProcess.Start();
 
-                transferDaemonProcess = new System.Diagnostics.Process
-                {
-                    StartInfo = psi,
-                };
-
-                transferDaemonProcess.Start();
-                await Task.Delay(5000);
-            }
-
-            if (sdkClient != null)
-            {
-                break;
+                // wait for daemon to be ready
+                Thread.Sleep(5000);
             }
         }
 
-        if (sdkClient == null)
+        if (mSdkClient == null)
         {
             Console.WriteLine("ERROR: daemon not started or cannot be started.\nCheck the logs: daemon.err and daemon.out (see paths above).");
             Environment.Exit(1);
         }
+        if (mTransferDaemonProcess != null)
+        {
+            mTransferDaemonProcess.BeginOutputReadLine();
+            mTransferDaemonProcess.BeginErrorReadLine();
+        }
     }
 
-    async Task<string> StartTransfer(string transferSpec)
+    public string StartTransfer(JObject aSpecObj)
     {
         // Start a transfer and return transfer id
         var transferRequest = new Transfersdk.TransferRequest
         {
             TransferType = Transfersdk.TransferType.FileRegular,
-            Config = new Transfersdk.TransferConfig(),
-            TransferSpec = transferSpec,
+            Config = new Transfersdk.TransferConfig { LogLevel = 2 },
+            TransferSpec = Newtonsoft.Json.JsonConvert.SerializeObject(aSpecObj),
         };
 
-        var transferResponse = await sdkClient.StartTransferAsync(transferRequest);
+        var transferResponse = mSdkClient.StartTransfer(transferRequest);
 
         if (transferResponse.Status == Transfersdk.TransferStatus.Failed)
         {
@@ -175,44 +186,65 @@ public class TestEnvironment
         return transferResponse.TransferId;
     }
 
-    async Task WaitTransfer(string transferId)
+    void WaitTransfer(string aTransferId)
     {
+        while (true)
+        {
+            // check the current state of the transfer
+            var queryTransferResponse = mSdkClient.QueryTransfer(new Transfersdk.TransferInfoRequest() { TransferId = aTransferId });
+            Console.Out.WriteLine("transfer info " + queryTransferResponse);
+
+            // check transfer status in response, and exit if it's done
+            Transfersdk.TransferStatus status = queryTransferResponse.Status;
+            if (status == Transfersdk.TransferStatus.Failed || status == Transfersdk.TransferStatus.Completed)
+            {
+                Console.Out.WriteLine("finished " + status);
+                break;
+            }
+            // wait a second before checking again
+            System.Threading.Thread.Sleep(1000);
+        }
     }
 
-    void Shutdown()
+    public void Shutdown()
     {
         // Shutdown transfer manager daemon, if needed
-        if (transferDaemonProcess != null)
+        if (mTransferDaemonProcess != null)
         {
-            transferDaemonProcess.Kill();
-            transferDaemonProcess.WaitForExit();
-            transferDaemonProcess = null;
-            Console.WriteLine("Transfer daemon has been terminated");
+            Console.WriteLine("Stopping Transfer daemon...");
+            mTransferDaemonProcess.Kill();
+            mTransferDaemonProcess.WaitForExit();
+            mTransferDaemonProcess = null;
+            Console.WriteLine("Transfer daemon has been terminated.");
+            foreach (var stream in mStreams)
+            {
+                stream.Close();
+            }
         }
         else
         {
-            Console.WriteLine("Transfer daemon not started by this process, or already terminated");
+            Console.WriteLine("Transfer daemon not started by this process or already terminated.");
         }
     }
 
-    public async Task StartTransferAndWait(JObject tSpec)
+    public void StartTransferAndWait(JObject aSpecObj)
     {
         // One-call simplified procedure to start daemon, transfer, and wait for it to finish
-        if (sdkClient == null)
+        if (mSdkClient == null)
         {
-            //sdkClient = await StartDaemon(mConfig.get('misc').get('trsdk_url'));
+            StartDaemon(mConfig["misc"]["trsdk_url"]);
         }
 
-        //tSpec.HttpFallback = false; // TODO: remove when transfer SDK bug fixed
-        Console.WriteLine(tSpec); // Logging transfer specification
+        //aSpecObj.HttpFallback = false; // TODO: remove when transfer SDK bug fixed
+        Console.WriteLine(aSpecObj); // Logging transfer specification
         try
         {
-            var transferId = await StartTransfer(Newtonsoft.Json.JsonConvert.SerializeObject(tSpec));
-            await WaitTransfer(transferId);
+            var aTransferId = StartTransfer(aSpecObj);
+            WaitTransfer(aTransferId);
         }
         finally
         {
-            if (shutdownAfterTransfer)
+            if (mShutdownAfterTransfer)
             {
                 Shutdown();
             }
