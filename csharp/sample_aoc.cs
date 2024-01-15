@@ -63,6 +63,7 @@ class SampleAoc : SampleInterface
         // (all tags are not mandatory, but some are, like 'node')
         var t_spec = new JObject{
             {"direction", "send"},
+            {"paths", new JArray()},
             {"token", aoc_api.get_bearer($"node.{node_info["access_key"]}:user:all" )},
             {"tags", new JObject{
                 {"aspera", new JObject{
@@ -87,22 +88,18 @@ class SampleAoc : SampleInterface
             {"remote_host", node_info["host"]},
             // 'cookie': 'aspera.aoc:cGFja2FnZXM=:TGF1cmVudCBNYXJ0aW4=:bGF1cmVudC5tYXJ0aW4uYXNwZXJhQGZyLmlibS5jb20=',
             {"create_dir", true},
-            {"target_rate_kbps", 2000000}};
-
+            {"target_rate_kbps", 2000000},
+        };
         if (transfer_sessions != 1)
         {
             t_spec["multi_session"] = transfer_sessions;
             t_spec["multi_session_threshold"] = 500000;
         }
-
         // add file list in transfer spec
-        var paths = new JArray();
         foreach (string f in files)
         {
-            paths.Add(new JObject { { "source", f } });
+            ((JArray)t_spec["paths"]).Add(new JObject { { "source", f } });
         }
-        t_spec["paths"] = paths;
-
         // Finally send files to package folder on server
         test_env.StartTransferAndWait(t_spec);
     }
