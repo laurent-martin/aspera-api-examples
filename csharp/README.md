@@ -3,10 +3,10 @@
 
 ## Get started
 
-To run a sample manually (samples are `server`, `faspex5` and `aoc`):
+To run a sample manually (samples are `server_upload`, `faspex5` and `aoc`):
 
 ```bash
-dotnet run server 'faux:///test1?1k'
+dotnet run server_upload 'faux:///test1?1k'
 ```
 
 Execute: `make` to run all tests, or to test a single sample: `make .tested.server`

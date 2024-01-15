@@ -2,25 +2,19 @@ class Program
 {
     static void Main(string[] args)
     {
-        var fileList = args;
-        if (fileList.Length <= 1)
+        if (args.Length <= 1)
         {
             throw new Exception($"ERROR: Usage: Prog <test name> <files to send>");
         }
-        string[] files = fileList.Skip(1).ToArray();
-        switch (args[0])
+        var capitalized_name = new System.Text.StringBuilder();
+        foreach (string word in args[0].Split('_'))
         {
-            case "aoc":
-                SampleAoc.start(files);
-                break;
-            case "faspex5":
-                SampleFaspex5.start(files);
-                break;
-            case "server":
-                SampleServerUpload.start(files);
-                break;
-            default:
-                throw new System.Exception("Unknown sample: " + args[0]);
+            if (!string.IsNullOrEmpty(word))
+            {
+                capitalized_name.Append(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(word));
+            }
         }
+        // call the sample class, based on name
+        ((SampleInterface)Activator.CreateInstance(Type.GetType($"Sample{capitalized_name}", throwOnError: true))).start(args.Skip(1).ToArray());
     }
 }

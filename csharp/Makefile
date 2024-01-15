@@ -1,7 +1,7 @@
 DIR_TOP=$(shell pwd -P)/../
 include $(DIR_TOP)common.make
 TSTFILE='faux:///test1?1k'
-all:: $(T)server $(T)faspex5 $(T)aoc
+all:: $(T)server_upload $(T)faspex5 $(T)aoc
 $(T)%: $(IS_OK)
 	@echo "Running test $@"
 	name='$@' && dotnet run $${name#$(T)} $(TSTFILE)

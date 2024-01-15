@@ -1,8 +1,8 @@
 using Newtonsoft.Json.Linq;
 
-class SampleServerUpload
+class SampleServerUpload : SampleInterface
 {
-    public static void start(string[] files)
+    public void start(string[] files)
     {
         Log.log.Debug("server upload");
         var test_env = new TestEnvironment();

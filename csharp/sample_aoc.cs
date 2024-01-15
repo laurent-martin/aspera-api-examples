@@ -2,15 +2,11 @@
 // Sample to call Aspera On Cloud (AoC) API using .NET
 using Newtonsoft.Json.Linq;
 
-class SampleAoc
+class SampleAoc : SampleInterface
 {
-    static int transfer_sessions = 1;
+    int transfer_sessions = 1;
 
-    static string get_bearer(string scope)
-    {
-        return "todo";
-    }
-    public static void start(string[] package_files)
+    public void start(string[] files)
     {
         var test_env = new TestEnvironment();
         var aoc_config = test_env.mConfig["aoc"];
@@ -101,7 +97,7 @@ class SampleAoc
 
         // add file list in transfer spec
         var paths = new JArray();
-        foreach (string f in package_files)
+        foreach (string f in files)
         {
             paths.Add(new JObject { { "source", f } });
         }

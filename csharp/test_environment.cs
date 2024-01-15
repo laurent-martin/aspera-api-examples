@@ -10,7 +10,10 @@ class Log
         log.Debug($"{name}={Newtonsoft.Json.JsonConvert.SerializeObject(value, Newtonsoft.Json.Formatting.Indented)}");
     }
 }
-
+interface SampleInterface
+{
+    void start(string[] files);
+}
 public class TestEnvironment
 {
     // general test configuration parameters

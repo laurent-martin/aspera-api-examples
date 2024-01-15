@@ -1,8 +1,8 @@
 using Newtonsoft.Json.Linq;
 
-class SampleFaspex5
+class SampleFaspex5: SampleInterface
 {
-    public static void start(string[] files)
+    public void start(string[] files)
     {
         var test_env = new TestEnvironment();
         var config = test_env.mConfig["faspex5"];
