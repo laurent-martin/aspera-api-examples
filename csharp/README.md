@@ -11,8 +11,9 @@ dotnet run server 'faux:///test1?1k'
 
 Execute: `make` to run all tests, or to test a single sample: `make .tested.server`
 
-> **Note:** The `proto` file is used on the file by use of `<Protobuf>` tag in the `.csproj` file.
-No need for `.cs` files provided in SDK: `../generated/trsdk/noarch/connectors/csharp/TransferService`.
+> **Note:** The `proto` file is used on the file by use of tag `<Protobuf>` (from package [Grpc.Tools](https://www.nuget.org/packages/Grpc.Tools/)) in the `.csproj` file.
+>
+> **Note:** Alternatively, one could use pre-generated `.cs` files provided in SDK: `../generated/trsdk/noarch/connectors/csharp/TransferService` or use `protoc` to compile the proto file to source stubs.
 
 ## Environment
 

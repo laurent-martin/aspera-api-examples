@@ -1,6 +1,4 @@
 dist
 bin
 obj
-Transfer.cs
-TransferGrpc.cs
-test_environment.cs.old
+
