@@ -136,48 +136,47 @@ For example, if you want to test only COS transfer with transfer SDK you can set
 Example (with random credentials):
 
 ```yaml
----
-  misc:
-    system_type: osx-x86_64
-    trsdk_url: grpc://127.0.0.1:55002
-  web:
-    port: 9080
-  httpgw:
-    url: https://1.2.3.4/aspera/http-gwy
-  server:
-    user: aspera
-    pass: demoaspera
-    url: ssh://demo.asperasoft.com:33001
-  server_paths:
-    file_download: /aspera-test-dir-small/10MB.1
-    folder_upload: /Upload
-  node:
-    url: https://node.example.com:9092
-    verify: false
-    user: node_user
-    pass: _the_password_here_
-  faspex:
-    url: https://faspex.example.com/aspera/faspex
-    user: faxpex_user
-    pass: _the_password_here_
-  cos:
-    endpoint: https://s3.eu-de.cloud-object-storage.appdomain.cloud
-    bucket: mybucket
-    key: _the_key_here_
-    crn: 'crn:v1:bluemix:public:cloud-object-storage:global:_the_crn_::'
-    auth: https://iam.cloud.ibm.com/identity/token
-  coscreds:
-    bucket: mybucket
-    service_credential_file: ./service_creds.json
-    region: eu-de
-  aoc:
-    org: acme
-    user_email: john@example.com
-    private_key: /path/to/my_aoc_key
-    client_id: aspera.global-cli-client
-    client_secret: frpmsRsG4mjZ0PlxCgdJlvONqBg4Vlpz_IX7gXmBMAfsgMLy2FO6CXLodKfKAuhqnCqSptLbe_wdmnm9JRuEPO-PpFqpq_Kb
-    workspace: Default
-    shared_inbox: TheSharedInbox
+misc:
+  system_type: osx-x86_64
+  trsdk_url: grpc://127.0.0.1:55002
+web:
+  port: 9080
+httpgw:
+  url: https://1.2.3.4/aspera/http-gwy
+server:
+  user: aspera
+  pass: demoaspera
+  url: ssh://demo.asperasoft.com:33001
+server_paths:
+  file_download: /aspera-test-dir-small/10MB.1
+  folder_upload: /Upload
+node:
+  url: https://node.example.com:9092
+  verify: false
+  user: node_user
+  pass: _the_password_here_
+faspex:
+  url: https://faspex.example.com/aspera/faspex
+  user: faxpex_user
+  pass: _the_password_here_
+cos:
+  endpoint: https://s3.eu-de.cloud-object-storage.appdomain.cloud
+  bucket: mybucket
+  key: _the_key_here_
+  crn: 'crn:v1:bluemix:public:cloud-object-storage:global:_the_crn_::'
+  auth: https://iam.cloud.ibm.com/identity/token
+coscreds:
+  bucket: mybucket
+  service_credential_file: ./service_creds.json
+  region: eu-de
+aoc:
+  org: acme
+  user_email: john@example.com
+  private_key: /path/to/my_aoc_key
+  client_id: aspera.global-cli-client
+  client_secret: frpmsRsG4mjZ0PlxCgdJlvONqBg4Vlpz_IX7gXmBMAfsgMLy2FO6CXLodKfKAuhqnCqSptLbe_wdmnm9JRuEPO-PpFqpq_Kb
+  workspace: Default
+  shared_inbox: TheSharedInbox
 ```
 
 > **Note:** Faspex and node sections have a parameter `verify`: set to `false` to disable certificate verification.
