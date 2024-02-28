@@ -2,15 +2,22 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-This public repository provides code examples to transfer files using some of the IBM Aspera APIs for various IBM Aspera products using some languages.
+This public repository provides code examples to transfer files using some of the IBM Aspera APIs for various IBM Aspera products using some languages:
+
+- Aspera Transfer SDK: for transfers in an application
+- Aspera Connect SDK and HTTPGW SDK: for transfers in a web browser
+- Aspera Applications APIs: to interact with applications like Faspex, AoC, Node API, COS, etc...
+
+## Other resources
 
 [General access to all IBM Aspera APIs here](https://developer.ibm.com/apis/catalog/?search=aspera) or [here](https://developer.ibm.com/?q=aspera&dwcontenttype[0]=APIs)
 
-See [Aspera transfer SDK on IBM site](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22)
-
-Other code examples are provided as part of the Transfer SDK itself.
+The [Aspera transfer SDK on IBM site](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22)
+ contains code sample for the use oif it.
 
 [Video about Transfer SDK](https://higherlogicstream.s3.amazonaws.com/IMWUC/d5b91301-6aa1-5741-e083-2a9121d9d8a7_file.mp4)
+
+The [IBM Aspera Connect SDK github site](https://github.com/IBM/aspera-connect-sdk-js) contains examples about using the Aspera Connect SDK.
 
 ## Overview
 
@@ -31,8 +38,6 @@ Nevertheless, developers may choose another method for daemon startup.
 Unix-like systems: Linux, macOS... `Makefile` is provided to run the samples.
 
 Windows: Refer to the Quick start for Windows below as `make` is not available, and use the `Makefile` as a reference to execute the commands manually.
-
-This repo was tested on macOS ARM.
 
 ## Quick start (Unix-like systems)
 
@@ -115,12 +120,11 @@ Set the parameter `misc.system_type` to the architecture used:
 
 - `windows-x86_64`
 - `osx-x86_64`
+- `osx-arm64`
 - `linux-x86_64`
 - `linux-ppc64le`
 - `linux-s390`
 - `aix-ppc64`
-
-> **Note:** for macOS ARM, use `osx-x86_64`
 
 The parameter `misc.trsdk_url` can be set to `grpc://127.0.0.1:55002` (specify the local port that sdk will use).
 
