@@ -7,31 +7,27 @@ This project provides code examples to use some IBM Aspera APIs and transfer fil
 The sample code in `src` shows how to transfer files using:
 
 * IBM Aspera HSTS using SSH credentials
-* IBM Aspera HSTS or Shares using Node credentials
+* IBM Aspera HSTS or Shares using Node credentials, using transfer spec v1 or v2
 * IBM Cloud Object Storage (COS) using IBM Cloud service credentials
-* IBM Aspera Faspex
+* IBM Aspera Faspex 4 and 5
 * IBM Aspera on Cloud using JWT and a private key
 
 ## Quick start
 
-First, initialize the main folder: execute `make` in the top folder of this repository.
-Follow the main Readme to install the required components.
-
-Then, initialize the python folder:
+To run all python sample programs at once, in this folder execute:
 
 ```bash
-cd python
-
 make
 ```
 
 This will run sample programs with sample files using servers as configured in the config file.
 
-If you prefer to test a single application, you may configure only the appropriate section in the config file, have a look to the [`Makefile`](Makefile) to check how the example is invoked and execute just the example relevant to you.
-Then run only one example:
+If you prefer to test a single application, you may configure only the appropriate section in the config file.
+Have a look to the [`Makefile`](Makefile) to check how the example is invoked and execute just the example relevant to you.
+Then run only one example, to test `node`:
 
 ```bash
-make cos2
+make .tested.node
 ```
 
 > **Note:** If the daemon does not start, you make first try to stop it: `make stop`, and then run the sample again.

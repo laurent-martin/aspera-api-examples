@@ -3,7 +3,7 @@ include $(DIR_TOP)common.make
 SRC=src/
 PYTMP=$(TMPDIR)/pythontst/
 TSTFILE=$(PYTMP)This_is_a_test.txt
-all:: $(T)aoc $(T)cos $(T)cos_v2 $(T)cos_node_api $(T)faspex $(T)faspex5 $(T)node $(T)server
+all:: $(T)aoc $(T)cos $(T)cos_v2 $(T)cos_node_api $(T)faspex $(T)faspex5 $(T)node $(T)node_v2 $(T)shares $(T)shares_v2 $(T)server
 $(T)%: $(IS_OK)
 	@echo "Running test $@"
 	source $(PYTMP).venv/bin/activate && name='$@' && $(SRC)$${name#$(T)}.py $(TSTFILE)
