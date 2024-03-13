@@ -32,7 +32,7 @@ t_spec = {
                 }
             ]
         }
-    },
+    }
 }
 
 # add file list in transfer spec

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
-# Upload files using node API and transfer spec v2
+# Upload files Shares (Node) API and transfer spec v2
 # Note: Transfer SDK may have a bug that make this work only if the share name is equal to the folder name on node.
 import test_environment
 import base64
@@ -33,12 +33,13 @@ t_spec = {
                 }
             ]
         }
-    },
+    }
 }
 
 # add file list in transfer spec
 t_spec["assets"]["paths"] = []
 for f in files_to_upload:
+    # note: the Shares requires both source and destination to be set
     basename = f.split("/")[-1]
     t_spec["assets"]["paths"].append(
         {"source": f, "destination": f"{basename}"})
