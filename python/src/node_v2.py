@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
-# Upload files to COS using COS embedded Aspera and Transfer SDK and transfer spec v2
+# Upload files using node API and transfer spec v2
 import test_environment
-import helper_aspera_cos
+import base64
 import logging
 import json
 import sys
@@ -11,22 +11,26 @@ import sys
 files_to_upload = test_environment.file_list
 
 # get node information from config file
-config = test_environment.CONFIG["cos"]
-destination_folder = "/"
+config = test_environment.CONFIG["node"]
+api_base_url = config["url"]
+destination_folder = "/Upload"
 
 # prepare transfer spec v2 for COS
 t_spec = {
-    "title": "send to COS using ts v2",
+    "title": "send using Node API and ts v2",
     "direction": "send",
     "assets": {
         "destination_root": destination_folder,
     },
     "session_initiation": {
-        "icos": {
-            "api_key": config["key"],
-            "bucket": config["bucket"],
-            "ibm_service_instance_id": config["crn"],
-            "ibm_service_endpoint": config["endpoint"],
+        "node_api": {
+            "url": api_base_url,
+            "headers": [
+                {
+                    "key": "Authorization",
+                    "value": f"Basic {base64.b64encode(f'{config["user"]}:{config["pass"]}'.encode()).decode()}",
+                }
+            ]
         }
     },
 }
