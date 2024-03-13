@@ -13,9 +13,8 @@ files_to_upload = test_environment.file_list
 
 # get node information from config file
 config = test_environment.CONFIG["shares"]
-
 api_base_url = f"{config["url"]}/node_api"
-destination_folder = config['share']
+destination_folder = config["share"]
 
 # verify certificate if not explicitly set to False
 verify_cert = not ('verify' in config and config['verify'] is False)
@@ -53,5 +52,5 @@ for f in files_to_upload:
     t_spec["paths"].append({"source": f})
 logging.debug(t_spec)
 
-# start transfer, here we use the FASP Manager, but the newer Transfer SDK can be used as well
+# start transfer, using Transfer SDK
 test_environment.start_transfer_and_wait(t_spec)

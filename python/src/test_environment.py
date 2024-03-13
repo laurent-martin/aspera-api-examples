@@ -15,25 +15,29 @@ import subprocess
 from http.client import HTTPConnection
 from urllib.parse import urlparse
 
+
 # get project root folder
-top_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+TOP_FOLDER = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..", ".."))
 
 # config file with sub-paths in project's root folder
 PATHS_FILE = "config/paths.yaml"
 
 # read project's relative paths config file
 PATHS = yaml.load(
-    open(os.path.join(top_folder, *PATHS_FILE.split("/"))), Loader=yaml.FullLoader
+    open(os.path.join(TOP_FOLDER, *PATHS_FILE.split("/"))), Loader=yaml.FullLoader
 )
 
 # Error hint to help user to fix the issue
-ERROR_HINT = f"\nPlease check: SDK installed in {PATHS['sdk_root']}, configuration file: {PATHS['main_config']}"
+ERROR_HINT = f"\nPlease check: SDK installed in {
+    PATHS['sdk_root']}, configuration file: {PATHS['main_config']}"
 
 
 def get_path(name):
     """Get con figuration sub-path in project's root folder"""
-    item_path = os.path.join(top_folder, *PATHS[name].split("/"))
-    assert os.path.exists(item_path), f"ERROR: {item_path} not found.{ERROR_HINT}"
+    item_path = os.path.join(TOP_FOLDER, *PATHS[name].split("/"))
+    assert os.path.exists(item_path), f"ERROR: {
+        item_path} not found.{ERROR_HINT}"
     return item_path
 
 
@@ -41,7 +45,8 @@ def get_path(name):
 CONFIG = yaml.load(open(get_path("main_config")), Loader=yaml.FullLoader)
 
 # location of gRPC stubs
-python_stub_folder = os.path.join(get_path("trsdk_noarch"), "connectors", "python")
+python_stub_folder = os.path.join(
+    get_path("trsdk_noarch"), "connectors", "python")
 
 assert os.path.exists(
     python_stub_folder
@@ -54,8 +59,8 @@ sys.path.insert(1, python_stub_folder)
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 # import gRPC stubs (Transfer SDK API)
-import transfer_pb2 as transfer_manager
-import transfer_pb2_grpc as transfer_manager_grpc
+import transfer_pb2_grpc as transfer_manager_grpc  # noqa: E4
+import transfer_pb2 as transfer_manager  # noqa: E4
 
 # folder with executables
 arch_folder = os.path.join(get_path("sdk_root"), CONFIG["misc"]["system_type"])
@@ -94,12 +99,13 @@ def start_daemon(sdk_grpc_url):
     os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "false"
     # create a connection to the transfer manager daemon, in case it is running
     grpc_url = urlparse(sdk_grpc_url)
-    channel = grpc.insecure_channel(grpc_url.hostname + ":" + str(grpc_url.port))
+    channel = grpc.insecure_channel(f"{grpc_url.hostname}:{grpc_url.port}")
     # try to start daemon a few times if needed
     for i in range(0, 2):
         try:
             print(
-                f"Connecting to {TRANSFERD_EXECUTABLE} using gRPC: {grpc_url.hostname} {grpc_url.port}..."
+                f"Connecting to {TRANSFERD_EXECUTABLE} using gRPC: {
+                    grpc_url.hostname} {grpc_url.port}..."
             )
             grpc.channel_ready_future(channel).result(timeout=3)
             print("SUCCESS: connected")
@@ -109,10 +115,11 @@ def start_daemon(sdk_grpc_url):
             print("ERROR: Failed to connect\nStarting daemon...")
             # else prepare config and start
             bin_folder = arch_folder
+            log_folder = tempfile.gettempdir()
             config = {
                 "address": grpc_url.hostname,
                 "port": grpc_url.port,
-                "log_directory": tempfile.gettempdir(),
+                "log_directory": log_folder,
                 "log_level": "debug",
                 "fasp_runtime": {
                     "use_embedded": False,
@@ -121,13 +128,13 @@ def start_daemon(sdk_grpc_url):
                         "etc": get_path("trsdk_noarch"),
                     },
                     "log": {
-                        "dir": tempfile.gettempdir(),
+                        "dir": log_folder,
                         "level": 0,
                     },
                 },
             }
-            tmp_file_base = os.path.join(tempfile.gettempdir(), "daemon")
-            conf_file = tmp_file_base + ".conf"
+            tmp_file_base = os.path.join(log_folder, "daemon")
+            conf_file = f"{tmp_file_base}.conf"
             with open(conf_file, "w") as the_file:
                 the_file.write(json.dumps(config))
             command = [
@@ -135,12 +142,13 @@ def start_daemon(sdk_grpc_url):
                 "--config",
                 conf_file,
             ]
-            out_file = tmp_file_base + ".out"
-            err_file = tmp_file_base + ".err"
+            out_file = f"{tmp_file_base}.out"
+            err_file = f"{tmp_file_base}.err"
             time.sleep(1)
-            print("Starting: " + " ".join(command))
-            print("stderr: " + err_file)
-            print("stdout: " + out_file)
+            print(f"Starting: {" ".join(command)}")
+            print(f"stderr: {err_file}")
+            print(f"stdout: {out_file}")
+            print(f"log: {log_folder}/asperatransferd.log")
             transfer_daemon_process = subprocess.Popen(
                 " ".join(command),
                 shell=True,
@@ -184,10 +192,12 @@ def wait_transfer(transfer_id):
     # monitor transfer status
     for transfer_info in sdk_client.MonitorTransfers(
         transfer_manager.RegistrationRequest(
-            filters=[transfer_manager.RegistrationFilter(transferId=[transfer_id])]
+            filters=[transfer_manager.RegistrationFilter(
+                transferId=[transfer_id])]
         )
     ):
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\ntransfer info {0}".format(transfer_info))
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\ntransfer info {0}".format(
+            transfer_info))
         # check transfer status in response, and exit if it's done
         status = transfer_info.status
         # exit on first success or failure
