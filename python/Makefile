@@ -3,7 +3,7 @@ include $(DIR_TOP)common.make
 SRC=src/
 PYTMP=$(TMPDIR)/pythontst/
 TSTFILE=$(PYTMP)This_is_a_test.txt
-all:: $(T)aoc $(T)cos $(T)cos2 $(T)cos_node_api $(T)faspex $(T)faspex5 $(T)node $(T)server
+all:: $(T)aoc $(T)cos $(T)cos_v2 $(T)cos_node_api $(T)faspex $(T)faspex5 $(T)node $(T)server
 $(T)%: $(IS_OK)
 	@echo "Running test $@"
 	source $(PYTMP).venv/bin/activate && name='$@' && $(SRC)$${name#$(T)}.py $(TSTFILE)
@@ -12,6 +12,7 @@ $(T)%: $(IS_OK)
 # ensure SDK is there
 ../$(IS_OK):
 	cd .. && make
+# initialize python environment
 $(IS_OK): ../$(IS_OK)
 	python3 -m venv $(PYTMP).venv
 	source $(PYTMP).venv/bin/activate && pip3 install -r $(SRC)requirements.txt
