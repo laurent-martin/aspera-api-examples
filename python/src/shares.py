@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
-# Upload files using an Aspera Transfer token, generated using node API (upload_setup)
+# Upload files to Aspera Shares (similar as node api)
 import test_environment
 import requests
 import requests.auth
@@ -12,9 +12,10 @@ import sys
 files_to_upload = test_environment.file_list
 
 # get node information from config file
-config = test_environment.CONFIG["node"]
-api_base_url = config["url"]
-destination_folder = "/Upload"
+config = test_environment.CONFIG["shares"]
+
+api_base_url = f"{config["url"]}/node_api"
+destination_folder = config['share']
 
 # verify certificate if not explicitly set to False
 verify_cert = not ('verify' in config and config['verify'] is False)
