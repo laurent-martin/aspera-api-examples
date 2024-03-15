@@ -1,10 +1,17 @@
+# main folder (location of this makefile)
 DIR_TOP=$(shell pwd -P)/
 include $(DIR_TOP)common.make
+# template configurtion file
 CONFIG_TMPL=$(DIR_TOP)config/config.tmpl
+# user's config file path
 CONFIG_FILE=$(DIR_TOP)$(shell sed -n -e 's/^main_config: //p' $(GLOBAL_PATHS))
+# main folder for generated/downloaded stuff
 GENERATED_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^temp_gene: //p' $(GLOBAL_PATHS))/
+# location of extracted transfer SDK
 TRSDK_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' $(GLOBAL_PATHS))/
+# location of platform specific transfer SDK files (binaries)
 TRSDK_ARCH=$(TRSDK_ROOT)$(shell sed -n -e 's/^ *system_type: //p' $(CONFIG_FILE) 2> /dev/null)/
+# downloaded SDK file
 TRSDK_ZIP=$(TRSDK_ROOT)transfer_sdk.zip
 all:: $(IS_OK)
 clean: clean_flags
@@ -23,12 +30,12 @@ $(IS_OK): $(CONFIG_FILE) $(TRSDK_ARCH)asperatransferd
 $(TRSDK_ZIP):
 	mkdir -p $(TRSDK_ROOT)
 	curl -L https://ibm.biz/aspera_transfer_sdk -o $(TRSDK_ZIP)
-# extract transfer SDK
-# Note: create the link: etc because the SDK configuration does not use its "etc" configuration.
+# Extract transfer SDK
+# Note: Create the "etc" link because "ascp" expects to find "aspera-license" in one of . .. ../.. ./etc ../etc ../../etc
 $(TRSDK_ARCH)asperatransferd: $(TRSDK_ZIP)
 	@echo $(TRSDK_ARCH)
 	unzip -qud $(TRSDK_ROOT) $(TRSDK_ZIP)
-	echo '<product><name>IBM Aspera SDK</name><version>1.1.1.52</version></product>' > $(TRSDK_ARCH)product-info.mf
+	$(TRSDK_ARCH)/asperatransferd version | sed -Ee 's|^(.*) version (.*)\..*$$|<product><name>\1</name><version>\2</version></product>|' > $(TRSDK_ARCH)product-info.mf
 	ln -s noarch $(TRSDK_ROOT)etc
 	@touch $@
 # create template from actual private config file

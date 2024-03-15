@@ -88,7 +88,7 @@ If you use macOS, or Linux, AIX, etc...
     mklink /D generated\trsdk\etc noarch
     ```
 
-    > **Note:** Creation of the link is due to a limitation in `asperatransferd` which does not use the `etc` parameter from its config file.
+    > **Note:** Creation of the link `etc -> noarch` is because `ascp` will look for its license file `aspera-license` in one of `.` `./etc` `..` `../etc` `../..` `../../etc`
 
 3. Download [sdk.zip](https://ibm.biz/aspera_transfer_sdk) and extract its contents to `generated/trsdk`
 

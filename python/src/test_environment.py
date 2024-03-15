@@ -92,7 +92,11 @@ TRANSFERD_EXECUTABLE = "asperatransferd"
 
 
 def start_daemon(sdk_grpc_url):
-    """Start transfer manager daemon if not already running and return gRPC client"""
+    """
+    Start transfer manager daemon if not already running
+
+    @return gRPC client
+    """
     global transfer_daemon_process
     global sdk_client
     # avoid message: "Other threads are currently calling into gRPC, skipping fork() handlers"
@@ -116,6 +120,7 @@ def start_daemon(sdk_grpc_url):
             # else prepare config and start
             bin_folder = arch_folder
             log_folder = tempfile.gettempdir()
+            # see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
             config = {
                 "address": grpc_url.hostname,
                 "port": grpc_url.port,
@@ -129,7 +134,7 @@ def start_daemon(sdk_grpc_url):
                     },
                     "log": {
                         "dir": log_folder,
-                        "level": 0,
+                        "level": 2,
                     },
                 },
             }
@@ -148,7 +153,8 @@ def start_daemon(sdk_grpc_url):
             print(f"Starting: {" ".join(command)}")
             print(f"stderr: {err_file}")
             print(f"stdout: {out_file}")
-            print(f"log: {log_folder}/asperatransferd.log")
+            print(f"sdk log: {log_folder}/asperatransferd.log")
+            print(f"xfer log: {log_folder}/aspera-scp-transfer.log")
             transfer_daemon_process = subprocess.Popen(
                 " ".join(command),
                 shell=True,
