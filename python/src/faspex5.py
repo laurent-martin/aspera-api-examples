@@ -6,8 +6,6 @@ import test_environment
 import requests
 import requests.auth
 import logging
-import json
-import sys
 import jwt
 import calendar
 import time
@@ -18,12 +16,12 @@ JWT_NOT_BEFORE_OFFSET_SEC = 60
 # take some validity for the JWT
 JWT_EXPIRY_OFFSET_SEC = 600
 # base path for v5 api
-API_V5_PATH = "/api/v5"
+API_V5_PATH = '/api/v5'
 # path for oauth2 token generation
-TOKEN_PATH = "/auth/token"
+TOKEN_PATH = '/auth/token'
 
 # Arg1: name of package
-package_name = "sample package"
+package_name = 'sample package'
 
 # Arg2: number of // transfer sessions (typically, 1)
 transfer_sessions = 1
@@ -32,80 +30,81 @@ transfer_sessions = 1
 package_files = test_environment.file_list
 
 # get configuration parameters from config file
-config = test_environment.CONFIG["faspex5"]
+config = test_environment.CONFIG['faspex5']
 
 # verify certificate if not explicitly set to False
 verify_cert = not ('verify' in config and config['verify'] is False)
 
+
 def f5_url(path):
-    """return the full url for a given path"""
-    return config["url"] + API_V5_PATH + "/" + path
+    '''return the full url for a given path'''
+    return config['url'] + API_V5_PATH + '/' + path
 
 
 def get_bearer():
-    """generate a bearer token"""
-    with open(config["private_key"]) as fin:
+    '''generate a bearer token'''
+    with open(config['private_key']) as fin:
         private_key_pem = fin.read()
 
     seconds_since_epoch = int(calendar.timegm(time.gmtime()))
 
     jwt_payload = {
-        "iss": config["client_id"],  # issuer
-        "aud": config["client_id"],  # audience
-        "sub": "user:" + config["username"],  # subject
-        "exp": seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
-        "nbf": seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
-        "iat": seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
-        "jti": str(uuid.uuid4()),
+        'iss': config['client_id'],  # issuer
+        'aud': config['client_id'],  # audience
+        'sub': 'user:' + config['username'],  # subject
+        'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
+        'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
+        'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
+        'jti': str(uuid.uuid4()),
     }
     logging.debug(jwt_payload)
 
     data = {
-        "client_id": config["client_id"],
-        "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        "assertion": jwt.encode(
+        'client_id': config['client_id'],
+        'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        'assertion': jwt.encode(
             payload=jwt_payload,
             key=private_key_pem,
-            algorithm="RS256",
-            headers={"typ": "JWT"},
+            algorithm='RS256',
+            headers={'typ': 'JWT'},
         ),
     }
 
     response = requests.post(
-        url=config["url"] + TOKEN_PATH,
-        auth=requests.auth.HTTPBasicAuth(config["client_id"], config["client_secret"]),
+        url=config['url'] + TOKEN_PATH,
+        auth=requests.auth.HTTPBasicAuth(config['client_id'], config['client_secret']),
         data=data,
         headers={
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "application/json",
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
         },
         verify=verify_cert
     )
     response.raise_for_status()
     response_data = response.json()
 
-    return "Bearer " + response_data["access_token"]
+    return 'Bearer ' + response_data['access_token']
 
 
 # Headers for authorization to Faspex 5 API
 # bearer token is valid for some time and can (should) be re-used, until expired, then refresh it
 # in this example we generate a new bearer token for each script invocation
 request_headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-    "Authorization": get_bearer(),
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Authorization': get_bearer(),
 }
 
 
 # Faspex 5 package creation information
 package_creation = {
-    "title": "test title",
-    "recipients": [{"name": config["username"]}],  # send to myself (for test)
+    'title': 'test title',
+    'recipients': [{'name': config['username']}],  # send to myself (for test)
 }
 
 # create a new package with Faspex 5 API (this allocates a reception folder on package storage)
 response = requests.post(
-    url=f5_url("packages"),
+    url=f5_url('packages'),
     headers=request_headers,
     json=package_creation,
     verify=verify_cert
@@ -115,13 +114,13 @@ package_info = response.json()
 logging.debug(package_info)
 
 # build payload to specify files to send
-files_to_send = {"paths": []}
+files_to_send = {'paths': []}
 for f in package_files:
-    files_to_send["paths"].append({"source": f})
+    files_to_send['paths'].append({'source': f})
 
 response = requests.post(
     url=f5_url(
-        "packages/" + package_info["id"] + "/transfer_spec/upload?transfer_type=connect"
+        'packages/' + package_info['id'] + '/transfer_spec/upload?transfer_type=connect'
     ),
     headers=request_headers,
     json=files_to_send,
@@ -133,13 +132,13 @@ logging.debug(t_spec)
 
 # optional: multi session
 if transfer_sessions != 1:
-    t_spec["multi_session"] = transfer_sessions
-    t_spec["multi_session_threshold"] = 500000
+    t_spec['multi_session'] = transfer_sessions
+    t_spec['multi_session_threshold'] = 500000
 
 # add file list in transfer spec
-t_spec["paths"] = []
+t_spec['paths'] = []
 for f in package_files:
-    t_spec["paths"].append({"source": f})
+    t_spec['paths'].append({'source': f})
 
 # Finally send files to package folder on server
 test_environment.start_transfer_and_wait(t_spec)

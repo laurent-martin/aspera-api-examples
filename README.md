@@ -219,8 +219,8 @@ To test transfers to COS, you will need:
 - bucket name
 - storage endpoint
 - api key
-- crn
-- auth endpoint
+- resource instance id (crn)
+- authentication endpoint (optional)
 
 This is the default in the example.
 
