@@ -247,3 +247,11 @@ def start_transfer_and_wait(t_spec):
 def basic_authorization(username, password):
     '''Create basic auth header'''
     return f'Basic {base64.b64encode(f"{username}:{password}".encode()).decode()}'
+
+
+def basic_auth_header_key_value(username, password):
+    '''Create basic auth header key and value for transfer SDK'''
+    return {
+        'key': 'Authorization',
+        'value': basic_authorization(username, password),
+    }

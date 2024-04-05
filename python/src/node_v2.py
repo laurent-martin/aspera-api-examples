@@ -25,10 +25,7 @@ t_spec = {
         'node_api': {
             'url': api_base_url,
             'headers': [
-                {
-                    'key': 'Authorization',
-                    'value': test_environment.basic_authorization(config['user'], config['pass']),
-                }
+                test_environment.basic_auth_header_key_value(config['user'], config['pass'])
             ]
         }
     }
