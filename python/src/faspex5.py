@@ -26,11 +26,11 @@ package_name = 'sample package'
 # Arg2: number of // transfer sessions (typically, 1)
 transfer_sessions = 1
 
-# Arg3 and +: list of files to send
+# Arg3 and next: list of files to send
 package_files = test_environment.file_list
 
 # get configuration parameters from config file
-config = test_environment.CONFIG['faspex5']
+config = test_environment.get_configuration('faspex5')
 
 # verify certificate if not explicitly set to False
 verify_cert = not ('verify' in config and config['verify'] is False)
@@ -38,7 +38,7 @@ verify_cert = not ('verify' in config and config['verify'] is False)
 
 def f5_url(path):
     '''return the full url for a given path'''
-    return config['url'] + API_V5_PATH + '/' + path
+    return f'{config["url"]}{API_V5_PATH}/{path}'
 
 
 def get_bearer():
@@ -51,7 +51,7 @@ def get_bearer():
     jwt_payload = {
         'iss': config['client_id'],  # issuer
         'aud': config['client_id'],  # audience
-        'sub': 'user:' + config['username'],  # subject
+        'sub': f'user:{config["username"]}',  # subject
         'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
         'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
         'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
@@ -71,7 +71,7 @@ def get_bearer():
     }
 
     response = requests.post(
-        url=config['url'] + TOKEN_PATH,
+        url=f'{config["url"]}{TOKEN_PATH}',
         auth=requests.auth.HTTPBasicAuth(config['client_id'], config['client_secret']),
         data=data,
         headers={
@@ -83,7 +83,7 @@ def get_bearer():
     response.raise_for_status()
     response_data = response.json()
 
-    return 'Bearer ' + response_data['access_token']
+    return f'Bearer {response_data["access_token"]}'
 
 
 # Headers for authorization to Faspex 5 API
@@ -119,9 +119,7 @@ for f in package_files:
     files_to_send['paths'].append({'source': f})
 
 response = requests.post(
-    url=f5_url(
-        'packages/' + package_info['id'] + '/transfer_spec/upload?transfer_type=connect'
-    ),
+    url=f5_url(f'packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect'),
     headers=request_headers,
     json=files_to_send,
     verify=verify_cert

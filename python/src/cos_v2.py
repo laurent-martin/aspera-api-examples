@@ -9,7 +9,7 @@ import logging
 files_to_upload = test_environment.file_list
 
 # get node information from config file
-config = test_environment.CONFIG['cos']
+config = test_environment.get_configuration('cos')
 destination_folder = '/'
 
 # prepare transfer spec v2 for COS

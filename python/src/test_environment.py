@@ -87,7 +87,13 @@ file_list = sys.argv[1:]
 
 assert file_list, f'ERROR: Usage: {sys.argv[0]} <files to send>'
 
-TRANSFERD_EXECUTABLE = 'asperatransferd'
+TRANSFER_SDK_DAEMON = 'asperatransferd'
+
+
+def get_configuration(key):
+    '''Get configuration value for specific app'''
+    assert key in CONFIG, f'configuration for {key} is missing'
+    return CONFIG[key]
 
 
 def start_daemon(sdk_grpc_url):
@@ -107,7 +113,7 @@ def start_daemon(sdk_grpc_url):
     for i in range(0, 2):
         try:
             print(
-                f'Connecting to {TRANSFERD_EXECUTABLE} using gRPC: {grpc_url.hostname} {grpc_url.port}...'
+                f'Connecting to {TRANSFER_SDK_DAEMON} using gRPC: {grpc_url.hostname} {grpc_url.port}...'
             )
             grpc.channel_ready_future(channel).result(timeout=3)
             print('SUCCESS: connected')
@@ -142,7 +148,7 @@ def start_daemon(sdk_grpc_url):
             with open(conf_file, 'w') as the_file:
                 the_file.write(json.dumps(config))
             command = [
-                os.path.join(bin_folder, TRANSFERD_EXECUTABLE),
+                os.path.join(bin_folder, TRANSFER_SDK_DAEMON),
                 '--config',
                 conf_file,
             ]

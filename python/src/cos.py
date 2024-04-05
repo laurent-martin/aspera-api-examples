@@ -18,7 +18,8 @@ destination_folder = '/'
 # node_info=helper_aspera_cos.node(bucket=config['bucket'],endpoint=info['endpoint'],key=info['key'],crn=info['crn'])
 
 # get Aspera Transfer Service Node information for specified COS bucket
-config = test_environment.CONFIG['cos']
+config = test_environment.get_configuration('cos')
+
 node_info = helper_aspera_cos.node(
     bucket=config['bucket'],
     endpoint=config['endpoint'],
@@ -40,7 +41,7 @@ request_headers.update(node_info['headers'])
 
 # call Node API with one transfer request to get one transfer spec
 response = requests.post(
-    node_info['url'] + '/files/upload_setup',
+    url=f'{node_info["url"]}/files/upload_setup',
     auth=node_info['auth'],
     data=json.dumps(upload_setup_request),
     headers=request_headers,

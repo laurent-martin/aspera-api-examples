@@ -38,13 +38,11 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
     # Get Aspera connection information for the bucket
     header_auth = {
         'ibm-service-instance-id': crn,
-        'Authorization': bearer_token_info['token_type']
-        + ' '
-        + bearer_token_info['access_token'],
+        'Authorization': f'{bearer_token_info["token_type"]} {bearer_token_info["access_token"]}',
         'Accept': 'application/xml',
     }
     response = requests.get(
-        endpoint + '/' + bucket,
+        url=f'{endpoint}/{bucket}',
         headers=header_auth,
         params={'faspConnectionInfo': True},
     )
@@ -96,7 +94,7 @@ def from_service_credentials(*, credentials, region):
         raise Exception('service creds must be a dict')
     for k in ['apikey', 'endpoints', 'resource_instance_id']:
         if not k in credentials:
-            raise Exception('missing key: ' + k)
+            raise Exception(f'missing key: {k}')
     logging.debug(credentials)
 
     # read endpoints from url in service credentials
@@ -106,8 +104,7 @@ def from_service_credentials(*, credentials, region):
 
     # return parameters
     return {
-        'endpoint': 'https://'
-        + response.json()['service-endpoints']['regional'][region]['public'][region],
+        'endpoint': f"https://{response.json()['service-endpoints']['regional'][region]['public'][region]}",
         'key': credentials['apikey'],
         'crn': credentials['resource_instance_id'],
     }

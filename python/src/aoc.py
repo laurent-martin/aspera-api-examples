@@ -29,7 +29,7 @@ transfer_sessions = 1
 package_files = test_environment.file_list
 
 # get configuration parameters from config file
-config = test_environment.CONFIG['aoc']
+config = test_environment.get_configuration('aoc')
 
 
 def get_bearer(scope):

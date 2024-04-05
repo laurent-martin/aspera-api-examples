@@ -7,18 +7,18 @@ import tempfile
 import os
 from urllib.parse import urlparse
 
-assert 'server' in test_environment.CONFIG, 'server config is missing'
+config = test_environment.get_configuration('server')
 
 # where transferred files will be stored
 my_local_folder = tempfile.gettempdir()
 
-server_url = urlparse(test_environment.CONFIG['server']['url'])
+server_url = urlparse(config['url'])
 assert server_url.scheme == 'ssh', 'expecting SSH scheme for server URL'
 
 remote_host = server_url.hostname
 remote_port = server_url.port
-remote_user = test_environment.CONFIG['server']['user']
-remote_pass = test_environment.CONFIG['server']['pass']
+remote_user = config['user']
+remote_pass = config['pass']
 
 
 test_environment.shutdown_after_transfer = False

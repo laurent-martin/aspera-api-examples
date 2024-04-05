@@ -11,7 +11,8 @@ import json
 files_to_upload = test_environment.file_list
 
 # get node information from config file
-config = test_environment.CONFIG['node']
+config = test_environment.get_configuration('node')
+
 api_base_url = config['url']
 destination_folder = '/Upload'
 

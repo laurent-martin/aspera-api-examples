@@ -9,8 +9,9 @@ import logging
 # get file to upload from command line
 files_to_upload = test_environment.file_list
 
-# get node information from config file
-config = test_environment.CONFIG['shares']
+# get Shares information from config file
+config = test_environment.get_configuration('shares')
+
 api_base_url = f'{config["url"]}/node_api'
 destination_folder = config['share']
 

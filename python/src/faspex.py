@@ -8,7 +8,7 @@ import logging
 import json
 
 # get configuration parameters from config file
-config = test_environment.CONFIG['faspex']
+config = test_environment.get_configuration('faspex')
 
 # verify certificate if not explicitly set to False
 verify_cert = not ('verify' in config and config['verify'] is False)
@@ -27,7 +27,7 @@ delivery_info = {
 
 # create package and get information for file upload (transfer spec)
 response = requests.post(
-    config['url'] + '/send',
+    f'{config["url"]}/send',
     auth=requests.auth.HTTPBasicAuth(config['user'], config['pass']),
     headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
     data=json.dumps(delivery_info),
