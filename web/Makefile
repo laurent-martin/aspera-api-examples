@@ -4,6 +4,8 @@ include $(DIR_TOP)common.make
 SRC=./src/
 TMP_NPM=tmp_node/
 GW_SDK=@ibm-aspera/http-gateway-sdk-js
+DK_SDK=@ibm-aspera/desktop-sdk-js
+CN_SDK=@ibm-aspera/connect-sdk-js
 all:: $(IS_OK)
 	node --trace-warnings src/server.js $(SRC)
 # retrieve javascript libs for http gateway client

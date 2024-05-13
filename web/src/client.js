@@ -11,7 +11,8 @@
 
 // identifier used by HTTPGW SDK
 const HTTPGW_FORM_ID = 'send-panel'
-
+const desktop_init_url = 'aspera://'
+const desktop_base_url = 'http://127.0.0.1:33024'
 // =================================================================================================
 // private functions
 
@@ -114,6 +115,27 @@ function my_initialize_connect() {
     console.log('app info=', my_info)
 }
 
+function my_initialize_httpgw() {
+    asperaHttpGateway.initHttpGateway(document.getElementById('httpgw_url').value + '/v1')
+        .then(response => {
+            console.log('HTTP Gateway SDK started', response)
+            document.getElementById('httpgw_version').innerHTML = `HTTP GW v${response.version}`
+            // register a transfer monitor
+            this.httpGwMonitorId = asperaHttpGateway.registerActivityCallback((result) => { my_handleTransferEvents(result.transfers) })
+        })
+        .catch(error => {
+            document.getElementById('httpgw_version').innerHTML = `HTTP GW ${error.message}`
+            my_error(`Problem with HTTPGW: ${error.message}`)
+        })
+}
+
+function my_initialize_desktop() {
+    fetch(`${desktop_init_url}`, {
+        method: 'GET'
+    })
+        .then((response) => { console.log(response) })
+}
+
 // Generates a transfer spec without calling node API: authorization with bare SSH credentials
 // this is for demo only, usually it would not be the case: a token would be used for authorization
 function my_getTransferSpecSSH(params) {
@@ -158,7 +180,7 @@ function my_getTransferSpecFromServer(params) {
 }
 
 // start transfer for specified transfer type and files
-// using either connect SDK or HTTP HW SDK
+// using either Connect SDK or HTTPGW SDK
 function my_startTransfer(transferSpec) {
     console.log('startTransfer ts=', transferSpec)
     if (document.getElementById('use_connect').checked) {
@@ -166,18 +188,21 @@ function my_startTransfer(transferSpec) {
         // https://ibm.github.io/aspera-connect-sdk-js/global.html#ConnectSpec
         // allow_dialogs=false : hide connect client, we will follow the transfer progress in the web UI
         this.connectClient.startTransfer(transferSpec, { "allow_dialogs": false })
-    } else {
+    } else if (document.getElementById('use_httpgw').checked) {
         // transfer spec specific to http gw:
         //transferSpec.download_name='project_files'
         //transferSpec.zip_required=true
         if (transferSpec.direction === 'receive') {
-            asperaHttpGateway.download(transferSpec).then(response => {
-            }).catch(error => { my_error(`Problem with HTTPGW: ${error.message}`) })
+            asperaHttpGateway.download(transferSpec)
+                .then(response => { })
+                .catch(error => { my_error(`Problem with HTTPGW: ${error.message}`) })
         } else {
             asperaHttpGateway.upload(transferSpec, HTTPGW_FORM_ID)
                 .then(response => { console.log('Upload started', response) })
                 .catch(error => { my_error(`Problem with HTTPGW: ${error.message}`) })
         }
+    } else if (document.getElementById('use_desktop').checked) {
+        my_error('Desktop not yet implemented')
     }
 }
 
@@ -192,18 +217,21 @@ function my_resetSelection() {
 function my_updateUi() {
     console.log('update UI')
     document.getElementById('upload_files').innerHTML = this.selectedUploadFiles.join(', ')
+    // init client app
     if (document.getElementById('use_connect').checked) {
         // Connect
         document.getElementById('connect_info').style.display = 'block'
         document.getElementById('httpgw_info').style.display = 'none'
+        document.getElementById('desktop_info').style.display = 'none'
         document.getElementById('div_ssh_creds_selector').style.display = 'block'
         if (!this.connectClient) {
             my_initialize_connect()
         }
-    } else {
+    } else if (document.getElementById('use_httpgw').checked) {
         // HTTPGW
         document.getElementById('connect_info').style.display = 'none'
         document.getElementById('httpgw_info').style.display = 'block'
+        document.getElementById('desktop_info').style.display = 'none'
         document.getElementById('div_ssh_creds_selector').style.display = 'none'
         // SSH creds are not supported by HTTPGW
         if (document.querySelector("input[type='radio'][name=transfer_auth]:checked").value === "ssh_creds") {
@@ -211,18 +239,14 @@ function my_updateUi() {
             document.getElementById('aspera_token_radio').checked = true
         }
         if (!this.httpGwMonitorId) {
-            asperaHttpGateway.initHttpGateway(document.getElementById('httpgw_url').value + '/v1')
-                .then(response => {
-                    console.log('HTTP Gateway SDK started', response)
-                    document.getElementById('httpgw_version').innerHTML = `HTTP GW v${response.version}`
-                    // register a transfer monitor
-                    this.httpGwMonitorId = asperaHttpGateway.registerActivityCallback((result) => { my_handleTransferEvents(result.transfers) })
-                })
-                .catch(error => {
-                    document.getElementById('httpgw_version').innerHTML = `HTTP GW ${error.message}`
-                    my_error(`Problem with HTTPGW: ${error.message}`)
-                })
+            my_initialize_httpgw()
         }
+    } else if (document.getElementById('use_desktop').checked) {
+        document.getElementById('connect_info').style.display = 'none'
+        document.getElementById('httpgw_info').style.display = 'none'
+        document.getElementById('desktop_info').style.display = 'block'
+        document.getElementById('div_ssh_creds_selector').style.display = 'block'
+        my_initialize_desktop()
     }
     // update UI for transfer auth type
     if (document.querySelector("input[type='radio'][name=transfer_auth]:checked").value === "ssh_creds") {
@@ -271,9 +295,6 @@ function client_initialize() {
     document.getElementById('folder_for_upload').value = config.server_paths.folder_upload
     // Event listener when user click on UI
     document.querySelectorAll('input[type=radio]').forEach(item => item.addEventListener('change', () => my_updateUi()))
-    document.querySelectorAll('input[type=checkbox]').forEach(item => item.addEventListener('change', () => my_updateUi()))
-    document.getElementById('use_connect').addEventListener('click', () => { my_updateUi() })
-    document.getElementById('action_download').addEventListener('click', () => { my_updateUi() })
     my_updateUi()
 }
 // Button: Select files for upload
@@ -284,8 +305,10 @@ function client_pick_files() {
         this.connectClient.showSelectFileDialogPromise({ allowMultipleSelection: false })
             .then((selection) => { my_storeFileNames(selection) })
             .catch(() => { console.error('Unable to select files') })
-    } else {
+    } else if (document.getElementById('use_httpgw').checked) {
         asperaHttpGateway.getFilesForUpload((selection) => { my_storeFileNames(selection) }, HTTPGW_FORM_ID)
+    } else if (document.getElementById('use_desktop').checked) {
+        my_error('Desktop not yet implemented')
     }
 }
 // Button: Start transfer

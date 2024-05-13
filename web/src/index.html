@@ -6,11 +6,11 @@
   <link rel="tab icon" href="favicon.ico" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://d3gcli72yxqn2z.cloudfront.net/@ibm-aspera/connect-sdk-js/latest/connect-sdk.js"></script>
+  <script src="https://cdn.privex.io/lib/simple-jsonrpc/master/simple-jsonrpc-js.min.js"></script>
   <script src="http-gateway.js"></script>
   <script src="conf.js"></script>
   <script src="client.js"></script>
 </head>
-
 <body onload="client_initialize()">
   <header>
     <div class="content">
@@ -25,22 +25,29 @@
   </header>
   <fieldset>
     <legend>Select transfer agent</legend>
-    <label class="toggle">
-      <input type="checkbox" id="use_connect" checked>
-      <div class="labels" data-on="Connect" data-off="HTTPGW"></div>
-    </label>
+    <div>
+      <input type="radio" name="client_select" id="use_connect" checked />
+      <label for="use_connect">Connect</label>
+      <input type="radio" name="client_select" id="use_httpgw" />
+      <label for="use_httpgw">HTTPGW</label>
+      <input type="radio" name="client_select" id="use_desktop" />
+      <label for="use_desktop">Desktop</label>
+    </div>
     <div id="httpgw_info">URL:
       <input type="text" id="httpgw_url">
       <div id="httpgw_version"></div>
     </div>
     <div id="connect_info"></div>
+    <div id="desktop_info">Not Implemented</div>
   </fieldset>
   <fieldset>
     <legend>Select transfer operation</legend>
-    <label class="toggle">
-      <input type="checkbox" id="action_download" checked>
-      <div class="labels" data-on="Download" data-off="Upload"></div>
-    </label>
+    <div>
+      <input type="radio" name="op_select" id="action_download" checked />
+      <label for="action_download">Download</label>
+      <input type="radio" name="op_select" id="action_upload" />
+      <label for="action_upload">Upload</label>
+    </div>
   </fieldset>
   <fieldset>
     <legend>Select transfer authentication</legend>
@@ -50,7 +57,7 @@
     </div>
     <div>
       <input type="radio" id="basic_token_radio" name="transfer_auth" value="basic_token">
-      <label for="basic_token">Token: Basic (Access key only)</label>
+      <label for="basic_token">Token: Basic (Access Key only)</label>
     </div>
     <div id="div_ssh_creds_selector">
       <input type="radio" id="ssh_creds_radio" name="transfer_auth" value="ssh_creds">

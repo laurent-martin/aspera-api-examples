@@ -1,8 +1,12 @@
-# Aspera transfers in web app using Connect or HTTP Gateway and Node API
+# Aspera transfers in Browser-based Web Applications
 
-This sample application shows how to build an Aspera-transfer-enabled web application using the Aspera Connect SDK and Aspera HTTP Gateway SDK.
+This sample application shows how to build an Aspera-transfer-enabled web application using:
 
-In both case, starting a transfer consists in building a **transfer spec** and then calling the browser-side javascript `startTransfer` SDK's API.
+- the Aspera Connect SDK
+- the Aspera HTTP Gateway SDK
+- the Aspera Desktop Client SDK (not implemented yet)
+
+In all cases, starting a transfer consists in building a **transfer spec** and then calling the browser-side javascript `startTransfer` SDK's API.
 
 The transfer spec is Aspera's structure that contains all information to start a transfer:
 
@@ -22,6 +26,7 @@ Web applications shall use the "token" authorization scheme, using either of tho
 
 - Aspera Transfer token (a string that starts with either `ATM` or `ATB` and ends with the same letters reverse)
 - an OAuth 2.0 bearer token (a string that begins with `Bearer`)
+- a Basic token (a string that begins with `Basic`, mainly for testing purpose, available only with access keys)
 
 In this example, the transfer spec is build either:
 
