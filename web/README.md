@@ -6,6 +6,8 @@ This sample application shows how to build an Aspera-transfer-enabled web applic
 - the Aspera HTTP Gateway SDK
 - the Aspera Desktop Client SDK (not implemented yet)
 
+![screenshot](screenshot.png)
+
 In all cases, starting a transfer consists in building a **transfer spec** and then calling the browser-side javascript `startTransfer` SDK's API.
 
 The transfer spec is Aspera's structure that contains all information to start a transfer:
