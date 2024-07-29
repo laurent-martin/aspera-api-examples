@@ -24,7 +24,7 @@ public class TestEnvironment {
 	private static final Logger LOGGER = Logger.getLogger(TestEnvironment.class.getName());
 	static final String CONF_KEY_SDK_URL = "trsdk_url";
 	static final String PATHS_FILES = "config/paths.yaml";
-	static final String TRANSFERD_EXECUTABLE = "asperatransferd";
+	static final String SDK_DAEMON_EXECUTABLE = "asperatransferd";
 
 	// config filer loaded from yaml
 	public Map<String, Map<String, Object>> config;
@@ -41,14 +41,14 @@ public class TestEnvironment {
 
 	/// get path from the reference file
 	/// @param name the name of the path in the reference file
-	private String getPath(String name) {
+	/// @return the path
+	private String getPath(String name, String... sub_path) {
 		// by default , we init with the paths reference file
-		String subpath = PATHS_FILES;
-		if (name != null) {
-			// if a name is provided, we use the path from the reference file
-			subpath = paths.get(name);
-		}
-		return FileSystems.getDefault().getPath(dir_top, subpath).toString();
+		// if a name is provided, we use the path from the reference file
+		final String[] completePath = new String[sub_path.length + 1];
+		completePath[0] = name == null ? PATHS_FILES : paths.get(name);
+		System.arraycopy(sub_path, 0, completePath, 1, sub_path.length);
+		return FileSystems.getDefault().getPath(dir_top, completePath).toString();
 	}
 
 	/// Create configuration file for the Aspera Transfer SDK
@@ -92,11 +92,9 @@ public class TestEnvironment {
 		}
 		try {
 			final URI grpc_url = new URI(config.get("misc").get(CONF_KEY_SDK_URL).toString());
-			arch_dir = FileSystems.getDefault()
-					.getPath(getPath("sdk_root"), config.get("misc").get("system_type").toString())
-					.toString();
-			daemon_executable =
-					FileSystems.getDefault().getPath(arch_dir, TRANSFERD_EXECUTABLE).toString();
+			final String system_type = config.get("misc").get("system_type").toString();
+			arch_dir = getPath("sdk_root", system_type);
+			daemon_executable = getPath("sdk_root", system_type, SDK_DAEMON_EXECUTABLE);
 			sdk_conf_path = createConfFile(grpc_url);
 			// create channel to socket
 			final ManagedChannel channel = ManagedChannelBuilder

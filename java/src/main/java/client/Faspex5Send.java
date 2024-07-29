@@ -22,6 +22,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 // into package
 public class Faspex5Send {
 	private static final Logger LOGGER = Logger.getLogger(Faspex5Send.class.getName());
+	final static String MIME_JSON = "application/json";
 	// get simplified testing environment
 	final TestEnvironment mTestEnv = new TestEnvironment();
 	// config from yaml
@@ -77,7 +78,7 @@ public class Faspex5Send {
 	String getBearerToken() {
 		final String client_id = mConfig.get("client_id").toString();
 		final HttpResponse<JsonNode> result = Unirest.post(mTokenUrl)//
-				.header("Accept", "application/json")
+				.header("Accept", MIME_JSON)
 				.header("Content-Type", "application/x-www-form-urlencoded")
 				.field("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer") //
 				.field("client_id", client_id) //
@@ -92,12 +93,13 @@ public class Faspex5Send {
 	void sendPackage() {
 		// dummy file is sent
 		final String file_to_send = "faux:///10m?10m";
-		final boolean verify =!(mConfig.containsKey("verify") && (Boolean)mConfig.get("verify") == false);
+		final boolean verify =
+				!(mConfig.containsKey("verify") && (Boolean) mConfig.get("verify") == false);
 
 		// REST: prepare environment
 		Unirest.config()//
-				.verifySsl(verify)
-				.setDefaultHeader("Accept", "application/json");
+				.verifySsl(verify) //
+				.setDefaultHeader("Accept", MIME_JSON);
 
 		// Faspex REST API: generate OAuth authorization
 		final String token = getBearerToken();
@@ -105,7 +107,7 @@ public class Faspex5Send {
 		// REST: prepare environment for Bearer token based auth
 		Unirest.config()//
 				.setDefaultHeader("Authorization", "Bearer " + token) //
-				.setDefaultHeader("Content-Type", "application/json");
+				.setDefaultHeader("Content-Type", MIME_JSON);
 
 		// Faspex API: Prepare package creation information
 		final JSONObject package_create_params = new JSONObject()//
