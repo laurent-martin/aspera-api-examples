@@ -5,8 +5,10 @@ PROJECT_NAME=java_samples
 # same as in build.gradle
 PROJECT_VERSION=0.1
 SAMPLE_JAR=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar
+# cspell:disable
 JAVA_PROPS=-Ddir_top=$(DIR_TOP) -Djava.util.logging.config.file=logging.properties
 GRADLE_PROPS=-Psdk_noarch=$(GLOBAL_TRSDK_NOARCH)
+# cspell:enable
 all:: $(T)ServerFileUploadV1Example $(T)ServerFileDownloadV2Example $(T)COSFileUploadExample $(T)PersistentUploadExample $(T)Faspex5Send
 $(T)%: $(IS_OK)
 	@name='$@' && echo "== Testing $${name#$(T)} ==========================="

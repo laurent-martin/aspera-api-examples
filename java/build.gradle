@@ -10,7 +10,10 @@ plugins {
 group = 'com.ibm.aspera'
 version = '0.1'
 
+// if compilation lead to missing symbol: check that gRPC and protoc versions are compatible
+// check on https://github.com/grpc/grpc-java/tree/v1.43.x
 def grpcVersion = '1.43.2'
+def protocVersion = '3.19.2'
 
 application {
   mainClass = 'COSFileUploadExample'
@@ -27,7 +30,7 @@ repositories {
 }
 
 protobuf {
-    protoc { artifact = "com.google.protobuf:protoc:3.19.2" }
+    protoc { artifact = "com.google.protobuf:protoc:${protocVersion}" }
     plugins {
         grpc { artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}" }
     }
