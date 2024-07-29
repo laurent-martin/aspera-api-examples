@@ -34,7 +34,7 @@ Instead, the `.proto` file should be used to generate the classes (grpc stubs).
 
 The appropriate toolchain should be used to match your java version.
 
-To test the exemple with a specific java version set the env var `JAVA_HOME`, for example on macos:
+To test the example with a specific java version set the env var `JAVA_HOME`, for example on macos:
 
 ```bash
 JAVA_HOME=/opt/homebrew/Cellar/openjdk@11/11.0.23 make

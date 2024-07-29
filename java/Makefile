@@ -1,7 +1,7 @@
 DIR_TOP=$(shell pwd -P)/../
 include $(DIR_TOP)common.make
 # same as in settings.gradle
-PROJECT_NAME=javasamples
+PROJECT_NAME=java_samples
 # same as in build.gradle
 PROJECT_VERSION=0.1
 SAMPLE_JAR=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar

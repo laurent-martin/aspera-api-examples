@@ -57,7 +57,7 @@ If you use macOS, or Linux, AIX, etc...
 
     > **Note:** If you don't have internet access on the system, download the Transfer SDK with a system with internet from: <https://ibm.biz/aspera_transfer_sdk> and place the file here: `<main folder>/sdk/trsdk/transfer_sdk.zip`
 
-2. Refer to [Configuration File](#config): Edit the file `private/config.yaml` and fill values.
+2. Refer to [Configuration File](#configuration-file): Edit the file `private/config.yaml` and fill values.
 
     ```bash
     vi private/config.yaml
@@ -67,7 +67,7 @@ If you use macOS, or Linux, AIX, etc...
 
 ## Quick start (Windows)
 
-1. Refer to [Configuration File](#config): Copy the file `config/config.tmpl` into `private/config.yaml` and fill values.
+1. Refer to [Configuration File](#configuration-file): Copy the file `config/config.tmpl` into `private/config.yaml` and fill values.
 
     ```dos
     md private
@@ -78,7 +78,7 @@ If you use macOS, or Linux, AIX, etc...
 
    Edit required parameters in `private/config.yaml`, for example Faspex connection information.
 
-   > **Note:** Yes, you can also drap and drop, and click, and copy/paste, and edit the file with Notepad, etc...
+   > **Note:** Yes, you can also drag and drop, and click, and copy/paste, and edit the file with Notepad, etc...
 
 2. Prepare the SDK folder
 
@@ -107,7 +107,7 @@ python python/src/cos.py datafile
 
 > **Note:** The file `transfer.proto` shall be used to generate the stub code for the client side of Transfer SDK using your own version of the language. Generate code is provided for convenience in the SDK, but it is not recommended to use it directly, as it was generated with a specific version of the language. Refer to [GRPC web site](https://grpc.io/) for instructions on how to generate the code.
 
-## <a id="config"></a>Configuration file
+## Configuration file
 
 A template configuration file is provided: [`config/config.tmpl`](config/config.tmpl).
 

@@ -1,40 +1,79 @@
-version: "0.2"
-ignorePaths:
-  - "**/*.pptx"
-  - "**/*.lock"
-  - "**/*.gem"
-  - "**/*.log"
-  - "**/*.html"
-  - "**/*.pdf"
-  - "coverage/**"
-  - "/tmp/**"
-  - ".rspec_status/**"
-  - "local/**"
-  - ".secrets.baseline"
-dictionaryDefinitions:
-  - name: aspera
-    path: aspera.dict
-    addWords: true
-dictionaries:
-  - aspera
-words: []
-ignoreWords: []
-import: []
-enableFiletypes:
-  - shellscript
-ignoreRegExpList:
-  - Email
-  - >-
-    /ftp:[^\s]*/g
-patterns:
-  - name: markdown_code_block
-    pattern: |
-      /
-          ^(\s*`{3,}).*     # match the ```
-          [\s\S]*?          # the block of code
-          ^\1               # end of the block
-      /gmx
-languageSettings:
-  - languageId: markdown
-    ignoreRegExpList:
-      - markdown_code_block
+{
+  "version": "0.2",
+  "ignorePaths": [
+    "*.dict",
+    ".cspell.json",
+    "lib/aspera/data",
+    "**/*.tex",
+    "**/*.html",
+    "**/*.pptx"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "aspera",
+      "path": ".aspera.dict",
+      "addWords": true
+    }
+  ],
+  "useGitignore": true,
+  "dictionaries": [
+    "aspera",
+    "technical",
+    "shell"
+  ],
+  "words": [],
+  "ignoreWords": [],
+  "import": [],
+  "enableFiletypes": [
+    "makefile",
+    "markdown",
+    "shellscript"
+  ],
+  "patterns": [
+    {
+      "name": "markdown_code_block",
+      "pattern": "/^\\s*```(.|\\n)+?^\\s*```/gm"
+    },
+    {
+      "name": "markdown_code_inline",
+      "pattern": "/`.*?`/g"
+    },
+    {
+      "name": "quoted_special_words",
+      "pattern": "/\".*?\"/g"
+    },
+    {
+      "name": "embedded_ruby_code_block",
+      "pattern": "/<%[^%]*%>/g"
+    },
+    {
+      "name": "makefile_only_comments",
+      "pattern": "/^[^#]/"
+    }
+  ],
+  "languageSettings": [
+    {
+      "languageId": "markdown",
+      "ignoreRegExpList": [
+        "markdown_code_block",
+        "markdown_code_inline",
+        "quoted_special_words",
+        "embedded_ruby_code_block"
+      ]
+    },
+    {
+      "languageId": "makefile",
+      "ignoreRegExpList": [
+        "makefile_only_comments"
+      ]
+    }
+  ],
+  "overrides": [
+    {
+      "filename": "**/Makefile",
+      "languageId": "cpp",
+      "enabled": true
+      // Add any other specific configurations for Makefiles
+    }
+  ]
+}
