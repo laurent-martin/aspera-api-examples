@@ -105,6 +105,8 @@ echo hello > datafile
 python python/src/cos.py datafile
 ```
 
+> **Note:** The file `transfer.proto` shall be used to generate the stub code for the client side of Transfer SDK using your own version of the language. Generate code is provided for convenience in the SDK, but it is not recommended to use it directly, as it was generated with a specific version of the language. Refer to [GRPC web site](https://grpc.io/) for instructions on how to generate the code.
+
 ## <a id="config"></a>Configuration file
 
 A template configuration file is provided: [`config/config.tmpl`](config/config.tmpl).
@@ -157,11 +159,11 @@ node:
   pass: _the_password_here_
 faspex:
   url: https://faspex.example.com/aspera/faspex
-  user: faxpex_user
+  user: faspex_user
   pass: _the_password_here_
 cos:
   endpoint: https://s3.eu-de.cloud-object-storage.appdomain.cloud
-  bucket: mybucket
+  bucket: my_bucket
   key: _the_key_here_
   crn: 'crn:v1:bluemix:public:cloud-object-storage:global:_the_crn_::'
   auth: https://iam.cloud.ibm.com/identity/token
