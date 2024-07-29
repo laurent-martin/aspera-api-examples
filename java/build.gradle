@@ -11,9 +11,9 @@ group = 'com.ibm.aspera'
 version = '0.1'
 
 // if compilation lead to missing symbol: check that gRPC and protoc versions are compatible
-// check on https://github.com/grpc/grpc-java/tree/v1.43.x
-def grpcVersion = '1.43.2'
-def protocVersion = '3.19.2'
+// check on https://github.com/grpc/grpc-java/tree/v1.65.x
+def grpcVersion = '1.65.1'
+def protocVersion = '3.25.1'
 
 application {
   mainClass = 'COSFileUploadExample'
@@ -58,6 +58,9 @@ sourceSets {
 shadowJar {
     project.configurations.implementation.canBeResolved = true
     configurations = [project.configurations.implementation]
+    // For issue: NameResolver 'unix' for '...' not supported by transport
+    // https://github.com/grpc/grpc-java/issues/10853
+    mergeServiceFiles() 
 }
 
 dependencies {

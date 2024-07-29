@@ -1,17 +1,20 @@
 # Examples using Java
 
-The TestEnvironment class checks if the daemon is running and if not, it will start it before running the test.
+The `TestEnvironment` class checks if the daemon is running and if not, it will start it before running the test.
 
 Samples show logs on terminal.
 
-The toolchain here uses gradle, but maven can also be used, refer to [Github GRPC for java](https://github.com/grpc/grpc-java)
+## Using `maven` to build the project
 
-The gradle file builds generated java classes from the `.proto` file for the Transfer SDK.
+The toolchain here uses gradle, but maven can also be used, refer to [Github GRPC for java](https://github.com/grpc/grpc-java) for sample maven configuration.
 
-## Java version
+## Java
 
 No `.jar` or `.class` should be used from SDK.
 Instead, the `.proto` file should be used to generate the classes (grpc stubs).
+
+The gradle file builds generated java classes from the `.proto` file for the Transfer SDK.
+Any toolchain can be used to generate the classes with `protoc` and `grpc-java`.
 
 ```text
 ╭───────────────╮                                    ╭───────────────╮
@@ -42,7 +45,7 @@ To test the example with a specific java version set the env var `JAVA_HOME`, fo
 JAVA_HOME=/opt/homebrew/Cellar/openjdk@11/11.0.23 make
 ```
 
-## gRPC versions
+## gRPC and `protoc` versions
 
 The compilation of the `.proto` requires the use of:
 

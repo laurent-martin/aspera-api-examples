@@ -22,7 +22,7 @@ import java.util.logging.Level;
 // read configuration file and provide interface for transfer
 public class TestEnvironment {
 	private static final Logger LOGGER = Logger.getLogger(TestEnvironment.class.getName());
-	static final String SDK_URL = "trsdk_url";
+	static final String CONF_KEY_SDK_URL = "trsdk_url";
 	static final String PATHS_FILES = "config/paths.yaml";
 	static final String TRANSFERD_EXECUTABLE = "asperatransferd";
 
@@ -39,6 +39,8 @@ public class TestEnvironment {
 	final Map<String, String> paths;
 	final String arch_dir;
 
+	/// get path from the reference file
+	/// @param name the name of the path in the reference file
 	private String getPath(String name) {
 		// by default , we init with the paths reference file
 		String subpath = PATHS_FILES;
@@ -49,6 +51,7 @@ public class TestEnvironment {
 		return FileSystems.getDefault().getPath(dir_top, subpath).toString();
 	}
 
+	/// Create configuration file for the Aspera Transfer SDK
 	private String createConfFile(final URI grpc_url) {
 		// Define the configuration JSON object
 		JSONObject sdk_config = new JSONObject() //
@@ -88,19 +91,20 @@ public class TestEnvironment {
 			throw new Error(e.getMessage());
 		}
 		try {
-			final URI grpc_url = new URI(config.get("misc").get(SDK_URL).toString());
+			final URI grpc_url = new URI(config.get("misc").get(CONF_KEY_SDK_URL).toString());
 			arch_dir = FileSystems.getDefault()
-					.getPath(getPath("sdk_root"), config.get("misc").get("system_type").toString()).toString();
+					.getPath(getPath("sdk_root"), config.get("misc").get("system_type").toString())
+					.toString();
 			daemon_executable =
 					FileSystems.getDefault().getPath(arch_dir, TRANSFERD_EXECUTABLE).toString();
 			sdk_conf_path = createConfFile(grpc_url);
 			// create channel to socket
 			final ManagedChannel channel = ManagedChannelBuilder
 					.forAddress(grpc_url.getHost(), grpc_url.getPort()).usePlaintext().build();
-			// create a connection to the transfer sdk daemon
+			// create a connection to the Transfer SDK daemon
 			client = TransferServiceGrpc.newBlockingStub(channel);
 		} catch (final java.net.URISyntaxException e) {
-			throw new Error(SDK_URL + ": " + e.getMessage());
+			throw new Error(CONF_KEY_SDK_URL + ": " + e.getMessage());
 		}
 		boolean isStarted = false;
 		int remaining_try = 2;
