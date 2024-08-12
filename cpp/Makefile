@@ -19,5 +19,5 @@ $(IS_OK): ../$(IS_OK)
 	cd $(BUILD_DIR) && cmake ..
 	@# Build the project
 	cd $(BUILD_DIR) && cmake --build .
-clean:
-	rm -fr $(BUILD_DIR) CMakeUserPresets.json
+clean: clean_flags
+	rm -fr $(BUILD_DIR) CMakeUserPresets.json file
