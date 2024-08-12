@@ -2,6 +2,8 @@
 
 #include "test_environment.hpp"
 
+#include <nlohmann/json.hpp>
+
 int main() {
     // generate example file for transfer
     const std::string filePath = GenerateSourceFile();

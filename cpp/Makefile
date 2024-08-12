@@ -14,10 +14,12 @@ $(T)%: $(IS_OK)
 # compile all samples
 $(IS_OK): ../$(IS_OK)
 	@# Install dependencies
-	conan install . --output-folder=$(BUILD_DIR) --build=missing
-	@# Create and navigate to the build directory, generate build files
-	cd $(BUILD_DIR) && cmake ..
+	conan install . --output-folder=. --build=missing -s build_type=Release
+	cmake --preset conan-release
+	@# Generate build files
+	cd $(BUILD_DIR) && \
+	cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=Release/generators/conan_toolchain.cmake  -DCMAKE_BUILD_TYPE=Release
 	@# Build the project
-	cd $(BUILD_DIR) && cmake --build .
+	cd $(BUILD_DIR) && cmake --build . -- VERBOSE=1
 clean: clean_flags
 	rm -fr $(BUILD_DIR) CMakeUserPresets.json file
