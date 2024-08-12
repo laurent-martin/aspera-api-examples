@@ -44,7 +44,7 @@ target_link_libraries(hw_grpc_proto
 
 #    nlohmann_json::nlohmann_json
 # Targets greeter_[async_](client|server)
-foreach(_target regular_file_example)
+foreach(_target server)
   add_executable(${_target} "src/${_target}.cpp")
   target_link_libraries(${_target}
     hw_grpc_proto

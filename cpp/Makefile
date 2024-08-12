@@ -3,7 +3,7 @@ include $(DIR_TOP)/common.make
 SRC=src/
 BUILD_DIR=build
 # list of samples
-all:: $(T)regular_file_example
+all:: $(T)server
 # execute one sample
 $(T)%: $(IS_OK)
 	name='$@' && $(BUILD_DIR)/$${name#$(T)} $(TSTFILE)

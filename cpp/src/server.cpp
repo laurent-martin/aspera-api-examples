@@ -4,10 +4,10 @@
 
 int main() {
     // generate example file for transfer
-    std::string filePath = GenerateSourceFile();
+    const std::string filePath = GenerateSourceFile();
 
     // create transfer spec string
-    std::string transferSpec =
+    const std::string transferSpec =
         "{"
         "  \"session_initiation\": {"
         "    \"ssh\": {"
