@@ -4,9 +4,11 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <thread>
 
 #include "transfer.grpc.pb.h"
+using json = nlohmann::json;
 
 namespace filesystem = std::__fs::filesystem;
 
@@ -56,7 +58,8 @@ inline std::string statusToString(int status) {
     }
 }
 
-inline void start_transfer_and_wait(std::string transferSpec) {
+inline void start_transfer_and_wait(const json &transferSpec) {
+    std::cout << "ts=" << transferSpec.dump(4) << std::endl;
     // create a connection to the faspmanager daemon
     std::unique_ptr<TransferService::Stub> client = TransferService::NewStub(
         grpc::CreateChannel("localhost:55002", grpc::InsecureChannelCredentials()));
@@ -66,7 +69,7 @@ inline void start_transfer_and_wait(std::string transferSpec) {
     auto *transferConfig = new TransferConfig;
     transferConfig->set_loglevel(2);
     transferRequest.set_allocated_config(transferConfig);
-    transferRequest.set_transferspec(transferSpec);
+    transferRequest.set_transferspec(transferSpec.dump());
 
     // send start transfer request to the faspmanager daemon
     ClientContext startTransferContext;
