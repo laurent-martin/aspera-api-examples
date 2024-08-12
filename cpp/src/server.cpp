@@ -3,8 +3,10 @@
 #include "test_environment.hpp"
 
 int main(int argc, char* argv[]) {
+
+    auto test_env = new TestEnvironment();
     // generate example file for transfer
-    const std::string filePath = GenerateSourceFile();
+    const std::string filePath = TestEnvironment::GenerateSourceFile();
 
     // create transfer spec object
     json transferSpec = {
@@ -21,7 +23,7 @@ int main(int argc, char* argv[]) {
              {"destination_root", "/Upload"},
              {"paths", json::array({{{"source", filePath}}})}}}};
 
-    start_transfer_and_wait(transferSpec);
+    test_env->start_transfer_and_wait(transferSpec);
 
     return 0;
 }

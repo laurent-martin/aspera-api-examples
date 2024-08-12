@@ -53,7 +53,7 @@ target_link_libraries(hw_grpc_proto
   gRPC::grpc++_reflection
   gRPC::grpc++
   protobuf::libprotobuf)
-#    nlohmann_json::nlohmann_json
+
 
 foreach(_target server)
   add_executable(${_target} "src/${_target}.cpp")
