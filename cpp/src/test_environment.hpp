@@ -127,30 +127,24 @@ class TestEnvironment {
     void start_daemon() {
         std::string sdk_url = config["misc"]["trsdk_url"].as<std::string>();
         LOGGER(info) << "sdk_url=" << sdk_url;
-        auto parsed = urls::parse_uri(sdk_url);
-        urls::url_view url_view = parsed.value();
-        auto port_str = std::string(url_view.port());
-        auto hostname = std::string(url_view.host());
+        auto sdk_uri = urls::parse_uri(sdk_url).value();
+        auto port_str = std::string(sdk_uri.port());
+        auto hostname = std::string(sdk_uri.host());
         std::string channel_address = hostname + ":" + port_str;
-
         LOGGER(info) << "channel_address=" << channel_address;
-
-        // create a connection to the faspmanager daemon
+        // create a connection to the daemon
         auto channel = grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials());
         client = TransferService::NewStub(channel);
         std::this_thread::sleep_for(std::chrono::seconds(5));
-
-        // Attempt to connect
+        // wait for connection, or start the daemon
         for (int i = 0; i < 2; ++i) {
             LOGGER(info) << "Connecting to " << channel_address << " using gRPC";
             grpc_connectivity_state state = channel->GetState(true);
-
             if (state == GRPC_CHANNEL_READY) {
                 LOGGER(info) << "Connected !";
                 return;
             }
             LOGGER(error) << "Failed to connect";
-
             json config_info = {
                 {"address", hostname},
                 {"port", std::stoi(port_str)},
@@ -165,34 +159,28 @@ class TestEnvironment {
                  {{"dir", log_folder},
                   {"level", 2}}}};
             config_info.dump(4);
-
             // Prepare config
             auto conf_file = log_folder / "daemon.conf";
             auto daemon_path = arch_folder / TRANSFER_SDK_DAEMON;
             std::ofstream conf_stream(conf_file.string());
             conf_stream << config_info.dump(4);
             conf_stream.close();
-
             // Start daemon
             std::string command = daemon_path.string() + " --config " + conf_file.string();
             std::string out_file = log_folder / "daemon.out";
             std::string err_file = log_folder / "daemon.err";
-            LOGGER(info) << "Starting: " << command;
             LOGGER(info) << "stderr: " << err_file;
             LOGGER(info) << "stdout: " << out_file;
-
-            LOGGER(info) << "Starting daemon...";
-            transfer_daemon = new boost::process::child(command, boost::process::std_out > out_file, boost::process::std_err > err_file);
-
+            LOGGER(info) << "Starting: " << command;
+            transfer_daemon = new boost::process::child(
+                command,
+                boost::process::std_out > out_file,
+                boost::process::std_err > err_file);
             // Wait for the daemon to start
             std::this_thread::sleep_for(std::chrono::seconds(10));
         }
-
-        if (!client) {
-            LOGGER(error) << "daemon not started or cannot be started.\nCheck the logs: daemon.err and daemon.out (see paths above).";
-            exit(1);
-        }
-        return;
+        LOGGER(error) << "daemon not started or cannot be started.\nCheck the logs: daemon.err and daemon.out (see paths above).";
+        exit(1);
     }
 
     inline void
