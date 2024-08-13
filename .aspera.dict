@@ -19,3 +19,4 @@ mklink
 noarch
 demoaspera
 pkcs
+spdlog

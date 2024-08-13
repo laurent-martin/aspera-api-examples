@@ -1,6 +1,7 @@
 [requires]
 # cpprestsdk/2.10.19
 nlohmann_json/3.11.3
+boost/1.83.0
 
 [generators]
 CMakeDeps

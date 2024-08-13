@@ -2,15 +2,19 @@ DIR_TOP=../
 include $(DIR_TOP)/common.make
 SRC=src/
 BUILD_DIR=build
+TSTFILE=$(TMPDIR)/This_is_a_test.txt
 # list of samples
 all:: $(T)server
 # execute one sample
-$(T)%: $(IS_OK)
+$(T)%: $(IS_OK) $(TSTFILE)
 	name='$@' && $(BUILD_DIR)/$${name#$(T)} $(TSTFILE)
 	@touch $@
 # ensure SDK is there
 ../$(IS_OK):
 	cd .. && make
+$(TSTFILE):
+	@echo "test file: $(TSTFILE)"
+	date > $(TSTFILE)
 # compile all samples
 $(IS_OK): ../$(IS_OK)
 	@# Install dependencies
@@ -22,4 +26,4 @@ $(IS_OK): ../$(IS_OK)
 	@# Build the project
 	cd $(BUILD_DIR) && cmake --build . -- VERBOSE=1
 clean: clean_flags
-	rm -fr $(BUILD_DIR) CMakeUserPresets.json file
+	rm -fr $(BUILD_DIR) CMakeUserPresets.json $(TSTFILE)
