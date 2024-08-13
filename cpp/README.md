@@ -1,6 +1,8 @@
 # C++ Examples
 
-Tool chain use cmake and conan.
+Tool chain uses cmake and conan.
+
+Mainly uses the Boost library.
 
 ## Requirements
 
