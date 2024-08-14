@@ -1,6 +1,8 @@
+---
 misc:
-  system_type: osx-x86_64
-  trsdk_url: grpc://127.0.0.1:55002
+  platform: osx-arm64
+trsdk:
+  url: grpc://trsdk.address.here:55002
 httpgw:
   url: https://httpgw.address.here/aspera/http-gwy
 web:
@@ -41,6 +43,12 @@ faspex5:
   client_id: _client_id_here_
   client_secret: _client_secret_here_
   private_key: "/path/to/your/private_key"
+shares:
+  url: https://shares.address.here
+  verify: true
+  user: _user_here_
+  pass: _pass_here_
+  share: test1
 aoc:
   org: sedemo
   user_email: john@example.com

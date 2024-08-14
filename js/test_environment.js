@@ -15,7 +15,7 @@ function get_path(name) {
 }
 // read config for examples
 const config = yaml.load(fs.readFileSync(get_path("main_config"), 'utf8'))
-const arch_folder = path.join(get_path("sdk_root"), config["misc"]["system_type"])
+const arch_folder = path.join(get_path("sdk_root"), config["misc"]["platform"])
 const daemon_name = "asperatransferd"
 const daemon_exe = path.join(arch_folder, daemon_name)
 
@@ -34,7 +34,7 @@ module.exports = {
 	config: config,
 	tmp_folder: os.tmpdir(),
 	connect_to_api: (ready_rb) => {
-		const grpc_url = new URL(config['misc']['trsdk_url'])
+		const grpc_url = new URL(config['trsdk']['url'])
 		assert(grpc_url.protocol === 'grpc:', "Expecting gRPC protocol")
 		const daemon_conf = {
 			address: grpc_url.hostname,

@@ -62,7 +62,7 @@ import transfer_pb2_grpc as transfer_manager_grpc  # noqa: E4
 import transfer_pb2 as transfer_manager  # noqa: E4
 
 # folder with executables
-arch_folder = os.path.join(get_path('sdk_root'), CONFIG['misc']['system_type'])
+arch_folder = os.path.join(get_path('sdk_root'), CONFIG['misc']['platform'])
 assert os.path.exists(
     arch_folder
 ), f'ERROR: SDK not found in: {arch_folder}.{ERROR_HINT}'
@@ -242,7 +242,7 @@ def start_transfer_and_wait(t_spec):
     logging.debug(t_spec)
     try:
         if sdk_client is None:
-            sdk_client = start_daemon(CONFIG['misc']['trsdk_url'])
+            sdk_client = start_daemon(CONFIG['trsdk']['url'])
         t_id = start_transfer(t_spec)
         wait_transfer(t_id)
     finally:

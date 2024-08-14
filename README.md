@@ -74,7 +74,7 @@ If you use macOS, or Linux, AIX, etc...
     copy config\config.tmpl private\config.yaml
     ```
 
-   Set the parameter `misc.system_type` to `windows-x86_64`
+   Set the parameter `misc.platform` to `windows-x86_64`
 
    Edit required parameters in `private/config.yaml`, for example Faspex connection information.
 
@@ -118,7 +118,7 @@ cp config/config.tmpl private/config.yaml
 vi private/config.yaml
 ```
 
-Set the parameter `misc.system_type` to the architecture used:
+Set the parameter `misc.platform` to the architecture used:
 
 - `windows-x86_64`
 - `osx-x86_64`
@@ -128,7 +128,7 @@ Set the parameter `misc.system_type` to the architecture used:
 - `linux-s390`
 - `aix-ppc64`
 
-The parameter `misc.trsdk_url` can be set to `grpc://127.0.0.1:55002` (specify the local port that sdk will use).
+The parameter `trsdk.url` can be set to `grpc://127.0.0.1:55002` (specify the local port that sdk will use).
 
 Section `httpgw` is used by the `web` example only.
 
@@ -139,8 +139,9 @@ Example (with random credentials):
 
 ```yaml
 misc:
-  system_type: osx-x86_64
-  trsdk_url: grpc://127.0.0.1:55002
+  platform: osx-x86_64
+trsdk:
+  url: grpc://127.0.0.1:55002
 web:
   port: 9080
 httpgw:
@@ -194,6 +195,12 @@ Typically, a node api user is created like this:
 ```
 
 > **Note:** Access key credentials (id and secret) can also be used for the node api user.
+
+## Shares
+
+The same examples as for **Node API** can be used for **Shares**.
+
+The root of Shares API is `<shares url>/node_api`.
 
 ## Aspera on Cloud
 

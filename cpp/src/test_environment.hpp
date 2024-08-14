@@ -117,7 +117,7 @@ class TestEnvironment {
         std::string main_config = get_path("main_config").string();
         LOGGER(info) << "main_config={}" << main_config;
         config = YAML::LoadFile(main_config);
-        arch_folder = get_path("sdk_root") / config["misc"]["system_type"].as<std::string>();
+        arch_folder = get_path("sdk_root") / config["misc"]["platform"].as<std::string>();
         LOGGER(info) << "arch_folder=" << arch_folder.string();
         for (const auto& one_file : file_list) {
             LOGGER(info) << "file: " << one_file;
@@ -125,7 +125,7 @@ class TestEnvironment {
     }
 
     void start_daemon() {
-        std::string sdk_url = config["misc"]["trsdk_url"].as<std::string>();
+        std::string sdk_url = config["trsdk"]["url"].as<std::string>();
         LOGGER(info) << "sdk_url=" << sdk_url;
         auto sdk_uri = urls::parse_uri(sdk_url).value();
         auto port_str = std::string(sdk_uri.port());

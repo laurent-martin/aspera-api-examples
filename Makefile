@@ -10,7 +10,7 @@ GENERATED_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^temp_gene: //p' $(GLOBAL_PATHS))/
 # location of extracted transfer SDK
 TRSDK_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' $(GLOBAL_PATHS))/
 # location of platform specific transfer SDK files (binaries)
-TRSDK_ARCH=$(TRSDK_ROOT)$(shell sed -n -e 's/^ *system_type: //p' $(CONFIG_FILE) 2> /dev/null)/
+TRSDK_ARCH=$(TRSDK_ROOT)$(shell sed -n -e 's/^ *platform: //p' $(CONFIG_FILE) 2> /dev/null)/
 # downloaded SDK file
 TRSDK_ZIP=$(TRSDK_ROOT)transfer_sdk.zip
 all:: $(IS_OK)
@@ -19,6 +19,7 @@ clean: clean_flags
 	cd python && make clean
 	cd java && make clean
 	cd web && make clean
+	cd cpp && make clean
 	rm -fr $(GENERATED_ROOT)
 	find . -name \*.log -exec rm {} \;
 	-killall asperatransferd

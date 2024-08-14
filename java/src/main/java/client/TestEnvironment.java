@@ -22,7 +22,6 @@ import java.util.logging.Level;
 // read configuration file and provide interface for transfer
 public class TestEnvironment {
 	private static final Logger LOGGER = Logger.getLogger(TestEnvironment.class.getName());
-	static final String CONF_KEY_SDK_URL = "trsdk_url";
 	static final String PATHS_FILES = "config/paths.yaml";
 	static final String SDK_DAEMON_EXECUTABLE = "asperatransferd";
 
@@ -91,10 +90,10 @@ public class TestEnvironment {
 			throw new Error(e.getMessage());
 		}
 		try {
-			final URI grpc_url = new URI(config.get("misc").get(CONF_KEY_SDK_URL).toString());
-			final String system_type = config.get("misc").get("system_type").toString();
-			arch_dir = getPath("sdk_root", system_type);
-			daemon_executable = getPath("sdk_root", system_type, SDK_DAEMON_EXECUTABLE);
+			final URI grpc_url = new URI(config.get("trsdk").get("url").toString());
+			final String platform = config.get("misc").get("platform").toString();
+			arch_dir = getPath("sdk_root", platform);
+			daemon_executable = getPath("sdk_root", platform, SDK_DAEMON_EXECUTABLE);
 			sdk_conf_path = createConfFile(grpc_url);
 			// create channel to socket
 			final ManagedChannel channel = ManagedChannelBuilder
@@ -102,7 +101,7 @@ public class TestEnvironment {
 			// create a connection to the Transfer SDK daemon
 			client = TransferServiceGrpc.newBlockingStub(channel);
 		} catch (final java.net.URISyntaxException e) {
-			throw new Error(CONF_KEY_SDK_URL + ": " + e.getMessage());
+			throw new Error("problem with SDK URL: " + e.getMessage());
 		}
 		boolean isStarted = false;
 		int remaining_try = 2;

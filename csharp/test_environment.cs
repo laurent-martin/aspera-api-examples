@@ -104,7 +104,7 @@ public class TestEnvironment
             catch (Exception)
             {
                 Console.WriteLine("ERROR: Failed to connect\nStarting daemon...");
-                var binFolder = Path.Combine(GetPath("sdk_root"), mConfig["misc"]["system_type"]);
+                var binFolder = Path.Combine(GetPath("sdk_root"), mConfig["misc"]["platform"]);
                 var configData = new
                 {
                     address = grpcUrl.Host,
@@ -243,7 +243,7 @@ public class TestEnvironment
         // One-call simplified procedure to start daemon, transfer, and wait for it to finish
         if (mSdkClient == null)
         {
-            StartDaemon(mConfig["misc"]["trsdk_url"]);
+            StartDaemon(mConfig["trsdk"]["url"]);
         }
 
         //aSpecObj.HttpFallback = false; // TODO: remove when transfer SDK bug fixed
