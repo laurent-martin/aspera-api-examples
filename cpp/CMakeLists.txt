@@ -22,6 +22,7 @@ endif()
 
 
 find_package(Boost REQUIRED)
+find_package(cppcodec REQUIRED)
 
 # BEGIN gRPC
 # https://github.com/grpc/grpc/blob/master/examples/cpp/cmake/common.cmake
@@ -73,12 +74,13 @@ target_link_libraries(aspera_grpc_library
   protobuf::libprotobuf)
 # END gRPC
 
-foreach(_target server)
+foreach(_target server shares)
   add_executable(${_target} "src/${_target}.cpp")
   target_link_libraries(${_target}
     nlohmann_json::nlohmann_json
     yaml-cpp::yaml-cpp
     aspera_grpc_library
     boost::boost
+    cppcodec::cppcodec
     )
 endforeach()

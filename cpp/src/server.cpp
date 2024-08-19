@@ -3,9 +3,9 @@
 #define LOGGER(level) BOOST_LOG_SEV(test_env.log(), boost::log::trivial::level)
 int main(int argc, char* argv[]) {
     TestEnvironment test_env(argc, argv);
-    std::string sdk_url = test_env.conf_str({"server","url"});
-    LOGGER(info) << "Server URL: " << sdk_url;
-    auto server_uri = boost::urls::parse_uri(sdk_url).value();
+    std::string server_url = test_env.conf_str({"server","url"});
+    LOGGER(info) << "Server URL: " << server_url;
+    auto server_uri = boost::urls::parse_uri(server_url).value();
     assert(server_uri.scheme == "ssh");
     // create V2 transfer spec
     json transferSpec = {

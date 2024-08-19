@@ -4,6 +4,7 @@ jwt-cpp/0.5.0
 cpp-httplib/0.16.0
 nlohmann_json/3.11.3
 boost/1.83.0
+cppcodec/0.2
 
 [generators]
 CMakeDeps
