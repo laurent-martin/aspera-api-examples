@@ -9,7 +9,6 @@ require 'test_environment'
 Aspera::Log.instance.level = :debug
 all_config = TestEnvironment.instance.config
 server_conf = all_config['server']
-paths_conf = all_config['server_paths']
 
 ##############################################################
 # download using SSH credentials
@@ -22,7 +21,7 @@ transfer_spec = {
   'remote_password' => server_conf['pass'],
   'direction' => 'receive',
   'destination_root' => Dir.tmpdir,
-  'paths' => [{ 'source' => paths_conf['file_download'] }]
+  'paths' => [{ 'source' => server_conf['file_download'] }]
 }
 # start transfer in separate thread
 # method returns as soon as transfer thread is created

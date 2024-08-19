@@ -55,7 +55,6 @@ node:
     url: https://server.example.com
     user: _node_user_here_
     pass: _node_pass_here_
-server_paths:
     file_download: /aspera-test-dir-small/10MB.1
     folder_upload: /Upload
 server:

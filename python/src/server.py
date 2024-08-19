@@ -34,12 +34,13 @@ t_spec_download = {
     'remote_password': remote_pass,
     'direction': 'receive',
     'destination_root': my_local_folder,
-    'paths': [{'source': '/aspera-test-dir-tiny/200KB.1'}],
+    'paths': [{'source': config['file_download']}],
 }
 test_environment.start_transfer_and_wait(t_spec_download)
 
 # location of downloaded file
-local_file = os.path.join(my_local_folder, '200KB.1')
+local_file = os.path.join(my_local_folder, os.path.basename(config['file_download']))
+
 
 # Example 2: upload: single file upload to existing folder.
 logging.debug('======Test 2: upload file')
@@ -49,7 +50,7 @@ t_spec_upload = {
     'remote_user': remote_user,
     'remote_password': remote_pass,
     'direction': 'send',
-    'destination_root': '/Upload',
+    'destination_root': config['folder_upload'],
     # 'create_dir':True, # destination root is folder, else it assumes (one source) it is dest file name
     'paths': [{'source': local_file}],
     'tags': {'mysample_tag': 'hello'},
@@ -62,13 +63,13 @@ test_environment.start_transfer_and_wait(t_spec_upload)
 # but if destination is a folder, it will send same source filename into folder
 # so enforce folder creation, to be sure of what happens
 logging.debug('======Test 3: upload file to new folder')
-t_spec_upload['destination_root'] = '/Upload/new_folder'
+t_spec_upload['destination_root'] = config['folder_upload']+'/new_folder'
 t_spec_upload['create_dir'] = True
 test_environment.start_transfer_and_wait(t_spec_upload)
 
 # Example 4: upload: send to sub folder, but using file pairs
 logging.debug('======Test 4: upload file and rename')
-t_spec_upload['destination_root'] = '/Upload'
+t_spec_upload['destination_root'] = config['folder_upload']
 del t_spec_upload['create_dir']
 t_spec_upload['paths'] = [{'source': local_file, 'destination': 'xxx/newfilename.ext'}]
 test_environment.start_transfer_and_wait(t_spec_upload)

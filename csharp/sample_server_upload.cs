@@ -15,7 +15,7 @@ class SampleServerUpload : SampleInterface
             {"remote_user", server_conf["user"]},
             {"remote_password", server_conf["pass"]},
             {"direction", "send"},
-            {"destination_root", test_env.mConfig["server_paths"]["folder_upload"]},
+            {"destination_root", server_conf["folder_upload"]},
             {"paths", new JArray()},
         };
         // add file list in transfer spec

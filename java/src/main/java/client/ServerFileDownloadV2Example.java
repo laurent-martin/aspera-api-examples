@@ -28,7 +28,7 @@ public class ServerFileDownloadV2Example {
 						.put("destination_root", System.getProperty("java.io.tmpdir"))//
 						.put("paths", new JSONArray()//
 								.put(new JSONObject()//
-										.put("source", "aspera-test-dir-tiny/200KB.1")//
+										.put("source", server_conf.get("file_download").toString())//
 										.put("destination", "downloaded_file"))));
 
 		// execute transfer

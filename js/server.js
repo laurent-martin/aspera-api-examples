@@ -9,8 +9,8 @@ const server_config = test_environment.config.server;
 const server_url = new URL(server_config.url)
 assert(server_url.protocol === 'ssh:', 'Expecting SSH protocol');
 
-// downloaded file
-const local_file = path.join('/', test_environment.tmp_folder, '200KB.1');
+// downloaded file is then uploaded
+const local_file = path.join('/', test_environment.tmp_folder, server_config.file_download.split('/').pop());
 
 // base transfer spec with server information
 var t_spec1_generic = {
@@ -29,7 +29,7 @@ const test1 = (success_cb) => {
 	// note that the destination root on download is relative to the CWD of transferd, NOT this process
 	// so prefer to use abs. paths
 	t_spec1_generic.destination_root = test_environment.tmp_folder;
-	t_spec1_generic.paths = [{ source: '/aspera-test-dir-tiny/200KB.1' }];
+	t_spec1_generic.paths = [{ source: server_config.file_download }];
 	test_environment.start_transfer_and_wait(t_spec1_generic, success_cb);
 }
 
@@ -37,9 +37,9 @@ const test1 = (success_cb) => {
 const test2 = (success_cb) => {
 	console.log('======Test 2: upload file');
 	t_spec1_generic.direction = 'send';
-	t_spec1_generic.destination_root = '/Upload';
+	t_spec1_generic.destination_root = server_config.folder_upload;
 	t_spec1_generic.paths = [{ source: local_file }];
-	t_spec1_generic.tags = { mysample_tag: 'hello' };
+	t_spec1_generic.tags = { my_sample_tag: 'hello' };
 	test_environment.start_transfer_and_wait(t_spec1_generic, success_cb);
 }
 // check file is uploaded by connecting to: http://demo.asperasoft.com/aspera/user/ with same creds
@@ -50,7 +50,7 @@ const test2 = (success_cb) => {
 // so enforce folder creation, to be sure of what happens
 const test3 = (success_cb) => {
 	console.log('======Test 3: upload file to new folder');
-	t_spec1_generic.destination_root = '/Upload/new_folder';
+	t_spec1_generic.destination_root = server_config.folder_upload + '/new_folder';
 	t_spec1_generic.create_dir = true;
 	test_environment.start_transfer_and_wait(t_spec1_generic, success_cb);
 }
@@ -58,7 +58,7 @@ const test3 = (success_cb) => {
 // Example 4: upload: send to sub folder, but using file pairs
 const test4 = (success_cb) => {
 	console.log('======Test 4: upload file and rename');
-	t_spec1_generic.destination_root = '/Upload';
+	t_spec1_generic.destination_root = server_config.folder_upload;
 	delete t_spec1_generic.create_dir;
 	t_spec1_generic.paths = [{ source: local_file, destination: 'xxx/newfilename.ext' }];
 	test_environment.start_transfer_and_wait(t_spec1_generic, success_cb);

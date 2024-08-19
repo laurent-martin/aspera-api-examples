@@ -96,17 +96,20 @@ module.exports = {
 	},
 	// start a transfer , provide transfer_spec and optionally event callback
 	start_transfer_and_wait: (transferSpec, success_cb) => {
+		var ts = JSON.stringify(transferSpec)
+		console.log("transfer spec: %s", ts)
 		const startTransferRequest = {
 			transferType: 'FILE_REGULAR',
-			transferSpec: JSON.stringify(transferSpec)
+			transferSpec: ts
 		}
 		const eventStream = client.startTransferWithMonitor(startTransferRequest, function (err, data) {
-			console.log("error starting transfer " + err)
+			console.log("error starting transfer: %s ", err)
 			throw err
 		})
 		eventStream.on('data', function (data) {
-			console.log("Transfer %d Mbps/%d Mbps %s %s %s", data.transferInfo.averageRateKbps / 1000,
-				data.transferInfo.targetRateKbps / 1000, data.transferEvent, data.status, data.transferType)
+			if (data.transferInfo)
+				console.log("Transfer %d Mbps/%d Mbps %s %s %s", data.transferInfo.averageRateKbps / 1000,
+					data.transferInfo.targetRateKbps / 1000, data.transferEvent, data.status, data.transferType)
 			if (data.transferEvent === 'SESSION_STOP' && data.status === 'COMPLETED')
 				success_cb()
 			if (data.transferEvent === 'SESSION_ERROR' && data.status === 'FAILED')

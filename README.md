@@ -150,7 +150,6 @@ server:
   user: aspera
   pass: demoaspera
   url: ssh://demo.asperasoft.com:33001
-server_paths:
   file_download: /aspera-test-dir-small/10MB.1
   folder_upload: /Upload
 node:

@@ -55,4 +55,5 @@ tests:  $(IS_OK)
 	cd java && make
 	cd ruby && make
 	cd csharp && make
+	cd cpp && make
 	cd web && make test

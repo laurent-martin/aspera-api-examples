@@ -22,7 +22,7 @@ public class ServerFileUploadV1Example {
 				.put("remote_user", server_conf.get("user").toString())//
 				.put("remote_password", server_conf.get("pass").toString())//
 				.put("direction", "send")//
-				.put("destination_root", "/Upload")//
+				.put("destination_root", server_conf.get("folder_upload").toString())//
 				.put("paths", new JSONArray()//
 						.put(new JSONObject()//
 								.put("source", "faux:///10m?10m")));

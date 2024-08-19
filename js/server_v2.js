@@ -9,7 +9,8 @@ const files = process.argv.slice(2)
 assert(files.length, 'ERROR: Provide at least one file path to transfer')
 
 // get destination server from example config
-const server_url = new URL(test_environment.config.server.url)
+const server_config = test_environment.config.server;
+const server_url = new URL(server_config.url)
 assert(server_url.protocol === 'ssh:', 'ERROR: Expecting SSH protocol')
 
 // create transfer spec version 2
@@ -19,15 +20,15 @@ const transferSpecV2 = {
 	session_initiation: {
 		ssh: {
 			ssh_port: parseInt(server_url.port),
-			remote_user: test_environment.config.server.user,
-			remote_password: test_environment.config.server.pass
+			remote_user: server_config.user,
+			remote_password: server_config.pass
 		}
 	},
 	security: {
 		cipher: 'aes-256'
 	},
 	assets: {
-		destination_root: '/Upload',
+		destination_root: server_config.folder_upload,
 		paths: files.map((file) => { return { source: file } })
 	}
 }

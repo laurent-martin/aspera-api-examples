@@ -11,7 +11,7 @@ require 'test_environment'
 Aspera::Log.instance.level = :debug
 all_config = TestEnvironment.instance.config
 node_conf = all_config['node']
-destination_folder = all_config['server_paths']['folder_upload']
+destination_folder = all_config['server']['folder_upload']
 
 ##############################################################
 # Upload with node authorization
