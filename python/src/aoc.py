@@ -180,6 +180,7 @@ t_spec = {
     # 'cookie': 'aspera.aoc:cGFja2FnZXM=:TGF1cmVudCBNYXJ0aW4=:bGF1cmVudC5tYXJ0aW4uYXNwZXJhQGZyLmlibS5jb20=',
     'create_dir': True,
     'target_rate_kbps': 2000000,
+    'paths': []
 }
 
 if transfer_sessions != 1:
@@ -187,7 +188,6 @@ if transfer_sessions != 1:
     t_spec['multi_session_threshold'] = 500000
 
 # add file list in transfer spec
-t_spec['paths'] = []
 for f in package_files:
     t_spec['paths'].append({'source': f})
 

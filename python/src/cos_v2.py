@@ -15,10 +15,6 @@ destination_folder = '/'
 # prepare transfer spec v2 for COS
 t_spec = {
     'title': 'send to COS using ts v2',
-    'direction': 'send',
-    'assets': {
-        'destination_root': destination_folder,
-    },
     'session_initiation': {
         'icos': {
             'api_key': config['key'],
@@ -27,13 +23,16 @@ t_spec = {
             'ibm_service_endpoint': config['endpoint'],
         }
     },
+    'direction': 'send',
+    'assets': {
+        'destination_root': destination_folder,
+        'paths': []
+    },
 }
 
 # add file list in transfer spec
-t_spec['assets']['paths'] = []
 for f in files_to_upload:
     t_spec['assets']['paths'].append({'source': f})
-logging.debug(t_spec)
 
 # start transfer, using Transfer SDK
 test_environment.start_transfer_and_wait(t_spec)

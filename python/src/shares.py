@@ -12,7 +12,7 @@ files_to_upload = test_environment.file_list
 
 # get Shares information from config file
 config = test_environment.get_configuration('shares')
-api_base_url = f'{config["url"]}/node_api'
+api_base_url = f'{config['url']}/node_api'
 destination_folder = config['share']
 
 # verify certificate if not explicitly set to False
@@ -49,7 +49,6 @@ t_spec = response_data['transfer_specs'][0]['transfer_spec']
 t_spec['paths'] = []
 for f in files_to_upload:
     t_spec['paths'].append({'source': f})
-logging.debug(t_spec)
 
 # start transfer, using Transfer SDK
 test_environment.start_transfer_and_wait(t_spec)

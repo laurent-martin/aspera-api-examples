@@ -15,10 +15,6 @@ config = test_environment.get_configuration('node')
 # prepare transfer spec v2 for COS
 t_spec = {
     'title': 'send using Node API and ts v2',
-    'direction': 'send',
-    'assets': {
-        'destination_root': config['folder_upload'],
-    },
     'session_initiation': {
         'node_api': {
             'url': config['url'],
@@ -26,14 +22,17 @@ t_spec = {
                 test_environment.basic_auth_header_key_value(config['user'], config['pass'])
             ]
         }
-    }
+    },
+    'direction': 'send',
+    'assets': {
+        'destination_root': config['folder_upload'],
+        'paths': []
+    },
 }
 
 # add file list in transfer spec
-t_spec['assets']['paths'] = []
 for f in files_to_upload:
     t_spec['assets']['paths'].append({'source': f})
-logging.debug(t_spec)
 
 # start transfer, using Transfer SDK
 test_environment.start_transfer_and_wait(t_spec)

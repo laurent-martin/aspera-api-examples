@@ -126,7 +126,6 @@ response = requests.post(
 )
 response.raise_for_status()
 t_spec = response.json()
-logging.debug(t_spec)
 
 # optional: multi session
 if transfer_sessions != 1:

@@ -182,6 +182,8 @@ def start_daemon(sdk_grpc_url):
 def start_transfer(transfer_spec):
     '''Start a transfer and return transfer id'''
     global sdk_client
+
+    logging.debug(transfer_spec)
     # create a transfer request
     transfer_request = transfer_manager.TransferRequest(
         transferType=transfer_manager.FILE_REGULAR,
