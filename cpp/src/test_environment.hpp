@@ -29,13 +29,15 @@
 #include "transfer.grpc.pb.h"
 using json = nlohmann::json;
 
-//namespace filesystem = std::__fs::filesystem;
+// namespace filesystem = std::__fs::filesystem;
 namespace trsdk = transfersdk;
 
 #define PATHS_FILE_REL "config/paths.yaml"
 #define TRANSFER_SDK_DAEMON "asperatransferd"
+#define SDK_LOG "asperatransferd.log"
+#define XFER_LOG "aspera-scp-transfer.log"
 
-#define ENUM_TO_STRING_BEGIN(enum_ns,enum_name)                       \
+#define ENUM_TO_STRING_BEGIN(enum_ns, enum_name)                       \
     inline std::string enum_name##ToString(enum_ns::enum_name value) { \
         switch (value) {
 #define ENUM_TO_STRING_CASE(enum_name, enum_value) \
@@ -47,7 +49,7 @@ namespace trsdk = transfersdk;
         }                                                     \
         }
 // define the enum to string conversion
-ENUM_TO_STRING_BEGIN(transfersdk,TransferStatus)
+ENUM_TO_STRING_BEGIN(transfersdk, TransferStatus)
 ENUM_TO_STRING_CASE(transfersdk::TransferStatus, UNKNOWN_STATUS)
 ENUM_TO_STRING_CASE(transfersdk::TransferStatus, QUEUED)
 ENUM_TO_STRING_CASE(transfersdk::TransferStatus, RUNNING)
@@ -197,6 +199,8 @@ class TestEnvironment {
             std::string err_file = log_folder / "daemon.err";
             LOGGER(info) << "stderr: " << err_file;
             LOGGER(info) << "stdout: " << out_file;
+            LOGGER(info) << "sdk log: " << log_folder / SDK_LOG;
+            LOGGER(info) << "xfer log: " << log_folder / XFER_LOG;
             LOGGER(info) << "Starting: " << command;
             _transfer_daemon = new boost::process::child(
                 command,
