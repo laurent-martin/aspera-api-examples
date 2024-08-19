@@ -20,6 +20,7 @@
 #include <boost/url/parse.hpp>
 #include <boost/url/url.hpp>
 #include <chrono>
+#include <cppcodec/base64_rfc4648.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -254,9 +255,13 @@ class TestEnvironment {
         LOGGER(info) << "finished " << TransferStatusToString(status);
     }
     // add files to the transfer spec
-    void add_files_to_ts(json& _paths) {
+    void add_files_to_ts(json& _paths, bool add_destination = false) {
         for (const auto& one_file : _file_list) {
-            _paths.push_back({{"source", one_file}});
+            json one = {{"source", one_file}};
+            if (add_destination) {
+                one.push_back({"destination", std::filesystem::path(one_file).filename()});
+            }
+            _paths.push_back(one);
         }
     }
 
@@ -272,5 +277,10 @@ class TestEnvironment {
             delete _transfer_daemon;
             _transfer_daemon = nullptr;
         }
+    }
+
+    // create a basic auth header
+    static inline std::string basic_auth_header(const std::string& username, const std::string& password) {
+        return "Basic " + cppcodec::base64_rfc4648::encode(username + ":" + password);
     }
 };
