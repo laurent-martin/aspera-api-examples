@@ -38,28 +38,30 @@ namespace trsdk = transfersdk;
 #define SDK_LOG "asperatransferd.log"
 #define XFER_LOG "aspera-scp-transfer.log"
 
-#define ENUM_TO_STRING_BEGIN(enum_ns, enum_name)                       \
-    inline std::string enum_name##ToString(enum_ns::enum_name value) { \
+#define ENUM_TO_STRING_BEGIN(enum_ns, enum_name)                \
+    namespace enum_ns {                                         \
+    inline std::string enum_name##_to_string(enum_name value) { \
         switch (value) {
 #define ENUM_TO_STRING_CASE(enum_name, enum_value) \
     case enum_name ::enum_value:                   \
         return #enum_value;
-#define ENUM_TO_STRING_END(enum_name)                         \
-    default:                                                  \
-        return "Unknown " #enum_name + std::to_string(value); \
-        }                                                     \
+#define ENUM_TO_STRING_END(enum_name)                              \
+    default:                                                       \
+        return "Unknown " #enum_name ": " + std::to_string(value); \
+        }                                                          \
+        }                                                          \
         }
 // define the enum to string conversion
 ENUM_TO_STRING_BEGIN(transfersdk, TransferStatus)
-ENUM_TO_STRING_CASE(transfersdk::TransferStatus, UNKNOWN_STATUS)
-ENUM_TO_STRING_CASE(transfersdk::TransferStatus, QUEUED)
-ENUM_TO_STRING_CASE(transfersdk::TransferStatus, RUNNING)
-ENUM_TO_STRING_CASE(transfersdk::TransferStatus, COMPLETED)
-ENUM_TO_STRING_CASE(transfersdk::TransferStatus, FAILED)
-ENUM_TO_STRING_CASE(transfersdk::TransferStatus, CANCELED)
-ENUM_TO_STRING_CASE(transfersdk::TransferStatus, PAUSED)
-ENUM_TO_STRING_CASE(transfersdk::TransferStatus, ORPHANED)
-ENUM_TO_STRING_END(transfersdk::TransferStatus)
+ENUM_TO_STRING_CASE(TransferStatus, UNKNOWN_STATUS)
+ENUM_TO_STRING_CASE(TransferStatus, QUEUED)
+ENUM_TO_STRING_CASE(TransferStatus, RUNNING)
+ENUM_TO_STRING_CASE(TransferStatus, COMPLETED)
+ENUM_TO_STRING_CASE(TransferStatus, FAILED)
+ENUM_TO_STRING_CASE(TransferStatus, CANCELED)
+ENUM_TO_STRING_CASE(TransferStatus, PAUSED)
+ENUM_TO_STRING_CASE(TransferStatus, ORPHANED)
+ENUM_TO_STRING_END(TransferStatus)
 
 #define LOGGER(level) BOOST_LOG_SEV(_log, boost::log::trivial::level)
 
@@ -173,6 +175,7 @@ class TestEnvironment {
                 return;
             }
             LOGGER(error) << "Failed to connect";
+            // Prepare daemon configuration file
             json config_info = {
                 {"address", hostname},
                 {"port", std::stoi(port_str)},
@@ -183,11 +186,10 @@ class TestEnvironment {
                   {"user_defined",
                    {{"bin", _arch_folder},
                     {"etc", get_path("trsdk_noarch")}}}}},
-                {"_log",
+                {"log",
                  {{"dir", log_folder},
                   {"level", 2}}}};
-            config_info.dump(4);
-            // Prepare daemon configuration
+            LOGGER(info) << config_info.dump(4);
             auto conf_file = log_folder / "daemon.conf";
             auto daemon_path = _arch_folder / TRANSFER_SDK_DAEMON;
             std::ofstream conf_stream(conf_file.string());
@@ -209,7 +211,7 @@ class TestEnvironment {
             // Wait for the daemon to start
             std::this_thread::sleep_for(std::chrono::seconds(10));
         }
-        LOGGER(error) << "daemon not started or cannot be started.\nCheck the logs: daemon.err and daemon.out (see _paths above).";
+        LOGGER(error) << "daemon not started or cannot be started.\nCheck the logs: daemon.err and daemon.out (see paths above).";
         exit(1);
     }
 
@@ -245,13 +247,13 @@ class TestEnvironment {
             grpc::ClientContext queryTransferContext;
             _client->QueryTransfer(&queryTransferContext, transferInfoRequest, &queryTransferResponse);
             status = queryTransferResponse.status();
-            LOGGER(info) << "transfer info " << TransferStatusToString(status);
+            LOGGER(info) << "transfer info " << TransferStatus_to_string(status);
             finished = status == trsdk::TransferStatus::COMPLETED ||
                        status == trsdk::TransferStatus::FAILED ||
                        status == trsdk::TransferStatus::UNKNOWN_STATUS;
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-        LOGGER(info) << "finished " << TransferStatusToString(status);
+        LOGGER(info) << "finished " << TransferStatus_to_string(status);
     }
     // add files to the transfer spec
     void add_files_to_ts(json& _paths, bool add_destination = false) {
