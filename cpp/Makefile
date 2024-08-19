@@ -4,7 +4,7 @@ SRC=src/
 BUILD_DIR=build
 TSTFILE=$(TMPDIR)/This_is_a_test.txt
 # list of samples
-all:: $(T)server
+all:: $(T)server $(T)shares
 # execute one sample
 $(T)%: $(IS_OK) $(TSTFILE)
 	name='$@' && $(BUILD_DIR)/$${name#$(T)} $(TSTFILE)

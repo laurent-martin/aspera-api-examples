@@ -130,7 +130,6 @@ class TestEnvironment {
         // Need to clone, else it will be modified in loop
         YAML::Node currentNode = YAML::Clone(_config);
         for (const auto& key : keys) {
-            LOGGER(debug) << "dig: " << key;
             const auto next_node = currentNode[key];
             if (next_node.IsDefined()) {
                 currentNode = next_node;
