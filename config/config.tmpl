@@ -11,14 +11,13 @@ server:
   url: ssh://server.address.here:33001
   user: _user_here_
   pass: _pass_here_
+  file_download: "/aspera-test-dir-small/10MB.1"
+  folder_upload: "/Upload"
 node:
   url: https://node.address.here
   verify: false
   user: _user_here_
   pass: _pass_here_
-  folder_upload: "/Upload"
-server_paths:
-  file_download: "/aspera-test-dir-small/10MB.1"
   folder_upload: "/Upload"
 cos:
   endpoint: https://s3.us-south.cloud-object-storage.appdomain.cloud
