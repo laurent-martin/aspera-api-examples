@@ -1,29 +1,41 @@
 DIR_TOP=../
 include $(DIR_TOP)/common.make
-SRC=src/
+# Executables are generated here:
 BUILD_DIR=build
-TSTFILE=$(TMPDIR)/This_is_a_test.txt
-# list of samples
-all:: $(T)server $(T)shares
-# execute one sample
-$(T)%: $(IS_OK) $(TSTFILE)
-	name='$@' && $(BUILD_DIR)/$${name#$(T)} $(TSTFILE)
+# Sample file to transfer
+SAMPLE_FILE=$(TMPDIR)/This_is_a_test.txt
+# List of tests, also in CMakeLists.txt, in last loop
+TEST_MARKS=$(T)server $(T)shares
+CONAN_HOME=$(PWD)/.conan2
+export CONAN_HOME
+# Execute all samples
+all:: $(TEST_MARKS)
+# Execute one sample
+$(T)%: $(IS_OK) $(SAMPLE_FILE)
+	name='$@' && cd $(BUILD_DIR) && cmake --build . -- VERBOSE=1 $${name#$(T)}
+	name='$@' && $(BUILD_DIR)/$${name#$(T)} $(SAMPLE_FILE)
 	@touch $@
-# ensure SDK is there
+# Ensure SDK is there
 ../$(IS_OK):
 	cd .. && make
-$(TSTFILE):
-	@echo "test file: $(TSTFILE)"
-	date > $(TSTFILE)
-# compile all samples
+$(SAMPLE_FILE):
+	@echo "Generating test file: $(SAMPLE_FILE)"
+	date > $(SAMPLE_FILE)
+# Setup compilation environment
+# 1. Install dependencies
+# 2. Generate build files
 $(IS_OK): ../$(IS_OK)
-	@# Install dependencies
+	mkdir -p $(CONAN_HOME)
+	conan profile detect --force
 	conan install . --output-folder=. --build=missing -s build_type=Release
 	cmake --preset conan-release
-	@# Generate build files
-	cd $(BUILD_DIR) && \
-	cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=Release/generators/conan_toolchain.cmake  -DCMAKE_BUILD_TYPE=Release
-	@# Build the project
-	cd $(BUILD_DIR) && cmake --build . -- VERBOSE=1
+	cd $(BUILD_DIR) && cmake .. \
+		-G "Unix Makefiles" \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_TOOLCHAIN_FILE=Release/generators/conan_toolchain.cmake
+	@touch $@
 clean: clean_flags
-	rm -fr $(BUILD_DIR) CMakeUserPresets.json $(TSTFILE)
+	rm -fr $(TEST_MARKS) $(BUILD_DIR) CMakeUserPresets.json $(SAMPLE_FILE) $(IS_OK)
+superclean: clean
+	rm -fr $(CONAN_HOME)
+.PHONY: all clean superclean
