@@ -80,7 +80,7 @@ class TestEnvironment {
     }
 
     const bool _init_log;
-    const bool _shutdown;
+    const bool _auto_shutdown;
     boost::log::sources::severity_logger<boost::log::trivial::severity_level> _log;
     // list of files to transfer
     std::vector<std::string> _file_list;
@@ -90,35 +90,46 @@ class TestEnvironment {
     const YAML::Node _paths;
     const YAML::Node _config;
     // folder with SDK binaries
-    std::filesystem::path _arch_folder;
+    const std::filesystem::path _arch_folder;
     boost::process::child* _transfer_daemon;
     std::unique_ptr<trsdk::TransferService::Stub> _client;
+
     YAML::Node load_yaml(const char* const name, const std::filesystem::path& path) {
         LOGGER(info) << name << "=" << path.string();
         return YAML::LoadFile(path.string());
     }
 
     bool init_log() {
-        boost::log::add_console_log(std::clog, boost::log::keywords::format = "[%TimeStamp%]: %Message%");
+        boost::log::add_common_attributes();
         boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::debug);
+        auto fmtTimeStamp = boost::log::expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f");
+        auto fmtSeverity = boost::log::expressions::attr<boost::log::trivial::severity_level>("Severity");
+        boost::log::formatter logFmt = boost::log::expressions::format("[%1%] (%2%) %3%") % fmtTimeStamp % fmtSeverity % boost::log::expressions::smessage;
+        auto consoleSink = boost::log::add_console_log(std::clog);
+        consoleSink->set_formatter(logFmt);
         return true;
     }
 
    public:
-    TestEnvironment(int argc, char* argv[], bool shutdown = true) : _init_log(init_log()),
-                                                                    _shutdown(shutdown),
-                                                                    _log(),
-                                                                    _file_list(argv + 1, argv + argc),
-                                                                    _top_folder(std::filesystem::absolute(__FILE__).parent_path().parent_path().parent_path()),
-                                                                    _paths(load_yaml("paths", _top_folder / PATHS_FILE_REL)),
-                                                                    _config(load_yaml("main_config", get_path("main_config"))),
-                                                                    _arch_folder(get_path("sdk_root") / conf_str({"misc", "platform"})),
-                                                                    _transfer_daemon(nullptr),
-                                                                    _client(nullptr) {
+    TestEnvironment(
+        int argc,
+        char* argv[],
+        bool shutdown = true)
+        : _init_log(init_log()),
+          _auto_shutdown(shutdown),
+          _log(),
+          _file_list(argv + 1, argv + argc),
+          _top_folder(std::filesystem::absolute(argv[0]).parent_path().parent_path().parent_path()),
+          _paths(load_yaml("paths", _top_folder / PATHS_FILE_REL)),
+          _config(load_yaml("main_config", get_path("main_config"))),
+          _arch_folder(get_path("sdk_root") / conf_str({"misc", "platform"})),
+          _transfer_daemon(nullptr),
+          _client(nullptr) {
         if (_file_list.empty()) {
             LOGGER(error) << "No file(s) to transfer provided.";
             throw std::runtime_error("ERROR");
         }
+        LOGGER(info) << "top_folder=" << _top_folder.string();
         LOGGER(info) << "arch_folder=" << _arch_folder.string();
         for (const auto& one_file : _file_list) {
             LOGGER(info) << "file: " << one_file;
@@ -126,7 +137,7 @@ class TestEnvironment {
     }
 
     ~TestEnvironment() {
-        if (_shutdown) {
+        if (_auto_shutdown) {
             shutdown();
         }
     }
@@ -153,6 +164,7 @@ class TestEnvironment {
         return _log;
     }
 
+    // start the transfer SDK daemon
     void start_daemon() {
         std::string sdk_url = conf_str({"trsdk", "url"});
         LOGGER(info) << "sdk_url=" << sdk_url;
@@ -216,36 +228,36 @@ class TestEnvironment {
     }
 
     inline void
-    start_transfer_and_wait(const json& transferSpec) {
-        LOGGER(info) << "ts=" << transferSpec.dump(4);
+    start_transfer_and_wait(const json& transfer_spec) {
+        LOGGER(info) << "ts=" << transfer_spec.dump(4);
         if (_client == nullptr) {
             start_daemon();
         }
 
         // create a transfer request
-        auto* transferConfig = new trsdk::TransferConfig;
-        transferConfig->set_loglevel(2);  // levels: 0 1 2
-        trsdk::TransferRequest transferRequest;
-        transferRequest.set_transfertype(trsdk::TransferType::FILE_REGULAR);
-        transferRequest.set_allocated_config(transferConfig);
-        transferRequest.set_transferspec(transferSpec.dump());
+        auto* transfer_config = new trsdk::TransferConfig;
+        transfer_config->set_loglevel(2);  // levels: 0 1 2
+        trsdk::TransferRequest transfer_request;
+        transfer_request.set_transfertype(trsdk::TransferType::FILE_REGULAR);
+        transfer_request.set_allocated_config(transfer_config);
+        transfer_request.set_transferspec(transfer_spec.dump());
 
         // send start transfer request to the transfer daemon
-        grpc::ClientContext startTransferContext;
+        grpc::ClientContext start_transfer_context;
         transfersdk::StartTransferResponse startTransferResponse;
-        _client->StartTransfer(&startTransferContext, transferRequest, &startTransferResponse);
-        std::string transferId = startTransferResponse.transferid();
-        LOGGER(info) << "transfer started with id " << transferId;
+        _client->StartTransfer(&start_transfer_context, transfer_request, &startTransferResponse);
+        std::string transfer_id = startTransferResponse.transferid();
+        LOGGER(info) << "transfer started with id " << transfer_id;
         trsdk::TransferStatus status;
         // wait until finished, check every second
         do {
             std::this_thread::sleep_for(std::chrono::seconds(1));
-            trsdk::TransferInfoRequest transferInfoRequest;
-            transferInfoRequest.set_transferid(transferId);
-            trsdk::QueryTransferResponse queryTransferResponse;
-            grpc::ClientContext queryTransferContext;
-            _client->QueryTransfer(&queryTransferContext, transferInfoRequest, &queryTransferResponse);
-            status = queryTransferResponse.status();
+            trsdk::TransferInfoRequest transfer_info_request;
+            transfer_info_request.set_transferid(transfer_id);
+            grpc::ClientContext query_transfer_context;
+            trsdk::QueryTransferResponse query_transfer_response;
+            _client->QueryTransfer(&query_transfer_context, transfer_info_request, &query_transfer_response);
+            status = query_transfer_response.status();
             LOGGER(info) << "transfer status: " << TransferStatus_to_string(status);
         } while (!transfer_finished(status));
     }

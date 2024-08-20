@@ -26,7 +26,7 @@ The following tools are used:
 make
 ```
 
-## LKnown issues
+## Known issues
 
 on macos:
 

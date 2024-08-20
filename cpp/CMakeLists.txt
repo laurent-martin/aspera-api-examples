@@ -1,17 +1,23 @@
 cmake_minimum_required(VERSION 3.8)
 
 project(LaurentSamples
-        LANGUAGES C CXX)
+  LANGUAGES C CXX
+  )
 
 set(CXX_STANDARD 17)
 
+find_package(Boost REQUIRED)
+find_package(cppcodec REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+
 include(FetchContent)
 
+# BEGIN yaml-cpp
 FetchContent_Declare(
   yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
   GIT_TAG yaml-cpp-0.7.0
-)
+  )
 FetchContent_GetProperties(yaml-cpp)
 
 if(NOT yaml-cpp_POPULATED)
@@ -19,10 +25,7 @@ if(NOT yaml-cpp_POPULATED)
   FetchContent_Populate(yaml-cpp)
   add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR})
 endif()
-
-
-find_package(Boost REQUIRED)
-find_package(cppcodec REQUIRED)
+# END yaml-cpp
 
 # BEGIN gRPC
 # https://github.com/grpc/grpc/blob/master/examples/cpp/cmake/common.cmake
@@ -39,47 +42,54 @@ message(STATUS "Using protobuf ${Protobuf_VERSION}")
 find_package(gRPC CONFIG REQUIRED)
 message(STATUS "Using gRPC ${gRPC_VERSION}")
 
-find_package(nlohmann_json CONFIG REQUIRED)
-# Proto file
-get_filename_component(aspera_proto "../generated/trsdk/noarch/connectors/grpc/transfer.proto" ABSOLUTE)
-get_filename_component(aspera_proto_path "${aspera_proto}" PATH)
+# Transfer SDK Proto file
+get_filename_component(aspera_proto_file "../generated/trsdk/noarch/connectors/grpc/transfer.proto" ABSOLUTE)
+get_filename_component(aspera_proto_dir "${aspera_proto_file}" DIRECTORY)
+get_filename_component(aspera_proto_name "${aspera_proto_file}" NAME_WE)
+set(generated_path "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Generated sources
-set(aspera_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/transfer.pb.cc")
-set(aspera_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/transfer.pb.h")
-set(aspera_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/transfer.grpc.pb.cc")
-set(aspera_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/transfer.grpc.pb.h")
+set(aspera_proto_srcs "${generated_path}/${aspera_proto_name}.pb.cc")
+set(aspera_proto_hdrs "${generated_path}/${aspera_proto_name}.pb.h")
+set(aspera_grpc_srcs "${generated_path}/${aspera_proto_name}.grpc.pb.cc")
+set(aspera_grpc_hdrs "${generated_path}/${aspera_proto_name}.grpc.pb.h")
+
+# Generation command
 add_custom_command(
   OUTPUT "${aspera_proto_srcs}" "${aspera_proto_hdrs}" "${aspera_grpc_srcs}" "${aspera_grpc_hdrs}"
+  DEPENDS "${aspera_proto_file}"
   COMMAND protoc
-  ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
-  --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
-  -I "${aspera_proto_path}"
+  ARGS
   --plugin=protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
-  "${aspera_proto}"
-  DEPENDS "${aspera_proto}")
+  --grpc_out "${generated_path}"
+  --cpp_out "${generated_path}"
+  -I "${aspera_proto_dir}"
+  "${aspera_proto_file}"
+  )
 
-# Include generated *.pb.h files
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+# Location of generated *.pb.h files for includes
+include_directories("${generated_path}")
 
 add_library(aspera_grpc_library
   ${aspera_grpc_srcs}
   ${aspera_grpc_hdrs}
   ${aspera_proto_srcs}
-  ${aspera_proto_hdrs})
+  ${aspera_proto_hdrs}
+  )
 target_link_libraries(aspera_grpc_library
   absl::check
-  gRPC::grpc++_reflection
+  protobuf::libprotobuf
   gRPC::grpc++
-  protobuf::libprotobuf)
+  gRPC::grpc++_reflection
+  )
 # END gRPC
 
 foreach(_target server shares)
   add_executable(${_target} "src/${_target}.cpp")
   target_link_libraries(${_target}
+    aspera_grpc_library
     nlohmann_json::nlohmann_json
     yaml-cpp::yaml-cpp
-    aspera_grpc_library
     boost::boost
     cppcodec::cppcodec
     )

@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
     auto server_uri = boost::urls::parse_uri(server_url).value();
     assert(server_uri.scheme == "ssh");
     // create V2 transfer spec
-    json transferSpec = {
+    json transfer_spec = {
         {"title", "test with transfer spec V2"},
         {"remote_host", std::string(server_uri.host())},
         {"session_initiation",
@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
         {"assets",
          {{"destination_root", test_env.conf_str({"server","folder_upload"})},
           {"paths", json::array()}}}};
-    test_env.add_files_to_ts(transferSpec["assets"]["paths"]);
-    test_env.start_transfer_and_wait(transferSpec);
+    test_env.add_files_to_ts(transfer_spec["assets"]["paths"]);
+    test_env.start_transfer_and_wait(transfer_spec);
     return 0;
 }
