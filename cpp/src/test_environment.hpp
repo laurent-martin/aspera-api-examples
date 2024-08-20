@@ -92,7 +92,7 @@ class TestEnvironment {
     // folder with SDK binaries
     const std::filesystem::path _arch_folder;
     boost::process::child* _transfer_daemon;
-    std::unique_ptr<trsdk::TransferService::Stub> _client;
+    std::unique_ptr<trsdk::TransferService::Stub> _transfer_service;
 
     YAML::Node load_yaml(const char* const name, const std::filesystem::path& path) {
         LOGGER(info) << name << "=" << path.string();
@@ -124,7 +124,7 @@ class TestEnvironment {
           _config(load_yaml("main_config", get_path("main_config"))),
           _arch_folder(get_path("sdk_root") / conf_str({"misc", "platform"})),
           _transfer_daemon(nullptr),
-          _client(nullptr) {
+          _transfer_service(nullptr) {
         if (_file_list.empty()) {
             LOGGER(error) << "No file(s) to transfer provided.";
             throw std::runtime_error("ERROR");
@@ -166,16 +166,16 @@ class TestEnvironment {
 
     // start the transfer SDK daemon
     void start_daemon() {
-        std::string sdk_url = conf_str({"trsdk", "url"});
+        const std::string sdk_url = conf_str({"trsdk", "url"});
         LOGGER(info) << "sdk_url=" << sdk_url;
-        auto sdk_uri = boost::urls::parse_uri(sdk_url).value();
-        auto server_port_str = std::string(sdk_uri.port());
-        auto server_address = std::string(sdk_uri.host());
-        std::string channel_address = server_address + ":" + server_port_str;
+        const auto sdk_uri = boost::urls::parse_uri(sdk_url).value();
+        const auto server_port_str = std::string(sdk_uri.port());
+        const auto server_address = std::string(sdk_uri.host());
+        const std::string channel_address = server_address + ":" + server_port_str;
         LOGGER(info) << "channel_address=" << channel_address;
         // create a connection to the daemon
-        auto channel = grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials());
-        _client = trsdk::TransferService::NewStub(channel);
+        const auto channel = grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials());
+        _transfer_service = trsdk::TransferService::NewStub(channel);
         std::this_thread::sleep_for(std::chrono::seconds(5));
         const std::filesystem::path log_folder(std::filesystem::temp_directory_path());
         // wait for connection, or start the daemon
@@ -223,14 +223,15 @@ class TestEnvironment {
             // Wait for the daemon to start
             std::this_thread::sleep_for(std::chrono::seconds(10));
         }
-        LOGGER(error) << "daemon not started or cannot be started.\nCheck the logs: daemon.err and daemon.out (see paths above).";
+        LOGGER(error) << "daemon not started or cannot be started.";
+        LOGGER(error) << "Check the logs: daemon.err and daemon.out (see paths above).";
         exit(1);
     }
 
     inline void
     start_transfer_and_wait(const json& transfer_spec) {
         LOGGER(info) << "ts=" << transfer_spec.dump(4);
-        if (_client == nullptr) {
+        if (_transfer_service == nullptr) {
             start_daemon();
         }
 
@@ -245,8 +246,8 @@ class TestEnvironment {
         // send start transfer request to the transfer daemon
         grpc::ClientContext start_transfer_context;
         transfersdk::StartTransferResponse startTransferResponse;
-        _client->StartTransfer(&start_transfer_context, transfer_request, &startTransferResponse);
-        std::string transfer_id = startTransferResponse.transferid();
+        _transfer_service->StartTransfer(&start_transfer_context, transfer_request, &startTransferResponse);
+        const std::string transfer_id = startTransferResponse.transferid();
         LOGGER(info) << "transfer started with id " << transfer_id;
         trsdk::TransferStatus status;
         // wait until finished, check every second
@@ -256,7 +257,7 @@ class TestEnvironment {
             transfer_info_request.set_transferid(transfer_id);
             grpc::ClientContext query_transfer_context;
             trsdk::QueryTransferResponse query_transfer_response;
-            _client->QueryTransfer(&query_transfer_context, transfer_info_request, &query_transfer_response);
+            _transfer_service->QueryTransfer(&query_transfer_context, transfer_info_request, &query_transfer_response);
             status = query_transfer_response.status();
             LOGGER(info) << "transfer status: " << TransferStatus_to_string(status);
         } while (!transfer_finished(status));
@@ -274,8 +275,8 @@ class TestEnvironment {
 
     // shutdown daemon
     void shutdown() {
-        if (_client != nullptr) {
-            _client = nullptr;
+        if (_transfer_service != nullptr) {
+            _transfer_service = nullptr;
         }
         if (_transfer_daemon != nullptr) {
             LOGGER(info) << "Shutting down daemon...";
