@@ -25,6 +25,5 @@ int main(int argc, char* argv[]) {
           {"paths", json::array()}}}};
     test_env.add_files_to_ts(transferSpec["assets"]["paths"], true);
     test_env.start_transfer_and_wait(transferSpec);
-    test_env.shutdown();
     return 0;
 }

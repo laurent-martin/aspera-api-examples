@@ -80,6 +80,7 @@ class TestEnvironment {
     }
 
     const bool _init_log;
+    const bool _shutdown;
     boost::log::sources::severity_logger<boost::log::trivial::severity_level> _log;
     // list of files to transfer
     std::vector<std::string> _file_list;
@@ -92,11 +93,6 @@ class TestEnvironment {
     std::filesystem::path _arch_folder;
     boost::process::child* _transfer_daemon;
     std::unique_ptr<trsdk::TransferService::Stub> _client;
-    void log_yaml(YAML::Node node) {
-        for (YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
-            LOGGER(debug) << "key:" << it->first.as<std::string>() << std::endl;
-        }
-    }
     YAML::Node load_yaml(const char* const name, const std::filesystem::path& path) {
         LOGGER(info) << name << "=" << path.string();
         return YAML::LoadFile(path.string());
@@ -109,15 +105,16 @@ class TestEnvironment {
     }
 
    public:
-    TestEnvironment(int argc, char* argv[]) : _init_log(init_log()),
-                                              _log(),
-                                              _file_list(argv + 1, argv + argc),
-                                              _top_folder(std::filesystem::absolute(__FILE__).parent_path().parent_path().parent_path()),
-                                              _paths(load_yaml("paths", _top_folder / PATHS_FILE_REL)),
-                                              _config(load_yaml("main_config", get_path("main_config"))),
-                                              _arch_folder(get_path("sdk_root") / conf_str({"misc", "platform"})),
-                                              _transfer_daemon(nullptr),
-                                              _client(nullptr) {
+    TestEnvironment(int argc, char* argv[], bool shutdown = true) : _init_log(init_log()),
+                                                                    _shutdown(shutdown),
+                                                                    _log(),
+                                                                    _file_list(argv + 1, argv + argc),
+                                                                    _top_folder(std::filesystem::absolute(__FILE__).parent_path().parent_path().parent_path()),
+                                                                    _paths(load_yaml("paths", _top_folder / PATHS_FILE_REL)),
+                                                                    _config(load_yaml("main_config", get_path("main_config"))),
+                                                                    _arch_folder(get_path("sdk_root") / conf_str({"misc", "platform"})),
+                                                                    _transfer_daemon(nullptr),
+                                                                    _client(nullptr) {
         if (_file_list.empty()) {
             LOGGER(error) << "No file(s) to transfer provided.";
             throw std::runtime_error("ERROR");
@@ -125,6 +122,12 @@ class TestEnvironment {
         LOGGER(info) << "arch_folder=" << _arch_folder.string();
         for (const auto& one_file : _file_list) {
             LOGGER(info) << "file: " << one_file;
+        }
+    }
+
+    ~TestEnvironment() {
+        if (_shutdown) {
+            shutdown();
         }
     }
 
@@ -136,9 +139,6 @@ class TestEnvironment {
             if (next_node.IsDefined()) {
                 currentNode = next_node;
             } else {
-                if (next_node.IsMap()) {
-                    log_yaml(next_node);
-                }
                 throw std::runtime_error("Key not found: " + key);
             }
         }
@@ -157,9 +157,9 @@ class TestEnvironment {
         std::string sdk_url = conf_str({"trsdk", "url"});
         LOGGER(info) << "sdk_url=" << sdk_url;
         auto sdk_uri = boost::urls::parse_uri(sdk_url).value();
-        auto port_str = std::string(sdk_uri.port());
-        auto hostname = std::string(sdk_uri.host());
-        std::string channel_address = hostname + ":" + port_str;
+        auto server_port_str = std::string(sdk_uri.port());
+        auto server_address = std::string(sdk_uri.host());
+        std::string channel_address = server_address + ":" + server_port_str;
         LOGGER(info) << "channel_address=" << channel_address;
         // create a connection to the daemon
         auto channel = grpc::CreateChannel(channel_address, grpc::InsecureChannelCredentials());
@@ -177,8 +177,8 @@ class TestEnvironment {
             LOGGER(error) << "Failed to connect";
             // Prepare daemon configuration file
             json config_info = {
-                {"address", hostname},
-                {"port", std::stoi(port_str)},
+                {"address", server_address},
+                {"port", std::stoi(server_port_str)},
                 {"log_directory", log_folder},
                 {"log_level", "debug"},
                 {"fasp_runtime",
@@ -223,46 +223,40 @@ class TestEnvironment {
         }
 
         // create a transfer request
+        auto* transferConfig = new trsdk::TransferConfig;
+        transferConfig->set_loglevel(2);  // levels: 0 1 2
         trsdk::TransferRequest transferRequest;
         transferRequest.set_transfertype(trsdk::TransferType::FILE_REGULAR);
-        auto* transferConfig = new trsdk::TransferConfig;
-        transferConfig->set_loglevel(2);
         transferRequest.set_allocated_config(transferConfig);
         transferRequest.set_transferspec(transferSpec.dump());
 
-        // send start transfer request to the faspmanager daemon
+        // send start transfer request to the transfer daemon
         grpc::ClientContext startTransferContext;
         transfersdk::StartTransferResponse startTransferResponse;
         _client->StartTransfer(&startTransferContext, transferRequest, &startTransferResponse);
         std::string transferId = startTransferResponse.transferid();
         LOGGER(info) << "transfer started with id " << transferId;
-
-        bool finished = false;
         trsdk::TransferStatus status;
         // wait until finished, check every second
-        while (!finished) {
+        do {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
             trsdk::TransferInfoRequest transferInfoRequest;
             transferInfoRequest.set_transferid(transferId);
             trsdk::QueryTransferResponse queryTransferResponse;
             grpc::ClientContext queryTransferContext;
             _client->QueryTransfer(&queryTransferContext, transferInfoRequest, &queryTransferResponse);
             status = queryTransferResponse.status();
-            LOGGER(info) << "transfer info " << TransferStatus_to_string(status);
-            finished = status == trsdk::TransferStatus::COMPLETED ||
-                       status == trsdk::TransferStatus::FAILED ||
-                       status == trsdk::TransferStatus::UNKNOWN_STATUS;
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-        LOGGER(info) << "finished " << TransferStatus_to_string(status);
+            LOGGER(info) << "transfer status: " << TransferStatus_to_string(status);
+        } while (!transfer_finished(status));
     }
     // add files to the transfer spec
-    void add_files_to_ts(json& _paths, bool add_destination = false) {
+    void add_files_to_ts(json& paths, bool add_destination = false) {
         for (const auto& one_file : _file_list) {
             json one = {{"source", one_file}};
             if (add_destination) {
                 one.push_back({"destination", std::filesystem::path(one_file).filename()});
             }
-            _paths.push_back(one);
+            paths.push_back(one);
         }
     }
 
@@ -283,5 +277,11 @@ class TestEnvironment {
     // create a basic auth header
     static inline std::string basic_auth_header(const std::string& username, const std::string& password) {
         return "Basic " + cppcodec::base64_rfc4648::encode(username + ":" + password);
+    }
+
+    static inline bool transfer_finished(const trsdk::TransferStatus& status) {
+        return status == trsdk::TransferStatus::COMPLETED ||
+               status == trsdk::TransferStatus::FAILED ||
+               status == trsdk::TransferStatus::UNKNOWN_STATUS;
     }
 };
