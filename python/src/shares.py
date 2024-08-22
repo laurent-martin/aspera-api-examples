@@ -39,6 +39,7 @@ response = requests.post(
 )
 if response.status_code != 200:
     raise Exception('error')
+# response.raise_for_status()
 
 response_data = response.json()
 

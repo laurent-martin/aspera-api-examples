@@ -14,11 +14,35 @@ Nevertheless, those libraries are used only for the examples and are not require
 
 ## Requirements
 
-The following tools are used:
+The following tools are used.
 
-- `protoc` and `grpc_cpp_plugin`. [web site](https://grpc.io/docs/languages/cpp/quickstart/).
-- `cmake`. [web site](https://cmake.org/)
-- `conan`. [web site](https://conan.io/)
+## `protoc` and `grpc_cpp_plugin`
+
+[web site](https://grpc.io/docs/languages/cpp/quickstart/).
+
+Linux install:
+
+```console
+ubuntu$ sudo apt-get install protobuf-compiler
+redhat$ sudo dnf install -y protobuf-compiler protobuf-devel
+```
+
+## `cmake`
+
+[web site](https://cmake.org/)
+
+```console
+redhat$ sudo dnf install cmake
+```
+
+## `conan`
+
+[web site](https://conan.io/)
+
+```console
+redhat$ sudo dnf install -y python3-pip
+linux$ sudo pip install conan
+```
 
 ## Build and Run
 
