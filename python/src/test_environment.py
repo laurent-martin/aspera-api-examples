@@ -215,7 +215,7 @@ def wait_transfer(transfer_id):
         status = transfer_info.status
         # exit on first success or failure
         if status == transfer_manager.COMPLETED:
-            print('finished {0}'.format(status))
+            print('finished transfer: status: {0}'.format(status))
             break
         if status == transfer_manager.FAILED:
             raise Exception(transfer_info.message)

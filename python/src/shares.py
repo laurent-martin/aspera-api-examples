@@ -13,7 +13,6 @@ files_to_upload = test_environment.file_list
 # get Shares information from config file
 config = test_environment.get_configuration('shares')
 api_base_url = f'{config['url']}/node_api'
-destination_folder = config['share']
 
 # verify certificate if not explicitly set to False
 verify_cert = not ('verify' in config and config['verify'] is False)
@@ -21,7 +20,7 @@ verify_cert = not ('verify' in config and config['verify'] is False)
 # prepare node API request for upload_setup
 upload_setup_request = {
     'transfer_requests': [
-        {'transfer_request': {'paths': [{'destination': destination_folder}]}}
+        {'transfer_request': {'paths': [{'destination': config['folder_upload']}]}}
     ]
 }
 

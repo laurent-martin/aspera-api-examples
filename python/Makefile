@@ -25,3 +25,5 @@ $(IS_OK): ../$(IS_OK)
 clean: clean_flags
 	rm -fr $(PYTMP)
 	find . -name __pycache__ -o -name '*.pyc'|xargs rm -fr
+superclean: clean
+	rm -fr $(DIR_PYENV)

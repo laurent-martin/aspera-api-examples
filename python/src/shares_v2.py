@@ -13,6 +13,11 @@ files_to_upload = test_environment.file_list
 config = test_environment.get_configuration('shares')
 
 shares_api_url = f'{config['url']}/node_api'
+destination_folder = config['folder_upload']
+# if '/' not in destination_folder:
+#    destination_folder = f'{config['folder_upload']}/'
+# share_name, subfolder = destination_folder.split('/', 1)
+
 
 # prepare transfer spec v2 for COS
 t_spec = {
@@ -27,7 +32,7 @@ t_spec = {
     },
     'direction': 'send',
     'assets': {
-        'destination_root': config['share'],
+        'destination_root': destination_folder,
         'paths': []
     }
 }
@@ -35,10 +40,12 @@ t_spec = {
 # add file list in transfer spec
 for f in files_to_upload:
     # note: Shares API requires both source and destination to be set (unlike real node api)
-    basename = f.split('/')[-1]
+    destination = f.split('/')[-1]
+    # if subfolder:
+    # destination = f'{destination_folder}/{destination}'
     t_spec['assets']['paths'].append(
         {'source': f,
-         'destination': basename})
+         'destination': destination})
 
 # start transfer, using Transfer SDK
 test_environment.start_transfer_and_wait(t_spec)

@@ -7,8 +7,6 @@ project(LaurentSamples
 set(CXX_STANDARD 17)
 
 find_package(Boost REQUIRED)
-find_package(cppcodec REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
 
 include(FetchContent)
 
@@ -34,7 +32,7 @@ find_package(Threads REQUIRED)
 # Find Protobuf installation
 # Looks for protobuf-config.cmake file installed by Protobuf's cmake installation.
 option(protobuf_MODULE_COMPATIBLE TRUE)
-include(FindProtobuf)
+# include(FindProtobuf)
 find_package(Protobuf CONFIG REQUIRED)
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
 
@@ -85,13 +83,11 @@ target_link_libraries(aspera_grpc_library
   )
 # END gRPC
 
-foreach(_target server shares)
+foreach(_target server shares shares_v2)
   add_executable(${_target} "src/${_target}.cpp")
   target_link_libraries(${_target}
     aspera_grpc_library
-    nlohmann_json::nlohmann_json
     yaml-cpp::yaml-cpp
     boost::boost
-    cppcodec::cppcodec
     )
 endforeach()

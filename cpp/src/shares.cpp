@@ -1,29 +1,20 @@
+
 #include "test_environment.hpp"
+
 #undef LOGGER
 #define LOGGER(level) BOOST_LOG_SEV(test_env.log(), boost::log::trivial::level)
+
 int main(int argc, char* argv[]) {
     TestEnvironment test_env(argc, argv);
-    std::string shares_api_url = test_env.conf_str({"shares", "url"}) + "/node_api";
+    const std::string shares_api_url = test_env.conf_str({"shares", "url"}) + "/node_api";
     LOGGER(info) << "Shares API URL: " << shares_api_url;
-    auto shares_uri = boost::urls::parse_uri(shares_api_url).value();
-    // create V2 transfer spec
-    json transferSpec = {
-        {"title", "send using Node API and ts v2"},
-        {"session_initiation",
-         {{"node_api",
-           {{"url", shares_api_url},
-            {
-                "headers",
-                json::array({{
-                    {"key", "Authorization"},
-                    {"value", TestEnvironment::basic_auth_header(test_env.conf_str({"shares", "user"}), test_env.conf_str({"shares", "pass"}))}  //
-                }}),
-            }}}}},
-        {"direction", "send"},
-        {"assets",
-         {{"destination_root", test_env.conf_str({"shares", "share"})},
-          {"paths", json::array()}}}};
-    test_env.add_files_to_ts(transferSpec["assets"]["paths"], true);
-    test_env.start_transfer_and_wait(transferSpec);
+    json::object upload_setup_request = json::object{
+        {"transfer_requests", json::array{json::object{{"transfer_request", json::object{{"paths", json::array{json::object{{"destination", test_env.conf_str({"shares", "folder_upload"})}}}}}}}}}};
+    Rest shares_api(shares_api_url);
+    shares_api.set_basic(test_env.conf_str({"shares", "user"}), test_env.conf_str({"shares", "pass"}));
+    json::object response_data = shares_api.post("files/upload_setup", upload_setup_request);
+    json::object transfer_spec = response_data["transfer_specs"].as_array()[0].as_object()["transfer_spec"].as_object();
+    test_env.add_files_to_ts(transfer_spec["paths"].as_array(), true);
+    test_env.start_transfer_and_wait(transfer_spec);
     return 0;
 }

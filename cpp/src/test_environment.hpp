@@ -3,7 +3,11 @@
 #include <grpcpp/create_channel.h>
 #include <yaml-cpp/yaml.h>
 
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/beast.hpp>
 #include <boost/core/detail/string_view.hpp>
+#include <boost/json.hpp>
 #include <boost/log/attributes/named_scope.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
@@ -20,17 +24,14 @@
 #include <boost/url/parse.hpp>
 #include <boost/url/url.hpp>
 #include <chrono>
-#include <cppcodec/base64_rfc4648.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <nlohmann/json.hpp>
 #include <thread>
 
 #include "transfer.grpc.pb.h"
-using json = nlohmann::json;
 
-// namespace filesystem = std::__fs::filesystem;
+namespace json = boost::json;
 namespace trsdk = transfersdk;
 
 #define PATHS_FILE_REL "config/paths.yaml"
@@ -38,12 +39,12 @@ namespace trsdk = transfersdk;
 #define SDK_LOG "asperatransferd.log"
 #define XFER_LOG "aspera-scp-transfer.log"
 
-#define ENUM_TO_STRING_BEGIN(enum_ns, enum_name)                \
+#define ENUM_TO_STRING_BEGIN(enum_name, enum_ns)                \
     namespace enum_ns {                                         \
     inline std::string enum_name##_to_string(enum_name value) { \
         switch (value) {
-#define ENUM_TO_STRING_CASE(enum_name, enum_value) \
-    case enum_name ::enum_value:                   \
+#define ENUM_TO_STRING_VALUE(enum_name, enum_value) \
+    case enum_name ::enum_value:                    \
         return #enum_value;
 #define ENUM_TO_STRING_END(enum_name)                              \
     default:                                                       \
@@ -52,15 +53,15 @@ namespace trsdk = transfersdk;
         }                                                          \
         }
 // define the enum to string conversion
-ENUM_TO_STRING_BEGIN(transfersdk, TransferStatus)
-ENUM_TO_STRING_CASE(TransferStatus, UNKNOWN_STATUS)
-ENUM_TO_STRING_CASE(TransferStatus, QUEUED)
-ENUM_TO_STRING_CASE(TransferStatus, RUNNING)
-ENUM_TO_STRING_CASE(TransferStatus, COMPLETED)
-ENUM_TO_STRING_CASE(TransferStatus, FAILED)
-ENUM_TO_STRING_CASE(TransferStatus, CANCELED)
-ENUM_TO_STRING_CASE(TransferStatus, PAUSED)
-ENUM_TO_STRING_CASE(TransferStatus, ORPHANED)
+ENUM_TO_STRING_BEGIN(TransferStatus, transfersdk)
+ENUM_TO_STRING_VALUE(TransferStatus, UNKNOWN_STATUS)
+ENUM_TO_STRING_VALUE(TransferStatus, QUEUED)
+ENUM_TO_STRING_VALUE(TransferStatus, RUNNING)
+ENUM_TO_STRING_VALUE(TransferStatus, COMPLETED)
+ENUM_TO_STRING_VALUE(TransferStatus, FAILED)
+ENUM_TO_STRING_VALUE(TransferStatus, CANCELED)
+ENUM_TO_STRING_VALUE(TransferStatus, PAUSED)
+ENUM_TO_STRING_VALUE(TransferStatus, ORPHANED)
 ENUM_TO_STRING_END(TransferStatus)
 
 #define LOGGER(level) BOOST_LOG_SEV(_log, boost::log::trivial::level)
@@ -164,13 +165,13 @@ class TestEnvironment {
         return _log;
     }
 
-    // start the transfer SDK daemon
+    // Start the transfer SDK daemon
     void start_daemon() {
         const std::string sdk_url = conf_str({"trsdk", "url"});
         LOGGER(info) << "sdk_url=" << sdk_url;
         const auto sdk_uri = boost::urls::parse_uri(sdk_url).value();
-        const auto server_port_str = std::string(sdk_uri.port());
-        const auto server_address = std::string(sdk_uri.host());
+        const std::string server_port_str = sdk_uri.port();
+        const std::string server_address = sdk_uri.host();
         const std::string channel_address = server_address + ":" + server_port_str;
         LOGGER(info) << "channel_address=" << channel_address;
         // create a connection to the daemon
@@ -188,24 +189,22 @@ class TestEnvironment {
             }
             LOGGER(error) << "Failed to connect";
             // Prepare daemon configuration file
-            json config_info = {
+            json::object config_info = json::object{
                 {"address", server_address},
                 {"port", std::stoi(server_port_str)},
-                {"log_directory", log_folder},
+                {"log_directory", log_folder.string()},
                 {"log_level", "debug"},
-                {"fasp_runtime",
-                 {{"use_embedded", false},
-                  {"user_defined",
-                   {{"bin", _arch_folder},
-                    {"etc", get_path("trsdk_noarch")}}}}},
-                {"log",
-                 {{"dir", log_folder},
-                  {"level", 2}}}};
-            LOGGER(info) << config_info.dump(4);
+                {"fasp_runtime", json::object{
+                                     {"use_embedded", false},
+                                     {"user_defined", json::object{
+                                                          {"bin", _arch_folder.string()},
+                                                          {"etc", get_path("trsdk_noarch").string()}}}}},
+                {"log", json::object{{"dir", log_folder.string()}, {"level", 2}}}};
+            LOGGER(info) << json::serialize(config_info);
             auto conf_file = log_folder / "daemon.conf";
             auto daemon_path = _arch_folder / TRANSFER_SDK_DAEMON;
             std::ofstream conf_stream(conf_file.string());
-            conf_stream << config_info.dump(4);
+            conf_stream << json::serialize(config_info);
             conf_stream.close();
             // Start daemon
             std::string command = daemon_path.string() + " --config " + conf_file.string();
@@ -229,8 +228,8 @@ class TestEnvironment {
     }
 
     inline void
-    start_transfer_and_wait(const json& transfer_spec) {
-        LOGGER(info) << "ts=" << transfer_spec.dump(4);
+    start_transfer_and_wait(const json::object& transfer_spec) {
+        LOGGER(info) << "ts=" << json::serialize(transfer_spec);
         if (_transfer_service == nullptr) {
             start_daemon();
         }
@@ -241,7 +240,7 @@ class TestEnvironment {
         trsdk::TransferRequest transfer_request;
         transfer_request.set_transfertype(trsdk::TransferType::FILE_REGULAR);
         transfer_request.set_allocated_config(transfer_config);
-        transfer_request.set_transferspec(transfer_spec.dump());
+        transfer_request.set_transferspec(json::serialize(transfer_spec));
 
         // send start transfer request to the transfer daemon
         grpc::ClientContext start_transfer_context;
@@ -262,18 +261,19 @@ class TestEnvironment {
             LOGGER(info) << "transfer status: " << TransferStatus_to_string(status);
         } while (!transfer_finished(status));
     }
-    // add files to the transfer spec
-    void add_files_to_ts(json& paths, bool add_destination = false) {
+    // Add files to the transfer spec
+    void add_files_to_ts(json::array& paths, bool add_destination = false) {
+        paths.clear();
         for (const auto& one_file : _file_list) {
-            json one = {{"source", one_file}};
+            json::object one = json::object{{"source", one_file}};
             if (add_destination) {
-                one.push_back({"destination", std::filesystem::path(one_file).filename()});
+                one["destination"] = std::string(std::filesystem::path(one_file).filename());
             }
             paths.push_back(one);
         }
     }
 
-    // shutdown daemon
+    // Shutdown daemon
     void shutdown() {
         if (_transfer_service != nullptr) {
             _transfer_service = nullptr;
@@ -287,14 +287,74 @@ class TestEnvironment {
         }
     }
 
-    // create a basic auth header
+    // Create a basic auth header
     static inline std::string basic_auth_header(const std::string& username, const std::string& password) {
-        return "Basic " + cppcodec::base64_rfc4648::encode(username + ":" + password);
+        std::string credentials = username + ":" + password;
+        std::string encoded_credentials;
+        encoded_credentials.resize(boost::beast::detail::base64::encoded_size(credentials.size()));
+        boost::beast::detail::base64::encode(encoded_credentials.data(), credentials.data(), credentials.size());
+        return "Basic " + encoded_credentials;
     }
 
+    // Check if the transfer is finished
+    // @param status the status of the transfer
+    // @return true if the transfer is finished
     static inline bool transfer_finished(const trsdk::TransferStatus& status) {
         return status == trsdk::TransferStatus::COMPLETED ||
                status == trsdk::TransferStatus::FAILED ||
                status == trsdk::TransferStatus::UNKNOWN_STATUS;
+    }
+};
+
+#define HTTP_1_1 11
+
+// simple REST client
+class Rest {
+   public:
+    const std::string _base_url;
+    std::string _authorization;
+    Rest(std::string base_url) : _base_url(base_url), _authorization("") {}
+
+    void set_basic(const std::string& user, const std::string& pass) {
+        _authorization = TestEnvironment::basic_auth_header(user, pass);
+    }
+
+    inline json::object post(std::string subpath, json::object payload) {
+        const std::string json_body = json::serialize(payload);
+        const auto base_uri = boost::urls::parse_uri(_base_url).value();
+        const std::string host = base_uri.host();
+        std::string port = base_uri.port();
+        if (port.empty()) {
+            if (base_uri.scheme() == "https")
+                port = "443";
+        }
+        const std::string path = base_uri.path() + "/" + subpath;
+        boost::asio::io_service io_svc;
+        boost::asio::ssl::context ssl_ctx(boost::asio::ssl::context::sslv23_client);
+        boost::asio::ssl::stream<boost::asio::ip::tcp::socket> sock_stream = {io_svc, ssl_ctx};
+        boost::asio::ip::tcp::resolver resolver(io_svc);
+        auto it = resolver.resolve(host, port);
+        connect(sock_stream.lowest_layer(), it);
+        sock_stream.handshake(boost::asio::ssl::stream_base::handshake_type::client);
+        boost::beast::http::request<boost::beast::http::string_body> request{boost::beast::http::verb::post, path, HTTP_1_1};
+        request.set(boost::beast::http::field::host, host);
+        request.set(boost::beast::http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+        request.set(boost::beast::http::field::authorization, _authorization);
+        request.set(boost::beast::http::field::content_type, "application/json");
+        request.set(boost::beast::http::field::accept, "application/json");
+        request.set(boost::beast::http::field::content_length, std::to_string(json_body.size()));
+        request.body() = json_body;
+        boost::beast::http::write(sock_stream, request);
+        boost::beast::http::response<boost::beast::http::string_body> response;
+        boost::beast::flat_buffer buffer;
+        boost::beast::http::read(sock_stream, buffer, response);
+        boost::system::error_code ec;
+        sock_stream.shutdown(ec);
+        if (ec == boost::asio::error::eof || ec == boost::asio::ssl::error::stream_truncated) {
+            ec.assign(0, ec.category());
+        }
+        if (ec)
+            throw boost::system::system_error{ec};
+        return json::parse(response.body()).as_object();
     }
 };
