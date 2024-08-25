@@ -5,7 +5,7 @@ BUILD_DIR=build
 # Sample file to transfer
 SAMPLE_FILE=$(TMPDIR)/This_is_a_test.txt
 # List of tests, also in CMakeLists.txt, in last loop
-TEST_MARKS=$(T)server $(T)shares $(T)shares_v2
+TEST_MARKS=$(T)server $(T)shares $(T)node_v2
 CONAN_HOME=$(PWD)/.conan2
 export CONAN_HOME
 # Execute all samples

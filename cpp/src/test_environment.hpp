@@ -246,20 +246,23 @@ class TestEnvironment {
         grpc::ClientContext start_transfer_context;
         transfersdk::StartTransferResponse startTransferResponse;
         _transfer_service->StartTransfer(&start_transfer_context, transfer_request, &startTransferResponse);
+        throw_on_error(startTransferResponse.status(), startTransferResponse.error());
         const std::string transfer_id = startTransferResponse.transferid();
-        LOGGER(info) << "transfer started with id " << transfer_id;
-        trsdk::TransferStatus status;
+        LOGGER(info) << "transfer id: " << transfer_id << ", status: " << TransferStatus_to_string(startTransferResponse.status());
         // wait until finished, check every second
-        do {
+        while (true) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
             trsdk::TransferInfoRequest transfer_info_request;
             transfer_info_request.set_transferid(transfer_id);
             grpc::ClientContext query_transfer_context;
             trsdk::QueryTransferResponse query_transfer_response;
             _transfer_service->QueryTransfer(&query_transfer_context, transfer_info_request, &query_transfer_response);
-            status = query_transfer_response.status();
+            throw_on_error(query_transfer_response.status(), query_transfer_response.error());
+            trsdk::TransferStatus status = query_transfer_response.status();
             LOGGER(info) << "transfer status: " << TransferStatus_to_string(status);
-        } while (!transfer_finished(status));
+            if (status == trsdk::TransferStatus::COMPLETED)
+                break;
+        }
     }
     // Add files to the transfer spec
     void add_files_to_ts(json::array& paths, bool add_destination = false) {
@@ -296,13 +299,13 @@ class TestEnvironment {
         return "Basic " + encoded_credentials;
     }
 
-    // Check if the transfer is finished
-    // @param status the status of the transfer
-    // @return true if the transfer is finished
-    static inline bool transfer_finished(const trsdk::TransferStatus& status) {
-        return status == trsdk::TransferStatus::COMPLETED ||
-               status == trsdk::TransferStatus::FAILED ||
-               status == trsdk::TransferStatus::UNKNOWN_STATUS;
+    static inline void throw_on_error(const trsdk::TransferStatus& status, const trsdk::Error& error) {
+        if (status == trsdk::TransferStatus::FAILED) {
+            throw std::runtime_error("transfer failed: " + error.description());
+        }
+        if (status == trsdk::TransferStatus::UNKNOWN_STATUS) {
+            throw std::runtime_error("unknown transfer id: " + error.description());
+        }
     }
 };
 

@@ -83,7 +83,7 @@ target_link_libraries(aspera_grpc_library
   )
 # END gRPC
 
-foreach(_target server shares shares_v2)
+foreach(_target server shares node_v2)
   add_executable(${_target} "src/${_target}.cpp")
   target_link_libraries(${_target}
     aspera_grpc_library
