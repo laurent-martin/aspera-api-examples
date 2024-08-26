@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'com.ibm.aspera'
-version = '0.1'
+version = "${sample_version}"
 
 // if compilation lead to missing symbol: check that gRPC and protoc versions are compatible
 // check on https://github.com/grpc/grpc-java/tree/v1.65.x
