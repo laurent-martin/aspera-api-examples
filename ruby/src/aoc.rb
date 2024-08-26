@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'aspera/aoc'
+require 'aspera/api/aoc'
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'test_environment'
 
 aoc_conf = TestEnvironment.instance.config['aoc']
 
-aoc_api = Aspera::AoC.new(
+aoc_api = Aspera::Api::AoC.new(
   url: "https://#{aoc_conf['org']}.ibmaspera.com",
   auth: :jwt,
   private_key: File.read(aoc_conf['private_key']),

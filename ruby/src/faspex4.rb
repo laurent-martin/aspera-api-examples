@@ -57,14 +57,14 @@ api_v4 = Aspera::Rest.new(
   base_url: "#{faspex_conf['url']}/api",
   auth: {
     type: :oauth2,
+    grant_method: :generic,
     base_url: "#{faspex_conf['url']}/auth/oauth2",
     auth: {
       type: :basic,
       username: faspex_conf['adminuser'] || faspex_conf['user'],
       password: faspex_conf['adminpass'] || faspex_conf['pass']
     },
-    grant_method: :generic,
-    generic: { grant_type: 'password' },
+    grant_type: 'password',
     scope: 'admin'
   }
 )

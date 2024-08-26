@@ -18,25 +18,20 @@ logger = Aspera::Log.log
 
 # create REST API object
 api_v5 = Aspera::Rest.new(
-  {
-    base_url: "#{f5_conf['url']}/api/v5",
-    auth: {
-      type: :oauth2,
-      base_url: "#{f5_conf['url']}/auth",
-      grant_method: :jwt,
-      crtype: :jwt,
-      client_id: f5_conf['client_id'],
-      jwt: {
-        payload: {
-          iss: f5_conf['client_id'],    # issuer
-          aud: f5_conf['client_id'],    # audience
-          sub: "user:#{f5_conf['username']}" # subject
-        },
-        private_key_obj: OpenSSL::PKey::RSA.new(File.read(File.expand_path(f5_conf['private_key'])),
-                                                f5_conf['passphrase']),
-        headers: { typ: 'JWT' }
-      }
-    }
+  base_url: "#{f5_conf['url']}/api/v5",
+  auth: {
+    type: :oauth2,
+    grant_method: :jwt,
+    base_url: "#{f5_conf['url']}/auth",
+    client_id: f5_conf['client_id'],
+    payload: {
+      iss: f5_conf['client_id'], # issuer
+      aud: f5_conf['client_id'], # audience
+      sub: "user:#{f5_conf['username']}" # subject
+    },
+    private_key_obj: OpenSSL::PKey::RSA.new(File.read(File.expand_path(f5_conf['private_key'])),
+                                            f5_conf['passphrase']),
+    headers: { typ: 'JWT' }
   }
 )
 
@@ -57,8 +52,9 @@ transfer_spec = api_v5.call(
   operation: 'POST',
   subpath: "packages/#{package['id']}/transfer_spec/upload",
   headers: { 'Accept' => 'application/json' },
-  url_params: { transfer_type: 'connect' },
-  json_params: ts_paths
+  query: { transfer_type: 'connect' },
+  body: ts_paths,
+  body_type: :json
 )[:data]
 transfer_spec.delete('authentication')
 transfer_spec.merge!(ts_paths)

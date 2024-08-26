@@ -5,9 +5,8 @@ require 'singleton'
 require 'json'
 require 'tmpdir'
 require 'aspera/log'
-require 'aspera/fasp/agent_direct'
-require 'aspera/fasp/listener'
-require 'aspera/fasp/installation'
+require 'aspera/agent/direct'
+require 'aspera/ascp/installation'
 require 'aspera/rest'
 require 'aspera/rest_errors_aspera'
 
@@ -16,7 +15,7 @@ Aspera::SecretHider.log_secrets = true
 # register aspera REST call error handlers
 Aspera::RestErrorsAspera.register_handlers
 # ignore self signed cert
-Aspera::Rest.session_cb = ->(http) { http.verify_mode = OpenSSL::SSL::VERIFY_NONE }
+Aspera::Rest.set_parameters(session_cb: ->(http) { http.verify_mode = OpenSSL::SSL::VERIFY_NONE })
 
 ##############################################################
 # generic initialization : configuration of FaspManager
@@ -33,18 +32,6 @@ Aspera::Rest.session_cb = ->(http) { http.verify_mode = OpenSSL::SSL::VERIFY_NON
 # require 'aspera/fasp/node'
 # transfer_agent=Aspera::Fasp::Node.new(Aspera::Rest.new(...))
 
-
-
-# example of event listener that displays events on stdout
-class MyListener < Aspera::Fasp::Listener
-  # this is the callback called during transfers, here we only display the received information
-  # but it could be used to get detailed error information, check "type" field is "ERROR"
-  def event_enhanced(data)
-    $stdout.puts(JSON.generate(data))
-    $stdout.flush
-  end
-end
-
 # setup test env
 class TestEnvironment
   include Singleton
@@ -58,11 +45,9 @@ class TestEnvironment
     raise "Missing config file: #{get_path('main_config')}" unless @config['misc']
 
     # some required files are generated here (keys, certs)
-    Aspera::Fasp::Installation.instance.sdk_folder = File.join(get_path('trsdk_noarch'), 'connectors/ruby')
+    Aspera::Ascp::Installation.instance.sdk_folder = File.join(get_path('trsdk_noarch'), 'connectors/ruby')
     # get Transfer Agent
-    @agent = Aspera::Fasp::AgentDirect.new
-    # register the sample listener to display events
-    @agent.add_listener(MyListener.new)
+    @agent = Aspera::Agent::Direct.new
     unless ARGV.length.eql?(1)
       Aspera::Log.log.error { "Wrong number of args: #{ARGV.length}" }
       Aspera::Log.log.error { "Usage: #{$PROGRAM_NAME} <file to send>" }
