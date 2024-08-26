@@ -1,28 +1,18 @@
 # main folder (location of this makefile)
 DIR_TOP=$(shell pwd -P)/
-include $(DIR_TOP)common.make
+include $(DIR_TOP)common.mak
 # template configurtion file
 CONFIG_TMPL=$(DIR_TOP)config/config.tmpl
 # user's config file path
 CONFIG_FILE=$(DIR_TOP)$(shell sed -n -e 's/^main_config: //p' $(GLOBAL_PATHS))
-# main folder for generated/downloaded stuff
-GENERATED_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^temp_gene: //p' $(GLOBAL_PATHS))/
 # location of extracted transfer SDK
 TRSDK_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' $(GLOBAL_PATHS))/
 # location of platform specific transfer SDK files (binaries)
 TRSDK_ARCH=$(TRSDK_ROOT)$(shell sed -n -e 's/^ *platform: //p' $(CONFIG_FILE) 2> /dev/null)/
 # downloaded SDK file
 TRSDK_ZIP=$(TRSDK_ROOT)transfer_sdk.zip
+SECTIONS=js python java web cpp
 all:: $(IS_OK)
-clean: clean_flags
-	cd js && make clean
-	cd python && make clean
-	cd java && make clean
-	cd web && make clean
-	cd cpp && make clean
-	rm -fr $(GENERATED_ROOT)
-	find . -name \*.log -exec rm {} \;
-	-killall asperatransferd
 # ensure that SDK is installed and config file are here
 $(IS_OK): $(CONFIG_FILE) $(TRSDK_ARCH)asperatransferd
 	@touch $@
@@ -49,7 +39,7 @@ $(CONFIG_FILE):
 	cp $(CONFIG_TMPL) $@
 	@echo 'Created file $@ using template $(CONFIG_TMPL), refer to README.md'
 	@echo "\033[5m>>>> Edit and customize $@ <<<<\033[0m"
-tests:  $(IS_OK)
+tests: $(IS_OK)
 	cd js && make
 	cd python && make
 	cd java && make
@@ -57,3 +47,13 @@ tests:  $(IS_OK)
 	cd csharp && make
 	cd cpp && make
 	cd web && make test
+clean::
+	for sec in $(SECTIONS); do \
+		pushd $$sec && make $@ && popd; \
+	done
+	find . -name \*.log -exec rm {} \;
+	-killall asperatransferd
+superclean::
+	for sec in $(SECTIONS); do \
+		pushd $$sec && make $@ && popd; \
+	done

@@ -1,7 +1,7 @@
 # paths of files and folder
 # specified relative to the project main folder
 main_config: private/config.yaml
-temp_gene: generated
-sdk_root: generated/trsdk
-trsdk_noarch: generated/trsdk/noarch
-proto: generated/trsdk/noarch/connectors/grpc/transfer.proto
+temp_gene: tmp
+sdk_root: tmp/trsdk
+trsdk_noarch: tmp/trsdk/noarch
+proto: tmp/trsdk/noarch/connectors/grpc/transfer.proto

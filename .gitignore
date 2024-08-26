@@ -1,7 +1,7 @@
 .DS_Store
 .is_*
 .tested.*
-generated/
+tmp/
 private/
 .vscode/
 .idea/

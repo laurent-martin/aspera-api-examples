@@ -313,9 +313,10 @@ class TestEnvironment {
 
 // simple REST client
 class Rest {
-   public:
     const std::string _base_url;
     std::string _authorization;
+
+   public:
     Rest(std::string base_url) : _base_url(base_url), _authorization("") {}
 
     void set_basic(const std::string& user, const std::string& pass) {

@@ -1,6 +1,6 @@
 # must have trailing slash
 DIR_TOP=$(shell pwd -P)/../
-include $(DIR_TOP)common.make
+include $(DIR_TOP)common.mak
 SRC=./src/
 TMP_NPM=tmp_node/
 GW_SDK=@ibm-aspera/http-gateway-sdk-js
@@ -18,7 +18,7 @@ $(SRC)http-gateway.js:
 $(IS_OK): $(SRC)http-gateway.js
 	npm install
 	@touch $@
-clean: clean_flags
+clean::
 	rm -f package-lock.json $(SRC)conf.js $(SRC)http-gateway.js
 	rm -f aspera-httpgw-example.zip
 	rm -fr node_modules

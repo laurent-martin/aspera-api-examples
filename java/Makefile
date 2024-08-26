@@ -1,5 +1,5 @@
 DIR_TOP=$(shell pwd -P)/../
-include $(DIR_TOP)common.make
+include $(DIR_TOP)common.mak
 # same as in settings.gradle
 PROJECT_NAME=java_samples
 # same as in build.gradle
@@ -19,12 +19,10 @@ $(IS_OK): $(SAMPLE_JAR)
 	@touch $@
 # uncomment to trigger build on source change
 #.PHONY: $(SAMPLE_JAR)
-$(SAMPLE_JAR): ../$(IS_OK)
+$(SAMPLE_JAR): $(DIR_TOP)$(IS_OK)
 	gradle -version
 	gradle build $(GRADLE_PROPS)
-# ensure SDK is there
-../$(IS_OK):
-	cd .. && make
-clean: clean_flags
+clean:: clean_flags
 	if test -d .gradle;then gradle clean $(GRADLE_PROPS); fi
+superclean::
 	rm -fr .gradle bin/main
