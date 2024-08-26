@@ -293,15 +293,6 @@ class TestEnvironment {
         }
     }
 
-    // Create a basic auth header
-    static inline std::string basic_auth_header(const std::string& username, const std::string& password) {
-        std::string credentials = username + ":" + password;
-        std::string encoded_credentials;
-        encoded_credentials.resize(boost::beast::detail::base64::encoded_size(credentials.size()));
-        boost::beast::detail::base64::encode(encoded_credentials.data(), credentials.data(), credentials.size());
-        return "Basic " + encoded_credentials;
-    }
-
     static inline void throw_on_error(const trsdk::TransferStatus& status, const trsdk::Error& error) {
         if (status == trsdk::TransferStatus::FAILED) {
             throw std::runtime_error("transfer failed: " + error.description());
@@ -323,7 +314,7 @@ class Rest {
     Rest(std::string base_url) : _base_url(base_url), _authorization("") {}
 
     void set_basic(const std::string& user, const std::string& pass) {
-        _authorization = TestEnvironment::basic_auth_header(user, pass);
+        _authorization = basic_auth_header(user, pass);
     }
 
     inline json::object post(std::string subpath, json::object payload) {
@@ -363,5 +354,13 @@ class Rest {
         if (ec)
             throw boost::system::system_error{ec};
         return json::parse(response.body()).as_object();
+    }
+    // Create a basic auth header
+    static inline std::string basic_auth_header(const std::string& username, const std::string& password) {
+        std::string credentials = username + ":" + password;
+        std::string encoded_credentials;
+        encoded_credentials.resize(boost::beast::detail::base64::encoded_size(credentials.size()));
+        boost::beast::detail::base64::encode(encoded_credentials.data(), credentials.data(), credentials.size());
+        return "Basic " + encoded_credentials;
     }
 };
