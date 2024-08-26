@@ -1,6 +1,4 @@
 .DS_Store
-.is_*
-.tested.*
 tmp/
 private/
 .vscode/

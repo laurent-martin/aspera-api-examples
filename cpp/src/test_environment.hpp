@@ -52,6 +52,7 @@ namespace trsdk = transfersdk;
         }                                                          \
         }                                                          \
         }
+#if 0
 // define the enum to string conversion
 ENUM_TO_STRING_BEGIN(TransferStatus, transfersdk)
 ENUM_TO_STRING_VALUE(TransferStatus, UNKNOWN_STATUS)
@@ -63,11 +64,13 @@ ENUM_TO_STRING_VALUE(TransferStatus, CANCELED)
 ENUM_TO_STRING_VALUE(TransferStatus, PAUSED)
 ENUM_TO_STRING_VALUE(TransferStatus, ORPHANED)
 ENUM_TO_STRING_END(TransferStatus)
+#endif
+
+#define TransferStatus_to_string(value) transfersdk::TransferStatus_Name<transfersdk::TransferStatus>(value)
 
 #define LOGGER(level) BOOST_LOG_SEV(_log, boost::log::trivial::level)
 
-// provide a common environment for tests
-// including startup of asperatransferd
+// Provide a common environment for tests, including startup of asperatransferd
 class TestEnvironment {
     // get the path of the item in the test environment
     std::filesystem::path get_path(const std::string& name) {
@@ -222,14 +225,14 @@ class TestEnvironment {
             // Wait for the daemon to start
             std::this_thread::sleep_for(std::chrono::seconds(10));
         }
-        LOGGER(error) << "daemon not started or cannot be started.";
         LOGGER(error) << "Check the logs: daemon.err and daemon.out (see paths above).";
-        exit(1);
+        throw std::runtime_error("daemon not started or cannot be started.");
     }
 
     inline void
     start_transfer_and_wait(const json::object& transfer_spec) {
-        LOGGER(info) << "ts=" << json::serialize(transfer_spec);
+        const std::string ts_json = json::serialize(transfer_spec);
+        LOGGER(info) << "ts=" << ts_json;
         if (_transfer_service == nullptr) {
             start_daemon();
         }
@@ -240,7 +243,7 @@ class TestEnvironment {
         trsdk::TransferRequest transfer_request;
         transfer_request.set_transfertype(trsdk::TransferType::FILE_REGULAR);
         transfer_request.set_allocated_config(transfer_config);
-        transfer_request.set_transferspec(json::serialize(transfer_spec));
+        transfer_request.set_transferspec(ts_json);
 
         // send start transfer request to the transfer daemon
         grpc::ClientContext start_transfer_context;

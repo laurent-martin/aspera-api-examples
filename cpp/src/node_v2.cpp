@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
         {"direction", "send"},
         {"assets", json::object{{"destination_root", test_env.conf_str({"node", "folder_upload"})},
                                 {"paths", json::array()}}}};
-    test_env.add_files_to_ts(transfer_spec_v2["assets"].as_object()["paths"].as_array(), true);
+    test_env.add_files_to_ts(transfer_spec_v2["assets"].as_object()["paths"].as_array(), false);
     test_env.start_transfer_and_wait(transfer_spec_v2);
     return 0;
 }

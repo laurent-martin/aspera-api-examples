@@ -1,15 +1,18 @@
-DIR_TOP=$(shell pwd -P)/../
+DIR_TOP=$(CURDIR)/../
+TEST_CASES=server_upload faspex5 aoc
 include $(DIR_TOP)common.mak
-all:: $(T)server_upload $(T)faspex5 $(T)aoc
-$(T)%: $(IS_OK) $(SAMPLE_FILE)
-	@echo "Running test $@"
-	name='$@' && dotnet run $${name#$(T)} $(SAMPLE_FILE)
-	sleep 2
+PROPERTIES=-p:Proto_File=$(PROTO_FILE)
+all:: $(TEST_FLAGS)
+$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
+	@echo "== Test: $(notdir $@) ==========================="
+	dotnet run $(PROPERTIES) $(notdir $@) $(SAMPLE_FILE)
+	@sleep 2
+	@mkdir -p $(FLAG_DIR)
 	@touch $@
-$(IS_OK): $(DIR_TOP)$(IS_OK)
+$(ENV_IS_SETUP): $(SDK_FILES)
 	@touch $@
-do:
-	dotnet build
+build:
+	dotnet build $(PROPERTIES)
 clean::
 	dotnet clean
 superclean::

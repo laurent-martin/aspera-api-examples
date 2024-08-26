@@ -1,13 +1,16 @@
 # test file to transfer, here generated file, but could be real file with a path
-DIR_TOP=$(shell pwd -P)/../
+DIR_TOP=$(CURDIR)/../
+TEST_CASES=server server_v2 cos
 include $(DIR_TOP)common.mak
-SRC=./
-all:: $(T)server $(T)server_v2 $(T)cos
-$(T)%: $(IS_OK) $(SAMPLE_FILE)
-	name='$@' && node $(SRC)$${name#$(T)}.js $(SAMPLE_FILE)
-	sleep 2
+SRC=$(CURDIR)/
+all:: $(TEST_FLAGS)
+$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
+	@echo "== Test: $(notdir $@) ==========================="
+	node $(SRC)$(notdir $@).js $(SAMPLE_FILE)
+	@sleep 2
+	@mkdir -p $(FLAG_DIR)
 	@touch $@
-$(IS_OK): $(DIR_TOP)$(IS_OK)
+$(ENV_IS_SETUP): $(SDK_FILES)
 	npm install
 	@touch $@
 clean::

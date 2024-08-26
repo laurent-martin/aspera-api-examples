@@ -1,4 +1,4 @@
-DIR_TOP=$(PWD)/../
+DIR_TOP=$(CURDIR)/../
 include $(DIR_TOP)common.mak
 # create template from actual private config file
 DOC_TOOL=ruby -I $(DIR_TOP)/doc -r doc -e

@@ -1,16 +1,18 @@
-DIR_TOP=$(shell pwd -P)/../
-DIR_PYROOT=$(DIR_TOP)python/
-DIR_PYENV=$(DIR_PYROOT).venv/
+DIR_TOP=$(CURDIR)/../
+TEST_CASES=aoc cos  cos_node_api faspex faspex5 node node_v2 shares shares_v2 server
+#  cos_v2
 include $(DIR_TOP)common.mak
+DIR_PYENV=$(CURDIR)/.venv/
 SRC=src/
-all:: $(T)aoc $(T)cos $(T)cos_v2 $(T)cos_node_api $(T)faspex $(T)faspex5 $(T)node $(T)node_v2 $(T)shares $(T)shares_v2 $(T)server
-$(T)%: $(IS_OK) $(SAMPLE_FILE)
-	@echo "Running test $@"
-	source $(DIR_PYENV)bin/activate && name='$@' && $(SRC)$${name#$(T)}.py $(SAMPLE_FILE)
-	sleep 2
+all:: $(TEST_FLAGS)
+$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
+	@echo "== Test: $(notdir $@) ==========================="
+	source $(DIR_PYENV)bin/activate && $(SRC)$(notdir $@).py $(SAMPLE_FILE)
+	@sleep 2
+	@mkdir -p $(FLAG_DIR)
 	@touch $@
 # initialize python environment
-$(IS_OK): $(DIR_TOP)$(IS_OK)
+$(ENV_IS_SETUP): $(SDK_FILES)
 	python3 -m venv $(DIR_PYENV)
 	source $(DIR_PYENV)bin/activate && pip3 install -r $(SRC)requirements.txt
 	@touch $@

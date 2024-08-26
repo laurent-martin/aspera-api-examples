@@ -1,18 +1,19 @@
-# must have trailing slash
-DIR_TOP=$(PWD)/../
-TEST_CASES=webserver
+DIR_TOP=$(CURDIR)/../
+TEST_CASES=server
 include $(DIR_TOP)common.mak
 SRC=./src/
 TMP_NPM=tmp_node/
 GW_SDK=@ibm-aspera/http-gateway-sdk-js
 DK_SDK=@ibm-aspera/desktop-sdk-js
 CN_SDK=@ibm-aspera/connect-sdk-js
-$(FLAG_DIR)%: $(FLAG_DIR) $(IS_OK) $(SAMPLE_FILE)
-	node --trace-warnings src/server.js $(SRC)&
+all:: $(TEST_FLAGS)
+$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
+	@echo "== Test: $(notdir $@) ==========================="
+	node --trace-warnings src/$(notdir $@).js $(SRC)&
 	sleep 5
 	killall node
+	@mkdir -p $(FLAG_DIR)
 	@touch $@
-all:: $(TEST_FLAGS)
 # retrieve javascript libs for http gateway client
 $(SRC)http-gateway.js:
 	mkdir -p $(TMP_NPM)
@@ -20,7 +21,7 @@ $(SRC)http-gateway.js:
 	mv $(TMP_NPM)node_modules/$(GW_SDK)/js/http-gateway.js $(SRC)
 	rm -fr $(TMP_NPM)
 # run the server
-$(IS_OK): $(SRC)http-gateway.js
+$(ENV_IS_SETUP): $(SRC)http-gateway.js
 	npm install
 	@touch $@
 clean::

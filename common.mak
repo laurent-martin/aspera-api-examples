@@ -3,7 +3,6 @@ GLOBAL_TRSDK_NOARCH=$(DIR_TOP)$(shell sed -n -e 's/^trsdk_noarch: //p' < $(GLOBA
 # main folder for generated/downloaded files/temporary files
 DIR_TMP=$(DIR_TOP)$(shell sed -n -e 's/^temp_gene: //p' $(GLOBAL_PATHS))/
 PROTO_FILE=$(DIR_TOP)$(shell sed -n -e 's/^proto: //p' $(GLOBAL_PATHS))
-SAMPLE_FILE=$(DIR_TMP)This_is_a_test.txt
 # user's config file path
 CONFIG_FILE=$(DIR_TOP)$(shell sed -n -e 's/^main_config: //p' $(GLOBAL_PATHS))
 # location of extracted transfer SDK
@@ -15,16 +14,15 @@ TRSDK_ZIP=$(TRSDK_ROOT)transfer_sdk.zip
 SDK_FILES=$(CONFIG_FILE) $(TRSDK_ARCH)asperatransferd $(PROTO_FILE)
 # template configuration file
 CONFIG_TMPL=$(DIR_TOP)config/config.tmpl
+SAMPLE_FILE=$(DIR_TMP)This_is_a_test.txt
 # flag file that indicates that the folder was initialized
-IS_OK=.is_setup
-# prefix for test flags
-T=.tested.
+ENV_IS_SETUP=.is_setup
+# folder for test flags
 FLAG_DIR=$(DIR_TMP)$(notdir $(CURDIR))/
 TEST_FLAGS=$(foreach var,$(TEST_CASES),$(FLAG_DIR)$(var))
 all::
 clean_flags:
-	rm -f $(IS_OK)
-	test -n "$(T)" && rm -f $(T)*
+	rm -f $(ENV_IS_SETUP)
 clean:: clean_flags
 superclean:: clean
 	rm -fr $(DIR_TMP)
