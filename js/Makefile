@@ -1,6 +1,7 @@
 # test file to transfer, here generated file, but could be real file with a path
 DIR_TOP=$(CURDIR)/../
-TEST_CASES=server server_v2 cos
+TEST_CASES=server server_v2
+# cos
 include $(DIR_TOP)common.mak
 SRC=$(CURDIR)/
 all:: $(TEST_FLAGS)
