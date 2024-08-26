@@ -4,7 +4,7 @@ DIR_PYENV=$(DIR_PYROOT).venv/
 include $(DIR_TOP)common.mak
 SRC=src/
 all:: $(T)aoc $(T)cos $(T)cos_v2 $(T)cos_node_api $(T)faspex $(T)faspex5 $(T)node $(T)node_v2 $(T)shares $(T)shares_v2 $(T)server
-$(T)%: $(IS_OK)
+$(T)%: $(IS_OK) $(SAMPLE_FILE)
 	@echo "Running test $@"
 	source $(DIR_PYENV)bin/activate && name='$@' && $(SRC)$${name#$(T)}.py $(SAMPLE_FILE)
 	sleep 2

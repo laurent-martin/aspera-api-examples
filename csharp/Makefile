@@ -1,10 +1,9 @@
 DIR_TOP=$(shell pwd -P)/../
 include $(DIR_TOP)common.mak
-TSTFILE='faux:///test1?1k'
 all:: $(T)server_upload $(T)faspex5 $(T)aoc
-$(T)%: $(IS_OK)
+$(T)%: $(IS_OK) $(SAMPLE_FILE)
 	@echo "Running test $@"
-	name='$@' && dotnet run $${name#$(T)} $(TSTFILE)
+	name='$@' && dotnet run $${name#$(T)} $(SAMPLE_FILE)
 	sleep 2
 	@touch $@
 $(IS_OK): $(DIR_TOP)$(IS_OK)

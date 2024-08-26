@@ -2,9 +2,8 @@
 DIR_TOP=$(shell pwd -P)/../
 include $(DIR_TOP)common.mak
 SRC=./
-SAMPLE_FILE='faux:///100m?100m'
 all:: $(T)server $(T)server_v2 $(T)cos
-$(T)%: $(IS_OK)
+$(T)%: $(IS_OK) $(SAMPLE_FILE)
 	name='$@' && node $(SRC)$${name#$(T)}.js $(SAMPLE_FILE)
 	sleep 2
 	@touch $@
