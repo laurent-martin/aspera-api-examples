@@ -1,5 +1,5 @@
 DIR_TOP=../
-include $(DIR_TOP)/common.mak
+include $(DIR_TOP)common.mak
 SRC=src/
 GEMFILE=$(GLOBAL_TRSDK_NOARCH)/connectors/ruby/Gemfile
 all:: $(T)aoc $(T)node $(T)faspex5 $(T)server $(T)faspex4

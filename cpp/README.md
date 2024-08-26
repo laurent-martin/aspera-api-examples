@@ -18,12 +18,15 @@ The following tools are used.
 
 ## `protoc` and `grpc_cpp_plugin`
 
-[web site](https://grpc.io/docs/languages/cpp/quickstart/).
+[GRPC C++ Quickstart](https://grpc.io/docs/languages/cpp/quickstart/).
 
 Linux install:
 
 ```console
 ubuntu$ sudo apt-get install protobuf-compiler
+```
+
+```console
 redhat$ sudo dnf install -y protobuf-compiler protobuf-devel
 ```
 

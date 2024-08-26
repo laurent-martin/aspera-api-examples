@@ -1,34 +1,37 @@
-DIR_TOP=../
-include $(DIR_TOP)/common.mak
+DIR_TOP=$(PWD)/../
+TEST_CASES=server shares node_v2
+include $(DIR_TOP)common.mak
 # Executables are generated here:
-BUILD_DIR=build
-# Sample file to transfer
-SAMPLE_FILE=$(TMPDIR)/This_is_a_test.txt
-# List of tests, also in CMakeLists.txt, in last loop
-TEST_MARKS=$(T)server $(T)shares $(T)node_v2
+BUILD_DIR=build/
+SRC=src/
+# where conan downloads libraries
 CONAN_HOME=$(PWD)/.conan2
 export CONAN_HOME
+BUILD_TYPE=Release
 # Execute all samples
-all:: $(TEST_MARKS)
+all:: $(TEST_FLAGS)
 # Execute one sample
-$(T)%: $(IS_OK) $(SAMPLE_FILE)
-	name='$@' && cd $(BUILD_DIR) && cmake --build . -- VERBOSE=1 $${name#$(T)}
-	name='$@' && $(BUILD_DIR)/$${name#$(T)} $(SAMPLE_FILE)
+$(FLAG_DIR)%: $(FLAG_DIR) $(IS_OK) $(SAMPLE_FILE)
+	cd $(BUILD_DIR) && cmake --build . --target $(notdir $@)
+	$(BUILD_DIR)/$(notdir $@) $(SAMPLE_FILE)
 	@touch $@
 # Setup compilation environment
 # 1. Install dependencies
 # 2. Generate build files
-$(IS_OK): $(DIR_TOP)$(IS_OK)
+$(IS_OK): $(SDK_FILES)
 	mkdir -p $(CONAN_HOME)
 	conan profile detect --force
-	conan install . --output-folder=. --build=missing -s build_type=Release
+	conan install . --output-folder=. --build=missing -s build_type=$(BUILD_TYPE)
 	cmake --preset conan-release
 	cd $(BUILD_DIR) && cmake .. \
 		-G "Unix Makefiles" \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DCMAKE_TOOLCHAIN_FILE=Release/generators/conan_toolchain.cmake
+		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-Daspera_proto_file=$(PROTO_FILE) \
+		-DCMAKE_TOOLCHAIN_FILE=$(BUILD_TYPE)/generators/conan_toolchain.cmake \
+		-Dtest_cases="$(subst $() $(),;,$(TEST_CASES))"
 	@touch $@
 clean::
-	rm -fr $(TEST_MARKS) $(BUILD_DIR) $(SAMPLE_FILE) $(IS_OK) CMakeUserPresets.json
+	rm -f $(TEST_FLAGS) $(IS_OK) CMakeUserPresets.json
+	rm -fr $(BUILD_DIR)
 superclean::
 	rm -fr $(CONAN_HOME)
