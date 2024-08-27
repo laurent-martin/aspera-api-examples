@@ -1,7 +1,6 @@
 
 #include "test_environment.hpp"
 
-#undef LOGGER
 #define LOGGER(level) BOOST_LOG_SEV(test_env.log(), boost::log::trivial::level)
 
 int main(int argc, char* argv[]) {

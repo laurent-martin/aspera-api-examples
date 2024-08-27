@@ -2,7 +2,7 @@ DIR_TOP=$(CURDIR)/../
 TEST_CASES=aoc node faspex5 server faspex4
 include $(DIR_TOP)common.mak
 SRC=src/
-GEMFILE=$(GLOBAL_TRSDK_NOARCH)/connectors/ruby/Gemfile
+GEMFILE=$(TRSDK_NOARCH)/connectors/ruby/Gemfile
 all:: $(TEST_FLAGS)
 $(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
 	@echo "== Test: $(notdir $@) ==========================="

@@ -10,7 +10,8 @@ plugins {
 group = 'com.ibm.aspera'
 version = "${sample_version}"
 
-// if compilation lead to missing symbol: check that gRPC and protoc versions are compatible
+// if compilation lead to missing symbol:
+// check that gRPC and protoc versions are compatible
 // check on https://github.com/grpc/grpc-java/tree/v1.65.x
 def grpcVersion = '1.65.1'
 def protocVersion = '3.25.1'
@@ -30,12 +31,18 @@ repositories {
 }
 
 protobuf {
-    protoc { artifact = "com.google.protobuf:protoc:${protocVersion}" }
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protocVersion}"
+    }
     plugins {
-        grpc { artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}" }
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+        }
     }
     generateProtoTasks {
-        all()*.plugins { grpc {} }
+        all()*.plugins {
+            grpc {}
+        }
     }
 }
 
@@ -46,15 +53,14 @@ clean {
 sourceSets {
     main {
         proto {
-            // shall be: dirname $(CONFIG_TRSDK_PROTO)
-            srcDir "${sdk_noarch}connectors/grpc"
-            include 'transfer.proto'
+            srcDir "${proto_dir}"
+            include "${proto_file}"
             exclude '*/**/*.proto'
         }
     }
 }
 
-// build jar with -all ext withh all dependincies in it
+// build jar with -all ext with all dependencies in it
 shadowJar {
     project.configurations.implementation.canBeResolved = true
     configurations = [project.configurations.implementation]

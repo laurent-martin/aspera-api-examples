@@ -5,7 +5,9 @@ SECTIONS=cpp csharp java js python ruby web
 template:
 	cd doc && make
 all clean superclean clean_flags::
-	set -ex && for sec in $(SECTIONS); do killall asperatransferd || true;(set -ex && cd $$sec && make $@); done
+	set -ex && for sec in $(SECTIONS); do (killall -q asperatransferd||:; set -ex; cd $$sec; make $@); done
 clean::
 	find . -name \*.log -exec rm {} \;
-	-killall asperatransferd
+	-killall -q asperatransferd
+superclean::
+	rm -fr $(DIR_TMP)

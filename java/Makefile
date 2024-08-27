@@ -8,7 +8,7 @@ PROJECT_VERSION=0.1
 SAMPLE_JAR=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar
 # cspell:disable
 JAVA_PROPS=-Ddir_top=$(DIR_TOP) -Djava.util.logging.config.file=logging.properties
-GRADLE_PROPS=-Psdk_noarch=$(GLOBAL_TRSDK_NOARCH) -Psample_version=$(PROJECT_VERSION)
+GRADLE_PROPS=-Pproto_file=$(notdir $(PROTO_FILE)) -Pproto_dir=$(dir $(PROTO_FILE)) -Psample_version=$(PROJECT_VERSION)
 # cspell:enable
 all:: $(TEST_FLAGS)
 $(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)

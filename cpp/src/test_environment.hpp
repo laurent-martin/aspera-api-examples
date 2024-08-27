@@ -302,6 +302,7 @@ class TestEnvironment {
         }
     }
 };
+#undef LOGGER
 
 #define HTTP_1_1 11
 

@@ -31,12 +31,12 @@ public class TestEnvironment {
 	public TransferServiceGrpc.TransferServiceBlockingStub client;
 	// several transfer session may be started but for the example we use only one
 	public String transferId;
-	final String daemon_executable;
-	final String sdk_conf_path;
-	final Process daemon_process;
-	final String dir_top;
-	final Map<String, String> paths;
-	final String arch_dir;
+	private final String daemon_executable;
+	private final String sdk_conf_path;
+	private final Process daemon_process;
+	private final String dir_top;
+	private final Map<String, String> paths;
+	private final String arch_dir;
 
 	/// get path from the reference file
 	/// @param name the name of the path in the reference file

@@ -1,12 +1,12 @@
-GLOBAL_PATHS=$(DIR_TOP)config/paths.yaml
-GLOBAL_TRSDK_NOARCH=$(DIR_TOP)$(shell sed -n -e 's/^trsdk_noarch: //p' < $(GLOBAL_PATHS))/
+PATHS_FILE=$(DIR_TOP)config/paths.yaml
+TRSDK_NOARCH=$(DIR_TOP)$(shell sed -n -e 's/^trsdk_noarch: //p' < $(PATHS_FILE))/
 # main folder for generated/downloaded files/temporary files
-DIR_TMP=$(DIR_TOP)$(shell sed -n -e 's/^temp_gene: //p' $(GLOBAL_PATHS))/
-PROTO_FILE=$(DIR_TOP)$(shell sed -n -e 's/^proto: //p' $(GLOBAL_PATHS))
+DIR_TMP=$(DIR_TOP)$(shell sed -n -e 's/^temp_gene: //p' $(PATHS_FILE))/
+PROTO_FILE=$(DIR_TOP)$(shell sed -n -e 's/^proto: //p' $(PATHS_FILE))
 # user's config file path
-CONFIG_FILE=$(DIR_TOP)$(shell sed -n -e 's/^main_config: //p' $(GLOBAL_PATHS))
+CONFIG_FILE=$(DIR_TOP)$(shell sed -n -e 's/^main_config: //p' $(PATHS_FILE))
 # location of extracted transfer SDK
-TRSDK_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' $(GLOBAL_PATHS))/
+TRSDK_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' $(PATHS_FILE))/
 # location of platform specific transfer SDK files (binaries)
 TRSDK_ARCH=$(TRSDK_ROOT)$(shell sed -n -e 's/^ *platform: //p' $(CONFIG_FILE) 2> /dev/null)/
 # downloaded SDK file
@@ -28,7 +28,6 @@ clean_flags::
 clean:: clean_flags
 # clean all generated and compiled files
 superclean:: clean
-	rm -fr $(DIR_TMP)
 $(SAMPLE_FILE):
 	mkdir -p $(DIR_TMP)
 	@echo "Generating test file: $(SAMPLE_FILE)"

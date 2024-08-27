@@ -12,7 +12,7 @@ BUILD_TYPE=Release
 # Execute all samples
 all:: $(TEST_FLAGS)
 # Execute one sample
-$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
+$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE) src/%.cpp
 	@echo "== Test: $(notdir $@) ==========================="
 	cd $(BUILD_DIR) && cmake --build . --target $(notdir $@) -- VERBOSE=1
 	$(BUILD_DIR)$(notdir $@) $(SAMPLE_FILE)

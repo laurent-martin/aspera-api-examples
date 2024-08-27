@@ -1,7 +1,6 @@
 #include "test_environment.hpp"
-#undef LOGGER
 #define LOGGER(level) BOOST_LOG_SEV(test_env.log(), boost::log::trivial::level)
-int main(int argc, char* argv[]) {
+int main(const int argc, const char* const argv[]) {
     TestEnvironment test_env(argc, argv);
     const std::string node_api_url = test_env.conf_str({"node", "url"});
     json::object transfer_spec_v2 = json::object{
