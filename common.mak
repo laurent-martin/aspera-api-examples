@@ -21,14 +21,16 @@ ENV_IS_SETUP=.is_setup
 FLAG_DIR=$(DIR_TMP)$(notdir $(CURDIR))/
 TEST_FLAGS=$(foreach var,$(TEST_CASES),$(FLAG_DIR)$(var))
 all::
-clean_flags:
-	rm -f $(ENV_IS_SETUP)
+# clean flags indicating test was run: force re-run of tests only
+clean_flags::
+	rm -f $(ENV_IS_SETUP) $(TEST_FLAGS)
+# simple clean
 clean:: clean_flags
+# clean all generated and compiled files
 superclean:: clean
 	rm -fr $(DIR_TMP)
-$(DIR_TMP):
+$(SAMPLE_FILE):
 	mkdir -p $(DIR_TMP)
-$(SAMPLE_FILE): $(DIR_TMP)
 	@echo "Generating test file: $(SAMPLE_FILE)"
 	date > $(SAMPLE_FILE)
 $(FLAG_DIR):

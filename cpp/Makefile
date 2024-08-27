@@ -35,7 +35,7 @@ $(ENV_IS_SETUP): $(SDK_FILES)
 		-Dtest_cases="$(subst $() $(),;,$(TEST_CASES))"
 	@touch $@
 clean::
-	rm -f $(TEST_FLAGS) $(ENV_IS_SETUP) CMakeUserPresets.json
+	rm -f CMakeUserPresets.json
 	rm -fr $(BUILD_DIR)
 superclean::
 	rm -fr $(CONAN_HOME)
