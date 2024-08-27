@@ -16,7 +16,7 @@ find_package(Protobuf CONFIG REQUIRED)
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
 find_package(gRPC CONFIG REQUIRED)
 message(STATUS "Using gRPC ${gRPC_VERSION}")
-
+find_package(magic_enum CONFIG REQUIRED)
 # BEGIN Aspera Transfer SDK Daemon Client Library
 # https://github.com/grpc/grpc/blob/master/examples/cpp/cmake/common.cmake
 
@@ -58,5 +58,5 @@ target_link_libraries(aspera_grpc_library protobuf::libprotobuf gRPC::grpc++)
 
 foreach(_target ${test_cases})
   add_executable(${_target} "src/${_target}.cpp")
-  target_link_libraries(${_target} aspera_grpc_library yaml-cpp::yaml-cpp ${Boost_LIBRARIES})
+  target_link_libraries(${_target} aspera_grpc_library yaml-cpp::yaml-cpp magic_enum::magic_enum ${Boost_LIBRARIES})
 endforeach()
