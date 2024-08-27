@@ -1,5 +1,6 @@
 [requires]
 boost/1.85.0
+yaml-cpp/0.8.0
 
 [generators]
 CMakeDeps
