@@ -62,6 +62,8 @@ class TestEnvironment {
     std::vector<std::string> _file_list;
     // project folder
     const std::filesystem::path _top_folder;
+    const std::filesystem::path _log_folder;
+    const std::string _daemon_log;
     // conf file with _paths
     const YAML::Node _paths;
     const YAML::Node _config;
@@ -120,6 +122,8 @@ class TestEnvironment {
           _log(),
           _file_list(argv + 1, argv + argc),
           _top_folder(std::filesystem::absolute(argv[0]).parent_path().parent_path().parent_path()),
+          _log_folder(std::filesystem::temp_directory_path()),
+          _daemon_log(_log_folder / DAEMON_LOG_FILE),
           _paths(load_yaml("paths", _top_folder / PATHS_FILE_REL)),
           _config(load_yaml("main_config", get_path("main_config"))),
           _arch_folder(get_path("sdk_root") / conf_str({"misc", "platform"})),
@@ -175,12 +179,11 @@ class TestEnvironment {
 
     // Start the transfer SDK daemon
     void start_daemon() {
-        const std::filesystem::path log_folder(std::filesystem::temp_directory_path());
         // Prepare daemon configuration file
         const json::object config_info = json::object{
             {"address", _server_address},
             {"port", std::stoi(_server_port_str)},
-            {"log_directory", log_folder.string()},
+            {"log_directory", _log_folder.string()},
             {"log_level", "debug"},
             {"fasp_runtime", json::object{
                                  {"use_embedded", false},
@@ -188,20 +191,19 @@ class TestEnvironment {
                                                       {"bin", _arch_folder.string()},
                                                       {"etc", get_path("trsdk_noarch").string()}}},
                                  {"log", json::object{//
-                                                      {"dir", log_folder.string()},
+                                                      {"dir", _log_folder.string()},
                                                       {"level", 2}}}}}};
         const std::string config_data = json::serialize(config_info);
-        const std::string file_base = log_folder / TRANSFER_SDK_DAEMON;
+        const std::string file_base = _log_folder / TRANSFER_SDK_DAEMON;
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
         const std::string daemon_path = _arch_folder / TRANSFER_SDK_DAEMON;
-        const std::string daemon_log = log_folder / DAEMON_LOG_FILE;
         const std::string command = daemon_path + " --config " + conf_file;
         LOG(info) << LOG_ITEM("daemon out") << out_file;
         LOG(info) << LOG_ITEM("daemon err") << err_file;
-        LOG(info) << LOG_ITEM("daemon log") << daemon_log;
-        LOG(info) << LOG_ITEM("ascp log") << (log_folder / ASCP_LOG_FILE).string();
+        LOG(info) << LOG_ITEM("daemon log") << _daemon_log;
+        LOG(info) << LOG_ITEM("ascp log") << (_log_folder / ASCP_LOG_FILE).string();
         LOG(info) << LOG_ITEM("command") << command;
         LOG(info) << LOG_ITEM("config") << config_data;
         LOG(info) << "Starting daemon...";
@@ -218,8 +220,8 @@ class TestEnvironment {
             _transfer_daemon->wait();
             LOG(error) << "Daemon not started.";
             LOG(error) << "Exited with code: " << _transfer_daemon->exit_code();
-            LOG(error) << "Check daemon log: " << daemon_log;
-            LOG(error) << last_daemon_log_line(daemon_log);
+            LOG(error) << "Check daemon log: " << _daemon_log;
+            LOG(error) << last_daemon_log_line(_daemon_log);
             throw std::runtime_error("daemon startup failed");
         }
         LOG(info) << "Daemon started: " << _transfer_daemon->id();
@@ -276,9 +278,9 @@ class TestEnvironment {
             grpc::ClientContext query_transfer_context;
             trsdk::QueryTransferResponse query_transfer_response;
             _transfer_service->QueryTransfer(&query_transfer_context, transfer_info_request, &query_transfer_response);
-            throw_on_error(query_transfer_response.status(), query_transfer_response.error());
-            trsdk::TransferStatus status = query_transfer_response.status();
+            const trsdk::TransferStatus status = query_transfer_response.status();
             LOG(info) << "transfer status: " << TransferStatus_to_string(status);
+            throw_on_error(status, query_transfer_response.error());
             if (status == trsdk::TransferStatus::COMPLETED)
                 break;
         }
@@ -309,8 +311,9 @@ class TestEnvironment {
         }
     }
 
-    static inline void throw_on_error(const trsdk::TransferStatus& status, const trsdk::Error& error) {
+    void throw_on_error(const trsdk::TransferStatus& status, const trsdk::Error& error) {
         if (status == trsdk::TransferStatus::FAILED) {
+            LOG(error) << last_daemon_log_line(_daemon_log);
             throw std::runtime_error("transfer failed: " + error.description());
         }
         if (status == trsdk::TransferStatus::UNKNOWN_STATUS) {
