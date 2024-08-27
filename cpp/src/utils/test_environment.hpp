@@ -203,7 +203,7 @@ class TestEnvironment {
         LOG(info) << LOG_ITEM("daemon log") << daemon_log;
         LOG(info) << LOG_ITEM("ascp log") << (log_folder / ASCP_LOG_FILE).string();
         LOG(info) << LOG_ITEM("command") << command;
-        LOG(info) << config_data;
+        LOG(info) << LOG_ITEM("config") << config_data;
         LOG(info) << "Starting daemon...";
         std::ofstream conf_stream(conf_file);
         conf_stream << config_data;
