@@ -112,8 +112,8 @@ class TestEnvironment {
 
    public:
     TestEnvironment(
-        int argc,
-        char* argv[],
+        const int argc,
+        const char* const argv[],
         bool shutdown = true)
         : _init_log(init_log()),
           _auto_shutdown(shutdown),

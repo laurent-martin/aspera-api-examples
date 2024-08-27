@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
     utils::TestEnvironment test_env(argc, argv);
     const std::string shares_api_url = test_env.conf_str({"shares", "url"}) + "/node_api";
     LOG(info) << "Shares API URL: " << shares_api_url;
-    Rest shares_api(shares_api_url);
+    utils::Rest shares_api(shares_api_url);
     shares_api.set_basic(test_env.conf_str({"shares", "user"}), test_env.conf_str({"shares", "pass"}));
     json::object upload_setup_request = json::object{
         {"transfer_requests", json::array{json::object{{"transfer_request", json::object{{"paths", json::array{json::object{{"destination", test_env.conf_str({"shares", "folder_upload"})}}}}}}}}}};

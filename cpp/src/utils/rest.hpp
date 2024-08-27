@@ -4,6 +4,7 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
 #include <boost/json.hpp>
+#include <boost/url/parse.hpp>
 
 #define HTTP_1_1 11
 #define MIME_TYPE_JSON "application/json"
@@ -12,6 +13,7 @@ namespace json = boost::json;
 namespace http = boost::beast::http;
 namespace ssl = boost::asio::ssl;
 
+namespace utils {
 // simple REST client using boost
 class Rest {
    private:
@@ -76,3 +78,4 @@ class Rest {
         return "Basic " + encoded_credentials;
     }
 };
+}  // namespace utils
