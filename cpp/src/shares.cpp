@@ -1,12 +1,14 @@
 
-#include "test_environment.hpp"
+#include "utils/test_environment.hpp"
+#include "utils/rest.hpp"
 
-#define LOGGER(level) BOOST_LOG_SEV(test_env.log(), boost::log::trivial::level)
+
+#define LOG(level) LOGGER(test_env.log(), level)
 
 int main(int argc, char* argv[]) {
-    TestEnvironment test_env(argc, argv);
+    utils::TestEnvironment test_env(argc, argv);
     const std::string shares_api_url = test_env.conf_str({"shares", "url"}) + "/node_api";
-    LOGGER(info) << "Shares API URL: " << shares_api_url;
+    LOG(info) << "Shares API URL: " << shares_api_url;
     Rest shares_api(shares_api_url);
     shares_api.set_basic(test_env.conf_str({"shares", "user"}), test_env.conf_str({"shares", "pass"}));
     json::object upload_setup_request = json::object{

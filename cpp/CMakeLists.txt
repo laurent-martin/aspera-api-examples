@@ -1,3 +1,5 @@
+
+# cspell:ignore protoc absl libprotobuf protobuf
 cmake_minimum_required(VERSION 3.30)
 
 project(LaurentSamples
@@ -41,14 +43,14 @@ get_filename_component(aspera_proto_name "${aspera_proto_file}" NAME_WE)
 set(grpc_gen_path "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Generated sources
-set(aspera_proto_srcs "${grpc_gen_path}/${aspera_proto_name}.pb.cc")
-set(aspera_proto_hdrs "${grpc_gen_path}/${aspera_proto_name}.pb.h")
-set(aspera_grpc_srcs "${grpc_gen_path}/${aspera_proto_name}.grpc.pb.cc")
-set(aspera_grpc_hdrs "${grpc_gen_path}/${aspera_proto_name}.grpc.pb.h")
+set(aspera_proto_sources "${grpc_gen_path}/${aspera_proto_name}.pb.cc")
+set(aspera_proto_headers "${grpc_gen_path}/${aspera_proto_name}.pb.h")
+set(aspera_grpc_sources "${grpc_gen_path}/${aspera_proto_name}.grpc.pb.cc")
+set(aspera_grpc_headers "${grpc_gen_path}/${aspera_proto_name}.grpc.pb.h")
 
 # Generation command
 add_custom_command(
-  OUTPUT "${aspera_proto_srcs}" "${aspera_proto_hdrs}" "${aspera_grpc_srcs}" "${aspera_grpc_hdrs}"
+  OUTPUT "${aspera_proto_sources}" "${aspera_proto_headers}" "${aspera_grpc_sources}" "${aspera_grpc_headers}"
   DEPENDS "${aspera_proto_file}"
   COMMAND protoc
   ARGS
@@ -63,10 +65,10 @@ add_custom_command(
 include_directories("${grpc_gen_path}")
 
 add_library(aspera_grpc_library
-  ${aspera_grpc_srcs}
-  ${aspera_grpc_hdrs}
-  ${aspera_proto_srcs}
-  ${aspera_proto_hdrs}
+  ${aspera_grpc_sources}
+  ${aspera_grpc_headers}
+  ${aspera_proto_sources}
+  ${aspera_proto_headers}
   )
 target_link_libraries(aspera_grpc_library
   absl::check
@@ -84,4 +86,3 @@ foreach(_target ${test_cases})
     ${Boost_LIBRARIES}
     )
 endforeach()
-#    ${Boost_LIBRARIES}
