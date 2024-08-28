@@ -93,7 +93,7 @@ class TestEnvironment {
     static std::string last_daemon_log_line(const std::string& filename) {
         std::ifstream file(filename, std::ios::binary | std::ios::ate);
         if (!file.is_open())
-            throw std::runtime_error("Unable to open file");
+            throw std::runtime_error("Unable to open file: "+filename);
         std::string lastLine;
         if (file.tellg() >= 2) {
             // Move to the character before the last newline
@@ -153,6 +153,8 @@ class TestEnvironment {
         }
     }
 
+    // Dig to the yaml node by list of keys
+    // @param keys list of keys to dig to get the value
     YAML::Node conf(const std::vector<std::string>& keys) {
         // Need to clone, else it will be modified in loop
         YAML::Node currentNode = YAML::Clone(_config);
@@ -173,18 +175,19 @@ class TestEnvironment {
         return conf(keys).as<std::string>();
     }
 
+    // @return the logger
     auto& log() {
         return _log;
     }
 
-    // Start the transfer SDK daemon
+    // Start the transfer SDK daemon process
     void start_daemon() {
         // Prepare daemon configuration file
         const json::object config_info = json::object{
             {"address", _server_address},
             {"port", std::stoi(_server_port_str)},
             {"log_directory", _log_folder.string()},
-            {"log_level", "debug"},
+            {"log_level", "4"}, // 0 .. 4
             {"fasp_runtime", json::object{
                                  {"use_embedded", false},
                                  {"user_defined", json::object{
@@ -227,6 +230,7 @@ class TestEnvironment {
         LOG(info) << "Daemon started: " << _transfer_daemon->id();
     }
     void connect_to_daemon() {
+        LOG(info) << "Connecting to daemon...";
         const auto channel = grpc::CreateChannel(_channel_address, grpc::InsecureChannelCredentials());
         _transfer_service = trsdk::TransferService::NewStub(channel);
         grpc_connectivity_state state;
@@ -246,14 +250,18 @@ class TestEnvironment {
         LOG(info) << "Connected !";
     }
 
-    inline void
-    start_transfer_and_wait(const json::object& transfer_spec) {
-        const std::string ts_json = json::serialize(transfer_spec);
-        LOG(info) << LOG_ITEM("ts") << ts_json;
+    inline void connect() {
         if (_transfer_service == nullptr) {
             start_daemon();
             connect_to_daemon();
         }
+    }
+
+    inline void
+    start_transfer_and_wait(const json::object& transfer_spec) {
+        connect();
+        const std::string ts_json = json::serialize(transfer_spec);
+        LOG(info) << LOG_ITEM("ts") << ts_json;
 
         // create a transfer request
         auto* transfer_config = new trsdk::TransferConfig;
@@ -265,11 +273,11 @@ class TestEnvironment {
 
         // send start transfer request to the transfer daemon
         grpc::ClientContext start_transfer_context;
-        transfersdk::StartTransferResponse startTransferResponse;
-        _transfer_service->StartTransfer(&start_transfer_context, transfer_request, &startTransferResponse);
-        throw_on_error(startTransferResponse.status(), startTransferResponse.error());
-        const std::string transfer_id = startTransferResponse.transferid();
-        LOG(info) << "transfer id: " << transfer_id << ", status: " << TransferStatus_to_string(startTransferResponse.status());
+        transfersdk::StartTransferResponse start_transfer_response;
+        _transfer_service->StartTransfer(&start_transfer_context, transfer_request, &start_transfer_response);
+        throw_on_error(start_transfer_response.status(), start_transfer_response.error());
+        const std::string transfer_id = start_transfer_response.transferid();
+        LOG(info) << "transfer id: " << transfer_id << ", status: " << TransferStatus_to_string(start_transfer_response.status());
         // wait until finished, check every second
         while (true) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
