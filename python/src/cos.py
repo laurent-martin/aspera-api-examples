@@ -3,8 +3,8 @@
 # Upload files to COS using COS embedded Aspera and Aspera Gen3 Node API
 import utils.test_environment
 import utils.helper_aspera_cos
-import requests
-import json
+import utils.rest
+# import json
 
 test_env = utils.test_environment.TestEnvironment()
 
@@ -17,12 +17,13 @@ destination_folder = '/'
 # with open(config['service_credential_file']) as f:
 #    credentials = json.load(f)
 # info=utils.helper_aspera_cos.from_service_credentials(credentials=credentials,region=config['region'])
-# node_info=utils.helper_aspera_cos.node(bucket=config['bucket'],endpoint=info['endpoint'],key=info['key'],crn=info['crn'])
+# cos_node_info=utils.helper_aspera_cos.node(bucket=config['bucket'],endpoint=info['endpoint'],key=info['key'],crn=info['crn'])
 
-# get Aspera Transfer Service Node information for specified COS bucket
+# get configuration parameters from config file
 config = test_env.get_configuration('cos')
 
-node_info = utils.helper_aspera_cos.node(
+# get Aspera Transfer Service Node information for specified COS bucket
+cos_node_info = utils.helper_aspera_cos.node(
     bucket=config['bucket'],
     endpoint=config['endpoint'],
     key=config['key'],
@@ -30,34 +31,24 @@ node_info = utils.helper_aspera_cos.node(
     auth=config['auth'],
 )
 
-# prepare node API request for upload_setup
-upload_setup_request = {
+node_api = utils.rest.Rest(
+    base_url=cos_node_info['url'],
+    auth=cos_node_info['auth'],
+    headers=cos_node_info['headers'],
+)
+
+# call Node API with one transfer request to get one transfer spec
+response_data = node_api.post('files/upload_setup', {
     'transfer_requests': [
         {'transfer_request': {'paths': [{'destination': destination_folder}]}}
     ]
-}
-
-request_headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
-
-request_headers.update(node_info['headers'])
-
-# call Node API with one transfer request to get one transfer spec
-response = requests.post(
-    url=f'{node_info["url"]}/files/upload_setup',
-    auth=node_info['auth'],
-    data=json.dumps(upload_setup_request),
-    headers=request_headers,
-)
-if response.status_code != 200:
-    raise Exception('error')
-
-response_data = response.json()
+})
 
 # extract the single transfer spec (we sent a single transfer request)
 t_spec = response_data['transfer_specs'][0]['transfer_spec']
 
 # add COS specific authorization info
-t_spec.update(node_info['tspec'])
+t_spec.update(cos_node_info['tspec'])
 
 # add file list in transfer spec
 t_spec['paths'] = []

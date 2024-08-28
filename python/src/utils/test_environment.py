@@ -13,7 +13,7 @@ import logging
 import tempfile
 import subprocess
 import base64
-# from http.client import HTTPConnection
+from http.client import HTTPConnection
 from urllib.parse import urlparse
 
 
@@ -30,6 +30,7 @@ import transfer_pb2 as transfer_manager  # noqa: E4
 # config file with sub-paths in project's root folder
 PATHS_FILE = 'config/paths.yaml'
 TRANSFER_SDK_DAEMON = 'asperatransferd'
+DEBUG_HTTP = False
 
 
 class TestEnvironment:
@@ -71,10 +72,11 @@ class TestEnvironment:
         logging.getLogger().setLevel(logging.DEBUG)
 
         # debug http: see: https://stackoverflow.com/questions/10588644
-        # HTTPConnection.debuglevel = 1
-        # requests_log = logging.getLogger('requests.packages.urllib3')
-        # requests_log.setLevel(logging.DEBUG)
-        # requests_log.propagate = True
+        if DEBUG_HTTP:
+            HTTPConnection.debuglevel = 1
+            requests_log = logging.getLogger('requests.packages.urllib3')
+            requests_log.setLevel(logging.DEBUG)
+            requests_log.propagate = True
 
     def file_list(self):
         '''Get list of files to transfer'''

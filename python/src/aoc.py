@@ -3,6 +3,7 @@
 # Aspera on Cloud
 # Send a package to shared inbox (name in config file) in given workspace (name in config file)
 import utils.test_environment
+import utils.rest
 import requests
 import requests.auth
 import logging
@@ -17,7 +18,7 @@ JWT_NOT_BEFORE_OFFSET_SEC = 300
 JWT_EXPIRY_OFFSET_SEC = 3600
 
 # AoC API base URL: https://developer.ibm.com/apis/catalog?search=%22aspera%20on%20cloud%20api%22
-AOC_API_BASE = 'https://api.ibmaspera.com/api/v1/'
+AOC_API_BASE = 'https://api.ibmaspera.com/api/v1'
 
 # name of package to send
 package_name = 'sample package'
@@ -32,11 +33,6 @@ package_files = test_env.file_list()
 
 # get configuration parameters from config file
 config = test_env.get_configuration('aoc')
-
-
-def aoc_url(endpoint):
-    '''return full URL for AoC API'''
-    return f'{AOC_API_BASE}{endpoint}'
 
 
 def get_bearer(scope):
@@ -63,7 +59,7 @@ def get_bearer(scope):
     }
 
     response = requests.post(
-        url=aoc_url(f'oauth2/{config["org"]}/token'),
+        url=f'{AOC_API_BASE}/oauth2/{config["org"]}/token',
         auth=requests.auth.HTTPBasicAuth(config['client_id'], config['client_secret']),
         data=data,
         headers={
@@ -77,77 +73,47 @@ def get_bearer(scope):
     return f'Bearer {response_data["access_token"]}'
 
 
-# Headers for authorization to AoC API
-# bearer token is valid for some time and can (should) be re-used, until expired, then refresh it
-headers_rest_user = {
-    'Authorization': get_bearer('user:all'),
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-}
+aoc_api = utils.rest.Rest(
+    base_url=AOC_API_BASE,
+    headers={'Authorization': get_bearer('user:all')},
+)
 
 # simple api call:
-# response = requests.get(aoc_url('self'), headers=headers_rest_user)
+# response_data = aoc_api.get('self')
 
-# Get workspace information (workspace name in config file)
-response = requests.get(
-    url=aoc_url('workspaces'),
-    headers=headers_rest_user,
-    params={'q': config['workspace']},
-)
-response.raise_for_status()
-response_data = response.json()
+response_data = aoc_api.get('workspaces', params={'q': config['workspace']})
 logging.debug(response_data)
 if len(response_data) != 1:
     raise Exception(f'Found {len(response_data)} workspace for {config["workspace"]}')
 workspace_info = response_data[0]
 
+
 # Get dropbox information (shared inbox name in config file)
-response = requests.get(
-    url=aoc_url('dropboxes'),
-    headers=headers_rest_user,
-    params={'current_workspace_id': workspace_info['id'], 'q': config['shared_inbox']},
-)
-response.raise_for_status()
-response_data = response.json()
+response_data = aoc_api.get(
+    'dropboxes', params={'current_workspace_id': workspace_info['id'], 'q': config['shared_inbox']})
 logging.debug(response_data)
 if len(response_data) != 1:
     raise Exception(f'Found {len(response_data)} dropbox for {config["shared_inbox"]}')
 dropbox_info = response_data[0]
 
-# build package creation information
-package_creation = {
+#  create a new package (this allocates a reception folder on package storage)
+package_info = aoc_api.post('packages', {
     'workspace_id': workspace_info['id'],
     'recipients': [{'id': dropbox_info['id'], 'type': 'dropbox'}],
     'name': package_name,
     'note': 'My package note',
-}
-
-#  create a new package (this allocates a reception folder on package storage)
-response = requests.post(
-    url=aoc_url('packages'),
-    headers=headers_rest_user,
-    json=package_creation
-)
-response.raise_for_status()
-package_info = response.json()
+})
 logging.debug(package_info)
 
 #  get node information for the node on which package must be created
-response = requests.get(
-    url=aoc_url(f'nodes/{package_info["node_id"]}'),
-    headers=headers_rest_user
-)
-response.raise_for_status()
-node_info = response.json()
+node_info = aoc_api.get(f'nodes/{package_info["node_id"]}')
 logging.debug(node_info)
 
 # tell Aspera how many transfers to expect in package (can also be done after transfer)
-response = requests.put(
-    url=aoc_url(f'packages/{package_info["id"]}'),
-    headers=headers_rest_user,
-    json={'sent': True, 'transfers_expected': transfer_sessions},
+aoc_api.put(
+    f'packages/{package_info["id"]}',
+    {'sent': True, 'transfers_expected': transfer_sessions},
 )
-response.raise_for_status()
 
 # Note: generate a bearer token for the node on which package was created
 # (all tags are not mandatory, but some are, like 'node')

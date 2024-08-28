@@ -3,8 +3,6 @@
 # Upload files Shares (Node) API and transfer spec v2
 # Note: Transfer SDK may have a bug that make this work only if the share name is equal to the folder name on node.
 import utils.test_environment
-import base64
-import logging
 test_env = utils.test_environment.TestEnvironment()
 
 # get file to upload from command line

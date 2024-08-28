@@ -6,11 +6,11 @@ import logging
 
 test_env = utils.test_environment.TestEnvironment()
 
-# get file to upload from command line
-files_to_upload = test_env.file_list()
-
 # get node information from config file
 config = test_env.get_configuration('cos')
+
+# get file to upload from command line
+files_to_upload = test_env.file_list()
 destination_folder = '/'
 
 # prepare transfer spec v2 for COS

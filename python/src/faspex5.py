@@ -3,6 +3,7 @@
 # Faspex 5
 # Send a package to myself
 import utils.test_environment
+import utils.rest
 import requests
 import requests.auth
 import logging
@@ -33,11 +34,6 @@ config = test_env.get_configuration('faspex5')
 
 # verify certificate if not explicitly set to False
 verify_cert = not ('verify' in config and config['verify'] is False)
-
-
-def f5_url(path):
-    '''return the full url for a given path'''
-    return f'{config["url"]}{F5_API_PATH_V5}/{path}'
 
 
 def get_bearer():
@@ -85,31 +81,19 @@ def get_bearer():
     return f'Bearer {response_data["access_token"]}'
 
 
-# Headers for authorization to Faspex 5 API
 # bearer token is valid for some time and can (should) be re-used, until expired, then refresh it
 # in this example we generate a new bearer token for each script invocation
-request_headers = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'Authorization': get_bearer(),
-}
-
-
-# Faspex 5 package creation information
-package_creation = {
-    'title': package_name,
-    'recipients': [{'name': config['username']}],  # send to myself (for test)
-}
+f5_api = utils.rest.Rest(
+    base_url=f'{config["url"]}{F5_API_PATH_V5}',
+    headers={'Authorization': get_bearer()},
+    verify=verify_cert,
+)
 
 # create a new package with Faspex 5 API (this allocates a reception folder on package storage)
-response = requests.post(
-    url=f5_url('packages'),
-    headers=request_headers,
-    json=package_creation,
-    verify=verify_cert
-)
-response.raise_for_status()
-package_info = response.json()
+package_info = f5_api.post('packages', {
+    'title': package_name,
+    'recipients': [{'name': config['username']}],  # send to myself (for test)
+})
 logging.debug(package_info)
 
 # build payload to specify files to send
@@ -117,14 +101,8 @@ files_to_send = {'paths': []}
 for f in test_env.file_list():
     files_to_send['paths'].append({'source': f})
 
-response = requests.post(
-    url=f5_url(f'packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect'),
-    headers=request_headers,
-    json=files_to_send,
-    verify=verify_cert
-)
-response.raise_for_status()
-t_spec = response.json()
+t_spec = f5_api.post(f'packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect', files_to_send)
+
 
 # optional: multi session
 if transfer_sessions != 1:

@@ -1,11 +1,14 @@
 # Aspera API sample apps
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-to transfer files using some of the IBM Aspera APIs for various IBM Aspera products using some languages:
+
+Transfer files using IBM Aspera APIs for various IBM Aspera products:
 
 - Aspera Transfer SDK: transfer files in an application
 - Aspera Connect SDK and HTTPGW SDK: transfer files in a web browser
 - Aspera Applications APIs: interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
+
+Various programming languages are proposed.
 
 ## Other resources
 
@@ -22,13 +25,13 @@ The [IBM Aspera Connect SDK github site](https://github.com/IBM/aspera-connect-s
 
 IBM Aspera provides two types of APIs:
 
-- Client APIs: SDKs include libraries to be used in applications to transfer files
+- Client APIs: SDKs include **libraries** to be used in applications to transfer files
 
   - **Aspera Transfer SDK**: (gRPC with multi language) transfer files in an application
   - **Aspera Connect SDK**: (web js) transfer files in a web browser
   - **Aspera HTTP Gateway SDK**: (web js) transfer files in a web browser using HTTPS
 
-- Server APIs: REST APIs (with OpenAPI spec) interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
+- Server APIs: **REST** APIs (with OpenAPI spec) interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
 
 Depending on the use case, one might use one or (often) several of those APIs.
 
@@ -36,13 +39,14 @@ Depending on the use case, one might use one or (often) several of those APIs.
 
 This repository is structured like this:
 
-- `web` : this folder contains an example that shows the use of both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK**
-- other folders show samples in various languages using the **Aspera Transfer SDK** and **Aspera Applications APIs**
+- `web` : This folder contains an example that shows the use of both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK**
+
+- Other folders, one per programming language, show samples using the **Aspera Transfer SDK** and **Aspera Applications APIs**
 
 Sample programs will use server addresses and credentials from a YAML configuration file.
 Once the configuration file is created, sample programs can be run directly.
 
-**Unix-like systems**: Linux, macOS... `Makefile` is provided to run the samples.
+**Unix-like systems**: Linux, macOS... a `Makefile` is provided to run the samples.
 
 **Windows**: Refer to [Quick start (Windows)](#quick-start-windows) below. `make` might not be available. Use the `Makefile` as a reference to execute the commands manually.
 
@@ -60,7 +64,7 @@ If you use Linux, macOS, AIX, etc...
 
     - Create an empty configuration file from the template.
     - Download the Aspera Transfer SDK.
-    - Extract the SDK to the expected folder.
+    - Extract the SDK.
 
     > **Note:** If you don't have internet access on the system then download the Transfer SDK on a system with internet from: <https://ibm.biz/aspera_transfer_sdk> and place the file here: `<main folder>/generated/trsdk/transfer_sdk.zip`
 
@@ -219,16 +223,21 @@ The file `transfer.proto` shall be used to generate the stub code for the client
                     +------------+                      +---------------------+
                           |                                       ^
                           +-------------[executes]----------------+
+                                                                  |
+        [or other method, systemd, or manual]-----[executes]------+
 ```
 
-Generated code is provided for convenience in the Transfer SDK, but it is not recommended to use it directly, as it was generated with a specific version of the language.
-Prefer to generate stub code yourself to benefit from support to latest platforms and versions.
+Generated (stub) code is provided for convenience in the Transfer SDK.
+It can be used directly or it can be generated from the `transfer.proto` file.
+If you generate stub code yourself, then you can benefit from support to latest platforms and versions.
+
+Most samples here generate the stub code from the `transfer.proto` file.
 
 Refer to [GRPC web site](https://grpc.io/) for instructions on how to generate the code.
 
 Sample programs use a common library: "test environment" which takes care of creating a configuration file and starting the Transfer SDK daemon.
 
-It is also possible to create a static file and start the Transfer SDK daemon using another method (for example, a systemd service).
+It is also possible to create a static file and start the Transfer SDK daemon using another method (for example, a systemd service), for just for tests by executing `asperatransferd` manually in a separate terminal.
 
 ## HSTS Node API credentials
 
