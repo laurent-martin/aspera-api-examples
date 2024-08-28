@@ -13,7 +13,7 @@ import logging
 import tempfile
 import subprocess
 import base64
-from http.client import HTTPConnection
+# from http.client import HTTPConnection
 from urllib.parse import urlparse
 
 
@@ -64,7 +64,7 @@ class TestEnvironment:
             self._arch_folder
         ), f'ERROR: SDK not found in: {self._arch_folder}.{self._error_hint}'
         # use 'ascp' in PATH, add the one from SDK
-        os.environ['PATH'] += self._arch_folder
+        # os.environ['PATH'] += self._arch_folder
 
         # set logger for debugging
         logging.basicConfig()

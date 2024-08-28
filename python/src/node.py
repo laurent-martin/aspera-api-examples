@@ -2,55 +2,34 @@
 # laurent.martin.aspera@fr.ibm.com
 # Upload files using an Aspera Transfer token, generated using node API (upload_setup)
 import utils.test_environment
-import requests
-import requests.auth
-import logging
-import json
-test_env = utils.test_environment.TestEnvironment()
+import utils.rest
 
-# get file to upload from command line
-files_to_upload = test_env.file_list()
+test_env = utils.test_environment.TestEnvironment()
 
 # get node information from config file
 config = test_env.get_configuration('node')
 
-api_base_url = config['url']
+node_api = utils.rest.Rest(
+    config['url'],
+    user=config['user'],
+    password=config['pass'],
+    # verify certificate if not explicitly set to False
+    verify=not ('verify' in config and config['verify'] is False),
+)
 
-# verify certificate if not explicitly set to False
-verify_cert = not ('verify' in config and config['verify'] is False)
-
-# prepare node API request for upload_setup
-upload_setup_request = {
+# call Node API with a single transfer request to get one transfer spec with Aspera token
+response_data = node_api.post('files/upload_setup', {
     'transfer_requests': [
         {'transfer_request': {'paths': [{'destination': config['folder_upload']}]}}
     ]
-}
-
-# standard REST headers
-request_headers = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-}
-
-# call Node API with a single transfer request to get one transfer spec with Aspera token
-response = requests.post(
-    f'{api_base_url}/files/upload_setup',
-    auth=requests.auth.HTTPBasicAuth(config['user'], config['pass']),
-    data=json.dumps(upload_setup_request),
-    headers=request_headers,
-    verify=verify_cert,
-)
-if response.status_code != 200:
-    raise Exception('error')
-
-response_data = response.json()
+})
 
 # extract the single transfer spec (we sent a single transfer request)
 t_spec = response_data['transfer_specs'][0]['transfer_spec']
 
 # add file list in transfer spec
 t_spec['paths'] = []
-for f in files_to_upload:
+for f in test_env.file_list():
     t_spec['paths'].append({'source': f})
 
 # start transfer, here we use the FASP Manager, but the newer Transfer SDK can be used as well

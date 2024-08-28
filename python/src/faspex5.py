@@ -16,20 +16,17 @@ JWT_NOT_BEFORE_OFFSET_SEC = 60
 # take some validity for the JWT
 JWT_EXPIRY_OFFSET_SEC = 600
 # base path for v5 api
-API_V5_PATH = '/api/v5'
+F5_API_PATH_V5 = '/api/v5'
 # path for oauth2 token generation
-TOKEN_PATH = '/auth/token'
+F5_API_PATH_TOKEN = '/auth/token'
 
-# Arg1: name of package
+# name of package
 package_name = 'sample package'
 
-# Arg2: number of // transfer sessions (typically, 1)
+# number of // transfer sessions (typically, 1)
 transfer_sessions = 1
 
 test_env = utils.test_environment.TestEnvironment()
-
-# Arg3 and next: list of files to send
-package_files = test_env.file_list()
 
 # get configuration parameters from config file
 config = test_env.get_configuration('faspex5')
@@ -40,7 +37,7 @@ verify_cert = not ('verify' in config and config['verify'] is False)
 
 def f5_url(path):
     '''return the full url for a given path'''
-    return f'{config["url"]}{API_V5_PATH}/{path}'
+    return f'{config["url"]}{F5_API_PATH_V5}/{path}'
 
 
 def get_bearer():
@@ -73,7 +70,7 @@ def get_bearer():
     }
 
     response = requests.post(
-        url=f'{config["url"]}{TOKEN_PATH}',
+        url=f'{config["url"]}{F5_API_PATH_TOKEN}',
         auth=requests.auth.HTTPBasicAuth(config['client_id'], config['client_secret']),
         data=data,
         headers={
@@ -100,7 +97,7 @@ request_headers = {
 
 # Faspex 5 package creation information
 package_creation = {
-    'title': 'test title',
+    'title': package_name,
     'recipients': [{'name': config['username']}],  # send to myself (for test)
 }
 
@@ -117,7 +114,7 @@ logging.debug(package_info)
 
 # build payload to specify files to send
 files_to_send = {'paths': []}
-for f in package_files:
+for f in test_env.file_list():
     files_to_send['paths'].append({'source': f})
 
 response = requests.post(
@@ -136,7 +133,7 @@ if transfer_sessions != 1:
 
 # add file list in transfer spec
 t_spec['paths'] = []
-for f in package_files:
+for f in test_env.file_list():
     t_spec['paths'].append({'source': f})
 
 # Finally send files to package folder on server

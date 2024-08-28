@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Helper function to use COS API for native Aspera
+# cspell:ignore apikey tspec creds
 import xml.dom.minidom
 import requests
 import json
