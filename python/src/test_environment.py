@@ -34,7 +34,7 @@ ERROR_HINT = f'\nPlease check: SDK installed in {PATHS["sdk_root"]}, configurati
 
 
 def get_path(name):
-    '''Get con figuration sub-path in project's root folder'''
+    '''Get configuration sub-path in project's root folder'''
     item_path = os.path.join(TOP_FOLDER, *PATHS[name].split('/'))
     assert os.path.exists(item_path), f'ERROR: {item_path} not found.{ERROR_HINT}'
     return item_path
@@ -44,15 +44,14 @@ def get_path(name):
 CONFIG = yaml.load(open(get_path('main_config')), Loader=yaml.FullLoader)
 
 # location of gRPC stubs
-python_stub_folder = os.path.join(
-    get_path('trsdk_noarch'), 'connectors', 'python')
+aspera_sdk_grpc_client_folder = os.environ['PYTHON_SRC_GEN']
 
 assert os.path.exists(
-    python_stub_folder
-), f'ERROR: python stubs not found in: {python_stub_folder}.{ERROR_HINT}'
+    aspera_sdk_grpc_client_folder
+), f'ERROR: python stubs not found in: {aspera_sdk_grpc_client_folder}.{ERROR_HINT}'
 
 # tell where to find gRPC stubs: transfer_pb2 and transfer_pb2_grpc
-sys.path.insert(1, python_stub_folder)
+sys.path.insert(1, aspera_sdk_grpc_client_folder)
 
 # before stub import: protobuf: avoid incompatibility of version, use pure python implementation
 os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'

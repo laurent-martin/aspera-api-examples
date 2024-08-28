@@ -1,14 +1,12 @@
 # C++ Examples
 
-Tool chain uses `cmake` and `conan`.
+Tool chain uses `cmake` and `conan`, and uses C++17.
 
-Several C++ libraries are used:
+The following C++ libraries are used:
 
-- jwt-cpp
-- cpp-httplib
-- nlohmann_json
 - boost
-- cppcodec
+- yaml-cpp
+- magic_enum
 
 Nevertheless, those libraries are used only for the examples and are not required to use the Aspera Transfer SDK.
 
@@ -16,7 +14,7 @@ Nevertheless, those libraries are used only for the examples and are not require
 
 The following tools are used.
 
-## `protoc` and `grpc_cpp_plugin`
+### `protoc` and `grpc_cpp_plugin`
 
 [GRPC C++ Quickstart](https://grpc.io/docs/languages/cpp/quickstart/).
 
@@ -30,7 +28,7 @@ ubuntu$ sudo apt-get install protobuf-compiler
 redhat$ sudo dnf install -y protobuf-compiler protobuf-devel
 ```
 
-## `cmake`
+### `cmake`
 
 [web site](https://cmake.org/)
 
@@ -38,7 +36,7 @@ redhat$ sudo dnf install -y protobuf-compiler protobuf-devel
 redhat$ sudo dnf install cmake
 ```
 
-## `conan`
+### `conan`
 
 [web site](https://conan.io/)
 
