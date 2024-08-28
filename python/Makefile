@@ -1,6 +1,6 @@
 DIR_TOP=$(CURDIR)/../
 TEST_CASES=aoc cos cos_node_api faspex faspex5 node shares server
-#  cos_v2 node_v2 shares_v2
+# cos_v2 node_v2 shares_v2
 include $(DIR_TOP)common.mak
 DIR_PYENV=$(CURDIR)/.venv/
 SRC=./src/
