@@ -2,7 +2,7 @@
 # laurent.martin.aspera@fr.ibm.com
 # Faspex 5
 # Send a package to myself
-import test_environment
+import utils.test_environment
 import requests
 import requests.auth
 import logging
@@ -26,11 +26,13 @@ package_name = 'sample package'
 # Arg2: number of // transfer sessions (typically, 1)
 transfer_sessions = 1
 
+test_env = utils.test_environment.TestEnvironment()
+
 # Arg3 and next: list of files to send
-package_files = test_environment.file_list
+package_files = test_env.file_list()
 
 # get configuration parameters from config file
-config = test_environment.get_configuration('faspex5')
+config = test_env.get_configuration('faspex5')
 
 # verify certificate if not explicitly set to False
 verify_cert = not ('verify' in config and config['verify'] is False)
@@ -138,4 +140,4 @@ for f in package_files:
     t_spec['paths'].append({'source': f})
 
 # Finally send files to package folder on server
-test_environment.start_transfer_and_wait(t_spec)
+test_env.start_transfer_and_wait(t_spec)

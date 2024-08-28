@@ -2,7 +2,7 @@
 # laurent.martin.aspera@fr.ibm.com
 # Aspera on Cloud
 # Send a package to shared inbox (name in config file) in given workspace (name in config file)
-import test_environment
+import utils.test_environment
 import requests
 import requests.auth
 import logging
@@ -25,11 +25,13 @@ package_name = 'sample package'
 # number of parallel transfer sessions (typically, 1)
 transfer_sessions = 1
 
+test_env = utils.test_environment.TestEnvironment()
+
 # list of files to send
-package_files = test_environment.file_list
+package_files = test_env.file_list()
 
 # get configuration parameters from config file
-config = test_environment.get_configuration('aoc')
+config = test_env.get_configuration('aoc')
 
 
 def aoc_url(endpoint):
@@ -192,4 +194,4 @@ for f in package_files:
     t_spec['paths'].append({'source': f})
 
 # Finally send files to package folder on server
-test_environment.start_transfer_and_wait(t_spec)
+test_env.start_transfer_and_wait(t_spec)

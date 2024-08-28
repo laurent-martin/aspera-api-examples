@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Send a package using Faspex 4 API v3
-import test_environment
+import utils.test_environment
 import requests
 import requests.auth
 import logging
 import json
+test_env = utils.test_environment.TestEnvironment()
 
 # get configuration parameters from config file
-config = test_environment.get_configuration('faspex')
+config = test_env.get_configuration('faspex')
 
 # verify certificate if not explicitly set to False
 verify_cert = not ('verify' in config and config['verify'] is False)
 
 # files to send
-package_files = test_environment.file_list
+package_files = test_env.file_list()
 
 # package creation information for Faspex API v3 : POST /send
 delivery_info = {
@@ -49,4 +50,4 @@ for f in package_files:
     t_spec['paths'].append({'source': f})
 
 # send files into package
-test_environment.start_transfer_and_wait(t_spec)
+test_env.start_transfer_and_wait(t_spec)

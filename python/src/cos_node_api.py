@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Use Node API with COS credentials
-import test_environment
-import helper_aspera_cos
+import utils.test_environment
+import utils.helper_aspera_cos
 import requests
 
-# get Aspera Transfer Service Node information for specified COS bucket
-config = test_environment.get_configuration('cos')
+test_env = utils.test_environment.TestEnvironment()
 
-node_info = helper_aspera_cos.node(
+# get Aspera Transfer Service Node information for specified COS bucket
+config = test_env.get_configuration('cos')
+
+node_info = utils.helper_aspera_cos.node(
     bucket=config['bucket'],
     endpoint=config['endpoint'],
     key=config['key'],

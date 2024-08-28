@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Upload files using an Aspera Transfer token, generated using node API (upload_setup)
-import test_environment
+import utils.test_environment
 import requests
 import requests.auth
 import logging
 import json
+test_env = utils.test_environment.TestEnvironment()
 
 # get file to upload from command line
-files_to_upload = test_environment.file_list
+files_to_upload = test_env.file_list()
 
 # get node information from config file
-config = test_environment.get_configuration('node')
+config = test_env.get_configuration('node')
 
 api_base_url = config['url']
 
@@ -53,4 +54,4 @@ for f in files_to_upload:
     t_spec['paths'].append({'source': f})
 
 # start transfer, here we use the FASP Manager, but the newer Transfer SDK can be used as well
-test_environment.start_transfer_and_wait(t_spec)
+test_env.start_transfer_and_wait(t_spec)
