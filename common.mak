@@ -21,9 +21,6 @@ FILES_RUNTIME=$(GBL_FILE_CONFIG) $(SDK_DIR_ARCH)asperatransferd
 GBL_FILE_CONF_TMPL=$(DIR_TOP)config/config.tmpl
 # sample file to transfer
 GBL_FILE_SAMPLE=$(GBL_DIR_TMP)This_is_a_test.txt
-# flag file that indicates that the folder was initialized
-ENV_IS_SETUP=.is_setup
-.PHONY: $(ENV_IS_SETUP)
 # folder for test flags
 DIR_TESTED_FLAG=./.tested/
 TEST_FLAGS=$(foreach var,$(TEST_CASES),$(DIR_TESTED_FLAG)$(var))
@@ -49,14 +46,15 @@ $(SDK_FILE_ZIP):
 	curl -L https://ibm.biz/aspera_transfer_sdk -o $(SDK_FILE_ZIP)
 # Extract transfer SDK
 # Note: Create the "etc" link because "ascp" expects to find "aspera-license" in one of . .. ../.. ./etc ../etc ../../etc
+# modify the target date, so that they are newer (else in archive it's older)
 DIR_EXPECTED_LIC=$(SDK_DIR_ROOT)etc
 $(SDK_DIR_ARCH)asperatransferd $(SDK_FILE_PROTO): $(SDK_FILE_ZIP)
-	@echo $(SDK_DIR_ARCH)
 	unzip -qud $(SDK_DIR_ROOT) $(SDK_FILE_ZIP)
 	test -f $(SDK_FILE_PROTO)
 	$(SDK_DIR_ARCH)/asperatransferd version | sed -Ee 's|^(.*) version (.*)\..*$$|<product><name>\1</name><version>\2</version></product>|' > $(SDK_DIR_ARCH)product-info.mf
 	rm -f $(DIR_EXPECTED_LIC)
 	ln -s noarch $(DIR_EXPECTED_LIC)
+	touch $@
 $(GBL_FILE_CONFIG):
 	mkdir -p $$(dirname $@)
 	cp $(GBL_FILE_CONF_TMPL) $@

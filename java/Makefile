@@ -11,16 +11,12 @@ JAVA_PROPS=-Ddir_top=$(DIR_TOP) -Djava.util.logging.config.file=logging.properti
 GRADLE_PROPS=-Pproto_file=$(notdir $(SDK_FILE_PROTO)) -Pproto_dir=$(dir $(SDK_FILE_PROTO)) -Psample_version=$(PROJECT_VERSION)
 # cspell:enable
 all:: $(TEST_FLAGS)
-$(DIR_TESTED_FLAG)%: $(ENV_IS_SETUP) $(GBL_FILE_SAMPLE)
+$(DIR_TESTED_FLAG)%: $(SAMPLE_JAR) $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
 	java -cp $(SAMPLE_JAR) $(JAVA_PROPS) client.$(notdir $@)
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
-$(ENV_IS_SETUP): $(SAMPLE_JAR)
-	@touch $@
-# uncomment to trigger build on source change
-#.PHONY: $(SAMPLE_JAR)
 $(SAMPLE_JAR): $(FILES_RUNTIME)
 	gradle -version
 	gradle build $(GRADLE_PROPS)

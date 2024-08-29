@@ -5,15 +5,14 @@ TEST_CASES=server server_v2
 include $(DIR_TOP)common.mak
 SRC=$(CURDIR)/
 all:: $(TEST_FLAGS)
-$(DIR_TESTED_FLAG)%: $(ENV_IS_SETUP) $(GBL_FILE_SAMPLE)
+$(DIR_TESTED_FLAG)%: node_modules/.package-lock.json $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
 	node $(SRC)$(notdir $@).js $(GBL_FILE_SAMPLE)
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
-$(ENV_IS_SETUP): $(FILES_RUNTIME)
+node_modules/.package-lock.json:
 	npm install
-	@touch $@
 clean::
 	rm -f package-lock.json
 	rm -fr node_modules tmp

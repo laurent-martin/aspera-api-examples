@@ -64,15 +64,15 @@ module.exports = {
 		console.log(`stdout: ${out_file}`)
 		console.log(`log: ${daemon_conf['log_directory']}/asperatransferd.log`)
 		console.log(`ascp log: ${daemon_conf['fasp_runtime']['log']['dir']}/aspera-scp-transfer.log`)
+		connect_success = []
 		sdk_process = spawn(daemon_exe, args, {
 			stdio: ['ignore', fs.openSync(out_file, 'w'), fs.openSync(err_file, 'w')],
 		})
 		sdk_process.on('error', (error) => { console.error(`Error starting the child process: ${error.message}`) })
 		sdk_process.on('exit', (code, signal) => {
 			console.log(`transferd exited (${code})`)
-			if (code != 0) {
-				throw "transferd exited abnormally"
-			}
+			if (connect_success.length === 0)
+				throw "transferd exited before being ready"
 		})
 		console.log(`Started ${daemon_name} with pid ${sdk_process.pid}`)
 		// create a connection to the transfer manager daemon
@@ -86,6 +86,7 @@ module.exports = {
 				}
 				console.log("Connected...")
 			})
+			connect_success.push(true)
 			ready_rb()
 		}, 5000)
 	},
