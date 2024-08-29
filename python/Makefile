@@ -32,13 +32,14 @@ $(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(PYENV_ACTIVATE) $(PY_FILES_GRPC) $(GBL_F
 $(PYENV_ACTIVATE):
 	python3 -m venv $(PYENV_DIR)
 	source $(PYENV_ACTIVATE) && pip3 install -r $(SRC)requirements.txt
+# make COMPILE_PROTO=yes
 ifdef COMPILE_PROTO
 $(PY_FILES_GRPC): $(SDK_FILE_PROTO) $(PYENV_ACTIVATE)
 	mkdir -p $(PY_DIR_GRPC)
 	source $(PYENV_ACTIVATE) && python -m grpc_tools.protoc \
+	  --grpc_python_out=$(PY_DIR_GRPC) \
 	  --python_out=$(PY_DIR_GRPC) \
 	  --pyi_out=$(PY_DIR_GRPC) \
-	  --grpc_python_out=$(PY_DIR_GRPC) \
 	  --proto_path=$(dir $(SDK_FILE_PROTO)) \
 	  $(SDK_FILE_PROTO)
 else
