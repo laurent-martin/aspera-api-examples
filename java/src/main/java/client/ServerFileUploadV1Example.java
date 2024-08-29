@@ -26,7 +26,6 @@ public class ServerFileUploadV1Example {
 				.put("paths", new JSONArray()//
 						.put(new JSONObject()//
 								.put("source", "faux:///10m?10m")));
-
 		// execute transfer
 		test_environment.start_transfer_and_wait(transferSpecV1.toString());
 	}

@@ -30,7 +30,6 @@ public class ServerFileDownloadV2Example {
 								.put(new JSONObject()//
 										.put("source", server_conf.get("file_download").toString())//
 										.put("destination", "downloaded_file"))));
-
 		// execute transfer
 		test_environment.start_transfer_and_wait(transferSpecV2.toString());
 	}

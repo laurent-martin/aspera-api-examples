@@ -109,20 +109,20 @@ public class TestEnvironment {
 		Process started_process = null;
 		while (!isStarted && remaining_try > 0) {
 			try {
-				LOGGER.log(Level.FINE, "Checking gRPC connection");
+				LOGGER.log(Level.INFO, "Checking gRPC connection");
 				client.getAPIVersion(Transfer.APIVersionRequest.newBuilder().build());
-				LOGGER.log(Level.FINE, "OK: Daemon is here.");
+				LOGGER.log(Level.INFO, "OK: Daemon is here.");
 				isStarted = true;
 			} catch (final io.grpc.StatusRuntimeException e) {
-				LOGGER.log(Level.FINE, "KO: Daemon is not here.");
+				LOGGER.log(Level.SEVERE, "KO: Daemon is not here.");
 				try {
-					LOGGER.log(Level.FINE, "Starting daemon: {0} -c {1}",
+					LOGGER.log(Level.INFO, "Starting daemon: {0} -c {1}",
 							new Object[] {daemon_executable, sdk_conf_path});
 					started_process = Runtime.getRuntime()
 							.exec(new String[] {daemon_executable, "-c", sdk_conf_path});
 					Thread.sleep(5000);
 				} catch (final IOException e2) {
-					LOGGER.log(Level.FINE, "FAILED: cannot start daemon: {0}", e2.getMessage());
+					LOGGER.log(Level.SEVERE, "FAILED: cannot start daemon: {0}", e2.getMessage());
 					System.exit(1);
 				} catch (final InterruptedException e2) {
 					throw new Error(e2.getMessage());
@@ -132,7 +132,7 @@ public class TestEnvironment {
 		}
 		daemon_process = started_process;
 		if (!isStarted) {
-			LOGGER.log(Level.FINE,
+			LOGGER.log(Level.SEVERE,
 					"FAILED: API daemon did not start. Please check the logs and try again.");
 			System.exit(1);
 		}
@@ -158,23 +158,20 @@ public class TestEnvironment {
 								.setOperator(Transfer.RegistrationFilterOperator.OR)
 								.addTransferId(transferId).build())
 						.build());
-
 		// monitor transfer until it finishes
 		while (monitorTransferResponse.hasNext()) {
 			final Transfer.TransferResponse response = monitorTransferResponse.next();
-			// status is enum
 			final Transfer.TransferStatus status = response.getStatus();
 			LOGGER.log(Level.FINE, "L: transfer event: {0}", response.getTransferEvent());
 			LOGGER.log(Level.FINE, "L: file info: {0}",
 					response.getFileInfo().toString().replaceAll("\\n", ", "));
-			LOGGER.log(Level.FINE, "L: status: {0}", status.toString());
+			LOGGER.log(Level.INFO, "L: status: {0}", status.toString());
 			LOGGER.log(Level.FINE, "L: message: {0}", response.getMessage());
 			LOGGER.log(Level.FINE, "L: err: {0}", response.getError());
-
 			if (status == Transfer.TransferStatus.FAILED
 					|| status == Transfer.TransferStatus.COMPLETED) {
 				// || response.getTransferEvent() == Transfer.TransferEvent.FILE_STOP) {
-				LOGGER.log(Level.FINE, "L: upload finished, received: {0}", status);
+				LOGGER.log(Level.INFO, "L: upload finished, received: {0}", status);
 				break;
 			}
 		}
@@ -183,7 +180,7 @@ public class TestEnvironment {
 
 	public void shutdown() {
 		if (daemon_process != null) {
-			LOGGER.log(Level.FINE, "L: Shutting down daemon");
+			LOGGER.log(Level.INFO, "L: Shutting down daemon");
 			daemon_process.destroy();
 		}
 	}
