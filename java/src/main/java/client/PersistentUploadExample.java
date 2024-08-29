@@ -112,6 +112,7 @@ public class PersistentUploadExample {
 																		// 3.period(ms)
 		// This loops in getting statuses
 		test_environment.wait_transfer();
+		test_environment.shutdown();
 
 		LOGGER.log(Level.FINE, "L: exiting program");
 	}

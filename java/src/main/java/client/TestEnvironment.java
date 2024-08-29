@@ -181,8 +181,10 @@ public class TestEnvironment {
 	}
 
 	public void shutdown() {
-		if (daemon_process != null)
+		if (daemon_process != null) {
+			LOGGER.log(Level.FINE, "L: Shutting down daemon");
 			daemon_process.destroy();
+		}
 	}
 
 	public void start_transfer_and_wait(final String transferSpec) {
