@@ -4,3 +4,4 @@ private/
 .vscode/
 .idea/
 .is_setup
+.tested/

@@ -8,20 +8,20 @@ PROJECT_VERSION=0.1
 SAMPLE_JAR=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar
 # cspell:disable
 JAVA_PROPS=-Ddir_top=$(DIR_TOP) -Djava.util.logging.config.file=logging.properties
-GRADLE_PROPS=-Pproto_file=$(notdir $(PROTO_FILE)) -Pproto_dir=$(dir $(PROTO_FILE)) -Psample_version=$(PROJECT_VERSION)
+GRADLE_PROPS=-Pproto_file=$(notdir $(SDK_FILE_PROTO)) -Pproto_dir=$(dir $(SDK_FILE_PROTO)) -Psample_version=$(PROJECT_VERSION)
 # cspell:enable
 all:: $(TEST_FLAGS)
-$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
+$(DIR_TESTED_FLAG)%: $(ENV_IS_SETUP) $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
 	java -cp $(SAMPLE_JAR) $(JAVA_PROPS) client.$(notdir $@)
 	@sleep 2
-	@mkdir -p $(FLAG_DIR)
+	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
 $(ENV_IS_SETUP): $(SAMPLE_JAR)
 	@touch $@
 # uncomment to trigger build on source change
 #.PHONY: $(SAMPLE_JAR)
-$(SAMPLE_JAR): $(SDK_FILES)
+$(SAMPLE_JAR): $(FILES_RUNTIME)
 	gradle -version
 	gradle build $(GRADLE_PROPS)
 clean:: clean_flags

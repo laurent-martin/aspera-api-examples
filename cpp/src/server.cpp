@@ -4,7 +4,7 @@ int main(int argc, char* argv[]) {
     try {
         utils::TestEnvironment test_env(argc, argv);
         std::string server_url = test_env.conf_str({"server", "url"});
-        LOG(info) << "Server URL: " << server_url;
+        LOG(info) << LOG_ITEM("Server URL") << server_url;
         auto server_uri = boost::urls::parse_uri(server_url).value();
         assert(server_uri.scheme == "ssh");
         // create V2 transfer spec

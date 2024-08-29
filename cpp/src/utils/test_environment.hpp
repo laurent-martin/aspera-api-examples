@@ -26,9 +26,10 @@ namespace trsdk = transfersdk;
 
 // define TransferStatus_to_string(value) transfersdk::TransferStatus_Name<transfersdk::TransferStatus>(value)
 #define TransferStatus_to_string(value) magic_enum::enum_name(value)
+#define grpc_connectivity_state_to_string(value) (magic_enum::enum_name(value).data()+strlen("GRPC_CHANNEL_"))
 
 #define LOGGER(logger, level) BOOST_LOG_SEV(logger, boost::log::trivial::level)
-#define LOG_ITEM(item) std::setw(ITEM_WIDTH) << item << ": "
+#define LOG_ITEM(item) std::setw(utils::ITEM_WIDTH) << item << ": "
 
 namespace utils {
 inline constexpr const char* PATHS_FILE_REL = "config/paths.yaml";
@@ -236,7 +237,7 @@ class TestEnvironment {
         grpc_connectivity_state state;
         for (int i = 0; i < MAX_CONNECTION_WAIT_SEC; i++) {
             state = channel->GetState(true);
-            LOG(info) << "channel: " << magic_enum::enum_name(state);
+            LOG(info) << "channel: " << grpc_connectivity_state_to_string(state);
             if (state == GRPC_CHANNEL_READY) {
                 break;
             }
@@ -254,6 +255,20 @@ class TestEnvironment {
         if (_transfer_service == nullptr) {
             start_daemon();
             connect_to_daemon();
+        }
+    }
+
+    // Shutdown daemon
+    void shutdown() {
+        if (_transfer_service != nullptr) {
+            _transfer_service = nullptr;
+        }
+        if (_transfer_daemon != nullptr) {
+            LOG(info) << "Shutting down daemon...";
+            _transfer_daemon->terminate();
+            _transfer_daemon->wait();
+            delete _transfer_daemon;
+            _transfer_daemon = nullptr;
         }
     }
 
@@ -305,19 +320,6 @@ class TestEnvironment {
         }
     }
 
-    // Shutdown daemon
-    void shutdown() {
-        if (_transfer_service != nullptr) {
-            _transfer_service = nullptr;
-        }
-        if (_transfer_daemon != nullptr) {
-            LOG(info) << "Shutting down daemon...";
-            _transfer_daemon->terminate();
-            _transfer_daemon->wait();
-            delete _transfer_daemon;
-            _transfer_daemon = nullptr;
-        }
-    }
 
     void throw_on_error(const trsdk::TransferStatus& status, const trsdk::Error& error) {
         if (status == trsdk::TransferStatus::FAILED) {

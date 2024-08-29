@@ -2,6 +2,7 @@
 DIR_TOP=$(CURDIR)/
 include $(DIR_TOP)common.mak
 SECTIONS=cpp csharp java js python ruby web
+.PHONY: cleantmp template
 template:
 	cd doc && make
 all clean superclean clean_flags::
@@ -9,5 +10,6 @@ all clean superclean clean_flags::
 clean::
 	find . -name \*.log -exec rm {} \;
 	-killall -q asperatransferd
-superclean::
-	rm -fr $(DIR_TMP)
+superclean:: cleantmp
+cleantmp:
+	rm -fr $(GBL_DIR_TMP)

@@ -7,12 +7,12 @@ GW_SDK=@ibm-aspera/http-gateway-sdk-js
 DK_SDK=@ibm-aspera/desktop-sdk-js
 CN_SDK=@ibm-aspera/connect-sdk-js
 all:: $(TEST_FLAGS)
-$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
+$(DIR_TESTED_FLAG)%: $(ENV_IS_SETUP) $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
 	node --trace-warnings src/$(notdir $@).js $(SRC)&
 	sleep 5
 	killall node
-	@mkdir -p $(FLAG_DIR)
+	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
 # retrieve javascript libs for http gateway client
 $(SRC)http-gateway.js:

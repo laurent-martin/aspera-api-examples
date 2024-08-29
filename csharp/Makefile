@@ -1,15 +1,15 @@
 DIR_TOP=$(CURDIR)/../
 TEST_CASES=server_upload faspex5 aoc
 include $(DIR_TOP)common.mak
-PROPERTIES=-p:Proto_File=$(PROTO_FILE)
+PROPERTIES=-p:Proto_File=$(SDK_FILE_PROTO)
 all:: $(TEST_FLAGS)
-$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
+$(DIR_TESTED_FLAG)%: $(ENV_IS_SETUP) $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
-	dotnet run $(PROPERTIES) $(notdir $@) $(SAMPLE_FILE)
+	dotnet run $(PROPERTIES) $(notdir $@) $(GBL_FILE_SAMPLE)
 	@sleep 2
-	@mkdir -p $(FLAG_DIR)
+	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
-$(ENV_IS_SETUP): $(SDK_FILES)
+$(ENV_IS_SETUP): $(FILES_RUNTIME)
 	@touch $@
 build:
 	dotnet build $(PROPERTIES)

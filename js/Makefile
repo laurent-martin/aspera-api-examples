@@ -5,13 +5,13 @@ TEST_CASES=server server_v2
 include $(DIR_TOP)common.mak
 SRC=$(CURDIR)/
 all:: $(TEST_FLAGS)
-$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
+$(DIR_TESTED_FLAG)%: $(ENV_IS_SETUP) $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
-	node $(SRC)$(notdir $@).js $(SAMPLE_FILE)
+	node $(SRC)$(notdir $@).js $(GBL_FILE_SAMPLE)
 	@sleep 2
-	@mkdir -p $(FLAG_DIR)
+	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
-$(ENV_IS_SETUP): $(SDK_FILES)
+$(ENV_IS_SETUP): $(FILES_RUNTIME)
 	npm install
 	@touch $@
 clean::

@@ -2,15 +2,15 @@ DIR_TOP=$(CURDIR)/../
 TEST_CASES=aoc node faspex5 server faspex4
 include $(DIR_TOP)common.mak
 SRC=src/
-GEMFILE=$(TRSDK_NOARCH)/connectors/ruby/Gemfile
+GEMFILE=$(SDK_DIR_NOARCH)/connectors/ruby/Gemfile
 all:: $(TEST_FLAGS)
-$(FLAG_DIR)%: $(ENV_IS_SETUP) $(SAMPLE_FILE)
+$(DIR_TESTED_FLAG)%: $(ENV_IS_SETUP) $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
-	bundle exec $(SRC)$(notdir $@).rb $(SAMPLE_FILE)
+	bundle exec $(SRC)$(notdir $@).rb $(GBL_FILE_SAMPLE)
 	@sleep 2
-	@mkdir -p $(FLAG_DIR)
+	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
-$(ENV_IS_SETUP): $(SDK_FILES)
+$(ENV_IS_SETUP): $(FILES_RUNTIME)
 	bundle install --gemfile=$(GEMFILE)
 	bundle install
 	@touch $@
