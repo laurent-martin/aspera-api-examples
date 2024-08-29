@@ -170,9 +170,10 @@ class TestEnvironment:
             self._transfer_service = transfer_manager_grpc.TransferServiceStub(channel)
         except grpc.FutureTimeoutError:
             logging.error('Failed to connect')
+            raise Exception('Failed to connect to transfer manager daemon')
 
     def setup(self):
-        '''Connect to transfer manager daemon'''
+        '''Start and connect to transfer manager daemon'''
         if self._transfer_service is None:
             self.start_daemon()
             self.connect_to_daemon()
@@ -201,7 +202,7 @@ class TestEnvironment:
         )
         # send start transfer request to transfer manager daemon
         transfer_response = self._transfer_service.StartTransfer(transfer_request)
-        if 4 == transfer_response.status:
+        if transfer_manager.TransferStatus.FAILED == transfer_response.status:
             logging.error(transfer_response.error.description)
             exit(1)
         return transfer_response.transferId
@@ -219,11 +220,10 @@ class TestEnvironment:
             logging.debug('transfer info %s', transfer_info)
             # check transfer status in response, and exit if it's done
             status = transfer_info.status
-
             logging.info('transfer status: %s', transfer_manager.TransferStatus.Name(status))
             # exit on first success or failure
             if status == transfer_manager.COMPLETED:
-                logging.info(f'finished transfer')
+                logging.info(f'completed transfer')
                 break
             if status == transfer_manager.FAILED:
                 raise Exception(transfer_info.message)
