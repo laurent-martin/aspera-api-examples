@@ -41,9 +41,11 @@ $(DIR_TESTED_FLAG):
 	mkdir -p $(DIR_TESTED_FLAG)
 # config file info https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
 # download transfer SDK
+SDK_URL=https://ibm.biz/aspera_transfer_sdk
+#SDK_URL=https://eudemo.asperademo.com/download/sdk-1.1.2-753f662.zip
 $(SDK_FILE_ZIP):
 	mkdir -p $(SDK_DIR_ROOT)
-	curl -L https://ibm.biz/aspera_transfer_sdk -o $(SDK_FILE_ZIP)
+	curl -L $(SDK_URL) -o $(SDK_FILE_ZIP)
 # Extract transfer SDK
 # Note: Create the "etc" link because "ascp" expects to find "aspera-license" in one of . .. ../.. ./etc ../etc ../../etc
 # modify the target date, so that they are newer (else in archive it's older)

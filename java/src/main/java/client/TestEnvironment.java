@@ -110,8 +110,8 @@ public class TestEnvironment {
 		while (!isStarted && remaining_try > 0) {
 			try {
 				LOGGER.log(Level.INFO, "Checking gRPC connection");
-				client.getAPIVersion(Transfer.APIVersionRequest.newBuilder().build());
-				LOGGER.log(Level.INFO, "OK: Daemon is here.");
+				Transfer.InstanceInfoResponse infoResponse = client.getInfo(Transfer.InstanceInfoRequest.newBuilder().build());
+				LOGGER.log(Level.INFO, "OK: Daemon is here, API v = {0}", infoResponse.getApiVersion());
 				isStarted = true;
 			} catch (final io.grpc.StatusRuntimeException e) {
 				LOGGER.log(Level.SEVERE, "KO: Daemon is not here.");

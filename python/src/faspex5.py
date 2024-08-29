@@ -30,6 +30,7 @@ transfer_sessions = 1
 
 def get_bearer(verify_cert):
     '''generate a bearer token'''
+    logging.info('getting API authorization')
     with open(config['private_key']) as fin:
         private_key_pem = fin.read()
 
