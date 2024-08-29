@@ -6,54 +6,58 @@ import utils.helper_aspera_cos
 import utils.rest
 # import json
 
-test_env = utils.test_environment.TestEnvironment()
-
-# get file to upload from command line
-files_to_upload = test_env.file_list()
 destination_folder = '/'
 
-# get Aspera Transfer Service Node information using service credential file
-# config=test_env.get_configuration('coscreds')
-# with open(config['service_credential_file']) as f:
-#    credentials = json.load(f)
-# info=utils.helper_aspera_cos.from_service_credentials(credentials=credentials,region=config['region'])
-# cos_node_info=utils.helper_aspera_cos.node(bucket=config['bucket'],endpoint=info['endpoint'],key=info['key'],crn=info['crn'])
+test_env = utils.test_environment.TestEnvironment().setup()
 
-# get configuration parameters from config file
-config = test_env.get_configuration('cos')
+try:
+    # get file to upload from command line
+    files_to_upload = test_env.file_list()
 
-# get Aspera Transfer Service Node information for specified COS bucket
-cos_node_info = utils.helper_aspera_cos.node(
-    bucket=config['bucket'],
-    endpoint=config['endpoint'],
-    key=config['key'],
-    crn=config['crn'],
-    auth=config['auth'],
-)
+    # get Aspera Transfer Service Node information using service credential file
+    # config=test_env.get_configuration('coscreds')
+    # with open(config['service_credential_file']) as f:
+    #    credentials = json.load(f)
+    # info=utils.helper_aspera_cos.from_service_credentials(credentials=credentials,region=config['region'])
+    # cos_node_info=utils.helper_aspera_cos.node(bucket=config['bucket'],endpoint=info['endpoint'],key=info['key'],crn=info['crn'])
 
-node_api = utils.rest.Rest(
-    base_url=cos_node_info['url'],
-    auth=cos_node_info['auth'],
-    headers=cos_node_info['headers'],
-)
+    # get configuration parameters from config file
+    config = test_env.get_configuration('cos')
 
-# call Node API with one transfer request to get one transfer spec
-response_data = node_api.post('files/upload_setup', {
-    'transfer_requests': [
-        {'transfer_request': {'paths': [{'destination': destination_folder}]}}
-    ]
-})
+    # get Aspera Transfer Service Node information for specified COS bucket
+    cos_node_info = utils.helper_aspera_cos.node(
+        bucket=config['bucket'],
+        endpoint=config['endpoint'],
+        key=config['key'],
+        crn=config['crn'],
+        auth=config['auth'],
+    )
 
-# extract the single transfer spec (we sent a single transfer request)
-t_spec = response_data['transfer_specs'][0]['transfer_spec']
+    node_api = utils.rest.Rest(
+        base_url=cos_node_info['url'],
+        auth=cos_node_info['auth'],
+        headers=cos_node_info['headers'],
+    )
 
-# add COS specific authorization info
-t_spec.update(cos_node_info['tspec'])
+    # call Node API with one transfer request to get one transfer spec
+    response_data = node_api.post('files/upload_setup', {
+        'transfer_requests': [
+            {'transfer_request': {'paths': [{'destination': destination_folder}]}}
+        ]
+    })
 
-# add file list in transfer spec
-t_spec['paths'] = []
-for f in files_to_upload:
-    t_spec['paths'].append({'source': f})
+    # extract the single transfer spec (we sent a single transfer request)
+    t_spec = response_data['transfer_specs'][0]['transfer_spec']
 
-# start transfer
-test_env.start_transfer_and_wait(t_spec)
+    # add COS specific authorization info
+    t_spec.update(cos_node_info['tspec'])
+
+    # add file list in transfer spec
+    t_spec['paths'] = []
+    for f in files_to_upload:
+        t_spec['paths'].append({'source': f})
+
+    # start transfer
+    test_env.start_transfer_and_wait(t_spec)
+finally:
+    test_env.shutdown()

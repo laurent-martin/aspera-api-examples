@@ -12,12 +12,30 @@ The sample code in `src` shows how to transfer files using:
 * IBM Aspera Faspex 4 and 5
 * IBM Aspera on Cloud using JWT and a private key
 
+## Requirements
+
+### Unix-like
+
+* GNU make
+* Python 3.11 +
+
+### Windows
+
+Install python 3.11: <https://www.python.org/downloads/windows/>
+
 ## Quick start
 
 To run all python sample programs at once, in this folder execute:
 
 ```bash
 make
+```
+
+By default, this copies the file `transfer_pb2.py` and `transfer_pb2_grpc.py` from the SDK.
+Alternatively, it's possible to compile the file `transfer.proto`:
+
+```bash
+make COMPILE_PROTO=yes
 ```
 
 This will run sample programs with sample files using servers as configured in the config file.
@@ -27,7 +45,7 @@ Have a look to the [`Makefile`](Makefile) to check how the example is invoked an
 Then run only one example, to test `node`:
 
 ```bash
-make .tested.node
+make .tested/node
 ```
 
 > **Note:** If the daemon does not start, you make first try to stop it: `make stop`, and then run the sample again.
@@ -50,7 +68,8 @@ An adapter is kept for reference, but should not be used.
 
 Each of the sample programs are structured like this:
 
-* `import test_environment` : `test_environment.py` is located in the same folder as the example :
+* `import utils.test_environment` : `test_environment.py` is located in folder `src/utils`:
+  * `test_env = utils.test_environment.TestEnvironment()`
   * it reads the configuration file
   * setup debug logging
   * defines the method: `start_transfer_and_wait` which takes a **transfer_spec** as argument to start a transfer.
@@ -60,16 +79,10 @@ Each of the sample programs are structured like this:
 
 ## Known Transfer SDK Issues
 
-Even if property `etc` is set to other folder, it looks for `aspera-license` file in `etc` folder (will be fixed in next release).
-
 Transfer fails if `http_fallback` is `True`.
 
 ## COS official documentation for Aspera SDK
 
 <https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-aspera>
 
-Uncomment lines in `cos.py` to use service credential file instead of bare API key.
-
-## Windows
-
-Install python 3.11: <https://www.python.org/downloads/windows/>
+Uncomment lines in `cos.py` to use service credential file instead of individual parameters.
