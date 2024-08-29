@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Iterator;
 import java.util.logging.Logger;
 import java.util.logging.Level;
-
+import java.util.Locale;
 
 // read configuration file and provide interface for transfer
 public class TestEnvironment {
@@ -78,6 +78,7 @@ public class TestEnvironment {
 	}
 
 	public TestEnvironment() {
+		Locale.setDefault(Locale.ENGLISH);
 		try {
 			dir_top = System.getProperty("dir_top");
 			if (dir_top == null)
