@@ -15,7 +15,7 @@ namespace ssl = boost::asio::ssl;
 
 namespace utils {
 // simple REST client using boost
-class Rest {
+class RestClient {
    private:
     // base url, including possibly path
     const std::string _base_url;
@@ -23,7 +23,7 @@ class Rest {
     std::string _authorization;
 
    public:
-    Rest(std::string base_url) : _base_url(base_url), _authorization() {}
+    RestClient(std::string base_url) : _base_url(base_url), _authorization() {}
 
     void set_basic(const std::string& user, const std::string& pass) {
         _authorization = basic_auth_header(user, pass);

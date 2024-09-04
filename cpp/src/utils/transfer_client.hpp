@@ -20,6 +20,7 @@
 #include <magic_enum.hpp>
 #include <thread>
 
+#include "tools.hpp"
 #include "transfer.grpc.pb.h"
 namespace json = boost::json;
 namespace trsdk = transfersdk;
@@ -32,151 +33,48 @@ namespace trsdk = transfersdk;
 #define LOG_ITEM(item) std::setw(utils::ITEM_WIDTH) << item << ": "
 
 namespace utils {
-inline constexpr const char* PATHS_FILE_REL = "config/paths.yaml";
 inline constexpr const char* TRANSFER_SDK_DAEMON = "asperatransferd";
 inline constexpr const char* DAEMON_LOG_FILE = "asperatransferd.log";
 inline constexpr const char* ASCP_LOG_FILE = "aspera-scp-transfer.log";
-inline constexpr const int ITEM_WIDTH = 12;
 inline constexpr const int MAX_CONNECTION_WAIT_SEC = 10;
 
 // Provide a common environment for tests, including:
 // - logging
 // - conf file generation, startup and shutdown of asperatransferd
 // - transfer of files and monitoring
-class TestEnvironment {
-#define LOG(level) LOGGER(_log, level)
-    boost::log::sources::severity_logger<boost::log::trivial::severity_level> _log;
-    const bool _init_log;
-    // list of files to transfer
-    std::vector<std::string> _file_list;
+class TransferClient {
+#define LOG(level) LOGGER(_tools.log(), level)
+    Tools& _tools;
     const bool _auto_shutdown;
-    // project folder
-    const std::filesystem::path _top_folder_path;
-    const std::filesystem::path _log_folder_path;
     const std::string _daemon_log;
-    // conf file with _paths
-    const YAML::Node _paths;
-    const YAML::Node _config;
-    // folder with SDK binaries
-    const std::filesystem::path _arch_folder_path;
     std::string _server_address;
     std::string _server_port_str;
     std::string _channel_address;
     std::unique_ptr<boost::process::child> _transfer_daemon;
     std::unique_ptr<trsdk::TransferService::Stub> _transfer_service;
 
-    // get the path of the item in the test environment
-    std::filesystem::path get_path(const std::string& name) {
-        // LOG(debug) << "get_path" << ": " << name;
-        std::filesystem::path item_path = _top_folder_path / _paths[name].as<std::string>();
-        if (!std::filesystem::exists(item_path)) {
-            LOG(error) << item_path.string() << " not found.\nPlease check: SDK installed in " << _paths["sdk_root"].as<std::string>() << ", configuration file: " << _paths["main_config"].as<std::string>();
-            throw std::runtime_error("ERROR");
-        }
-        return item_path;
-    }
-    YAML::Node load_yaml(const char* const name, const std::filesystem::path& path) {
-        LOG(info) << std::setw(ITEM_WIDTH) << name << ": " << path.string();
-        return YAML::LoadFile(path.string());
-    }
-
-    bool init_log() {
-        boost::log::add_common_attributes();
-        boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::debug);
-        boost::log::add_console_log(std::clog)->set_formatter(
-            boost::log::expressions::stream
-            // << boost::log::expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S") << " "        // .%f
-            << std::setw(7) << std::left << boost::log::expressions::attr<boost::log::trivial::severity_level>("Severity") << " "  //
-            << boost::log::expressions::smessage);
-        return true;
-    }
-    // Get the last line of a file
-    static std::string last_file_line(const std::string& filename) {
-        // ate: seek to the end of the file
-        std::ifstream file(filename, std::ios::binary | std::ios::ate);
-        if (!file.is_open())
-            throw std::runtime_error("Unable to open file: " + filename);
-        std::string last_line;
-        char char_at_pos = 0;
-        // read until a newline or beginning of the file
-        // we skip the last byte (the newline)
-        while (file.tellg() > 1 && char_at_pos != '\n') {
-            // Move two bytes back and read one char
-            file.seekg(-2, std::ios::cur);
-            file.get(char_at_pos);
-        }
-        file.seekg(-1, std::ios::cur);
-        std::getline(file, last_line);
-        file.close();
-        return last_line;
-    }
-
    public:
-    TestEnvironment(
-        const int argc,
-        const char* const argv[],
+    TransferClient(
+        Tools& tools,
         bool shutdown = true)
-        : _log(),
-          _init_log(init_log()),
-          _file_list(argv + 1, argv + argc),
+        : _tools(tools),
           _auto_shutdown(shutdown),
-          _top_folder_path(std::filesystem::absolute(argv[0]).parent_path().parent_path().parent_path()),
-          _log_folder_path(std::filesystem::temp_directory_path()),
-          _daemon_log(_log_folder_path / DAEMON_LOG_FILE),
-          _paths(load_yaml("paths", _top_folder_path / PATHS_FILE_REL)),
-          _config(load_yaml("main_config", get_path("main_config"))),
-          _arch_folder_path(get_path("sdk_root") / conf_str({"misc", "platform"})),
+          _daemon_log(_tools.log_folder_path() / DAEMON_LOG_FILE),
           _transfer_daemon(nullptr),
           _transfer_service(nullptr) {
-        const std::string sdk_url = conf_str({"trsdk", "url"});
+        const std::string sdk_url = _tools.conf_str({"trsdk", "url"});
         LOG(info) << LOG_ITEM("sdk_url") << sdk_url;
         const auto sdk_uri = boost::urls::parse_uri(sdk_url).value();
         _server_address = sdk_uri.host();
         _server_port_str = sdk_uri.port();
         _channel_address = _server_address + ":" + _server_port_str;
         LOG(info) << LOG_ITEM("channel addr") << _channel_address;
-        if (_file_list.empty()) {
-            LOG(error) << "No file(s) to transfer provided.";
-            throw std::runtime_error("ERROR");
-        }
-        LOG(info) << LOG_ITEM("top_folder") << _top_folder_path.string();
-        LOG(info) << LOG_ITEM("arch_folder") << _arch_folder_path.string();
-        for (const auto& one_file : _file_list) {
-            LOG(info) << LOG_ITEM("file") << one_file;
-        }
     }
 
-    ~TestEnvironment() {
+    ~TransferClient() {
         if (_auto_shutdown) {
             shutdown();
         }
-    }
-
-    // Dig to the yaml node by list of keys
-    // @param keys list of keys to dig to get the value
-    YAML::Node conf(const std::vector<std::string>& keys) {
-        // Need to clone, else it will be modified in loop
-        YAML::Node currentNode = YAML::Clone(_config);
-        for (const auto& key : keys) {
-            const auto next_node = currentNode[key];
-            if (next_node.IsDefined()) {
-                currentNode = next_node;
-            } else {
-                throw std::runtime_error("Key not found: " + key);
-            }
-        }
-        return currentNode;
-    }
-
-    // Get a string from the configuration file
-    // @param keys list of keys to dig to get the value
-    std::string conf_str(const std::vector<std::string>& keys) {
-        return conf(keys).as<std::string>();
-    }
-
-    // @return the logger
-    auto& log() {
-        return _log;
     }
 
     // Start the transfer SDK daemon process
@@ -185,27 +83,27 @@ class TestEnvironment {
         const json::object config_info = {
             {"address", _server_address},
             {"port", std::stoi(_server_port_str)},
-            {"log_directory", _log_folder_path.string()},
+            {"log_directory", _tools.log_folder_path().string()},
             {"log_level", "4"},  // 0 .. 4
             {"fasp_runtime",
              {{"use_embedded", false},
               {"user_defined",
-               {{"bin", _arch_folder_path.string()},
-                {"etc", get_path("trsdk_noarch").string()}}},
+               {{"bin", _tools.arch_folder_path().string()},
+                {"etc", _tools.get_path("trsdk_noarch").string()}}},
               {"log",
-               {{"dir", _log_folder_path.string()},
+               {{"dir", _tools.log_folder_path().string()},
                 {"level", 2}}}}}};
         const std::string config_data = json::serialize(config_info);
-        const std::string file_base = _log_folder_path / TRANSFER_SDK_DAEMON;
+        const std::string file_base = _tools.log_folder_path() / TRANSFER_SDK_DAEMON;
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
-        const std::string daemon_path = _arch_folder_path / TRANSFER_SDK_DAEMON;
+        const std::string daemon_path = _tools.arch_folder_path() / TRANSFER_SDK_DAEMON;
         const std::string command = daemon_path + " --config " + conf_file;
         LOG(info) << LOG_ITEM("daemon out") << out_file;
         LOG(info) << LOG_ITEM("daemon err") << err_file;
         LOG(info) << LOG_ITEM("daemon log") << _daemon_log;
-        LOG(info) << LOG_ITEM("ascp log") << (_log_folder_path / ASCP_LOG_FILE).string();
+        LOG(info) << LOG_ITEM("ascp log") << (_tools.log_folder_path() / ASCP_LOG_FILE).string();
         LOG(info) << LOG_ITEM("command") << command;
         LOG(info) << LOG_ITEM("config") << config_data;
         LOG(info) << "Starting daemon...";
@@ -223,7 +121,7 @@ class TestEnvironment {
             LOG(error) << "Daemon not started.";
             LOG(error) << "Exited with code: " << _transfer_daemon->exit_code();
             LOG(error) << "Check daemon log: " << _daemon_log;
-            LOG(error) << last_file_line(_daemon_log);
+            LOG(error) << Tools::last_file_line(_daemon_log);
             throw std::runtime_error("daemon startup failed");
         }
         LOG(info) << "Daemon started: " << _transfer_daemon->id();
@@ -300,27 +198,16 @@ class TestEnvironment {
             trsdk::QueryTransferResponse query_transfer_response;
             _transfer_service->QueryTransfer(&query_transfer_context, transfer_info_request, &query_transfer_response);
             const trsdk::TransferStatus status = query_transfer_response.status();
-            LOG(info) << "transfer status: " << TransferStatus_to_string(status);
+            LOG(info) << "transfer: " << TransferStatus_to_string(status);
             throw_on_error(status, query_transfer_response.error());
             if (status == trsdk::TransferStatus::COMPLETED)
                 break;
         }
     }
-    // Add files to the transfer spec
-    void add_files_to_ts(json::array& paths, bool add_destination = false) {
-        paths.clear();
-        for (const auto& one_file : _file_list) {
-            json::object one = json::object{{"source", one_file}};
-            if (add_destination) {
-                one["destination"] = std::string(std::filesystem::path(one_file).filename());
-            }
-            paths.push_back(one);
-        }
-    }
 
     void throw_on_error(const trsdk::TransferStatus& status, const trsdk::Error& error) {
         if (status == trsdk::TransferStatus::FAILED) {
-            LOG(error) << last_file_line(_daemon_log);
+            LOG(error) << Tools::last_file_line(_daemon_log);
             throw std::runtime_error("transfer failed: " + error.description());
         }
         if (status == trsdk::TransferStatus::UNKNOWN_STATUS) {
