@@ -25,8 +25,7 @@ inline constexpr const int ITEM_WIDTH = 12;
 
 // Provide a common environment for tests, including:
 // - logging
-// - conf file generation, startup and shutdown of asperatransferd
-// - transfer of files and monitoring
+// - misc utilities
 class Tools {
 #define LOG(level) LOGGER(_log, level)
    public:

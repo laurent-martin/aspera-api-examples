@@ -1,20 +1,11 @@
 #pragma once
 
 #include <grpcpp/create_channel.h>
-#include <yaml-cpp/yaml.h>
 
 #include <boost/json.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/sources/logger.hpp>
-#include <boost/log/support/date_time.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/utility/setup/console.hpp>
 #include <boost/process.hpp>
 #include <boost/url/parse.hpp>
 #include <chrono>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <magic_enum.hpp>
@@ -29,9 +20,6 @@ namespace trsdk = transfersdk;
 #define TransferStatus_to_string(value) magic_enum::enum_name(value)
 #define grpc_connectivity_state_to_string(value) (magic_enum::enum_name(value).data() + strlen("GRPC_CHANNEL_"))
 
-#define LOGGER(logger, level) BOOST_LOG_SEV(logger, boost::log::trivial::level)
-#define LOG_ITEM(item) std::setw(utils::ITEM_WIDTH) << item << ": "
-
 namespace utils {
 inline constexpr const char* TRANSFER_SDK_DAEMON = "asperatransferd";
 inline constexpr const char* DAEMON_LOG_FILE = "asperatransferd.log";
@@ -39,7 +27,6 @@ inline constexpr const char* ASCP_LOG_FILE = "aspera-scp-transfer.log";
 inline constexpr const int MAX_CONNECTION_WAIT_SEC = 10;
 
 // Provide a common environment for tests, including:
-// - logging
 // - conf file generation, startup and shutdown of asperatransferd
 // - transfer of files and monitoring
 class TransferClient {
@@ -48,7 +35,7 @@ class TransferClient {
     const bool _auto_shutdown;
     const std::string _daemon_log;
     std::string _server_address;
-    std::string _server_port_str;
+    uint16_t _server_port;
     std::string _channel_address;
     std::unique_ptr<boost::process::child> _transfer_daemon;
     std::unique_ptr<trsdk::TransferService::Stub> _transfer_service;
@@ -62,12 +49,15 @@ class TransferClient {
           _daemon_log(_tools.log_folder_path() / DAEMON_LOG_FILE),
           _transfer_daemon(nullptr),
           _transfer_service(nullptr) {
-        const std::string sdk_url = _tools.conf_str({"trsdk", "url"});
-        LOG(info) << LOG_ITEM("sdk_url") << sdk_url;
-        const auto sdk_uri = boost::urls::parse_uri(sdk_url).value();
-        _server_address = sdk_uri.host();
-        _server_port_str = sdk_uri.port();
-        _channel_address = _server_address + ":" + _server_port_str;
+        auto sdk_url = _tools.conf_str({"trsdk", "url"});
+        auto result = boost::urls::parse_uri(sdk_url);
+        if (!result) {
+            throw std::runtime_error("Invalid trsdk url");
+        }
+        LOG(info) << LOG_ITEM("grpc url") << result.value();
+        _server_address = result.value().host();
+        _server_port = std::stoi(result.value().port());
+        _channel_address = _server_address + ":" + std::to_string(_server_port);
         LOG(info) << LOG_ITEM("channel addr") << _channel_address;
     }
 
@@ -82,7 +72,7 @@ class TransferClient {
         // Prepare daemon configuration file
         const json::object config_info = {
             {"address", _server_address},
-            {"port", std::stoi(_server_port_str)},
+            {"port", _server_port},
             {"log_directory", _tools.log_folder_path().string()},
             {"log_level", "4"},  // 0 .. 4
             {"fasp_runtime",
@@ -106,10 +96,10 @@ class TransferClient {
         LOG(info) << LOG_ITEM("ascp log") << (_tools.log_folder_path() / ASCP_LOG_FILE).string();
         LOG(info) << LOG_ITEM("command") << command;
         LOG(info) << LOG_ITEM("config") << config_data;
-        LOG(info) << "Starting daemon...";
         std::ofstream conf_stream(conf_file);
         conf_stream << config_data;
         conf_stream.close();
+        LOG(info) << "Starting daemon...";
         // Start daemon
         _transfer_daemon = std::make_unique<boost::process::child>(boost::process::child(
             command,
@@ -167,8 +157,7 @@ class TransferClient {
         }
     }
 
-    void
-    start_transfer_and_wait(const json::object& transfer_spec) {
+    void start_transfer_and_wait(const json::object& transfer_spec) {
         // ensure daemon is started and we are connected
         startup();
         const std::string ts_json = json::serialize(transfer_spec);
