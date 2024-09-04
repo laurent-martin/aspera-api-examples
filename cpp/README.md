@@ -61,3 +61,7 @@ ld: archive member '/' not a mach-o file in ...
 
 This is because GNU ar is used from `/opt/homebrew/opt/binutils/bin/ar`.
 To fix this, ensure to use the system ar: `/usr/bin/ar`.
+
+```bash
+export PATH=/usr/bin:$PATH
+```

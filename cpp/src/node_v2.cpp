@@ -9,18 +9,18 @@ int main(const int argc, const char* const argv[]) {
         const std::string header_authorization = utils::Rest::basic_auth_header(test_env.conf_str({"node", "user"}), test_env.conf_str({"node", "pass"}));
         json::object transfer_spec_v2 = {
             {"title", "send using Node API and ts v2"},
-            {"session_initiation", {              //
-                                    {"node_api", {//
-                                                  {"url", node_api_url},
-                                                  {"headers", json::array{
-                                                                  {{"key", "Authorization"},         //
-                                                                   {"value", header_authorization}}  //
-                                                              }}}}}},
+            {"session_initiation",
+             {{"node_api",
+               {{"url", node_api_url},
+                {"headers",
+                 json::array{
+                     {{"key", "Authorization"},
+                      {"value", header_authorization}}}}}}}},
             {"direction", "send"},
-            {"assets", {//
-                        {"destination_root", test_env.conf_str({"node", "folder_upload"})},
-                        {"paths", json::array()}}}};
-        test_env.add_files_to_ts(transfer_spec_v2["assets"].as_object()["paths"].as_array(), false);
+            {"assets",
+             {{"destination_root", test_env.conf_str({"node", "folder_upload"})},
+              {"paths", json::array()}}}};
+        test_env.add_files_to_ts(transfer_spec_v2["assets"].as_object()["paths"].as_array());
         test_env.start_transfer_and_wait(transfer_spec_v2);
         return 0;
     } catch (const std::exception& e) {
