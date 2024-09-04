@@ -4,7 +4,7 @@
 int main(const int argc, const char* const argv[]) {
     try {
         utils::TestEnvironment test_env(argc, argv);
-        test_env.connect();
+        test_env.startup();
         const std::string node_api_url = test_env.conf_str({"node", "url"});
         const std::string header_authorization = utils::Rest::basic_auth_header(test_env.conf_str({"node", "user"}), test_env.conf_str({"node", "pass"}));
         json::object transfer_spec_v2 = {
