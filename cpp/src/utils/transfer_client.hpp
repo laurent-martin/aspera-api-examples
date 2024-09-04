@@ -37,7 +37,7 @@ class TransferClient {
     std::string _server_address;
     uint16_t _server_port;
     std::string _channel_address;
-    std::unique_ptr<boost::process::child> _transfer_daemon;
+    std::unique_ptr<boost::process::child> _daemon_process;
     std::unique_ptr<trsdk::TransferService::Stub> _transfer_service;
 
    public:
@@ -47,7 +47,7 @@ class TransferClient {
         : _tools(tools),
           _auto_shutdown(shutdown),
           _daemon_log(_tools.log_folder_path() / DAEMON_LOG_FILE),
-          _transfer_daemon(nullptr),
+          _daemon_process(nullptr),
           _transfer_service(nullptr) {
         auto sdk_url = _tools.conf_str({"trsdk", "url"});
         auto result = boost::urls::parse_uri(sdk_url);
@@ -67,8 +67,7 @@ class TransferClient {
         }
     }
 
-    // Start the transfer SDK daemon process
-    void start_daemon() {
+    void create_config_file(const std::string& conf_file) {
         // Prepare daemon configuration file
         const json::object config_info = {
             {"address", _server_address},
@@ -84,6 +83,14 @@ class TransferClient {
                {{"dir", _tools.log_folder_path().string()},
                 {"level", 2}}}}}};
         const std::string config_data = json::serialize(config_info);
+        LOG(info) << LOG_ITEM("config") << config_data;
+        std::ofstream conf_stream(conf_file);
+        conf_stream << config_data;
+        conf_stream.close();
+    }
+
+    // Start the transfer SDK daemon process
+    void start_daemon() {
         const std::string file_base = _tools.log_folder_path() / TRANSFER_SDK_DAEMON;
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
@@ -95,26 +102,23 @@ class TransferClient {
         LOG(info) << LOG_ITEM("daemon log") << _daemon_log;
         LOG(info) << LOG_ITEM("ascp log") << (_tools.log_folder_path() / ASCP_LOG_FILE).string();
         LOG(info) << LOG_ITEM("command") << command;
-        LOG(info) << LOG_ITEM("config") << config_data;
-        std::ofstream conf_stream(conf_file);
-        conf_stream << config_data;
-        conf_stream.close();
+        create_config_file(conf_file);
         LOG(info) << "Starting daemon...";
         // Start daemon
-        _transfer_daemon = std::make_unique<boost::process::child>(boost::process::child(
+        _daemon_process = std::make_unique<boost::process::child>(boost::process::child(
             command,
             boost::process::std_out > out_file,
             boost::process::std_err > err_file));
         std::this_thread::sleep_for(std::chrono::seconds(2));
-        if (!_transfer_daemon->running()) {
-            _transfer_daemon->wait();
+        if (!_daemon_process->running()) {
+            _daemon_process->wait();
             LOG(error) << "Daemon not started.";
-            LOG(error) << "Exited with code: " << _transfer_daemon->exit_code();
+            LOG(error) << "Exited with code: " << _daemon_process->exit_code();
             LOG(error) << "Check daemon log: " << _daemon_log;
             LOG(error) << Tools::last_file_line(_daemon_log);
             throw std::runtime_error("daemon startup failed");
         }
-        LOG(info) << "Daemon started: " << _transfer_daemon->id();
+        LOG(info) << "Daemon started: " << _daemon_process->id();
     }
     void connect_to_daemon() {
         LOG(info) << "Connecting to daemon...";
@@ -149,11 +153,11 @@ class TransferClient {
         if (_transfer_service != nullptr) {
             _transfer_service = nullptr;
         }
-        if (_transfer_daemon != nullptr) {
+        if (_daemon_process != nullptr) {
             LOG(info) << "Shutting down daemon...";
-            _transfer_daemon->terminate();
-            _transfer_daemon->wait();
-            _transfer_daemon = nullptr;
+            _daemon_process->terminate();
+            _daemon_process->wait();
+            _daemon_process = nullptr;
         }
     }
 
