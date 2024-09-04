@@ -271,13 +271,14 @@ class TestEnvironment {
 
     void
     start_transfer_and_wait(const json::object& transfer_spec) {
+        // ensure daemon is started and we are connected
         startup();
         const std::string ts_json = json::serialize(transfer_spec);
         LOG(info) << LOG_ITEM("ts") << ts_json;
 
         // create a transfer request
         auto* transfer_config = new trsdk::TransferConfig;
-        transfer_config->set_loglevel(2);  // levels: 0 1 2
+        transfer_config->set_loglevel(2);  // ascp levels: 0 1 2
         trsdk::TransferRequest transfer_request;
         transfer_request.set_transfertype(trsdk::TransferType::FILE_REGULAR);
         transfer_request.set_allocated_config(transfer_config);
