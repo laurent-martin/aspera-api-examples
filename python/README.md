@@ -68,6 +68,7 @@ An adapter is kept for reference, but should not be used.
 
 Each of the sample programs are structured like this:
 
+* `import utils.tools` : `tools.py` is located in folder `src/utils` and provides utility functions
 * `import utils.transfer_client` : `transfer_client.py` is located in folder `src/utils`:
   * `test_env = utils.transfer_client.TransferClient()`
   * it reads the configuration file

@@ -26,9 +26,9 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 import transfer_pb2_grpc as transfer_manager_grpc  # noqa: E4
 import transfer_pb2 as transfer_manager  # noqa: E4
 
+TRANSFER_SDK_DAEMON = 'asperatransferd'
 DAEMON_LOG_FILE = "asperatransferd.log"
 ASCP_LOG_FILE = "aspera-scp-transfer.log"
-TRANSFER_SDK_DAEMON = 'asperatransferd'
 DEBUG_HTTP = False
 
 
@@ -59,8 +59,13 @@ class TransferClient:
         @return gRPC client
         '''
         # Prepare config and start
-        bin_folder = self._arch_folder
         log_folder = tempfile.gettempdir()
+        daemon_log_file = os.path.join(log_folder, DAEMON_LOG_FILE)
+        ascp_log_file = os.path.join(log_folder, ASCP_LOG_FILE)
+        tmp_file_base = os.path.join(log_folder, TRANSFER_SDK_DAEMON)
+        conf_file = f'{tmp_file_base}.conf'
+        out_file = f'{tmp_file_base}.out'
+        err_file = f'{tmp_file_base}.err'
         # see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
         config = {
             'address': self._server_address,
@@ -70,7 +75,7 @@ class TransferClient:
             'fasp_runtime': {
                 'use_embedded': False,
                 'user_defined': {
-                    'bin': bin_folder,
+                    'bin': self._arch_folder,
                     'etc': self._tools.get_path('trsdk_noarch'),
                 },
                 'log': {
@@ -79,26 +84,20 @@ class TransferClient:
                 },
             },
         }
-        tmp_file_base = os.path.join(log_folder, 'daemon')
         # dynamically create a config file
-        conf_file = f'{tmp_file_base}.conf'
         with open(conf_file, 'w') as the_file:
             the_file.write(json.dumps(config))
         command = [
-            os.path.join(bin_folder, TRANSFER_SDK_DAEMON),
+            os.path.join(self._arch_folder, TRANSFER_SDK_DAEMON),
             '--config',
             conf_file,
         ]
-        out_file = f'{tmp_file_base}.out'
-        err_file = f'{tmp_file_base}.err'
         time.sleep(1)
-        daemon_log_file = os.path.join(log_folder, DAEMON_LOG_FILE)
-        ascp_log_file = os.path.join(log_folder, ASCP_LOG_FILE)
         logging.info('Starting: %s', " ".join(command))
-        logging.info(f'stderr: %s', err_file)
-        logging.info(f'stdout: %s', out_file)
-        logging.info(f'sdk log: %s', daemon_log_file)
-        logging.info(f'xfer log: %s', ascp_log_file)
+        logging.info('stderr: %s', err_file)
+        logging.info('stdout: %s', out_file)
+        logging.info('sdk log: %s', daemon_log_file)
+        logging.info('xfer log: %s', ascp_log_file)
         self._transfer_daemon_process = subprocess.Popen(
             ' '.join(command),
             shell=True,
@@ -182,7 +181,7 @@ class TransferClient:
             logging.info('transfer status: %s', transfer_manager.TransferStatus.Name(status))
             # exit on first success or failure
             if status == transfer_manager.COMPLETED:
-                logging.info(f'completed transfer')
+                logging.info('completed transfer')
                 break
             if status == transfer_manager.FAILED:
                 raise Exception(transfer_info.message)
