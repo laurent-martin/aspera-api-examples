@@ -5,12 +5,10 @@
 # Simplified function to start transfer and wait for it to finish
 import os
 import sys
-import yaml
 import json
 import time
 import grpc
 import logging
-import tempfile
 import subprocess
 import utils.tools
 from urllib.parse import urlparse
@@ -21,6 +19,8 @@ sys.path.insert(1, os.environ['PY_DIR_GRPC'])
 
 # before stub import: protobuf: avoid incompatibility of version, use pure python implementation
 os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
+# avoid message: 'Other threads are currently calling into gRPC, skipping fork() handlers'
+os.environ['GRPC_ENABLE_FORK_SUPPORT'] = 'false'
 
 # import gRPC stubs (Transfer SDK API)
 import transfer_pb2_grpc as transfer_manager_grpc  # noqa: E4
@@ -37,20 +37,39 @@ class TransferClient:
 
     def __init__(self, tools):
         self._tools = tools
-        # Global vars
+        self._daemon_log = os.path.join(
+            self._tools._log_folder, DAEMON_LOG_FILE)
         self._transfer_daemon_process = None
         self._transfer_service = None
 
-        # folder with executables
-        self._arch_folder = os.path.join(self._tools.get_path('sdk_root'), self._tools.conf('misc', 'platform'))
-        assert os.path.exists(
-            self._arch_folder
-        ), f'ERROR: SDK not found in: {self._arch_folder}.{self._error_hint}'
+        sdk_url = urlparse(self._tools.conf('trsdk', 'url'))
+        self._server_address = sdk_url.hostname
+        self._server_port = sdk_url.port
+        self._channel_address = f'{sdk_url.hostname}:{sdk_url.port}'
 
-        grpc_url = urlparse(self._tools.conf('trsdk', 'url'))
-        self._channel_address = f'{grpc_url.hostname}:{grpc_url.port}'
-        self._server_address = grpc_url.hostname
-        self._server_port = grpc_url.port
+    def create_config_file(self, conf_file):
+        # see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
+        config_info = {
+            'address': self._server_address,
+            'port': self._server_port,
+            'log_directory': self._tools._log_folder,
+            'log_level': 'debug',
+            'fasp_runtime': {
+                'use_embedded': False,
+                'user_defined': {
+                    'bin': self._tools._arch_folder,
+                    'etc': self._tools.get_path('trsdk_noarch'),
+                },
+                'log': {
+                    'dir': self._tools._log_folder,
+                    'level': 2,
+                },
+            },
+        }
+        config_data = json.dumps(config_info)
+        logging.info('config: %s', config_data)
+        with open(conf_file, 'w') as the_file:
+            the_file.write(config_data)
 
     def start_daemon(self):
         '''
@@ -58,48 +77,26 @@ class TransferClient:
 
         @return gRPC client
         '''
-        # Prepare config and start
-        log_folder = tempfile.gettempdir()
-        daemon_log_file = os.path.join(log_folder, DAEMON_LOG_FILE)
-        ascp_log_file = os.path.join(log_folder, ASCP_LOG_FILE)
-        tmp_file_base = os.path.join(log_folder, TRANSFER_SDK_DAEMON)
-        conf_file = f'{tmp_file_base}.conf'
-        out_file = f'{tmp_file_base}.out'
-        err_file = f'{tmp_file_base}.err'
-        # see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
-        config = {
-            'address': self._server_address,
-            'port': self._server_port,
-            'log_directory': log_folder,
-            'log_level': 'debug',
-            'fasp_runtime': {
-                'use_embedded': False,
-                'user_defined': {
-                    'bin': self._arch_folder,
-                    'etc': self._tools.get_path('trsdk_noarch'),
-                },
-                'log': {
-                    'dir': log_folder,
-                    'level': 2,
-                },
-            },
-        }
-        # dynamically create a config file
-        with open(conf_file, 'w') as the_file:
-            the_file.write(json.dumps(config))
-        command = [
-            os.path.join(self._arch_folder, TRANSFER_SDK_DAEMON),
+        file_base = os.path.join(
+            self._tools._log_folder, TRANSFER_SDK_DAEMON)
+        conf_file = f'{file_base}.conf'
+        out_file = f'{file_base}.out'
+        err_file = f'{file_base}.err'
+        command = ' '.join([
+            os.path.join(self._tools._arch_folder, TRANSFER_SDK_DAEMON),
             '--config',
             conf_file,
-        ]
-        time.sleep(1)
-        logging.info('Starting: %s', " ".join(command))
-        logging.info('stderr: %s', err_file)
-        logging.info('stdout: %s', out_file)
-        logging.info('sdk log: %s', daemon_log_file)
-        logging.info('xfer log: %s', ascp_log_file)
+        ])
+        logging.info('daemon out: %s', out_file)
+        logging.info('daemon err: %s', err_file)
+        logging.info('daemon log: %s', self._daemon_log)
+        logging.info('ascp log: %s', os.path.join(
+            self._tools._log_folder, ASCP_LOG_FILE))
+        logging.info('command: %s', command)
+        self.create_config_file(conf_file)
+        logging.info('Starting daemon...')
         self._transfer_daemon_process = subprocess.Popen(
-            ' '.join(command),
+            command,
             shell=True,
             stdout=open(out_file, 'w'),
             stderr=open(err_file, 'w'),
@@ -107,30 +104,32 @@ class TransferClient:
         # give time for startup
         time.sleep(2)
         exit_status = self._transfer_daemon_process.poll()
-        if exit_status is None:
-            logging.info('transfer daemon has been started: %s', self._transfer_daemon_process.pid)
-        else:
-            logging.error('transfer daemon failed to start, exit code = %s', exit_status)
-            logging.error(utils.tools.last_file_line(daemon_log_file))
-            raise Exception('transfer daemon failed to start')
+        if exit_status is not None:
+            logging.error('Daemon not started.')
+            logging.error('Exited with code: %s', exit_status)
+            logging.error('Check daemon log: %s', self._daemon_log)
+            logging.error(utils.tools.last_file_line(self._daemon_log))
+            raise Exception('daemon startup failed')
+        logging.info('Daemon started: %s', self._transfer_daemon_process.pid)
 
     def connect_to_daemon(self):
         '''Connect to transfer manager daemon'''
-        # avoid message: 'Other threads are currently calling into gRPC, skipping fork() handlers'
-        os.environ['GRPC_ENABLE_FORK_SUPPORT'] = 'false'
-        # create a connection to the transfer manager daemon, in case it is running
+        logging.info('Connecting to %s on: %s ...',
+                     TRANSFER_SDK_DAEMON, self._channel_address)
+        # create a connection to the transfer manager daemon
         channel = grpc.insecure_channel(self._channel_address)
-        logging.info('Connecting to %s using gRPC: %s...', TRANSFER_SDK_DAEMON, self._channel_address)
         try:
             grpc.channel_ready_future(channel).result(timeout=5)
             logging.info('SUCCESS: connected')
-            # channel is ok, let's get the stub
-            self._transfer_service = transfer_manager_grpc.TransferServiceStub(channel)
         except grpc.FutureTimeoutError:
             logging.error('Failed to connect')
-            raise Exception('Failed to connect to transfer manager daemon')
+            raise Exception('failed to connect.')
+        # channel is ok, let's get the stub
+        self._transfer_service = transfer_manager_grpc.TransferServiceStub(
+            channel)
+        logging.info('Connected !')
 
-    def setup(self):
+    def startup(self):
         '''Start and connect to transfer manager daemon'''
         if self._transfer_service is None:
             self.start_daemon()
@@ -139,30 +138,30 @@ class TransferClient:
 
     def shutdown(self):
         '''Shutdown transfer manager daemon, if needed'''
+        if self._transfer_service is None:
+            self._transfer_service = None
         if self._transfer_daemon_process is not None:
+            logging.info('Shutting down daemon...')
             # self._transfer_daemon_process.send_signal(signal.CTRL_C_EVENT)
             # self._transfer_daemon_process.terminate()
             self._transfer_daemon_process.kill()
             self._transfer_daemon_process.wait()
             self._transfer_daemon_process = None
-            logging.info('transfer daemon has been terminated')
-        else:
-            logging.error('transfer daemon not started by this process, or already terminated')
 
     def start_transfer(self, transfer_spec):
         '''Start a transfer and return transfer id'''
-        logging.debug('ts = %s', transfer_spec)
+        ts_json = json.dumps(transfer_spec)
+        logging.debug('ts: %s', ts_json)
         # create a transfer request
         transfer_request = transfer_manager.TransferRequest(
             transferType=transfer_manager.FILE_REGULAR,
             config=transfer_manager.TransferConfig(),
-            transferSpec=json.dumps(transfer_spec),
+            transferSpec=ts_json,
         )
         # send start transfer request to transfer manager daemon
-        transfer_response = self._transfer_service.StartTransfer(transfer_request)
-        if transfer_manager.TransferStatus.FAILED == transfer_response.status:
-            logging.error(transfer_response.error.description)
-            exit(1)
+        transfer_response = self._transfer_service.StartTransfer(
+            transfer_request)
+        self.throw_on_error(transfer_response.status, transfer_response.error)
         return transfer_response.transferId
 
     def wait_transfer(self, transfer_id):
@@ -170,25 +169,29 @@ class TransferClient:
         logging.debug('transfer started with id %s', transfer_id)
         # monitor transfer status
         for transfer_info in self._transfer_service.MonitorTransfers(
-            transfer_manager.RegistrationRequest(
-                filters=[transfer_manager.RegistrationFilter(
-                    transferId=[transfer_id])]
-            )
-        ):
-            logging.debug('transfer info %s', transfer_info)
+                transfer_manager.RegistrationRequest(
+                    filters=[transfer_manager.RegistrationFilter(
+                        transferId=[transfer_id])]
+                )):
+            # logging.debug('transfer info %s', transfer_info)
             # check transfer status in response, and exit if it's done
             status = transfer_info.status
-            logging.info('transfer status: %s', transfer_manager.TransferStatus.Name(status))
-            # exit on first success or failure
+            logging.info('transfer: %s',
+                         transfer_manager.TransferStatus.Name(status))
+            self.throw_on_error(status, transfer_info.error)
             if status == transfer_manager.COMPLETED:
-                logging.info('completed transfer')
                 break
-            if status == transfer_manager.FAILED:
-                raise Exception(transfer_info.message)
 
     def start_transfer_and_wait(self, t_spec):
         '''One-call simplified procedure to start daemon, transfer and wait for it to finish'''
         # TODO: remove when transfer sdk bug fixed
         t_spec['http_fallback'] = False
-        self.setup()
+        self.startup()
         self.wait_transfer(self.start_transfer(t_spec))
+
+    def throw_on_error(self, status, error):
+        if status == transfer_manager.TransferStatus.FAILED:
+            logging.error(utils.tools.last_file_line(self._daemon_log))
+            raise Exception("transfer failed: " + error.description)
+        if status == transfer_manager.TransferStatus.UNKNOWN_STATUS:
+            raise Exception("unknown transfer id: " + error.description)

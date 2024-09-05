@@ -30,6 +30,7 @@ inline constexpr const int MAX_CONNECTION_WAIT_SEC = 10;
 // - conf file generation, startup and shutdown of asperatransferd
 // - transfer of files and monitoring
 class TransferClient {
+   private:
 #define LOG(level) LOGGER(_tools.log(), level)
     Tools& _tools;
     const bool _auto_shutdown;
@@ -37,7 +38,7 @@ class TransferClient {
     std::string _server_address;
     uint16_t _server_port;
     std::string _channel_address;
-    std::unique_ptr<boost::process::child> _daemon_process;
+    std::unique_ptr<boost::process::child> _transfer_daemon_process;
     std::unique_ptr<trsdk::TransferService::Stub> _transfer_service;
 
    public:
@@ -47,7 +48,7 @@ class TransferClient {
         : _tools(tools),
           _auto_shutdown(shutdown),
           _daemon_log(_tools.log_folder_path() / DAEMON_LOG_FILE),
-          _daemon_process(nullptr),
+          _transfer_daemon_process(nullptr),
           _transfer_service(nullptr) {
         auto sdk_url = _tools.conf_str({"trsdk", "url"});
         auto result = boost::urls::parse_uri(sdk_url);
@@ -95,8 +96,7 @@ class TransferClient {
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
-        const std::string daemon_path = _tools.arch_folder_path() / TRANSFER_SDK_DAEMON;
-        const std::string command = daemon_path + " --config " + conf_file;
+        const std::string command = std::string(_tools.arch_folder_path() / TRANSFER_SDK_DAEMON) + " --config " + conf_file;
         LOG(info) << LOG_ITEM("daemon out") << out_file;
         LOG(info) << LOG_ITEM("daemon err") << err_file;
         LOG(info) << LOG_ITEM("daemon log") << _daemon_log;
@@ -105,23 +105,23 @@ class TransferClient {
         create_config_file(conf_file);
         LOG(info) << "Starting daemon...";
         // Start daemon
-        _daemon_process = std::make_unique<boost::process::child>(boost::process::child(
+        _transfer_daemon_process = std::make_unique<boost::process::child>(boost::process::child(
             command,
             boost::process::std_out > out_file,
             boost::process::std_err > err_file));
         std::this_thread::sleep_for(std::chrono::seconds(2));
-        if (!_daemon_process->running()) {
-            _daemon_process->wait();
+        if (!_transfer_daemon_process->running()) {
+            _transfer_daemon_process->wait();
             LOG(error) << "Daemon not started.";
-            LOG(error) << "Exited with code: " << _daemon_process->exit_code();
+            LOG(error) << "Exited with code: " << _transfer_daemon_process->exit_code();
             LOG(error) << "Check daemon log: " << _daemon_log;
             LOG(error) << Tools::last_file_line(_daemon_log);
             throw std::runtime_error("daemon startup failed");
         }
-        LOG(info) << "Daemon started: " << _daemon_process->id();
+        LOG(info) << "Daemon started: " << _transfer_daemon_process->id();
     }
     void connect_to_daemon() {
-        LOG(info) << "Connecting to daemon...";
+        LOG(info) << "Connecting to " << TRANSFER_SDK_DAEMON << " on: " << _channel_address << " ...";
         const auto channel = grpc::CreateChannel(_channel_address, grpc::InsecureChannelCredentials());
         _transfer_service = trsdk::TransferService::NewStub(channel);
         grpc_connectivity_state state;
@@ -153,20 +153,17 @@ class TransferClient {
         if (_transfer_service != nullptr) {
             _transfer_service = nullptr;
         }
-        if (_daemon_process != nullptr) {
+        if (_transfer_daemon_process != nullptr) {
             LOG(info) << "Shutting down daemon...";
-            _daemon_process->terminate();
-            _daemon_process->wait();
-            _daemon_process = nullptr;
+            _transfer_daemon_process->terminate();
+            _transfer_daemon_process->wait();
+            _transfer_daemon_process = nullptr;
         }
     }
 
-    void start_transfer_and_wait(const json::object& transfer_spec) {
-        // ensure daemon is started and we are connected
-        startup();
+    std::string start_transfer(const json::object& transfer_spec) {
         const std::string ts_json = json::serialize(transfer_spec);
         LOG(info) << LOG_ITEM("ts") << ts_json;
-
         // create a transfer request
         auto* transfer_config = new trsdk::TransferConfig;
         transfer_config->set_loglevel(2);  // ascp levels: 0 1 2
@@ -174,7 +171,6 @@ class TransferClient {
         transfer_request.set_transfertype(trsdk::TransferType::FILE_REGULAR);
         transfer_request.set_allocated_config(transfer_config);
         transfer_request.set_transferspec(ts_json);
-
         // send start transfer request to the transfer daemon
         grpc::ClientContext start_transfer_context;
         transfersdk::StartTransferResponse start_transfer_response;
@@ -182,6 +178,10 @@ class TransferClient {
         throw_on_error(start_transfer_response.status(), start_transfer_response.error());
         const std::string transfer_id = start_transfer_response.transferid();
         LOG(info) << "transfer id: " << transfer_id << ", status: " << TransferStatus_to_string(start_transfer_response.status());
+        return transfer_id;
+    }
+
+    void wait_transfer(const std::string& transfer_id) {
         // wait until finished, check every second
         while (true) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -196,6 +196,12 @@ class TransferClient {
             if (status == trsdk::TransferStatus::COMPLETED)
                 break;
         }
+    }
+
+    void start_transfer_and_wait(const json::object& transfer_spec) {
+        // ensure daemon is started and we are connected
+        startup();
+        wait_transfer(start_transfer(transfer_spec));
     }
 
     void throw_on_error(const trsdk::TransferStatus& status, const trsdk::Error& error) {

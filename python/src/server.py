@@ -9,7 +9,7 @@ import os
 from urllib.parse import urlparse
 
 test_env = utils.tools.Tools()
-transfer_client = utils.transfer_client.TransferClient(test_env).setup()
+transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:
     config = test_env.conf('server')

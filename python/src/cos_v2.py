@@ -6,7 +6,7 @@ import utils.transfer_client
 import logging
 
 test_env = utils.tools.Tools()
-transfer_client = utils.transfer_client.TransferClient(test_env).setup()
+transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:
     # get node information from config file

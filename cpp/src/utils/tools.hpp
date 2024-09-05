@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <magic_enum.hpp>
 
 namespace json = boost::json;
 
@@ -40,6 +41,12 @@ class Tools {
           _paths(load_yaml("paths", _top_folder_path / PATHS_FILE_REL)),
           _config(load_yaml("main_config", get_path("main_config"))),
           _arch_folder_path(get_path("sdk_root") / conf_str({"misc", "platform"})) {
+        auto log_level = conf_str({"misc", "level"});
+        auto opt_level = magic_enum::enum_cast<boost::log::trivial::severity_level>(log_level);
+        if (!opt_level.has_value()) {
+            throw std::invalid_argument("Invalid log level string: " + log_level);
+        }
+        boost::log::core::get()->set_filter(boost::log::trivial::severity >= opt_level.value());
         if (_file_list.empty()) {
             LOG(error) << "No file(s) to transfer provided.";
             throw std::runtime_error("ERROR");
@@ -157,7 +164,7 @@ class Tools {
 
     bool init_log() {
         boost::log::add_common_attributes();
-        boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::debug);
+        boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::info);
         boost::log::add_console_log(std::clog)->set_formatter(
             boost::log::expressions::stream
             // << boost::log::expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S") << " "        // .%f

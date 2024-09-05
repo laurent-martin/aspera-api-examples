@@ -68,7 +68,7 @@ def get_bearer(scope):
 
 
 test_env = utils.tools.Tools()
-transfer_client = utils.transfer_client.TransferClient(test_env).setup()
+transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:
     # get configuration parameters from config file

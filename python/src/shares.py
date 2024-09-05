@@ -7,7 +7,7 @@ import utils.rest
 import logging
 
 test_env = utils.tools.Tools()
-transfer_client = utils.transfer_client.TransferClient(test_env).setup()
+transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:
     # get file to upload from command line
