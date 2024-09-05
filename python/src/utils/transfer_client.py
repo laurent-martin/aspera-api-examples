@@ -12,8 +12,7 @@ import grpc
 import logging
 import tempfile
 import subprocess
-import base64
-from http.client import HTTPConnection
+import utils.tools
 from urllib.parse import urlparse
 
 
@@ -27,74 +26,31 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 import transfer_pb2_grpc as transfer_manager_grpc  # noqa: E4
 import transfer_pb2 as transfer_manager  # noqa: E4
 
-# config file with sub-paths in project's root folder
-PATHS_FILE = 'config/paths.yaml'
+DAEMON_LOG_FILE = "asperatransferd.log"
+ASCP_LOG_FILE = "aspera-scp-transfer.log"
 TRANSFER_SDK_DAEMON = 'asperatransferd'
 DEBUG_HTTP = False
 
 
-class TestEnvironment:
-    '''Test Environment'''
+class TransferClient:
+    '''Transfer Client using Aspera Transfer SDK'''
 
-    def __init__(self):
+    def __init__(self, tools):
+        self._tools = tools
         # Global vars
         self._transfer_daemon_process = None
         self._transfer_service = None
-        self._file_list = sys.argv[1:]
-
-        assert self._file_list, f'ERROR: Usage: {sys.argv[0]} <files to send>'
-        self._top_folder = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), '..', '..', '..'))
-
-        # read project's relative paths config file
-        self._paths = yaml.load(
-            open(os.path.join(self._top_folder, *PATHS_FILE.split('/'))), Loader=yaml.FullLoader
-        )
-
-        # Error hint to help user to fix the issue
-        self._error_hint = f'\nPlease check: SDK installed in {
-            self._paths["sdk_root"]}, configuration file: {self._paths["main_config"]}'
-
-        # Read configuration from configuration file
-        self._config = yaml.load(open(self.get_path('main_config')), Loader=yaml.FullLoader)
 
         # folder with executables
-        self._arch_folder = os.path.join(self.get_path('sdk_root'), self._config['misc']['platform'])
+        self._arch_folder = os.path.join(self._tools.get_path('sdk_root'), self._tools.conf('misc', 'platform'))
         assert os.path.exists(
             self._arch_folder
         ), f'ERROR: SDK not found in: {self._arch_folder}.{self._error_hint}'
 
-        grpc_url = urlparse(self._config['trsdk']['url'])
+        grpc_url = urlparse(self._tools.conf('trsdk', 'url'))
         self._channel_address = f'{grpc_url.hostname}:{grpc_url.port}'
         self._server_address = grpc_url.hostname
         self._server_port = grpc_url.port
-
-        # set logger for debugging
-        logging.basicConfig(
-            format='%(levelname)-8s %(message)s',
-            level=logging.INFO
-        )
-        # debug http: see: https://stackoverflow.com/questions/10588644
-        if DEBUG_HTTP:
-            HTTPConnection.debuglevel = 1
-            requests_log = logging.getLogger('requests.packages.urllib3')
-            requests_log.setLevel(logging.DEBUG)
-            requests_log.propagate = True
-
-    def file_list(self):
-        '''Get list of files to transfer'''
-        return self._file_list
-
-    def get_path(self, name):
-        '''Get configuration sub-path in project's root folder'''
-        item_path = os.path.join(self._top_folder, *self._paths[name].split('/'))
-        assert os.path.exists(item_path), f'ERROR: {item_path} not found.{self._error_hint}'
-        return item_path
-
-    def get_configuration(self, key):
-        '''Get configuration value for specific app'''
-        assert key in self._config, f'configuration for {key} is missing'
-        return self._config[key]
 
     def start_daemon(self):
         '''
@@ -115,7 +71,7 @@ class TestEnvironment:
                 'use_embedded': False,
                 'user_defined': {
                     'bin': bin_folder,
-                    'etc': self.get_path('trsdk_noarch'),
+                    'etc': self._tools.get_path('trsdk_noarch'),
                 },
                 'log': {
                     'dir': log_folder,
@@ -136,11 +92,13 @@ class TestEnvironment:
         out_file = f'{tmp_file_base}.out'
         err_file = f'{tmp_file_base}.err'
         time.sleep(1)
+        daemon_log_file = os.path.join(log_folder, DAEMON_LOG_FILE)
+        ascp_log_file = os.path.join(log_folder, ASCP_LOG_FILE)
         logging.info('Starting: %s', " ".join(command))
         logging.info(f'stderr: %s', err_file)
         logging.info(f'stdout: %s', out_file)
-        logging.info(f'sdk log: %s/asperatransferd.log', log_folder)
-        logging.info(f'xfer log: %s/aspera-scp-transfer.log', log_folder)
+        logging.info(f'sdk log: %s', daemon_log_file)
+        logging.info(f'xfer log: %s', ascp_log_file)
         self._transfer_daemon_process = subprocess.Popen(
             ' '.join(command),
             shell=True,
@@ -154,6 +112,7 @@ class TestEnvironment:
             logging.info('transfer daemon has been started: %s', self._transfer_daemon_process.pid)
         else:
             logging.error('transfer daemon failed to start, exit code = %s', exit_status)
+            logging.error(utils.tools.last_file_line(daemon_log_file))
             raise Exception('transfer daemon failed to start')
 
     def connect_to_daemon(self):
@@ -234,14 +193,3 @@ class TestEnvironment:
         t_spec['http_fallback'] = False
         self.setup()
         self.wait_transfer(self.start_transfer(t_spec))
-
-    def basic_authorization(self, username, password):
-        '''Create basic auth header'''
-        return f'Basic {base64.b64encode(f"{username}:{password}".encode()).decode()}'
-
-    def basic_auth_header_key_value(self, username, password):
-        '''Create basic auth header key and value for transfer SDK'''
-        return {
-            'key': 'Authorization',
-            'value': self.basic_authorization(username, password),
-        }

@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # transfer files with Aspera HSTS using SSH authentication
-import utils.test_environment
+import utils.tools
+import utils.transfer_client
 import logging
 import tempfile
 import os
 from urllib.parse import urlparse
 
-test_env = utils.test_environment.TestEnvironment().setup()
+test_env = utils.tools.Tools()
+transfer_client = utils.transfer_client.TransferClient(test_env).setup()
 
 try:
-    config = test_env.get_configuration('server')
+    config = test_env.conf('server')
 
     # where transferred files will be stored
     my_local_folder = tempfile.gettempdir()
@@ -23,7 +25,7 @@ try:
     remote_user = config['user']
     remote_pass = config['pass']
 
-    test_env._shutdown_after_transfer = False
+    transfer_client._shutdown_after_transfer = False
 
     # Example 1: download
     # Instead of using the soon deprecated FaspManager1 Python lib, let's use the transfer spec
@@ -38,7 +40,7 @@ try:
         'destination_root': my_local_folder,
         'paths': [{'source': config['file_download']}],
     }
-    test_env.start_transfer_and_wait(t_spec_download)
+    transfer_client.start_transfer_and_wait(t_spec_download)
 
     # location of downloaded file
     local_file = os.path.join(my_local_folder, os.path.basename(config['file_download']))
@@ -56,7 +58,7 @@ try:
         'paths': [{'source': local_file}],
         'tags': {'mysample_tag': 'hello'},
     }
-    test_env.start_transfer_and_wait(t_spec_upload)
+    transfer_client.start_transfer_and_wait(t_spec_upload)
     # check file is uploaded by connecting to: http://demo.asperasoft.com/aspera/user/ with same creds
 
     # Example 3: upload: single file upload to non-existing folder
@@ -66,13 +68,13 @@ try:
     logging.info('======Test 3: upload file to new folder')
     t_spec_upload['destination_root'] = config['folder_upload']+'/new_folder'
     t_spec_upload['create_dir'] = True
-    test_env.start_transfer_and_wait(t_spec_upload)
+    transfer_client.start_transfer_and_wait(t_spec_upload)
 
     # Example 4: upload: send to sub folder, but using file pairs
     logging.info('======Test 4: upload file and rename')
     t_spec_upload['destination_root'] = config['folder_upload']
     del t_spec_upload['create_dir']
     t_spec_upload['paths'] = [{'source': local_file, 'destination': 'xxx/newfilename.ext'}]
-    test_env.start_transfer_and_wait(t_spec_upload)
+    transfer_client.start_transfer_and_wait(t_spec_upload)
 finally:
-    test_env.shutdown()
+    transfer_client.shutdown()

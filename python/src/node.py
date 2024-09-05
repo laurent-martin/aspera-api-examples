@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Upload files using an Aspera Transfer token, generated using node API (upload_setup)
-import utils.test_environment
+import utils.tools
+import utils.transfer_client
 import utils.rest
 import logging
 
-test_env = utils.test_environment.TestEnvironment().setup()
+test_env = utils.tools.Tools()
+transfer_client = utils.transfer_client.TransferClient(test_env).setup()
 
 try:
     # get node information from config file
-    config = test_env.get_configuration('node')
+    config = test_env.conf('node')
 
     node_api = utils.rest.Rest(
         config['url'],
@@ -36,6 +38,6 @@ try:
         t_spec['paths'].append({'source': f})
 
     # start transfer, here we use the FASP Manager, but the newer Transfer SDK can be used as well
-    test_env.start_transfer_and_wait(t_spec)
+    transfer_client.start_transfer_and_wait(t_spec)
 finally:
-    test_env.shutdown()
+    transfer_client.shutdown()

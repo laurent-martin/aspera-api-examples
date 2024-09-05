@@ -2,13 +2,15 @@
 # laurent.martin.aspera@fr.ibm.com
 # Upload files Shares (Node) API and transfer spec v2
 # Note: Transfer SDK may have a bug that make this work only if the share name is equal to the folder name on node.
-import utils.test_environment
+import utils.tools
+import utils.transfer_client
 
-test_env = utils.test_environment.TestEnvironment().setup()
+test_env = utils.tools.Tools()
+transfer_client = utils.transfer_client.TransferClient(test_env).setup()
 
 try:
     # get Shares information from config file
-    config = test_env.get_configuration('shares')
+    config = test_env.conf('shares')
 
     shares_api_url = f'{config['url']}/node_api'
     destination_folder = config['folder_upload']
@@ -23,7 +25,7 @@ try:
             'node_api': {
                 'url': shares_api_url,
                 'headers': [
-                    test_env.basic_auth_header_key_value(config['user'], config['pass'])
+                    tools.basic_auth_header_key_value(config['user'], config['pass'])
                 ]
             }
         },
@@ -45,6 +47,6 @@ try:
              'destination': destination})
 
     # start transfer, using Transfer SDK
-    test_env.start_transfer_and_wait(t_spec)
+    transfer_client.start_transfer_and_wait(t_spec)
 finally:
-    test_env.shutdown()
+    transfer_client.shutdown()

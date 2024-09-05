@@ -68,12 +68,12 @@ An adapter is kept for reference, but should not be used.
 
 Each of the sample programs are structured like this:
 
-* `import utils.test_environment` : `test_environment.py` is located in folder `src/utils`:
-  * `test_env = utils.test_environment.TestEnvironment()`
+* `import utils.transfer_client` : `transfer_client.py` is located in folder `src/utils`:
+  * `test_env = utils.transfer_client.TransferClient()`
   * it reads the configuration file
   * setup debug logging
   * defines the method: `start_transfer_and_wait` which takes a **transfer_spec** as argument to start a transfer.
-* get configuration, urls, username, credentials, secrets, from test_environment.CONFIG
+* get configuration, urls, username, credentials, secrets, from transfer_client.CONFIG
 * call application API to build a **transfer_spec**
 * call `start_transfer_and_wait` with this **transfer_spec** to start a transfer
 

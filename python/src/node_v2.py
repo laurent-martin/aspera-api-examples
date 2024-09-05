@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Upload files using node API and transfer spec v2
-import utils.test_environment
+import utils.tools
+import utils.transfer_client
 
-test_env = utils.test_environment.TestEnvironment().setup()
+test_env = utils.tools.Tools()
+transfer_client = utils.transfer_client.TransferClient(test_env).setup()
 
 try:
     # get node information from config file
-    config = test_env.get_configuration('node')
+    config = test_env.conf('node')
 
     # prepare transfer spec v2 for COS
     t_spec = {
@@ -16,7 +18,7 @@ try:
             'node_api': {
                 'url': config['url'],
                 'headers': [
-                    test_env.basic_auth_header_key_value(config['user'], config['pass'])
+                    utils.tools.basic_auth_header_key_value(config['user'], config['pass'])
                 ]
             }
         },
@@ -32,6 +34,6 @@ try:
         t_spec['assets']['paths'].append({'source': f})
 
     # start transfer, using Transfer SDK
-    test_env.start_transfer_and_wait(t_spec)
+    transfer_client.start_transfer_and_wait(t_spec)
 finally:
-    test_env.shutdown()
+    transfer_client.shutdown()

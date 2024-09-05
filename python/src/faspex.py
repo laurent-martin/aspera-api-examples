@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Send a package using Faspex 4 API v3
-import utils.test_environment
+import utils.tools
+import utils.transfer_client
 import utils.rest
 import logging
 
-test_env = utils.test_environment.TestEnvironment().setup()
+test_env = utils.tools.Tools()
+transfer_client = utils.transfer_client.TransferClient(test_env).setup()
 
 try:
     # get configuration parameters from config file
-    config = test_env.get_configuration('faspex')
+    config = test_env.conf('faspex')
 
     faspex_api = utils.rest.Rest(
         config['url'],
@@ -45,6 +47,6 @@ try:
         t_spec['paths'].append({'source': f})
 
     # send files into package
-    test_env.start_transfer_and_wait(t_spec)
+    transfer_client.start_transfer_and_wait(t_spec)
 finally:
-    test_env.shutdown()
+    transfer_client.shutdown()

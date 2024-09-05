@@ -10,7 +10,7 @@ PYENV_ACTIVATE=$(PYENV_DIR)bin/activate
 SRC=./src/
 # python grpc source code folder used by sample code
 PY_DIR_GRPC=$(PYENV_DIR)grpc_aspera/
-# this env var is used in test_environment.py
+# this env var is used in transfer_client.py
 export PY_DIR_GRPC
 # python grpc source code files, generated from proto file, also present in SDK
 PY_SRCS_GRPC=transfer_pb2.py transfer_pb2_grpc.py
@@ -32,8 +32,9 @@ $(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(PYENV_ACTIVATE) $(PY_FILES_GRPC) $(GBL_F
 $(PYENV_ACTIVATE):
 	python3 -m venv $(PYENV_DIR)
 	source $(PYENV_ACTIVATE) && pip3 install -r $(SRC)requirements.txt
-# make COMPILE_PROTO=yes
-ifdef COMPILE_PROTO
+# make COMPILE_PROTO=no
+COMPILE_PROTO=yes
+ifeq ($(COMPILE_PROTO),yes)
 $(PY_FILES_GRPC): $(SDK_FILE_PROTO) $(PYENV_ACTIVATE)
 	mkdir -p $(PY_DIR_GRPC)
 	source $(PYENV_ACTIVATE) && python -m grpc_tools.protoc \

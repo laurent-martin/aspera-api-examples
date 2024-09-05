@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Upload files to COS using COS embedded Aspera and Aspera Gen3 Node API
-import utils.test_environment
+import utils.tools
+import utils.transfer_client
 import utils.helper_aspera_cos
 import utils.rest
 # import json
 
 destination_folder = '/'
 
-test_env = utils.test_environment.TestEnvironment().setup()
+test_env = utils.tools.Tools()
+transfer_client = utils.transfer_client.TransferClient(test_env).setup()
 
 try:
     # get file to upload from command line
     files_to_upload = test_env.file_list()
 
     # get Aspera Transfer Service Node information using service credential file
-    # config=test_env.get_configuration('coscreds')
+    # config=test_env.conf('coscreds')
     # with open(config['service_credential_file']) as f:
     #    credentials = json.load(f)
     # info=utils.helper_aspera_cos.from_service_credentials(credentials=credentials,region=config['region'])
     # cos_node_info=utils.helper_aspera_cos.node(bucket=config['bucket'],endpoint=info['endpoint'],key=info['key'],crn=info['crn'])
 
     # get configuration parameters from config file
-    config = test_env.get_configuration('cos')
+    config = test_env.conf('cos')
 
     # get Aspera Transfer Service Node information for specified COS bucket
     cos_node_info = utils.helper_aspera_cos.node(
@@ -58,6 +60,6 @@ try:
         t_spec['paths'].append({'source': f})
 
     # start transfer
-    test_env.start_transfer_and_wait(t_spec)
+    transfer_client.start_transfer_and_wait(t_spec)
 finally:
-    test_env.shutdown()
+    transfer_client.shutdown()

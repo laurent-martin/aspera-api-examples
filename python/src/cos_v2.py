@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Upload files to COS using COS embedded Aspera and Transfer SDK and transfer spec v2
-import utils.test_environment
+import utils.tools
+import utils.transfer_client
 import logging
 
-test_env = utils.test_environment.TestEnvironment().setup()
+test_env = utils.tools.Tools()
+transfer_client = utils.transfer_client.TransferClient(test_env).setup()
 
 try:
     # get node information from config file
-    config = test_env.get_configuration('cos')
+    config = test_env.conf('cos')
 
     # get file to upload from command line
     files_to_upload = test_env.file_list()
@@ -37,6 +39,6 @@ try:
         t_spec['assets']['paths'].append({'source': f})
 
     # start transfer, using Transfer SDK
-    test_env.start_transfer_and_wait(t_spec)
+    transfer_client.start_transfer_and_wait(t_spec)
 finally:
-    test_env.shutdown()
+    transfer_client.shutdown()

@@ -2,7 +2,8 @@
 # laurent.martin.aspera@fr.ibm.com
 # Faspex 5
 # Send a package to myself
-import utils.test_environment
+import utils.tools
+import utils.transfer_client
 import utils.rest
 import requests
 import requests.auth
@@ -74,11 +75,12 @@ def get_bearer(verify_cert):
     return f'Bearer {response_data["access_token"]}'
 
 
-test_env = utils.test_environment.TestEnvironment().setup()
+test_env = utils.tools.Tools()
+transfer_client = utils.transfer_client.TransferClient(test_env).setup()
 
 try:
     # get configuration parameters from config file
-    config = test_env.get_configuration('faspex5')
+    config = test_env.conf('faspex5')
 
     # verify certificate if not explicitly set to False
     verify_cert = not ('verify' in config and config['verify'] is False)
@@ -118,6 +120,6 @@ try:
         t_spec['paths'].append({'source': f})
 
     # Finally send files to package folder on server
-    test_env.start_transfer_and_wait(t_spec)
+    transfer_client.start_transfer_and_wait(t_spec)
 finally:
-    test_env.shutdown()
+    transfer_client.shutdown()

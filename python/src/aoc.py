@@ -2,7 +2,8 @@
 # laurent.martin.aspera@fr.ibm.com
 # Aspera on Cloud
 # Send a package to shared inbox (name in config file) in given workspace (name in config file)
-import utils.test_environment
+import utils.tools
+import utils.transfer_client
 import utils.rest
 import requests
 import requests.auth
@@ -66,11 +67,12 @@ def get_bearer(scope):
     return f'Bearer {response_data["access_token"]}'
 
 
-test_env = utils.test_environment.TestEnvironment().setup()
+test_env = utils.tools.Tools()
+transfer_client = utils.transfer_client.TransferClient(test_env).setup()
 
 try:
     # get configuration parameters from config file
-    config = test_env.get_configuration('aoc')
+    config = test_env.conf('aoc')
 
     aoc_api = utils.rest.Rest(
         base_url=AOC_API_BASE,
@@ -163,6 +165,6 @@ try:
         t_spec['paths'].append({'source': f})
 
     # Finally send files to package folder on server
-    test_env.start_transfer_and_wait(t_spec)
+    transfer_client.start_transfer_and_wait(t_spec)
 finally:
-    test_env.shutdown()
+    transfer_client.shutdown()

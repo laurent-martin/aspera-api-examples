@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Use Node API with COS credentials
-import utils.test_environment
+import utils.tools
+import utils.transfer_client
 import utils.helper_aspera_cos
 import utils.rest
 import logging
 
-test_env = utils.test_environment.TestEnvironment()
+test_env = utils.tools.Tools()
+transfer_client = utils.transfer_client.TransferClient(test_env)
 
 try:
     # get Aspera Transfer Service Node information for specified COS bucket
-    config = test_env.get_configuration('cos')
+    config = test_env.conf('cos')
 
     node_info = utils.helper_aspera_cos.node(
         bucket=config['bucket'],
