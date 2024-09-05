@@ -10,8 +10,6 @@ PYENV_ACTIVATE=$(PYENV_DIR)bin/activate
 SRC=./src/
 # python grpc source code folder used by sample code
 PY_DIR_GRPC=$(PYENV_DIR)grpc_aspera/
-# this env var is used in transfer_client.py
-export PY_DIR_GRPC
 # python grpc source code files, generated from proto file, also present in SDK
 PY_SRCS_GRPC=transfer_pb2.py transfer_pb2_grpc.py
 # python grpc source code files used by sample code with full path
@@ -25,7 +23,9 @@ all:: $(TEST_FLAGS)
 # 5. Run the sample
 $(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(PYENV_ACTIVATE) $(PY_FILES_GRPC) $(GBL_FILE_SAMPLE) $(SRC)%.py
 	@echo "== Test: $(notdir $@) ==========================="
-	source $(PYENV_ACTIVATE) && $(SRC)$(notdir $@).py $(GBL_FILE_SAMPLE)
+	source $(PYENV_ACTIVATE) && \
+		PYTHONPATH=$(PY_DIR_GRPC) \
+		$(SRC)$(notdir $@).py $(GBL_FILE_SAMPLE)
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
