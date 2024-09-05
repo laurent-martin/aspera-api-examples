@@ -1,6 +1,6 @@
-package client;
+package utils;
 
-// https://github.com/Mastercard/client-encryption-java/blob/main/src/main/java/com/mastercard/developer/utils/EncryptionUtils.java
+// https://github.com/Mastercard/client-encryption-java/blob/main/src/main/java/com/mastercard/developer/utils/Crypto.java
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -15,7 +15,7 @@ import java.util.Base64;
 /**
  * Utility class for loading keys. one can also use bouncy castle
  */
-public final class EncryptionUtils {
+public final class Crypto {
     private static final String PKCS_1_PEM_HEADER = "-----BEGIN RSA PRIVATE KEY-----";
     private static final String PKCS_1_PEM_FOOTER = "-----END RSA PRIVATE KEY-----";
     private static final String PKCS_8_PEM_HEADER = "-----BEGIN PRIVATE KEY-----";

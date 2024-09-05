@@ -11,6 +11,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import utils.Tools;
+import utils.TransferClient;
 
 public class PersistentUploadExample {
 	private static final Logger LOGGER = Logger.getLogger(PersistentUploadExample.class.getName());
@@ -19,15 +21,15 @@ public class PersistentUploadExample {
 
 		private int mSequenceIndex;
 
-		private final TestEnvironment mTestEnv;
+		private final TransferClient mTransferClient;
 
 		private final int mMax;
 
 		private final boolean mUseRealFile;
 
-		FileUploadTask(final TestEnvironment aTestEnv, int aMax) {
+		FileUploadTask(final TransferClient aTestEnv, final int aMax) {
 			mSequenceIndex = 0;
-			mTestEnv = aTestEnv;
+			mTransferClient = aTestEnv;
 			mMax = aMax;
 			// only real files are supported in persistent session
 			mUseRealFile = true;
@@ -56,19 +58,21 @@ public class PersistentUploadExample {
 				++mSequenceIndex;
 				// add paths of files to transfer to persistent session
 				final Transfer.TransferPathRequest transferPathRequest =
-						Transfer.TransferPathRequest.newBuilder().setTransferId(mTestEnv.transferId)
+						Transfer.TransferPathRequest.newBuilder()
+								.setTransferId(mTransferClient.transferId)
 								.addTransferPath(Transfer.TransferPath.newBuilder()
 										.setSource(filePath).setDestination(fileName).build())
 								.build();
 				LOGGER.log(Level.FINE, "T: adding transfer path");
 				// this will add to the transfer queue
-				mTestEnv.client.addTransferPaths(transferPathRequest);
+				mTransferClient.transferService.addTransferPaths(transferPathRequest);
 				LOGGER.log(Level.FINE, "T: end task");
 				if (mSequenceIndex == mMax) {
 					// end the persistent session
 					LOGGER.log(Level.FINE, "T: Limit reached, locking session. !!!");
-					mTestEnv.client.lockPersistentTransfer(Transfer.LockPersistentTransferRequest
-							.newBuilder().setTransferId(mTestEnv.transferId).build());
+					mTransferClient.transferService.lockPersistentTransfer(
+							Transfer.LockPersistentTransferRequest.newBuilder()
+									.setTransferId(mTransferClient.transferId).build());
 				}
 			} catch (final IOException e) {
 				LOGGER.log(Level.FINE, "T: ERROR: {0}", e.getMessage());
@@ -89,11 +93,11 @@ public class PersistentUploadExample {
 		if (args.length > 1) {
 			ms_between_files = Integer.parseInt(args[1]);
 		}
+		final Tools tools = new Tools();
 		// get simplified testing environment, ensures that transfer daemon is started
-		final TestEnvironment test_environment = new TestEnvironment();
+		final TransferClient transferClient = new TransferClient(tools);
 		// get test server address and credentials from configuration file
-		final Map<String, Object> server_conf =
-				(Map<String, Object>) test_environment.config.get("server");
+		final Map<String, Object> server_conf = (Map<String, Object>) tools.config.get("server");
 		final URI server_ssh_url = new URI(server_conf.get("url").toString());
 		// transfer spec version 1 (JSON)
 		final JSONObject transferSpec = new JSONObject().put("title", "server upload V1")
@@ -102,17 +106,16 @@ public class PersistentUploadExample {
 				.put("remote_user", server_conf.get("user"))
 				.put("remote_password", server_conf.get("pass")).put("direction", "send")
 				.put("destination_root", "/Upload");
+		transferClient.startup();
 		// start persistent transfer session
-		test_environment.start_transfer(transferSpec.toString(),
-				Transfer.TransferType.FILE_PERSISTENT);
-
-		final TimerTask timerTask = new FileUploadTask(test_environment, max_files);
+		transferClient.start_transfer(transferSpec, Transfer.TransferType.FILE_PERSISTENT);
+		final TimerTask timerTask = new FileUploadTask(transferClient, max_files);
 		final Timer timer = new Timer(true);
-		timer.scheduleAtFixedRate(timerTask, 1000, ms_between_files); // 1.task 2.delay(ms)
-																		// 3.period(ms)
+		// 1.task 2.delay(ms) 3.period(ms)
+		timer.scheduleAtFixedRate(timerTask, 1000, ms_between_files);
 		// This loops in getting statuses
-		test_environment.wait_transfer();
-		test_environment.shutdown();
+		transferClient.wait_transfer();
+		transferClient.shutdown();
 		LOGGER.log(Level.FINE, "L: exiting program");
 	}
 }

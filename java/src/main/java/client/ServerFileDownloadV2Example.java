@@ -4,15 +4,18 @@ import org.json.JSONObject;
 import org.json.JSONArray;
 import java.net.URI;
 import java.util.Map;
+import utils.TransferClient;
+import utils.Tools;
 
 // Receive one file from demo server using ssh credentials and transferspec v2
 public class ServerFileDownloadV2Example {
 	public static void main(String... args) throws java.net.URISyntaxException {
+		final Tools tools = new Tools();
 		// get simplified testing environment
-		final TestEnvironment test_environment = new TestEnvironment();
+		final TransferClient test_environment = new TransferClient(tools);
 		// get test server address and credentials
 		final Map<String, Object> server_conf =
-				(Map<String, Object>) test_environment.config.get("server");
+				(Map<String, Object>) tools.config.get("server");
 		final URI fasp_url = new URI(server_conf.get("url").toString());
 		// transfer spec version 2 (JSON)
 		final JSONObject transferSpecV2 = new JSONObject()//
@@ -31,6 +34,6 @@ public class ServerFileDownloadV2Example {
 										.put("source", server_conf.get("file_download").toString())//
 										.put("destination", "downloaded_file"))));
 		// execute transfer
-		test_environment.start_transfer_and_wait(transferSpecV2.toString());
+		test_environment.start_transfer_and_wait(transferSpecV2);
 	}
 }

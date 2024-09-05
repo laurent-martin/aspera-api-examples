@@ -1,5 +1,5 @@
-DIR_TOP=$(CURDIR)/../
-TEST_CASES=ServerFileUploadV1Example ServerFileDownloadV2Example COSFileUploadExample PersistentUploadExample Faspex5Send
+DIR_TOP=$(realpath ..)/
+TEST_CASES=ServerFileUploadV1Example ServerFileDownloadV2Example PersistentUploadExample Faspex5Send COSFileUploadExample
 include $(DIR_TOP)common.mak
 # same as in settings.gradle
 PROJECT_NAME=java_samples
