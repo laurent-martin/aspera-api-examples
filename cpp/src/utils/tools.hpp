@@ -51,10 +51,10 @@ class Tools {
             LOG(error) << "No file(s) to transfer provided.";
             throw std::runtime_error("ERROR");
         }
-        LOG(info) << LOG_ITEM("top_folder") << _top_folder_path.string();
-        LOG(info) << LOG_ITEM("arch_folder") << _arch_folder_path.string();
+        LOG(debug) << LOG_ITEM("top_folder") << _top_folder_path.string();
+        LOG(debug) << LOG_ITEM("arch_folder") << _arch_folder_path.string();
         for (const auto& one_file : _file_list) {
-            LOG(info) << LOG_ITEM("file") << one_file;
+            LOG(debug) << LOG_ITEM("file") << one_file;
         }
     }
 
@@ -158,7 +158,7 @@ class Tools {
     const std::filesystem::path _arch_folder_path;
 
     YAML::Node load_yaml(const char* const name, const std::filesystem::path& path) {
-        LOG(info) << std::setw(ITEM_WIDTH) << name << ": " << path.string();
+        LOG(debug) << std::setw(ITEM_WIDTH) << name << ": " << path.string();
         return YAML::LoadFile(path.string());
     }
 

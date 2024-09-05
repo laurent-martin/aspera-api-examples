@@ -12,17 +12,15 @@ import logging
 import subprocess
 import utils.tools
 from urllib.parse import urlparse
-
-
-# tell where to find gRPC stubs: transfer_pb2 and transfer_pb2_grpc
-sys.path.insert(1, os.environ['PY_DIR_GRPC'])
+import warnings
+warnings.filterwarnings("ignore", ".*obsolete", UserWarning, "google.protobuf.runtime_version")
 
 # before stub import: protobuf: avoid incompatibility of version, use pure python implementation
 os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 # avoid message: 'Other threads are currently calling into gRPC, skipping fork() handlers'
 os.environ['GRPC_ENABLE_FORK_SUPPORT'] = 'false'
 
-# import gRPC stubs (Transfer SDK API)
+# import gRPC stubs (Transfer SDK API), make sure it is in PYTHONPATH
 import transfer_pb2_grpc as transfer_manager_grpc  # noqa: E4
 import transfer_pb2 as transfer_manager  # noqa: E4
 
@@ -67,7 +65,7 @@ class TransferClient:
             },
         }
         config_data = json.dumps(config_info)
-        logging.info('config: %s', config_data)
+        logging.debug('config: %s', config_data)
         with open(conf_file, 'w') as the_file:
             the_file.write(config_data)
 
@@ -87,12 +85,12 @@ class TransferClient:
             '--config',
             conf_file,
         ])
-        logging.info('daemon out: %s', out_file)
-        logging.info('daemon err: %s', err_file)
-        logging.info('daemon log: %s', self._daemon_log)
-        logging.info('ascp log: %s', os.path.join(
+        logging.debug('daemon out: %s', out_file)
+        logging.debug('daemon err: %s', err_file)
+        logging.debug('daemon log: %s', self._daemon_log)
+        logging.debug('ascp log: %s', os.path.join(
             self._tools._log_folder, ASCP_LOG_FILE))
-        logging.info('command: %s', command)
+        logging.debug('command: %s', command)
         self.create_config_file(conf_file)
         logging.info('Starting daemon...')
         self._transfer_daemon_process = subprocess.Popen(
@@ -120,7 +118,6 @@ class TransferClient:
         channel = grpc.insecure_channel(self._channel_address)
         try:
             grpc.channel_ready_future(channel).result(timeout=5)
-            logging.info('SUCCESS: connected')
         except grpc.FutureTimeoutError:
             logging.error('Failed to connect')
             raise Exception('failed to connect.')

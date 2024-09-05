@@ -55,11 +55,11 @@ class TransferClient {
         if (!result) {
             throw std::runtime_error("Invalid trsdk url");
         }
-        LOG(info) << LOG_ITEM("grpc url") << result.value();
+        LOG(debug) << LOG_ITEM("grpc url") << result.value();
         _server_address = result.value().host();
         _server_port = std::stoi(result.value().port());
         _channel_address = _server_address + ":" + std::to_string(_server_port);
-        LOG(info) << LOG_ITEM("channel addr") << _channel_address;
+        LOG(debug) << LOG_ITEM("channel addr") << _channel_address;
     }
 
     ~TransferClient() {
@@ -84,7 +84,7 @@ class TransferClient {
                {{"dir", _tools.log_folder_path().string()},
                 {"level", 2}}}}}};
         const std::string config_data = json::serialize(config_info);
-        LOG(info) << LOG_ITEM("config") << config_data;
+        LOG(debug) << LOG_ITEM("config") << config_data;
         std::ofstream conf_stream(conf_file);
         conf_stream << config_data;
         conf_stream.close();
@@ -97,11 +97,11 @@ class TransferClient {
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
         const std::string command = std::string(_tools.arch_folder_path() / TRANSFER_SDK_DAEMON) + " --config " + conf_file;
-        LOG(info) << LOG_ITEM("daemon out") << out_file;
-        LOG(info) << LOG_ITEM("daemon err") << err_file;
-        LOG(info) << LOG_ITEM("daemon log") << _daemon_log;
-        LOG(info) << LOG_ITEM("ascp log") << (_tools.log_folder_path() / ASCP_LOG_FILE).string();
-        LOG(info) << LOG_ITEM("command") << command;
+        LOG(debug) << LOG_ITEM("daemon out") << out_file;
+        LOG(debug) << LOG_ITEM("daemon err") << err_file;
+        LOG(debug) << LOG_ITEM("daemon log") << _daemon_log;
+        LOG(debug) << LOG_ITEM("ascp log") << (_tools.log_folder_path() / ASCP_LOG_FILE).string();
+        LOG(debug) << LOG_ITEM("command") << command;
         create_config_file(conf_file);
         LOG(info) << "Starting daemon...";
         // Start daemon
@@ -163,7 +163,7 @@ class TransferClient {
 
     std::string start_transfer(const json::object& transfer_spec) {
         const std::string ts_json = json::serialize(transfer_spec);
-        LOG(info) << LOG_ITEM("ts") << ts_json;
+        LOG(debug) << LOG_ITEM("ts") << ts_json;
         // create a transfer request
         auto* transfer_config = new trsdk::TransferConfig;
         transfer_config->set_loglevel(2);  // ascp levels: 0 1 2
