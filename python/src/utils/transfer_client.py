@@ -182,7 +182,7 @@ class TransferClient:
     def start_transfer_and_wait(self, t_spec):
         '''One-call simplified procedure to start daemon, transfer and wait for it to finish'''
         # TODO: remove when transfer sdk bug fixed
-        t_spec['http_fallback'] = False
+        # t_spec['http_fallback'] = False
         self.startup()
         self.wait_transfer(self.start_transfer(t_spec))
 

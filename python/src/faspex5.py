@@ -119,6 +119,9 @@ try:
     for f in test_env.file_list():
         t_spec['paths'].append({'source': f})
 
+    # not used in transfer sdk
+    del t_spec['authentication']
+
     # Finally send files to package folder on server
     transfer_client.start_transfer_and_wait(t_spec)
 finally:
