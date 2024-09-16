@@ -11,28 +11,24 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Logger;
 import java.util.logging.Level;
-import utils.Tools;
+import utils.Configuration;
 import utils.TransferClient;
 
 public class PersistentUploadExample {
 	private static final Logger LOGGER = Logger.getLogger(PersistentUploadExample.class.getName());
 
 	public static class FileUploadTask extends TimerTask {
+		private final TransferClient transferClient;
+		private final int maxFiles;
+		private final boolean useRealFile;
+		private int sequenceIndex;
 
-		private int mSequenceIndex;
-
-		private final TransferClient mTransferClient;
-
-		private final int mMax;
-
-		private final boolean mUseRealFile;
-
-		FileUploadTask(final TransferClient aTestEnv, final int aMax) {
-			mSequenceIndex = 0;
-			mTransferClient = aTestEnv;
-			mMax = aMax;
+		FileUploadTask(final TransferClient transferClient, final int maxFiles) {
+			this.transferClient = transferClient;
+			this.maxFiles = maxFiles;
 			// only real files are supported in persistent session
-			mUseRealFile = true;
+			this.useRealFile = true;
+			sequenceIndex = 0;
 		}
 
 		// this is the recurring task
@@ -40,39 +36,39 @@ public class PersistentUploadExample {
 			try {
 				LOGGER.log(Level.FINE, "T: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 				LOGGER.log(Level.FINE, "T: Task {0} scheduled ...executing now",
-						Integer.toString(mSequenceIndex));
+						Integer.toString(sequenceIndex));
 				// generate example file to transfer
-				final String fileName = String.format("file%03d", mSequenceIndex);
+				final String fileName = String.format("file%03d", sequenceIndex);
 				String filePath = null;
 
-				if (mUseRealFile) {
+				if (useRealFile) {
 					final File file =
 							new File(System.getProperty("java.io.tmpdir") + "/" + fileName);
 					final FileWriter writer = new FileWriter(file);
-					writer.write(String.format("Hello World %d!", mSequenceIndex));
+					writer.write(String.format("Hello World %d!", sequenceIndex));
 					writer.close();
 					filePath = file.getAbsolutePath();
 				} else {
-					filePath = String.format("faux:///file%03d?1k", mSequenceIndex);
+					filePath = String.format("faux:///file%03d?1k", sequenceIndex);
 				}
-				++mSequenceIndex;
+				++sequenceIndex;
 				// add paths of files to transfer to persistent session
 				final Transfer.TransferPathRequest transferPathRequest =
 						Transfer.TransferPathRequest.newBuilder()
-								.setTransferId(mTransferClient.transferId)
+								.setTransferId(transferClient.getTransferId())
 								.addTransferPath(Transfer.TransferPath.newBuilder()
 										.setSource(filePath).setDestination(fileName).build())
 								.build();
 				LOGGER.log(Level.FINE, "T: adding transfer path");
 				// this will add to the transfer queue
-				mTransferClient.transferService.addTransferPaths(transferPathRequest);
+				transferClient.transferService.addTransferPaths(transferPathRequest);
 				LOGGER.log(Level.FINE, "T: end task");
-				if (mSequenceIndex == mMax) {
+				if (sequenceIndex == maxFiles) {
 					// end the persistent session
 					LOGGER.log(Level.FINE, "T: Limit reached, locking session. !!!");
-					mTransferClient.transferService.lockPersistentTransfer(
+					transferClient.transferService.lockPersistentTransfer(
 							Transfer.LockPersistentTransferRequest.newBuilder()
-									.setTransferId(mTransferClient.transferId).build());
+									.setTransferId(transferClient.getTransferId()).build());
 				}
 			} catch (final IOException e) {
 				LOGGER.log(Level.FINE, "T: ERROR: {0}", e.getMessage());
@@ -93,19 +89,16 @@ public class PersistentUploadExample {
 		if (args.length > 1) {
 			ms_between_files = Integer.parseInt(args[1]);
 		}
-		final Tools tools = new Tools();
-		// get simplified testing environment, ensures that transfer daemon is started
-		final TransferClient transferClient = new TransferClient(tools);
-		// get test server address and credentials from configuration file
-		final Map<String, Object> server_conf = (Map<String, Object>) tools.config.get("server");
-		final URI server_ssh_url = new URI(server_conf.get("url").toString());
+		final Configuration config = new Configuration();
+		final TransferClient transferClient = new TransferClient(config);
+		final URI server_ssh_url = new URI(config.getParamStr("server", "url"));
 		// transfer spec version 1 (JSON)
 		final JSONObject transferSpec = new JSONObject().put("title", "server upload V1")
 				.put("remote_host", server_ssh_url.getHost())
 				.put("ssh_port", server_ssh_url.getPort())
-				.put("remote_user", server_conf.get("user"))
-				.put("remote_password", server_conf.get("pass")).put("direction", "send")
-				.put("destination_root", "/Upload");
+				.put("remote_user", config.getParamStr("server", "user"))
+				.put("remote_password", config.getParamStr("server", "pass"))
+				.put("direction", "send").put("destination_root", "/Upload");
 		transferClient.startup();
 		// start persistent transfer session
 		transferClient.start_transfer(transferSpec, Transfer.TransferType.FILE_PERSISTENT);

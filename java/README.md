@@ -6,7 +6,7 @@ Samples show logs on terminal.
 
 ## Using `maven` to build the project
 
-The toolchain here uses gradle, but maven can also be used, refer to [Github GRPC for java](https://github.com/grpc/grpc-java) for sample maven configuration.
+The toolchain here uses `gradle`, but `maven` can also be used, refer to [Github GRPC for java](https://github.com/grpc/grpc-java) for sample maven configuration.
 
 ## Java
 

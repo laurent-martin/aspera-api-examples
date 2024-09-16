@@ -11,7 +11,7 @@
 #include <magic_enum.hpp>
 #include <thread>
 
-#include "tools.hpp"
+#include "configuration.hpp"
 #include "transfer.grpc.pb.h"
 namespace json = boost::json;
 namespace trsdk = transfersdk;
@@ -31,8 +31,8 @@ inline constexpr const int MAX_CONNECTION_WAIT_SEC = 10;
 // - transfer of files and monitoring
 class TransferClient {
    private:
-#define LOG(level) LOGGER(_tools.log(), level)
-    Tools& _tools;
+#define LOG(level) LOGGER(_config.log(), level)
+    Configuration& _config;
     const bool _auto_shutdown;
     const std::string _daemon_log;
     std::string _server_address;
@@ -43,14 +43,14 @@ class TransferClient {
 
    public:
     TransferClient(
-        Tools& tools,
+        Configuration& tools,
         bool shutdown = true)
-        : _tools(tools),
+        : _config(tools),
           _auto_shutdown(shutdown),
-          _daemon_log(_tools.log_folder_path() / DAEMON_LOG_FILE),
+          _daemon_log(_config.log_folder_path() / DAEMON_LOG_FILE),
           _transfer_daemon_process(nullptr),
           _transfer_service(nullptr) {
-        auto sdk_url = _tools.conf_str({"trsdk", "url"});
+        auto sdk_url = _config.param_str({"trsdk", "url"});
         auto result = boost::urls::parse_uri(sdk_url);
         if (!result) {
             throw std::runtime_error("Invalid trsdk url");
@@ -73,15 +73,15 @@ class TransferClient {
         const json::object config_info = {
             {"address", _server_address},
             {"port", _server_port},
-            {"log_directory", _tools.log_folder_path().string()},
+            {"log_directory", _config.log_folder_path().string()},
             {"log_level", "4"},  // 0 .. 4
             {"fasp_runtime",
              {{"use_embedded", false},
               {"user_defined",
-               {{"bin", _tools.arch_folder_path().string()},
-                {"etc", _tools.get_path("trsdk_noarch").string()}}},
+               {{"bin", _config.arch_folder_path().string()},
+                {"etc", _config.get_path("trsdk_noarch").string()}}},
               {"log",
-               {{"dir", _tools.log_folder_path().string()},
+               {{"dir", _config.log_folder_path().string()},
                 {"level", 2}}}}}};
         const std::string config_data = json::serialize(config_info);
         LOG(debug) << LOG_ITEM("config") << config_data;
@@ -92,15 +92,15 @@ class TransferClient {
 
     // Start the transfer SDK daemon process
     void start_daemon() {
-        const std::string file_base = _tools.log_folder_path() / TRANSFER_SDK_DAEMON;
+        const std::string file_base = _config.log_folder_path() / TRANSFER_SDK_DAEMON;
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
-        const std::string command = std::string(_tools.arch_folder_path() / TRANSFER_SDK_DAEMON) + " --config " + conf_file;
+        const std::string command = std::string(_config.arch_folder_path() / TRANSFER_SDK_DAEMON) + " --config " + conf_file;
         LOG(debug) << LOG_ITEM("daemon out") << out_file;
         LOG(debug) << LOG_ITEM("daemon err") << err_file;
         LOG(debug) << LOG_ITEM("daemon log") << _daemon_log;
-        LOG(debug) << LOG_ITEM("ascp log") << (_tools.log_folder_path() / ASCP_LOG_FILE).string();
+        LOG(debug) << LOG_ITEM("ascp log") << (_config.log_folder_path() / ASCP_LOG_FILE).string();
         LOG(debug) << LOG_ITEM("command") << command;
         create_config_file(conf_file);
         LOG(info) << "Starting daemon...";
@@ -115,7 +115,7 @@ class TransferClient {
             LOG(error) << "Daemon not started.";
             LOG(error) << "Exited with code: " << _transfer_daemon_process->exit_code();
             LOG(error) << "Check daemon log: " << _daemon_log;
-            LOG(error) << Tools::last_file_line(_daemon_log);
+            LOG(error) << Configuration::last_file_line(_daemon_log);
             throw std::runtime_error("daemon startup failed");
         }
         LOG(info) << "Daemon started: " << _transfer_daemon_process->id();
@@ -206,7 +206,7 @@ class TransferClient {
 
     void throw_on_error(const trsdk::TransferStatus& status, const trsdk::Error& error) {
         if (status == trsdk::TransferStatus::FAILED) {
-            LOG(error) << Tools::last_file_line(_daemon_log);
+            LOG(error) << Configuration::last_file_line(_daemon_log);
             throw std::runtime_error("transfer failed: " + error.description());
         }
         if (status == trsdk::TransferStatus::UNKNOWN_STATUS) {

@@ -19,43 +19,47 @@ public class TransferClient {
 	private static final Logger LOGGER = Logger.getLogger(TransferClient.class.getName());
 	private static final String TRANSFER_SDK_DAEMON = "asperatransferd";
 
-	public final Tools tools;
+	public final Configuration config;
 	// Aspera client
 	public TransferServiceGrpc.TransferServiceBlockingStub transferService = null;
 	// several transfer session may be started but for the example we use only one
-	public String transferId;
-	private final URI grpc_url;
-	private final String daemon_executable;
-	private final String arch_dir;
+	private String transferId;
+	private final URI grpcURL;
+	private final String daemonExecutable;
+	private final String archFolder;
 	private Process daemon_process;
 
-	public TransferClient(final Tools aTools) {
-		tools = aTools;
+	public TransferClient(final Configuration aTools) {
+		config = aTools;
 		try {
-			grpc_url = new URI(tools.config.get("trsdk").get("url").toString());
-			final String platform = tools.config.get("misc").get("platform").toString();
-			arch_dir = tools.getPath("sdk_root", platform);
-			daemon_executable = tools.getPath("sdk_root", platform, TRANSFER_SDK_DAEMON);
+			grpcURL = new URI(config.getParamStr("trsdk", "url"));
+			final String platform = config.getParamStr("misc", "platform");
+			archFolder = config.getPath("sdk_root", platform);
+			daemonExecutable = config.getPath("sdk_root", platform, TRANSFER_SDK_DAEMON);
 		} catch (final java.net.URISyntaxException e) {
 			throw new Error("problem with SDK URL: " + e.getMessage());
 		}
+	}
+
+	public String getTransferId() {
+		return transferId;
 	}
 
 	/// Create configuration file for the Aspera Transfer SDK
 	private void createConfFile(final String confFile) {
 		// Define the configuration JSON object
 		JSONObject sdk_config = new JSONObject() //
-				.put("address", grpc_url.getHost()) //
-				.put("port", grpc_url.getPort()) //
-				.put("log_directory", tools.dir_log) //
+				.put("address", grpcURL.getHost()) //
+				.put("port", grpcURL.getPort()) //
+				.put("log_directory", config.getLogFolder()) //
 				.put("log_level", "debug") //
 				.put("fasp_runtime", new JSONObject() //
 						.put("use_embedded", false) //
 						.put("user_defined", new JSONObject() //
-								.put("bin", arch_dir) //
-								.put("etc", tools.getPath("trsdk_noarch"))) //
+								.put("bin", archFolder) //
+								.put("etc", config.getPath("trsdk_noarch"))) //
 						.put("log", new JSONObject() //
-								.put("dir", tools.dir_log) //
+								.put("dir", config.getLogFolder()) //
 								.put("level", 0)));
 		// Write the JSON to a file
 		try (final FileWriter fileWriter = new FileWriter(confFile)) {
@@ -69,10 +73,10 @@ public class TransferClient {
 	public void start_daemon() {
 		Process started_process = null;
 		// Define the paths
-		String sdk_conf_path = new File(tools.dir_log, "daemon.conf").toString();
+		String sdk_conf_path = new File(config.getLogFolder(), "daemon.conf").toString();
 		createConfFile(sdk_conf_path);
 		try {
-			String[] command = new String[] {daemon_executable, "-c", sdk_conf_path};
+			String[] command = new String[] {daemonExecutable, "-c", sdk_conf_path};
 			LOGGER.log(Level.INFO, "Starting daemon: {0} {1} {2}", command);
 			started_process = Runtime.getRuntime().exec(command);
 			Thread.sleep(5000);
@@ -89,7 +93,7 @@ public class TransferClient {
 		LOGGER.log(Level.INFO, "L: Connecting to daemon");
 		// create channel to socket
 		final ManagedChannel channel = ManagedChannelBuilder
-				.forAddress(grpc_url.getHost(), grpc_url.getPort()).usePlaintext().build();
+				.forAddress(grpcURL.getHost(), grpcURL.getPort()).usePlaintext().build();
 		// create a connection to the Transfer SDK daemon
 		transferService = TransferServiceGrpc.newBlockingStub(channel);
 		LOGGER.log(Level.INFO, "Checking gRPC connection");

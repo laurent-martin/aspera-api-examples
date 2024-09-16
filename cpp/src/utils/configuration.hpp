@@ -25,12 +25,15 @@ inline constexpr const char* PATHS_FILE_REL = "config/paths.yaml";
 inline constexpr const int ITEM_WIDTH = 12;
 
 // Provide a common environment for tests, including:
-// - logging
+// - configuration file parameters
 // - misc utilities
-class Tools {
+//      - logging
+//      - read last line of file
+//      - file list as command line parameters
+class Configuration {
 #define LOG(level) LOGGER(_log, level)
    public:
-    Tools(
+    Configuration(
         const int argc,
         const char* const argv[])
         : _log(),
@@ -40,8 +43,8 @@ class Tools {
           _log_folder_path(std::filesystem::temp_directory_path()),
           _paths(load_yaml("paths", _top_folder_path / PATHS_FILE_REL)),
           _config(load_yaml("main_config", get_path("main_config"))),
-          _arch_folder_path(get_path("sdk_root") / conf_str({"misc", "platform"})) {
-        auto log_level = conf_str({"misc", "level"});
+          _arch_folder_path(get_path("sdk_root") / param_str({"misc", "platform"})) {
+        auto log_level = param_str({"misc", "level"});
         auto opt_level = magic_enum::enum_cast<boost::log::trivial::severity_level>(log_level);
         if (!opt_level.has_value()) {
             throw std::invalid_argument("Invalid log level string: " + log_level);
@@ -58,7 +61,7 @@ class Tools {
         }
     }
 
-    ~Tools() {
+    ~Configuration() {
         if (_init_log) {
             boost::log::core::get()->remove_all_sinks();
         }
@@ -74,7 +77,7 @@ class Tools {
 
     // Dig to the yaml node by list of keys
     // @param keys list of keys to dig to get the value
-    YAML::Node conf(const std::vector<std::string>& keys) {
+    YAML::Node param(const std::vector<std::string>& keys) {
         // Need to clone, else it will be modified in loop
         YAML::Node currentNode = YAML::Clone(_config);
         for (const auto& key : keys) {
@@ -90,8 +93,8 @@ class Tools {
 
     // Get a string from the configuration file
     // @param keys list of keys to dig to get the value
-    std::string conf_str(const std::vector<std::string>& keys) {
-        return conf(keys).as<std::string>();
+    std::string param_str(const std::vector<std::string>& keys) {
+        return param(keys).as<std::string>();
     }
 
     // get the path of the item in the test environment
@@ -151,7 +154,7 @@ class Tools {
     // project folder
     const std::filesystem::path _top_folder_path;
     const std::filesystem::path _log_folder_path;
-    // conf file with _paths
+    // config file with _paths
     const YAML::Node _paths;
     const YAML::Node _config;
     // folder with SDK binaries

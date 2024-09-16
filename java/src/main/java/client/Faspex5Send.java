@@ -19,7 +19,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import utils.TransferClient;
 import utils.Crypto;
-import utils.Tools;
+import utils.Configuration;
 
 // This sample shows how to generate the bearer token, then use API v5 and finally send the file
 // into package
@@ -67,30 +67,23 @@ public class Faspex5Send {
 
 	public static void main(String... args) {
 		try {
-			final Tools tools = new Tools();
-			// Aspera Transfer Client
-			final TransferClient transferClient = new TransferClient(tools);
-			// get Faspex 5 parameters from config section in yaml
-			final Map<String, Object> faspexConfig =
-					(Map<String, Object>) tools.config.get("faspex5");
-			final URI faspexBaseUrl = new URI(faspexConfig.get("url").toString());
+			final Configuration config = new Configuration();
+			final TransferClient transferClient = new TransferClient(config);
+			final URI faspexBaseUrl = new URI(config.getParamStr("faspex5","url"));
 			// base url for api v5
 			final String apiBaseUrl = faspexBaseUrl + "/api/v5";
 			// URL for token generation
 			final String tokenUrl = faspexBaseUrl + "/auth/token";
 			// dummy file is sent
 			final String fileToSend = "faux:///10m?10m";
-			final boolean verify =
-					!(faspexConfig.containsKey("verify") && (Boolean) faspexConfig.get("verify") == false);
-
 			// REST: prepare environment
 			Unirest.config() //
-					.verifySsl(verify) //
+					.verifySsl(config.getParamBool("faspex5","verify")) //
 					.setDefaultHeader("Accept", MIME_JSON);
 
 			// Faspex REST API: generate OAuth authorization
-			final String token = getBearerToken(tokenUrl, faspexConfig.get("client_id").toString(),
-					faspexConfig.get("username").toString(), faspexConfig.get("private_key").toString());
+			final String token = getBearerToken(tokenUrl, config.getParamStr("faspex5","client_id"),
+					config.getParamStr("faspex5","username"), config.getParamStr("faspex5","private_key"));
 
 			// REST: prepare environment for Bearer token based auth
 			Unirest.config()//
@@ -102,7 +95,7 @@ public class Faspex5Send {
 					.put("title", "test title")//
 					.put("recipients", new JSONArray()//
 							.put(new JSONObject()//
-									.put("name", faspexConfig.get("username")))); // we send to ourselves
+									.put("name", config.getParamStr("faspex5","username")))); // we send to ourselves
 			LOGGER.log(Level.FINE, "req>> {0}", package_create_params);
 
 			// Faspex REST API: Create package and get creation information
