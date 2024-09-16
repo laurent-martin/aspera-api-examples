@@ -3,7 +3,6 @@ package client;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import java.net.URI;
-import java.util.Map;
 import utils.Configuration;
 import utils.TransferClient;
 

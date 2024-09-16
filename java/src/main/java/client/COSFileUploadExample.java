@@ -2,7 +2,6 @@ package client;
 
 import org.json.JSONObject;
 import org.json.JSONArray;
-import java.util.Map;
 import utils.Configuration;
 import utils.TransferClient;
 

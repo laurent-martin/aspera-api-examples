@@ -3,7 +3,6 @@ package client;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Date;
 import java.util.UUID;
 import java.util.logging.Logger;
