@@ -66,7 +66,7 @@ public class Faspex5Send {
 
 	public static void main(String... args) {
 		try {
-			final Configuration config = new Configuration();
+			final Configuration config = new Configuration(args);
 			final TransferClient transferClient = new TransferClient(config);
 			final URI faspexBaseUrl = new URI(config.getParamStr("faspex5","url"));
 			// base url for api v5

@@ -8,7 +8,7 @@ import utils.TransferClient;
 // Send one file to COS using transfer spec v2
 public class COSFileUploadExample {
 	public static void main(String... args) {
-		final Configuration config = new Configuration();
+		final Configuration config = new Configuration(args);
 		final TransferClient transferClient = new TransferClient(config);
 		// build transfer spec version 2 (JSON)
 		final JSONObject transferSpecV2 = new JSONObject()//

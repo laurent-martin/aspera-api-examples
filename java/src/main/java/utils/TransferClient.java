@@ -46,6 +46,8 @@ public class TransferClient {
 
 	// @return current session transfer id
 	public String getTransferId() {
+		if (transferId == null)
+			throw new Error("transfer session was not started");
 		return transferId;
 	}
 
@@ -74,7 +76,7 @@ public class TransferClient {
 		}
 	}
 
-	public void start_daemon() {
+	public void daemon_startup() {
 		Process started_process = null;
 		// Define the paths
 		String sdk_conf_path = new File(config.getLogFolder(), "daemon.conf").toString();
@@ -99,7 +101,9 @@ public class TransferClient {
 		daemon_process = started_process;
 	}
 
-	void connect_to_daemon() {
+	public void daemon_connect() {
+		if (transferService != null)
+			throw new Error("already connected to daemon");
 		LOGGER.log(Level.INFO, "L: Connecting to daemon");
 		// create channel to socket
 		final ManagedChannel channel = ManagedChannelBuilder
@@ -115,23 +119,32 @@ public class TransferClient {
 		LOGGER.log(Level.INFO, "OK: Daemon is here, API v = {0}", infoResponse.getApiVersion());
 	}
 
-	public void daemon_startup() {
-		if (transferService == null) {
-			start_daemon();
-			connect_to_daemon();
-		}
-	}
+
 
 	public void daemon_shutdown() {
 		if (daemon_process != null) {
 			LOGGER.log(Level.INFO, "L: Shutting down daemon");
 			daemon_process.destroy();
+			try {
+				final int exitStatus = daemon_process.waitFor();
+				LOGGER.log(Level.INFO, "L: daemon exited with status {0}", exitStatus);
+			} catch (final InterruptedException e) {
+				LOGGER.log(Level.SEVERE, "L: error waiting for daemon to shutdown: {0}",
+						e.getMessage());
+			}
+			daemon_process = null;
 		}
 	}
 
+
+	// helped method for simple examples
 	public void start_transfer_and_wait(final JSONObject transferSpec) {
 		daemon_startup();
-		session_start(transferSpec, Transfer.TransferType.FILE_REGULAR);
+		daemon_connect();
+		if (config.getParamBool("misc", "transfer_regular"))
+			session_start(transferSpec, Transfer.TransferType.FILE_REGULAR);
+		else
+			session_start_streaming(transferSpec);
 		session_wait_for_completion();
 		daemon_shutdown();
 	}
@@ -150,8 +163,13 @@ public class TransferClient {
 				new Object[] {transferId, transferResponse.getStatus().getNumber()});
 	}
 
+	private void session_start_streaming(final JSONObject transferSpec) {
+		session_start(transferSpec, Transfer.TransferType.STREAM_TO_FILE_UPLOAD);
+		// throw new Error("not implemented");
+	}
+
 	public void session_wait_for_completion() {
-		LOGGER.log(Level.FINE, "L: Getting session events");
+		LOGGER.log(Level.FINE, "L: Wait for session completion");
 		final Iterator<Transfer.TransferResponse> monitorTransferResponse =
 				transferService.monitorTransfers(Transfer.RegistrationRequest.newBuilder()
 						.addFilters(Transfer.RegistrationFilter.newBuilder()

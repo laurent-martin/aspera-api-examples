@@ -9,7 +9,7 @@ import utils.Configuration;
 // Receive one file from demo server using ssh credentials and transferspec v2
 public class ServerFileDownloadV2Example {
 	public static void main(String... args) throws java.net.URISyntaxException {
-		final Configuration config = new Configuration();
+		final Configuration config = new Configuration(args);
 		final TransferClient transferClient = new TransferClient(config);
 		final URI faspURL = new URI(config.getParamStr("server","url"));
 		// transfer spec version 2 (JSON)

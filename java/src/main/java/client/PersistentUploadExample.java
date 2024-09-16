@@ -3,7 +3,6 @@ package client;
 import ibm.aspera.transferservice.Transfer;
 import org.json.JSONObject;
 import java.net.URI;
-import java.util.Map;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -83,7 +82,7 @@ public class PersistentUploadExample {
 
 	public static void main(String... args)
 			throws Exception, IOException, java.net.URISyntaxException {
-		final Configuration config = new Configuration();
+		final Configuration config = new Configuration(args);
 		final TransferClient transferClient = new TransferClient(config);
 		final URI server_ssh_url = new URI(config.getParamStr("server", "url"));
 		// transfer spec version 1 (JSON)
@@ -95,6 +94,7 @@ public class PersistentUploadExample {
 				.put("direction", "send")
 				.put("destination_root", config.getParamStr("server", "folder_upload"));
 		transferClient.daemon_startup();
+		transferClient.daemon_connect();
 		// start persistent transfer session
 		transferClient.session_start(transferSpec, Transfer.TransferType.FILE_PERSISTENT);
 		final TimerTask timerTask =

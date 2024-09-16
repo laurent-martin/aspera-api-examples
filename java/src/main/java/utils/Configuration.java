@@ -17,7 +17,7 @@ public class Configuration {
 	private final Map<String, String> paths;
 	private Map<String, Map<String, Object>> config;
 
-	public Configuration() {
+	public Configuration(String[] args) {
 		Locale.setDefault(Locale.ENGLISH);
 		try {
 			topFolder = System.getProperty("dir_top");

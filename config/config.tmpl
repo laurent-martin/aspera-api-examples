@@ -1,6 +1,8 @@
 ---
 misc:
   platform: osx-arm64
+  level: info
+  transfer_regular: true
 trsdk:
   url: grpc://trsdk.address.here:55002
 httpgw:
@@ -13,6 +15,8 @@ server:
   pass: _pass_here_
   file_download: "/aspera-test-dir-small/10MB.1"
   folder_upload: "/Upload"
+  persist_max: 10
+  persist_ms: 100
 node:
   url: https://node.address.here
   verify: false

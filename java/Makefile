@@ -14,7 +14,7 @@ GRADLE_PROPS=-Pproto_file=$(notdir $(SDK_FILE_PROTO)) -Pproto_dir=$(dir $(SDK_FI
 all:: $(TEST_FLAGS)
 $(DIR_TESTED_FLAG)%: $(SAMPLE_JAR) $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
-	java -cp $(SAMPLE_JAR) $(JAVA_PROPS) client.$(notdir $@)
+	java -cp $(SAMPLE_JAR) $(JAVA_PROPS) client.$(notdir $@) $(GBL_FILE_SAMPLE)
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
