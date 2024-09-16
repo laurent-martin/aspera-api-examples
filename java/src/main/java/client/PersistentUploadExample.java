@@ -85,9 +85,9 @@ public class PersistentUploadExample {
 		if (args.length > 0) {
 			max_files = Integer.parseInt(args[0]);
 		}
-		int ms_between_files = 100;
+		long ms_between_files = 100;
 		if (args.length > 1) {
-			ms_between_files = Integer.parseInt(args[1]);
+			ms_between_files = Long.parseLong(args[1]);
 		}
 		final Configuration config = new Configuration();
 		final TransferClient transferClient = new TransferClient(config);
@@ -98,7 +98,7 @@ public class PersistentUploadExample {
 				.put("ssh_port", server_ssh_url.getPort())
 				.put("remote_user", config.getParamStr("server", "user"))
 				.put("remote_password", config.getParamStr("server", "pass"))
-				.put("direction", "send").put("destination_root", "/Upload");
+				.put("direction", "send").put("destination_root", config.getParamStr("server", "folder_upload"));
 		transferClient.startup();
 		// start persistent transfer session
 		transferClient.start_transfer(transferSpec, Transfer.TransferType.FILE_PERSISTENT);
