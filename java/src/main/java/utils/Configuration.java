@@ -12,12 +12,14 @@ public class Configuration {
 	static final String PATHS_FILES = "config/paths.yaml";
 
 	// config filer loaded from yaml
+	private final String[] fileList;
 	private final String topFolder;
 	private final String logFolder;
 	private final Map<String, String> paths;
 	private Map<String, Map<String, Object>> config;
 
 	public Configuration(String[] args) {
+		fileList = args;
 		Locale.setDefault(Locale.ENGLISH);
 		try {
 			topFolder = System.getProperty("dir_top");
@@ -35,6 +37,10 @@ public class Configuration {
 
 	public String getLogFolder() {
 		return logFolder;
+	}
+
+	public String[] getFileList() {
+		return fileList;
 	}
 
 	public Object getParam(String... name) {
@@ -57,18 +63,20 @@ public class Configuration {
 		return (Integer) getParam(name);
 	}
 
-	/// @return true if the value is not null and is true
+	/** @return true if the value is not null and is true */
 	public Boolean getParamBool(String... name) {
 		final Object value = getParam(name);
 		return !(value != null && (Boolean) value == false);
 	}
 
-	/// get path from the reference file
-	/// if name == null, then we use the default path file
-	/// if a name is provided, we use the path from the reference file
-	/// @param name the name of the path in the reference file
-	/// @param sub_path the sub path to append to the path
-	/// @return the path as String
+	/**
+	 * Get path from the reference file
+	 * if name == null, then we use the default path file
+	 * if a name is provided, we use the path from the reference file
+	 * @param name the name of the path in the reference file
+	 * @param sub_path the sub path to append to the path
+	 * @return the path as String
+	 */
 	public String getPath(String name, String... sub_path) {
 		// path elements are:
 		// - the top folder

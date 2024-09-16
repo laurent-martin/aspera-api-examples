@@ -68,33 +68,33 @@ public class Faspex5Send {
 		try {
 			final Configuration config = new Configuration(args);
 			final TransferClient transferClient = new TransferClient(config);
-			final URI faspexBaseUrl = new URI(config.getParamStr("faspex5","url"));
+			final URI faspexBaseUrl = new URI(config.getParamStr("faspex5", "url"));
 			// base url for api v5
 			final String apiBaseUrl = faspexBaseUrl + "/api/v5";
 			// URL for token generation
 			final String tokenUrl = faspexBaseUrl + "/auth/token";
-			// dummy file is sent
-			final String fileToSend = "faux:///10m?10m";
-			// REST: prepare environment
+			// REST: prepare environment for token generation
 			Unirest.config() //
-					.verifySsl(config.getParamBool("faspex5","verify")) //
+					.verifySsl(config.getParamBool("faspex5", "verify")) //
 					.setDefaultHeader("Accept", MIME_JSON);
 
 			// Faspex REST API: generate OAuth authorization
-			final String token = getBearerToken(tokenUrl, config.getParamStr("faspex5","client_id"),
-					config.getParamStr("faspex5","username"), config.getParamStr("faspex5","private_key"));
+			final String token =
+					getBearerToken(tokenUrl, config.getParamStr("faspex5", "client_id"),
+							config.getParamStr("faspex5", "username"),
+							config.getParamStr("faspex5", "private_key"));
 
 			// REST: prepare environment for Bearer token based auth
 			Unirest.config()//
 					.setDefaultHeader("Authorization", "Bearer " + token) //
 					.setDefaultHeader("Content-Type", MIME_JSON);
 
-			// Faspex API: Prepare package creation information
+			// Faspex API: Prepare package creation information: we send to ourselves
 			final JSONObject package_create_params = new JSONObject()//
 					.put("title", "test title")//
 					.put("recipients", new JSONArray()//
 							.put(new JSONObject()//
-									.put("name", config.getParamStr("faspex5","username")))); // we send to ourselves
+									.put("name", config.getParamStr("faspex5", "username"))));
 			LOGGER.log(Level.FINE, "req>> {0}", package_create_params);
 
 			// Faspex REST API: Create package and get creation information
@@ -105,19 +105,17 @@ public class Faspex5Send {
 			// Faspex REST API: Create transfer spec
 			LOGGER.log(Level.FINE, "package>> {0}", package_info);
 			final String package_id = package_info.getString("id");
-			final JSONObject files_to_send = new JSONObject()//
-					.put("paths", new JSONArray()//
-							.put(new JSONObject()//
-									.put("source", fileToSend)));
-			LOGGER.log(Level.FINE, "req>> {0}", files_to_send);
+			final JSONObject uploadRequest = new JSONObject();
+			transferClient.fillFilePaths(uploadRequest);
+			LOGGER.log(Level.FINE, "req>> {0}", uploadRequest);
 			final HttpResponse<JsonNode> transfer_spec_response = Unirest
 					.post(apiBaseUrl + "/" + "packages/" + package_id + "/transfer_spec/upload")
-					.body(files_to_send.toString()).queryString("transfer_type", "connect")
+					.body(uploadRequest.toString()).queryString("transfer_type", "connect")
 					.asJson();
 			final JSONObject transfer_spec =
 					new JSONObject(transfer_spec_response.getBody().toString());
 			transfer_spec.remove("authentication");
-			transfer_spec.put("paths", files_to_send.get("paths"));
+			transferClient.fillFilePaths(transfer_spec);
 			LOGGER.log(Level.FINE, "ts>> {0}", transfer_spec);
 
 			// API: Transfer SDK: transfer files into package
