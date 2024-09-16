@@ -19,18 +19,21 @@ public class TransferClient {
 	private static final Logger LOGGER = Logger.getLogger(TransferClient.class.getName());
 	private static final String TRANSFER_SDK_DAEMON = "asperatransferd";
 
+	// configuration parameters from the configuration file
 	public final Configuration config;
-	// Aspera client
+	// process for the daemon
+	private Process daemon_process;
+	// Aspera client API (synchronous)
 	public TransferServiceGrpc.TransferServiceBlockingStub transferService = null;
 	// several transfer session may be started but for the example we use only one
 	private String transferId;
 	private final URI grpcURL;
 	private final String daemonExecutable;
 	private final String archFolder;
-	private Process daemon_process;
 
-	public TransferClient(final Configuration aTools) {
-		config = aTools;
+	public TransferClient(final Configuration aConfig) {
+		config = aConfig;
+		transferId = null;
 		try {
 			grpcURL = new URI(config.getParamStr("trsdk", "url"));
 			final String platform = config.getParamStr("misc", "platform");
@@ -41,6 +44,7 @@ public class TransferClient {
 		}
 	}
 
+	// @return current session transfer id
 	public String getTransferId() {
 		return transferId;
 	}
@@ -79,12 +83,18 @@ public class TransferClient {
 			String[] command = new String[] {daemonExecutable, "-c", sdk_conf_path};
 			LOGGER.log(Level.INFO, "Starting daemon: {0} {1} {2}", command);
 			started_process = Runtime.getRuntime().exec(command);
-			Thread.sleep(5000);
-		} catch (final IOException e2) {
-			LOGGER.log(Level.SEVERE, "FAILED: cannot start daemon: {0}", e2.getMessage());
-			System.exit(1);
-		} catch (final InterruptedException e2) {
-			throw new Error(e2.getMessage());
+			// wait for the daemon to start
+			final boolean hasTerminated =
+					started_process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS);
+			if (hasTerminated) {
+				LOGGER.log(Level.SEVERE, "new daemon terminated unexpectedly");
+				throw new Error("new daemon terminated unexpectedly");
+			}
+		} catch (final IOException e) {
+			LOGGER.log(Level.SEVERE, "cannot start daemon: {0}", e.getMessage());
+			throw new Error(e.getMessage());
+		} catch (final InterruptedException e) {
+			throw new Error(e.getMessage());
 		}
 		daemon_process = started_process;
 	}
@@ -95,21 +105,24 @@ public class TransferClient {
 		final ManagedChannel channel = ManagedChannelBuilder
 				.forAddress(grpcURL.getHost(), grpcURL.getPort()).usePlaintext().build();
 		// create a connection to the Transfer SDK daemon
+		// Note that this is a synchronous client here
+		// async is also possible
 		transferService = TransferServiceGrpc.newBlockingStub(channel);
 		LOGGER.log(Level.INFO, "Checking gRPC connection");
+		// make a simple api call to check communication is ok
 		Transfer.InstanceInfoResponse infoResponse =
 				transferService.getInfo(Transfer.InstanceInfoRequest.newBuilder().build());
 		LOGGER.log(Level.INFO, "OK: Daemon is here, API v = {0}", infoResponse.getApiVersion());
 	}
 
-	public void startup() {
+	public void daemon_startup() {
 		if (transferService == null) {
 			start_daemon();
 			connect_to_daemon();
 		}
 	}
 
-	public void shutdown() {
+	public void daemon_shutdown() {
 		if (daemon_process != null) {
 			LOGGER.log(Level.INFO, "L: Shutting down daemon");
 			daemon_process.destroy();
@@ -117,13 +130,14 @@ public class TransferClient {
 	}
 
 	public void start_transfer_and_wait(final JSONObject transferSpec) {
-		startup();
-		start_transfer(transferSpec, Transfer.TransferType.FILE_REGULAR);
-		wait_transfer();
-		shutdown();
+		daemon_startup();
+		session_start(transferSpec, Transfer.TransferType.FILE_REGULAR);
+		session_wait_for_completion();
+		daemon_shutdown();
 	}
 
-	public void start_transfer(final JSONObject transferSpec,
+	// start one transfer session
+	public void session_start(final JSONObject transferSpec,
 			final Transfer.TransferType aTransferType) {
 		LOGGER.log(Level.INFO, "L: ts: {0}", transferSpec.toString());
 		// send start transfer request to transfer sdk daemon
@@ -136,7 +150,7 @@ public class TransferClient {
 				new Object[] {transferId, transferResponse.getStatus().getNumber()});
 	}
 
-	public void wait_transfer() {
+	public void session_wait_for_completion() {
 		LOGGER.log(Level.FINE, "L: Getting session events");
 		final Iterator<Transfer.TransferResponse> monitorTransferResponse =
 				transferService.monitorTransfers(Transfer.RegistrationRequest.newBuilder()
@@ -149,11 +163,13 @@ public class TransferClient {
 			final Transfer.TransferResponse response = monitorTransferResponse.next();
 			final Transfer.TransferStatus status = response.getStatus();
 			LOGGER.log(Level.FINE, "L: transfer event: {0}", response.getTransferEvent());
-			LOGGER.log(Level.FINE, "L: file info: {0}",
-					response.getFileInfo().toString().replaceAll("\\n", ", "));
+			if (response.hasFileInfo())
+				LOGGER.log(Level.FINE, "L: file info: {0}",
+						response.getFileInfo().toString().replaceAll("\\n", ", "));
 			LOGGER.log(Level.INFO, "L: status: {0}", status.toString());
 			LOGGER.log(Level.FINE, "L: message: {0}", response.getMessage());
-			LOGGER.log(Level.FINE, "L: err: {0}", response.getError());
+			if (response.hasError())
+				LOGGER.log(Level.FINE, "L: err: {0}", response.getError());
 			if (status == Transfer.TransferStatus.FAILED
 					|| status == Transfer.TransferStatus.COMPLETED) {
 				// || response.getTransferEvent() == Transfer.TransferEvent.FILE_STOP) {

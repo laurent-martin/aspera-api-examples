@@ -1,7 +1,7 @@
 package utils;
 
 import java.util.Map;
-//import java.util.logging.Logger;
+// import java.util.logging.Logger;
 import java.util.Locale;
 import java.nio.file.FileSystems;
 import org.yaml.snakeyaml.Yaml;
@@ -38,11 +38,23 @@ public class Configuration {
 	}
 
 	public Object getParam(String... name) {
-		return config.get(name[0]).get(name[1]);
+		if (name.length != 2)
+			throw new Error("invalid configuration parameter name: " + String.join(".", name));
+		final var level1 = config.get(name[0]);
+		if (level1 == null)
+			throw new Error("missing configuration section: " + name[0]);
+		final var level2 = level1.get(name[1]);
+		if (level2 == null)
+			throw new Error("missing configuration parameter: " + name[0] + "." + name[1]);
+		return level2;
 	}
 
 	public String getParamStr(String... name) {
 		return getParam(name).toString();
+	}
+
+	public int getParamInt(String... name) {
+		return (Integer) getParam(name);
 	}
 
 	/// @return true if the value is not null and is true
@@ -58,9 +70,15 @@ public class Configuration {
 	/// @param sub_path the sub path to append to the path
 	/// @return the path as String
 	public String getPath(String name, String... sub_path) {
+		// path elements are:
+		// - the top folder
+		// - the path from the reference file specified by name
+		// - additional optional paths
 		final String[] completePath = new String[sub_path.length + 1];
 		completePath[0] = name == null ? PATHS_FILES : paths.get(name);
+		// optional additional paths after the named file path
 		System.arraycopy(sub_path, 0, completePath, 1, sub_path.length);
+		// concatenate all the path elements, including top folder
 		return FileSystems.getDefault().getPath(topFolder, completePath).toString();
 	}
 }

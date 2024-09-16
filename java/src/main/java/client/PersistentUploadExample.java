@@ -19,12 +19,14 @@ public class PersistentUploadExample {
 
 	public static class FileUploadTask extends TimerTask {
 		private final TransferClient transferClient;
+		private final String transferId;
 		private final int maxFiles;
 		private final boolean useRealFile;
 		private int sequenceIndex;
 
 		FileUploadTask(final TransferClient transferClient, final int maxFiles) {
 			this.transferClient = transferClient;
+			this.transferId = transferClient.getTransferId();
 			this.maxFiles = maxFiles;
 			// only real files are supported in persistent session
 			this.useRealFile = true;
@@ -34,8 +36,13 @@ public class PersistentUploadExample {
 		// this is the recurring task
 		public void run() {
 			try {
+				++sequenceIndex;
+				if (sequenceIndex > maxFiles) {
+					// ignore tasks after last one, not even log
+					return;
+				}
 				LOGGER.log(Level.FINE, "T: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-				LOGGER.log(Level.FINE, "T: Task {0} scheduled ...executing now",
+				LOGGER.log(Level.FINE, "T: Task {0} scheduled ... executing now",
 						Integer.toString(sequenceIndex));
 				// generate example file to transfer
 				final String fileName = String.format("file%03d", sequenceIndex);
@@ -51,11 +58,9 @@ public class PersistentUploadExample {
 				} else {
 					filePath = String.format("faux:///file%03d?1k", sequenceIndex);
 				}
-				++sequenceIndex;
 				// add paths of files to transfer to persistent session
 				final Transfer.TransferPathRequest transferPathRequest =
-						Transfer.TransferPathRequest.newBuilder()
-								.setTransferId(transferClient.getTransferId())
+						Transfer.TransferPathRequest.newBuilder().setTransferId(transferId)
 								.addTransferPath(Transfer.TransferPath.newBuilder()
 										.setSource(filePath).setDestination(fileName).build())
 								.build();
@@ -66,9 +71,9 @@ public class PersistentUploadExample {
 				if (sequenceIndex == maxFiles) {
 					// end the persistent session
 					LOGGER.log(Level.FINE, "T: Limit reached, locking session. !!!");
-					transferClient.transferService.lockPersistentTransfer(
-							Transfer.LockPersistentTransferRequest.newBuilder()
-									.setTransferId(transferClient.getTransferId()).build());
+					transferClient.transferService
+							.lockPersistentTransfer(Transfer.LockPersistentTransferRequest
+									.newBuilder().setTransferId(transferId).build());
 				}
 			} catch (final IOException e) {
 				LOGGER.log(Level.FINE, "T: ERROR: {0}", e.getMessage());
@@ -78,17 +83,6 @@ public class PersistentUploadExample {
 
 	public static void main(String... args)
 			throws Exception, IOException, java.net.URISyntaxException {
-		if (args.length > 2) {
-			throw new Exception("Usage: PersistentUploadExample [<max files>] [<delay ms>]");
-		}
-		int max_files = 100;
-		if (args.length > 0) {
-			max_files = Integer.parseInt(args[0]);
-		}
-		long ms_between_files = 100;
-		if (args.length > 1) {
-			ms_between_files = Long.parseLong(args[1]);
-		}
 		final Configuration config = new Configuration();
 		final TransferClient transferClient = new TransferClient(config);
 		final URI server_ssh_url = new URI(config.getParamStr("server", "url"));
@@ -98,17 +92,18 @@ public class PersistentUploadExample {
 				.put("ssh_port", server_ssh_url.getPort())
 				.put("remote_user", config.getParamStr("server", "user"))
 				.put("remote_password", config.getParamStr("server", "pass"))
-				.put("direction", "send").put("destination_root", config.getParamStr("server", "folder_upload"));
-		transferClient.startup();
+				.put("direction", "send")
+				.put("destination_root", config.getParamStr("server", "folder_upload"));
+		transferClient.daemon_startup();
 		// start persistent transfer session
-		transferClient.start_transfer(transferSpec, Transfer.TransferType.FILE_PERSISTENT);
-		final TimerTask timerTask = new FileUploadTask(transferClient, max_files);
+		transferClient.session_start(transferSpec, Transfer.TransferType.FILE_PERSISTENT);
+		final TimerTask timerTask =
+				new FileUploadTask(transferClient, config.getParamInt("server", "persist_max"));
 		final Timer timer = new Timer(true);
-		// 1.task 2.delay(ms) 3.period(ms)
-		timer.scheduleAtFixedRate(timerTask, 1000, ms_between_files);
-		// This loops in getting statuses
-		transferClient.wait_transfer();
-		transferClient.shutdown();
+		// 1.task 2.initial delay(ms) 3.execution period(ms)
+		timer.scheduleAtFixedRate(timerTask, 1000, config.getParamInt("server", "persist_ms"));
+		transferClient.session_wait_for_completion();
+		transferClient.daemon_shutdown();
 		LOGGER.log(Level.FINE, "L: exiting program");
 	}
 }
