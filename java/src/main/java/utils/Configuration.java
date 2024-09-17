@@ -1,14 +1,18 @@
 package utils;
 
 import java.util.Map;
-// import java.util.logging.Logger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.Locale;
+import java.io.RandomAccessFile;
 import java.nio.file.FileSystems;
 import org.yaml.snakeyaml.Yaml;
+import java.io.File;
+import java.io.IOException;
 
 // read configuration file and provide interface for transfer
 public class Configuration {
-	// private static final Logger LOGGER = Logger.getLogger(Configuration.class.getName());
+	private static final Logger LOGGER = Logger.getLogger(Configuration.class.getName());
 	static final String PATHS_FILES = "config/paths.yaml";
 
 	// config filer loaded from yaml
@@ -70,9 +74,9 @@ public class Configuration {
 	}
 
 	/**
-	 * Get path from the reference file
-	 * if name == null, then we use the default path file
-	 * if a name is provided, we use the path from the reference file
+	 * Get path from the reference file if name == null, then we use the default path file if a name
+	 * is provided, we use the path from the reference file
+	 * 
 	 * @param name the name of the path in the reference file
 	 * @param sub_path the sub path to append to the path
 	 * @return the path as String
@@ -88,5 +92,38 @@ public class Configuration {
 		System.arraycopy(sub_path, 0, completePath, 1, sub_path.length);
 		// concatenate all the path elements, including top folder
 		return FileSystems.getDefault().getPath(topFolder, completePath).toString();
+	}
+
+	// Get the last line of a file
+	public static String lastFileLine(String filename) {
+		LOGGER.log(Level.FINE, "Reading last line of file: {0}", filename);
+		File file = new File(filename);
+		try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
+			final long fileLength = randomAccessFile.length();
+			if (fileLength == 0) {
+				return ""; // Empty file case
+			}
+			LOGGER.log(Level.FINE, "length: {0}", fileLength);
+
+			// Start from the end of the file (minus one to skip the last byte)
+			long pointer = fileLength - 2;
+			randomAccessFile.seek(pointer);
+
+			// Read backwards until we find a newline or reach the start of the file
+			int readByte;
+			while (pointer > 0) {
+				readByte = randomAccessFile.readByte();
+				if (readByte == '\n') {
+					break; // Found the newline
+				}
+				pointer--;
+				randomAccessFile.seek(pointer); // Move back
+			}
+			// Now read the last line (either found newline or start of the file)
+			var result = randomAccessFile.readLine(); // Read the last line
+			return result;
+		} catch (final IOException e) {
+			throw new Error(e.getMessage());
+		}
 	}
 }
