@@ -2,7 +2,7 @@
 # laurent.martin.aspera@fr.ibm.com
 # Faspex 5
 # Send a package to myself
-import utils.tools
+import utils.configuration
 import utils.transfer_client
 import utils.rest
 import requests
@@ -75,7 +75,7 @@ def get_bearer(verify_cert):
     return f'Bearer {response_data["access_token"]}'
 
 
-test_env = utils.tools.Tools()
+test_env = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:

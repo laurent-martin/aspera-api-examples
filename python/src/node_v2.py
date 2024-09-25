@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Upload files using node API and transfer spec v2
-import utils.tools
+import utils.configuration
 import utils.transfer_client
 
-test_env = utils.tools.Tools()
+test_env = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:
@@ -18,7 +18,7 @@ try:
             'node_api': {
                 'url': config['url'],
                 'headers': [
-                    utils.tools.basic_auth_header_key_value(config['username'], config['password'])
+                    utils.configuration.basic_auth_header_key_value(config['username'], config['password'])
                 ]
             }
         },

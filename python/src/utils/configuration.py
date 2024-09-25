@@ -18,7 +18,7 @@ PATHS_FILE_REL = 'config/paths.yaml'
 DEBUG_HTTP = False
 
 
-class Tools:
+class Configuration:
     '''Test Environment'''
 
     def __init__(self):

@@ -2,7 +2,7 @@
 # laurent.martin.aspera@fr.ibm.com
 # Aspera on Cloud
 # Send a package to shared inbox (name in config file) in given workspace (name in config file)
-import utils.tools
+import utils.configuration
 import utils.transfer_client
 import utils.rest
 import requests
@@ -67,7 +67,7 @@ def get_bearer(scope):
     return f'Bearer {response_data["access_token"]}'
 
 
-test_env = utils.tools.Tools()
+test_env = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:

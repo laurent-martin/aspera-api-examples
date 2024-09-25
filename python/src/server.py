@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # transfer files with Aspera HSTS using SSH authentication
-import utils.tools
+import utils.configuration
 import utils.transfer_client
 import logging
 import tempfile
 import os
 from urllib.parse import urlparse
 
-test_env = utils.tools.Tools()
+test_env = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:

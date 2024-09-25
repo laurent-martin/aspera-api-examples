@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Upload files to Aspera Shares (similar as node api)
-import utils.tools
+import utils.configuration
 import utils.transfer_client
 import utils.rest
 import logging
 
-test_env = utils.tools.Tools()
+test_env = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:

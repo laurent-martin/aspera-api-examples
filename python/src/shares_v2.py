@@ -2,10 +2,10 @@
 # laurent.martin.aspera@fr.ibm.com
 # Upload files Shares (Node) API and transfer spec v2
 # Note: Transfer SDK may have a bug that make this work only if the share name is equal to the folder name on node.
-import utils.tools
+import utils.configuration
 import utils.transfer_client
 
-test_env = utils.tools.Tools()
+test_env = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:

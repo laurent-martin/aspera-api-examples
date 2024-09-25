@@ -10,7 +10,7 @@ import time
 import grpc
 import logging
 import subprocess
-import utils.tools
+import utils.configuration
 from urllib.parse import urlparse
 import warnings
 warnings.filterwarnings("ignore", ".*obsolete", UserWarning, "google.protobuf.runtime_version")
@@ -106,7 +106,7 @@ class TransferClient:
             logging.error('Daemon not started.')
             logging.error('Exited with code: %s', exit_status)
             logging.error('Check daemon log: %s', self._daemon_log)
-            logging.error(utils.tools.last_file_line(self._daemon_log))
+            logging.error(utils.configuration.last_file_line(self._daemon_log))
             raise Exception('daemon startup failed')
         logging.info('Daemon started: %s', self._transfer_daemon_process.pid)
 
@@ -188,7 +188,7 @@ class TransferClient:
 
     def throw_on_error(self, status, error):
         if status == transfer_manager.TransferStatus.FAILED:
-            logging.error(utils.tools.last_file_line(self._daemon_log))
+            logging.error(utils.configuration.last_file_line(self._daemon_log))
             raise Exception("transfer failed: " + error.description)
         if status == transfer_manager.TransferStatus.UNKNOWN_STATUS:
             raise Exception("unknown transfer id: " + error.description)

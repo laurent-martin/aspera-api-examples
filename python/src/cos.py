@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # laurent.martin.aspera@fr.ibm.com
 # Upload files to COS using COS embedded Aspera and Aspera Gen3 Node API
-import utils.tools
+import utils.configuration
 import utils.transfer_client
 import utils.helper_aspera_cos
 import utils.rest
@@ -9,7 +9,7 @@ import utils.rest
 
 destination_folder = '/'
 
-test_env = utils.tools.Tools()
+test_env = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(test_env).startup()
 
 try:
