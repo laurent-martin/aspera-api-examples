@@ -2,9 +2,9 @@
 # frozen_string_literal: true
 
 require 'aspera/api/aoc'
-require_relative 'utils/test_environment'
+require_relative 'utils/configuration'
 
-test_env = TestEnvironment.instance
+test_env = Configuration.instance
 
 aoc_api = Aspera::Api::AoC.new(
   url: "https://#{test_env.conf('aoc', 'org')}.ibmaspera.com",

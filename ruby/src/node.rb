@@ -5,9 +5,9 @@
 # location of ascp can be specified with env var "ascp"
 # temp folder can be specified with env var "tmp"
 
-require_relative 'utils/test_environment'
+require_relative 'utils/configuration'
 
-test_env = TestEnvironment.instance
+test_env = Configuration.instance
 
 destination_folder = test_env.conf('server', 'folder_upload')
 

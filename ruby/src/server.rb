@@ -3,9 +3,9 @@
 
 # Example: transfer a file using one of the provided transfer agents
 
-require_relative 'utils/test_environment'
+require_relative 'utils/configuration'
 
-test_env = TestEnvironment.instance
+test_env = Configuration.instance
 
 ##############################################################
 # download using SSH credentials
