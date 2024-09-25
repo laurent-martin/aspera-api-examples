@@ -26,7 +26,7 @@ api_v5 = Aspera::Rest.new(
       sub: "user:#{test_env.conf('faspex5', 'username')}" # subject
     },
     private_key_obj: OpenSSL::PKey::RSA.new(File.read(File.expand_path(test_env.conf('faspex5', 'private_key'))),
-                                            test_env.conf('faspex5', 'passphrase')),
+                                            test_env.conf('faspex5', 'passphrase', optional: true)),
     headers: { typ: 'JWT' }
   }
 )

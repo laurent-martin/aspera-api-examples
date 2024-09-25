@@ -1,7 +1,7 @@
 ---
 misc:
   platform: osx-arm64
-  level: info
+  level: debug
   transfer_regular: true
 trsdk:
   url: grpc://trsdk.address.here:55002
@@ -11,8 +11,8 @@ web:
   port: 9080
 server:
   url: ssh://server.address.here:33001
-  user: _user_here_
-  pass: _pass_here_
+  username: _username_here_
+  password: _password_here_
   file_download: "/aspera-test-dir-small/10MB.1"
   folder_upload: "/Upload"
   persist_max: 10
@@ -20,8 +20,8 @@ server:
 node:
   url: https://node.address.here
   verify: false
-  user: _user_here_
-  pass: _pass_here_
+  username: _username_here_
+  password: _password_here_
   folder_upload: "/Upload"
 cos:
   endpoint: https://s3.us-south.cloud-object-storage.appdomain.cloud
@@ -36,8 +36,8 @@ coscreds:
 faspex:
   url: https://faspex.address.here/aspera/faspex
   verify: true
-  user: _user_here_
-  pass: _pass_here_
+  username: _username_here_
+  password: _password_here_
   adminuser: _adminuser_here_
   adminpass: _adminpass_here_
 faspex5:
@@ -50,8 +50,8 @@ faspex5:
 shares:
   url: https://shares.address.here
   verify: true
-  user: _user_here_
-  pass: _pass_here_
+  username: _username_here_
+  password: _password_here_
   folder_upload: london-sh1
 aoc:
   org: sedemo

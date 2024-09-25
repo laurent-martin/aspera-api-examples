@@ -60,12 +60,16 @@ class TestEnvironment
     @files = [ARGV[0]]
   end
 
-  def conf(*keys)
+  def conf(*keys, optional: false)
     current_node = @config
     keys.each do |key|
-      raise KeyError, "Key not found: #{key}" unless current_node.key?(key)
-
-      current_node = current_node[key]
+      if current_node.key?(key)
+        current_node = current_node[key]
+      elsif optional
+        return nil
+      else
+        raise KeyError, "Key not found: #{key}"
+      end
     end
     current_node
   end
