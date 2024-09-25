@@ -9,7 +9,7 @@ PROJECT_VERSION=$(shell sed -nEe 's/^version.*"([^"]*)".*/\1/p' build.gradle)
 SAMPLE_JAR=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar
 # cspell:disable
 JAVA_PROPS=-Ddir_top=$(DIR_TOP) -Djava.util.logging.config.file=logging.properties
-GRADLE_PROPS=-Pproto_file=$(notdir $(SDK_FILE_PROTO)) -Pproto_dir=$(dir $(SDK_FILE_PROTO)) -Psample_version=$(PROJECT_VERSION)
+GRADLE_PROPS=-Pproto_file=$(notdir $(SDK_FILE_PROTO)) -Pproto_dir=$(dir $(SDK_FILE_PROTO))
 # cspell:enable
 all:: $(TEST_FLAGS)
 $(DIR_TESTED_FLAG)%: $(SAMPLE_JAR) $(GBL_FILE_SAMPLE)
