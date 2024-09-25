@@ -18,8 +18,8 @@ try:
 
     shares_api = utils.rest.Rest(
         base_url=f'{config['url']}/node_api',
-        user=config['user'],
-        password=config['pass'],
+        user=config['username'],
+        password=config['password'],
         # verify certificate if not explicitly set to False
         verify=not ('verify' in config and config['verify'] is False),
     )
