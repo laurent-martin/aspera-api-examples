@@ -11,6 +11,8 @@ def generate_config_template
 
   o = YAML.load_file(local_config)
   o.each do |k, h|
+    next if k.eql?('trsdk')
+
     h.each do |p, v|
       next unless v.is_a?(String)
 
