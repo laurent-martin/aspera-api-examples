@@ -70,8 +70,7 @@ class Configuration:
         '''Get configuration sub-path in project's root folder'''
         item_path = os.path.join(
             self._top_folder, *self._paths[name].split('/'))
-        assert os.path.exists(item_path), f'ERROR: {
-            item_path} not found.{self._error_hint}'
+        assert os.path.exists(item_path), f'ERROR: {item_path} not found.{self._error_hint}'
         return item_path
 
     def file_list(self):
