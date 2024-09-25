@@ -17,7 +17,7 @@ try:
     config = test_env.conf('shares')
 
     shares_api = utils.rest.Rest(
-        base_url=f'{config['url']}/node_api',
+        base_url=f"{config['url']}/node_api",
         user=config['username'],
         password=config['password'],
         # verify certificate if not explicitly set to False
