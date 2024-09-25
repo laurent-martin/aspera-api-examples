@@ -124,7 +124,7 @@ try:
     # (all tags are not mandatory, but some are, like 'node')
     t_spec = {
         'direction': 'send',
-        'token': get_bearer(f'node.{node_info['access_key']}:user:all'),
+        'token': get_bearer(f"node.{node_info['access_key']}:user:all"),
         'tags': {
             'aspera': {
                 'app': 'packages',
