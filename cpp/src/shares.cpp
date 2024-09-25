@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
         const std::string shares_api_url = config.param_str({"shares", "url"}) + "/node_api";
         LOG(info) << "Shares API URL: " << shares_api_url;
         utils::RestClient shares_api(shares_api_url);
-        shares_api.set_basic(config.param_str({"shares", "user"}), config.param_str({"shares", "pass"}));
+        shares_api.set_basic(config.param_str({"shares", "username"}), config.param_str({"shares", "password"}));
         const std::string destination_folder_in_shares = config.param_str({"shares", "folder_upload"});
         // refer to:
         // https://developer.ibm.com/apis/catalog/aspera--aspera-node-api/api/API--aspera--ibm-aspera-node-api#post1924996167

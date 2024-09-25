@@ -16,8 +16,8 @@ const local_file = path.join('/', test_environment.tmp_folder, server_config.fil
 var t_spec1_generic = {
 	remote_host: server_url.hostname,
 	ssh_port: parseInt(server_url.port),
-	remote_user: server_config.user,
-	remote_password: server_config.pass,
+	remote_user: server_config.username,
+	remote_password: server_config.password,
 }
 
 // Example 1: download

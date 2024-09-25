@@ -22,8 +22,8 @@ try:
 
     remote_host = server_url.hostname
     remote_port = server_url.port
-    remote_user = config['user']
-    remote_pass = config['pass']
+    remote_user = config['username']
+    remote_pass = config['password']
 
     transfer_client._shutdown_after_transfer = False
 

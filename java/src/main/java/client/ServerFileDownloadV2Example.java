@@ -19,8 +19,8 @@ public class ServerFileDownloadV2Example {
 				.put("session_initiation", new JSONObject()//
 						.put("ssh", new JSONObject()//
 								.put("ssh_port", faspURL.getPort())//
-								.put("remote_user", config.getParamStr("server","user"))//
-								.put("remote_password", config.getParamStr("server","pass"))))//
+								.put("remote_user", config.getParamStr("server","username"))//
+								.put("remote_password", config.getParamStr("server","password"))))//
 				.put("direction", "recv")//
 				.put("assets", new JSONObject()//
 						.put("destination_root", System.getProperty("java.io.tmpdir"))//

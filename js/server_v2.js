@@ -20,8 +20,8 @@ const transferSpecV2 = {
 	session_initiation: {
 		ssh: {
 			ssh_port: parseInt(server_url.port),
-			remote_user: server_config.user,
-			remote_password: server_config.pass
+			remote_user: server_config.username,
+			remote_password: server_config.password
 		}
 	},
 	security: {

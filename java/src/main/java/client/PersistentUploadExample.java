@@ -89,8 +89,8 @@ public class PersistentUploadExample {
 		final JSONObject transferSpec = new JSONObject().put("title", "server upload V1")
 				.put("remote_host", server_ssh_url.getHost())
 				.put("ssh_port", server_ssh_url.getPort())
-				.put("remote_user", config.getParamStr("server", "user"))
-				.put("remote_password", config.getParamStr("server", "pass"))
+				.put("remote_user", config.getParamStr("server", "username"))
+				.put("remote_password", config.getParamStr("server", "password"))
 				.put("direction", "send")
 				.put("destination_root", config.getParamStr("server", "folder_upload"));
 		transferClient.daemon_startup();

@@ -17,8 +17,8 @@ public class ServerFileUploadV1Example {
 				.put("title", "server upload V1")//
 				.put("remote_host", fasp_url.getHost())//
 				.put("ssh_port", fasp_url.getPort())//
-				.put("remote_user", config.getParamStr("server", "user"))//
-				.put("remote_password", config.getParamStr("server", "pass"))//
+				.put("remote_user", config.getParamStr("server", "username"))//
+				.put("remote_password", config.getParamStr("server", "password"))//
 				.put("direction", "send")//
 				.put("destination_root", config.getParamStr("server", "folder_upload"))//
 				.put("paths", new JSONArray()//

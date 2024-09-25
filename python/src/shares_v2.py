@@ -25,7 +25,7 @@ try:
             'node_api': {
                 'url': shares_api_url,
                 'headers': [
-                    tools.basic_auth_header_key_value(config['user'], config['pass'])
+                    tools.basic_auth_header_key_value(config['username'], config['password'])
                 ]
             }
         },

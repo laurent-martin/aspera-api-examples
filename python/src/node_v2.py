@@ -18,7 +18,7 @@ try:
             'node_api': {
                 'url': config['url'],
                 'headers': [
-                    utils.tools.basic_auth_header_key_value(config['user'], config['pass'])
+                    utils.tools.basic_auth_header_key_value(config['username'], config['password'])
                 ]
             }
         },
