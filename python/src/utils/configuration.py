@@ -35,8 +35,7 @@ class Configuration:
         self._config = yaml.load(
             open(self.get_path('main_config')), Loader=yaml.FullLoader)
         # Error hint to help user to fix the issue
-        self._error_hint = f'\nPlease check: SDK installed in {
-            self._paths["sdk_root"]}, configuration file: {self._paths["main_config"]}'
+        self._error_hint = f'\nPlease check: SDK installed in {self._paths["sdk_root"]}, configuration file: {self._paths["main_config"]}'
         # folder with SDK binaries
         self._arch_folder = os.path.join(
             self.get_path('sdk_root'), self.conf('misc', 'platform'))
