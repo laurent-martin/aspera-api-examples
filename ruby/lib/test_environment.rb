@@ -37,9 +37,13 @@ class TestEnvironment
   include Singleton
   attr_reader :top_folder, :config, :files, :agent
 
+  PATHS_FILE_REL = 'config/paths.yaml'
+
+  private_constant :PATHS_FILE_REL
+
   def initialize
     @top_folder = File.join(File.dirname(__FILE__), '..', '..')
-    @paths = YAML.load_file(File.join(@top_folder, 'config/paths.yaml'))
+    @paths = YAML.load_file(File.join(@top_folder, PATHS_FILE_REL))
     @config = YAML.load_file(get_path('main_config'))
     Aspera::Log.dump(:config, @config)
     raise "Missing config file: #{get_path('main_config')}" unless @config['misc']
