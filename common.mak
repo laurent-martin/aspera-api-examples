@@ -39,7 +39,7 @@ $(GBL_FILE_SAMPLE):
 	mkdir -p $(GBL_DIR_TMP)
 	@echo "Generating test file: $(GBL_FILE_SAMPLE)"
 	date > $(GBL_FILE_SAMPLE)
-	dd if=/dev/zero of=$(GBL_FILE_SAMPLE) bs=1k count=3
+	# dd if=/dev/zero of=$(GBL_FILE_SAMPLE) bs=1k count=3
 $(DIR_TESTED_FLAG):
 	mkdir -p $(DIR_TESTED_FLAG)
 # config file info https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
