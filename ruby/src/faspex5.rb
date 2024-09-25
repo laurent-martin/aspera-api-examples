@@ -9,6 +9,8 @@ require_relative 'utils/configuration'
 
 test_env = Configuration.instance
 
+log = test_env.log
+
 # 1: Faspex 5 API v5
 #---------------
 
@@ -32,7 +34,7 @@ api_v5 = Aspera::Rest.new(
 )
 
 # very simple api call
-test_env.log.debug(api_v5.read('version'))
+log.debug(api_v5.read('version')[:data])
 
 # 2: send a package
 #---------------
@@ -55,10 +57,10 @@ transfer_spec = api_v5.call(
 transfer_spec.delete('authentication')
 transfer_spec.merge!(ts_paths)
 
-test_env.log.debug { Aspera::Log.dump('transfer_spec', transfer_spec) }
+log.debug("transfer_spec #{transfer_spec}")
 # start transfer (asynchronous)
 job_id = test_env.agent.start_transfer(transfer_spec)
-test_env.log.debug { Aspera::Log.dump('job_id', job_id) }
+log.debug("job_id: #{job_id}")
 # wait for all transfer completion (for the example)
 result = test_env.agent.wait_for_transfers_completion
 #  notify of any transfer error

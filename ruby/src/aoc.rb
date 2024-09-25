@@ -6,6 +6,8 @@ require_relative 'utils/configuration'
 
 test_env = Configuration.instance
 
+log = test_env.log
+
 aoc_api = Aspera::Api::AoC.new(
   url: "https://#{test_env.conf('aoc', 'org')}.ibmaspera.com",
   auth: :jwt,
@@ -17,4 +19,4 @@ aoc_api = Aspera::Api::AoC.new(
 
 self_user_data = aoc_api.read('self')
 
-test_env.log.debug { Aspera::Log.dump('self', self_user_data) }
+log.debug("self: #{self_user_data}")

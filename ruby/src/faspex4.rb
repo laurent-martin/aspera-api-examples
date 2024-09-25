@@ -9,6 +9,8 @@ require_relative 'utils/configuration'
 
 test_env = Configuration.instance
 
+log = test_env.log
+
 # 1: Faspex 4 API v3
 #---------------
 
@@ -41,12 +43,12 @@ transfer_spec = pkg_created['xfer_sessions'].first
 transfer_spec['paths'] = test_env.files.map { |p| { 'source' => p } }
 # start transfer (asynchronous)
 job_id = test_env.agent.start_transfer(transfer_spec)
-Aspera::Log.dump('job_id', job_id)
+log.debug("job_id #{job_id}")
 # wait for all transfer completion (for the example)
 result = test_env.agent.wait_for_transfers_completion
 #  notify of any transfer error
 result.reject { |i| i.eql?(:success) }.each do |e|
-  Aspera::Log.log.error { "A transfer error occurred: #{e.message}" }
+  log.error { "A transfer error occurred: #{e.message}" }
 end
 
 # 3: Faspex 4 API v4 (Requires admin privilege)
@@ -68,4 +70,5 @@ api_v4 = Aspera::Rest.new(
 )
 
 # Use it. Note that Faspex 4 API v4 is totally different from Faspex 4 v3 APIs, see ref in header
-test_env.log.debug { Aspera::Log.dump('users', api_v4.read('users')[:data]) }
+users = api_v4.read('users')[:data]
+test_env.log.debug("users: #{users}")

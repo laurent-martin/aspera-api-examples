@@ -51,8 +51,8 @@ class Configuration
     # get Transfer Agent
     @agent = Aspera::Agent::Direct.new
     unless ARGV.length.eql?(1)
-      Aspera::Log.log.error { "Wrong number of args: #{ARGV.length}" }
-      Aspera::Log.log.error { "Usage: #{$PROGRAM_NAME} <file to send>" }
+      log.error { "Wrong number of args: #{ARGV.length}" }
+      log.error { "Usage: #{$PROGRAM_NAME} <file to send>" }
       Process.exit(1)
     end
     @files = [ARGV[0]]
