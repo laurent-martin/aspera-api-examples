@@ -42,7 +42,7 @@ class TestEnvironment
   private_constant :PATHS_FILE_REL
 
   def initialize
-    @top_folder = File.join(File.dirname(__FILE__), '..', '..')
+    @top_folder = File.join(File.dirname(__FILE__), '..', '..', '..')
     @paths = YAML.load_file(File.join(@top_folder, PATHS_FILE_REL))
     @config = YAML.load_file(get_path('main_config'))
     Aspera::Log.dump(:config, @config)
@@ -58,6 +58,20 @@ class TestEnvironment
       Process.exit(1)
     end
     @files = [ARGV[0]]
+  end
+
+  def conf(*keys)
+    current_node = @config
+    keys.each do |key|
+      raise KeyError, "Key not found: #{key}" unless current_node.key?(key)
+
+      current_node = current_node[key]
+    end
+    current_node
+  end
+
+  def log
+    Aspera::Log.log
   end
 
   def get_path(name)

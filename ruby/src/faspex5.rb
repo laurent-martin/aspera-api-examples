@@ -5,38 +5,34 @@
 # this example makes use of class Aspera::Rest for REST calls
 # alternatively class RestClient of gem rest-client could be used
 
-$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
-require 'test_environment'
+require_relative 'utils/test_environment'
 
-Aspera::Log.instance.level = :debug
-all_config = TestEnvironment.instance.config
-f5_conf = all_config['faspex5']
-logger = Aspera::Log.log
+test_env = TestEnvironment.instance
 
 # 1: Faspex 5 API v5
 #---------------
 
 # create REST API object
 api_v5 = Aspera::Rest.new(
-  base_url: "#{f5_conf['url']}/api/v5",
+  base_url: "#{test_env.conf('faspex5', 'url')}/api/v5",
   auth: {
     type: :oauth2,
     grant_method: :jwt,
-    base_url: "#{f5_conf['url']}/auth",
-    client_id: f5_conf['client_id'],
+    base_url: "#{test_env.conf('faspex5', 'url')}/auth",
+    client_id: test_env.conf('faspex5', 'client_id'),
     payload: {
-      iss: f5_conf['client_id'], # issuer
-      aud: f5_conf['client_id'], # audience
-      sub: "user:#{f5_conf['username']}" # subject
+      iss: test_env.conf('faspex5', 'client_id'), # issuer
+      aud: test_env.conf('faspex5', 'client_id'), # audience
+      sub: "user:#{test_env.conf('faspex5', 'username')}" # subject
     },
-    private_key_obj: OpenSSL::PKey::RSA.new(File.read(File.expand_path(f5_conf['private_key'])),
-                                            f5_conf['passphrase']),
+    private_key_obj: OpenSSL::PKey::RSA.new(File.read(File.expand_path(test_env.conf('faspex5', 'private_key'))),
+                                            test_env.conf('faspex5', 'passphrase')),
     headers: { typ: 'JWT' }
   }
 )
 
 # very simple api call
-logger.debug(api_v5.read('version'))
+test_env.log.debug(api_v5.read('version'))
 
 # 2: send a package
 #---------------
@@ -44,10 +40,10 @@ logger.debug(api_v5.read('version'))
 # package creation parameters
 package_create_params = {
   'title': 'test title',
-  'recipients': [{ 'name': f5_conf['username'] }]
+  'recipients': [{ 'name': test_env.conf('faspex5', 'username') }]
 }
 package = api_v5.create('packages', package_create_params)[:data]
-ts_paths = { 'paths' => TestEnvironment.instance.files.map { |p| { 'source' => p } } }
+ts_paths = { 'paths' => test_env.files.map { |p| { 'source' => p } } }
 transfer_spec = api_v5.call(
   operation: 'POST',
   subpath: "packages/#{package['id']}/transfer_spec/upload",
@@ -59,13 +55,13 @@ transfer_spec = api_v5.call(
 transfer_spec.delete('authentication')
 transfer_spec.merge!(ts_paths)
 
-Aspera::Log.dump('transfer_spec', transfer_spec)
+test_env.log.debug { Aspera::Log.dump('transfer_spec', transfer_spec) }
 # start transfer (asynchronous)
-job_id = TestEnvironment.instance.agent.start_transfer(transfer_spec)
-Aspera::Log.dump('job_id', job_id)
+job_id = test_env.agent.start_transfer(transfer_spec)
+test_env.log.debug { Aspera::Log.dump('job_id', job_id) }
 # wait for all transfer completion (for the example)
-result = TestEnvironment.instance.agent.wait_for_transfers_completion
+result = test_env.agent.wait_for_transfers_completion
 #  notify of any transfer error
 result.reject { |i| i.eql?(:success) }.each do |e|
-  logger.error { "A transfer error occurred: #{e.message}" }
+  test_env.log.error { "A transfer error occurred: #{e.message}" }
 end

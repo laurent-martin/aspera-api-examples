@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-Transfer files using IBM Aspera APIs for various IBM Aspera products:
+Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 
 - Aspera Transfer SDK: transfer files in an application
 - Aspera Connect SDK and HTTPGW SDK: transfer files in a web browser
@@ -25,13 +25,19 @@ The [IBM Aspera Connect SDK github site](https://github.com/IBM/aspera-connect-s
 
 IBM Aspera provides two types of APIs:
 
-- Client APIs: SDKs include **libraries** to be used in applications to transfer files
+- Client APIs:
+
+  SDKs include **libraries** to be used in applications to transfer files
 
   - **Aspera Transfer SDK**: (gRPC with multi language) transfer files in an application
-  - **Aspera Connect SDK**: (web js) transfer files in a web browser
-  - **Aspera HTTP Gateway SDK**: (web js) transfer files in a web browser using HTTPS
+  - web SDKs:
+    - **Aspera Connect SDK**: (web js) transfer files in a web browser
+    - **Aspera HTTP Gateway SDK**: (web js) transfer files in a web browser using HTTPS
+    - **Aspera for Desktop**: (web js) transfer files in a web browser
 
-- Server APIs: **REST** APIs (with OpenAPI spec) interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
+- Server APIs:
+
+  **REST** APIs (with OpenAPI spec) interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
 
 Depending on the use case, one might use one or (often) several of those APIs.
 
