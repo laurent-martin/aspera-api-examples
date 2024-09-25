@@ -24,19 +24,22 @@ GBL_FILE_SAMPLE=$(GBL_DIR_TMP)This_is_a_test.txt
 # folder for test flags
 DIR_TESTED_FLAG=./.tested/
 TEST_FLAGS=$(foreach var,$(TEST_CASES),$(DIR_TESTED_FLAG)$(var))
-.PHONY: all clean superclean clean_flags
+.PHONY: all clean superclean clean_flags clean_daemon
 all::
 # clean flags indicating test was run: force re-run of tests only
 clean_flags::
 	rm -f $(TEST_FLAGS)
 # simple clean
-clean:: clean_flags
+clean:: clean_flags clean_daemon
 # clean all generated and compiled files
 superclean:: clean
+clean_daemon:
+	killall -q asperatransferd||:
 $(GBL_FILE_SAMPLE):
 	mkdir -p $(GBL_DIR_TMP)
 	@echo "Generating test file: $(GBL_FILE_SAMPLE)"
 	date > $(GBL_FILE_SAMPLE)
+	dd if=/dev/zero of=$(GBL_FILE_SAMPLE) bs=1k count=3
 $(DIR_TESTED_FLAG):
 	mkdir -p $(DIR_TESTED_FLAG)
 # config file info https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File

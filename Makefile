@@ -9,7 +9,6 @@ all clean superclean clean_flags::
 	set -ex && for sec in $(SECTIONS); do cd $$sec; make $@; cd ..; done
 clean::
 	find . -name \*.log -exec rm {} \;
-	killall -q asperatransferd||:
 superclean:: cleantmp
 cleantmp:
 	rm -fr $(GBL_DIR_TMP)
