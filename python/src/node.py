@@ -4,7 +4,7 @@
 import utils.configuration
 import utils.transfer_client
 import utils.rest
-import logging
+import logging as log
 
 test_env = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(test_env).startup()
@@ -22,7 +22,7 @@ try:
     )
 
     # call Node API with a single transfer request to get one transfer spec with Aspera token
-    logging.info('Generating transfer spec')
+    log.info('Generating transfer spec')
     response_data = node_api.post('files/upload_setup', {
         'transfer_requests': [
             {'transfer_request': {'paths': [{'destination': config['folder_upload']}]}}

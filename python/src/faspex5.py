@@ -7,7 +7,7 @@ import utils.transfer_client
 import utils.rest
 import requests
 import requests.auth
-import logging
+import logging as log
 import jwt
 import calendar
 import time
@@ -31,7 +31,7 @@ transfer_sessions = 1
 
 def get_bearer(verify_cert):
     '''generate a bearer token'''
-    logging.info('getting API authorization')
+    log.info('getting API authorization')
     with open(config['private_key']) as fin:
         private_key_pem = fin.read()
 
@@ -46,7 +46,7 @@ def get_bearer(verify_cert):
         'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
         'jti': str(uuid.uuid4()),
     }
-    logging.debug(jwt_payload)
+    log.debug(jwt_payload)
 
     data = {
         'client_id': config['client_id'],
@@ -94,19 +94,19 @@ try:
     )
 
     # create a new package with Faspex 5 API (this allocates a reception folder on package storage)
-    logging.info(f'creating package "{package_name}"')
+    log.info(f'creating package "{package_name}"')
     package_info = f5_api.post('packages', {
         'title': package_name,
         'recipients': [{'name': config['username']}],  # send to myself (for test)
     })
-    logging.debug(package_info)
+    log.debug(package_info)
 
     # build payload to specify files to send
     files_to_send = {'paths': []}
     for f in test_env.file_list():
         files_to_send['paths'].append({'source': f})
 
-    logging.info('getting transfer spec')
+    log.info('getting transfer spec')
     t_spec = f5_api.post(f'packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect', files_to_send)
 
     # optional: multi session

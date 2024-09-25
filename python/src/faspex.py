@@ -4,7 +4,7 @@
 import utils.configuration
 import utils.transfer_client
 import utils.rest
-import logging
+import logging as log
 
 test_env = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(test_env).startup()
@@ -25,7 +25,7 @@ try:
     package_files = test_env.file_list()
 
     # package creation information for Faspex API v3 : POST /send
-    logging.info('Creating package')
+    log.info('Creating package')
     response_data = faspex_api.post('send', {
         'delivery': {
             'title': 'Sent from python example',
@@ -33,7 +33,7 @@ try:
             'sources': [{'paths': package_files}],
         }
     })
-    logging.debug('resp=%s', response_data)
+    log.debug('resp=%s', response_data)
 
     if 'error' in response_data:
         raise Exception(response_data['error']['internal_message'])

@@ -5,7 +5,6 @@ import utils.configuration
 import utils.transfer_client
 import utils.helper_aspera_cos
 import utils.rest
-# import json
 
 destination_folder = '/'
 

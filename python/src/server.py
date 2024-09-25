@@ -3,7 +3,7 @@
 # transfer files with Aspera HSTS using SSH authentication
 import utils.configuration
 import utils.transfer_client
-import logging
+import logging as log
 import tempfile
 import os
 from urllib.parse import urlparse
@@ -30,7 +30,7 @@ try:
     # Example 1: download
     # Instead of using the soon deprecated FaspManager1 Python lib, let's use the transfer spec
     # direction is relative to us, client, i.e. receive = download
-    logging.info('======Test 1: download')
+    log.info('======Test 1: download')
     t_spec_download = {
         'remote_host': remote_host,
         'ssh_port': remote_port,
@@ -46,7 +46,7 @@ try:
     local_file = os.path.join(my_local_folder, os.path.basename(config['file_download']))
 
     # Example 2: upload: single file upload to existing folder.
-    logging.info('======Test 2: upload file')
+    log.info('======Test 2: upload file')
     t_spec_upload = {
         'remote_host': remote_host,
         'ssh_port': remote_port,
@@ -65,13 +65,13 @@ try:
     # if there is only one source file and destination does not exist, then 'FASP' assumes it is destination filename
     # but if destination is a folder, it will send same source filename into folder
     # so enforce folder creation, to be sure of what happens
-    logging.info('======Test 3: upload file to new folder')
+    log.info('======Test 3: upload file to new folder')
     t_spec_upload['destination_root'] = config['folder_upload']+'/new_folder'
     t_spec_upload['create_dir'] = True
     transfer_client.start_transfer_and_wait(t_spec_upload)
 
     # Example 4: upload: send to sub folder, but using file pairs
-    logging.info('======Test 4: upload file and rename')
+    log.info('======Test 4: upload file and rename')
     t_spec_upload['destination_root'] = config['folder_upload']
     del t_spec_upload['create_dir']
     t_spec_upload['paths'] = [{'source': local_file, 'destination': 'xxx/newfilename.ext'}]

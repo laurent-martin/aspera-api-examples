@@ -7,7 +7,7 @@ import utils.transfer_client
 import utils.rest
 import requests
 import requests.auth
-import logging
+import logging as log
 import jwt
 import calendar
 import time
@@ -30,7 +30,7 @@ transfer_sessions = 1
 
 def get_bearer(scope):
     '''generate a bearer token for given scope using AoC API'''
-    logging.info('getting API authorization for %s', scope)
+    log.info('getting API authorization for %s', scope)
     with open(config['private_key']) as key_file:
         private_key_pem = key_file.read()
 
@@ -44,7 +44,7 @@ def get_bearer(scope):
         'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
         'org': config['org'],
     }
-    logging.debug(jwt_payload)
+    log.debug(jwt_payload)
 
     data = {
         'scope': scope,
@@ -82,39 +82,39 @@ try:
     # simple api call:
     # response_data = aoc_api.get('self')
 
-    logging.info('getting workspace information')
+    log.info('getting workspace information')
     response_data = aoc_api.get('workspaces', params={'q': config['workspace']})
-    logging.debug(response_data)
+    log.debug(response_data)
     if len(response_data) != 1:
         raise Exception(f'Found {len(response_data)} workspace for {config["workspace"]}')
     workspace_info = response_data[0]
 
     # Get dropbox information (shared inbox name in config file)
-    logging.info('getting shared inbox information')
+    log.info('getting shared inbox information')
     response_data = aoc_api.get(
         'dropboxes', params={'current_workspace_id': workspace_info['id'], 'q': config['shared_inbox']})
-    logging.debug(response_data)
+    log.debug(response_data)
     if len(response_data) != 1:
         raise Exception(f'Found {len(response_data)} dropbox for {config["shared_inbox"]}')
     dropbox_info = response_data[0]
 
     #  create a new package (this allocates a reception folder on package storage)
-    logging.info('creating package')
+    log.info('creating package')
     package_info = aoc_api.post('packages', {
         'workspace_id': workspace_info['id'],
         'recipients': [{'id': dropbox_info['id'], 'type': 'dropbox'}],
         'name': package_name,
         'note': 'My package note',
     })
-    logging.debug(package_info)
+    log.debug(package_info)
 
     #  get node information for the node on which package must be created
-    logging.info('getting node information')
+    log.info('getting node information')
     node_info = aoc_api.get(f'nodes/{package_info["node_id"]}')
-    logging.debug(node_info)
+    log.debug(node_info)
 
     # tell Aspera how many transfers to expect in package (can also be done after transfer)
-    logging.info('telling expected transfers')
+    log.info('telling expected transfers')
     aoc_api.put(
         f'packages/{package_info["id"]}',
         {'sent': True, 'transfers_expected': transfer_sessions},

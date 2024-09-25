@@ -5,7 +5,7 @@ import utils.configuration
 import utils.transfer_client
 import utils.helper_aspera_cos
 import utils.rest
-import logging
+import logging as log
 
 test_env = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(test_env)
@@ -32,7 +32,7 @@ try:
     # filtering options possible.
     transfer_list = node_api.get('ops/transfers')
 
-    logging.info('transfers: %s', transfer_list)
+    log.info('transfers: %s', transfer_list)
 
 finally:
     # no need shutdown, as we did not setup a server
