@@ -4,8 +4,8 @@ TEST_CASES=ServerFileUploadV1Example ServerFileDownloadV2Example PersistentUploa
 include $(DIR_TOP)common.mak
 # same as in settings.gradle
 PROJECT_NAME=java_samples
-# same as in build.gradle
-PROJECT_VERSION=0.1
+# get version from build.gradle
+PROJECT_VERSION=$(shell sed -nEe 's/^version.*"([^"]*)".*/\1/p' build.gradle)
 SAMPLE_JAR=build/libs/$(PROJECT_NAME)-$(PROJECT_VERSION)-all.jar
 # cspell:disable
 JAVA_PROPS=-Ddir_top=$(DIR_TOP) -Djava.util.logging.config.file=logging.properties
