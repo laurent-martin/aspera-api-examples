@@ -65,5 +65,5 @@ log.debug("job_id: #{job_id}")
 result = test_env.agent.wait_for_transfers_completion
 #  notify of any transfer error
 result.reject { |i| i.eql?(:success) }.each do |e|
-  test_env.log.error { "A transfer error occurred: #{e.message}" }
+  log.error { "A transfer error occurred: #{e.message}" }
 end

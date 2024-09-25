@@ -25,7 +25,8 @@ api_v3 = Aspera::Rest.new(
 )
 
 # very simple api call
-api_v3.read('me')
+me = api_v3.read('me')[:data]
+log.info("me: #{me}")
 
 # 2: send a package
 #---------------
@@ -43,7 +44,7 @@ transfer_spec = pkg_created['xfer_sessions'].first
 transfer_spec['paths'] = test_env.files.map { |p| { 'source' => p } }
 # start transfer (asynchronous)
 job_id = test_env.agent.start_transfer(transfer_spec)
-log.debug("job_id #{job_id}")
+log.info("job_id #{job_id}")
 # wait for all transfer completion (for the example)
 result = test_env.agent.wait_for_transfers_completion
 #  notify of any transfer error
@@ -71,4 +72,4 @@ api_v4 = Aspera::Rest.new(
 
 # Use it. Note that Faspex 4 API v4 is totally different from Faspex 4 v3 APIs, see ref in header
 users = api_v4.read('users')[:data]
-test_env.log.debug("users: #{users}")
+log.info("users: #{users}")

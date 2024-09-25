@@ -17,6 +17,6 @@ aoc_api = Aspera::Api::AoC.new(
   subpath: 'api/v1'
 )
 
-self_user_data = aoc_api.read('self')
+self_user_data = aoc_api.read('self')[:data]
 
-log.debug("self: #{self_user_data}")
+log.info("self: #{self_user_data}")

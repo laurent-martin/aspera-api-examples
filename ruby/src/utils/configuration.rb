@@ -20,6 +20,23 @@ class Configuration
   private_constant :PATHS_FILE_REL
 
   def initialize
+    unless ARGV.length.eql?(1)
+      log.error { "Wrong number of args: #{ARGV.length}" }
+      log.error { "Usage: #{$PROGRAM_NAME} <file to send>" }
+      Process.exit(1)
+    end
+    @files = [ARGV[0]]
+    @top_folder = File.join(File.dirname(__FILE__), '..', '..', '..')
+    @paths = YAML.load_file(File.join(@top_folder, PATHS_FILE_REL))
+    @config = YAML.load_file(get_path('main_config'))
+    log.debug("config: #{@config}")
+    raise "Missing config file: #{get_path('main_config')}" unless @config['misc']
+
+    # some required files are generated here (keys, certs)
+    Aspera::Ascp::Installation.instance.sdk_folder = File.join(get_path('trsdk_noarch'), 'connectors/ruby')
+    # get Transfer Agent
+    @agent = Aspera::Agent::Direct.new
+
     ##############################################################
     # generic initialization : configuration of FaspManager
 
@@ -34,28 +51,12 @@ class Configuration
     # transfer_agent=Aspera::Fasp::Connect.new
     # require 'aspera/fasp/node'
     # transfer_agent=Aspera::Fasp::Node.new(Aspera::Rest.new(...))
-    Aspera::Log.instance.level = :debug
+    Aspera::Log.instance.level = conf('misc', 'level').to_sym
     Aspera::SecretHider.log_secrets = true
     # register aspera REST call error handlers
     Aspera::RestErrorsAspera.register_handlers
     # ignore self signed cert
     Aspera::Rest.set_parameters(session_cb: ->(http) { http.verify_mode = OpenSSL::SSL::VERIFY_NONE })
-    @top_folder = File.join(File.dirname(__FILE__), '..', '..', '..')
-    @paths = YAML.load_file(File.join(@top_folder, PATHS_FILE_REL))
-    @config = YAML.load_file(get_path('main_config'))
-    Aspera::Log.dump(:config, @config)
-    raise "Missing config file: #{get_path('main_config')}" unless @config['misc']
-
-    # some required files are generated here (keys, certs)
-    Aspera::Ascp::Installation.instance.sdk_folder = File.join(get_path('trsdk_noarch'), 'connectors/ruby')
-    # get Transfer Agent
-    @agent = Aspera::Agent::Direct.new
-    unless ARGV.length.eql?(1)
-      log.error { "Wrong number of args: #{ARGV.length}" }
-      log.error { "Usage: #{$PROGRAM_NAME} <file to send>" }
-      Process.exit(1)
-    end
-    @files = [ARGV[0]]
   end
 
   def conf(*keys, optional: false)
