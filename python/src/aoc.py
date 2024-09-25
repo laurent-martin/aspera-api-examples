@@ -141,7 +141,7 @@ try:
                     'access_key': node_info['access_key'],
                     'file_id': package_info['contents_file_id'],
                 },
-                'usage_id': f'aspera.files.workspace.{workspace_info['id']}',
+                'usage_id': f"aspera.files.workspace.{workspace_info['id']}",
                 'xfer_id': str(uuid.uuid4()),
                 'xfer_retry': 3600,
             }
