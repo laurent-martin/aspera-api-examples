@@ -8,6 +8,8 @@ Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 - Aspera Connect SDK and HTTPGW SDK: transfer files in a web browser
 - Aspera Applications APIs: interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
 
+![Component APIs](doc/api_components.png)
+
 Various programming languages are proposed.
 
 ## Other resources
@@ -45,9 +47,9 @@ Depending on the use case, one might use one or (often) several of those APIs.
 
 This repository is structured like this:
 
-- `web` : This folder contains an example that shows the use of both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK**
+- `web` : This folder contains an example that shows the use of web SDKd: both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK**
 
-- Other folders, one per programming language, show samples using the **Aspera Transfer SDK** and **Aspera Applications APIs**
+- Other folders, one per programming language, show samples using the **Aspera Transfer SDK** and **Aspera Applications REST APIs**
 
 Sample programs will use server addresses and credentials from a YAML configuration file.
 Once the configuration file is created, sample programs can be run directly.
@@ -116,7 +118,16 @@ If you use Linux, macOS, AIX, etc...
 Create a configuration file as specified in [Configuration file](#configuration-file).
 Not all values are required, only those needed for the examples you want to run.
 
-For example to execute an individual script:
+For example to execute an individual sample, use `make .tested/<sample name here>`:
+
+```console
+$ cd python
+$ make list
+server aoc faspex faspex5 node shares node_v2
+$ make .tested/faspex5
+```
+
+Or run the sample directly (invocation depends on language):
 
 ```bash
 echo hello > datafile
@@ -142,6 +153,7 @@ Set the parameter `misc.platform` to the architecture used:
 - `linux-x86_64`
 - `linux-ppc64le`
 - `linux-s390`
+- `linux-arm64`
 - `aix-ppc64`
 
 The parameter `trsdk.url` can be set to `grpc://127.0.0.1:55002` (specify the local port that sdk will use).
@@ -149,7 +161,7 @@ The parameter `trsdk.url` can be set to `grpc://127.0.0.1:55002` (specify the lo
 Section `httpgw` is used by the `web` example only.
 
 Other sections are used by the various examples.
-For example, if you want to test only the COS transfer using the Transfer SDK, you can set the cos section and leave the other sections empty.
+For example, if you want to test only the COS transfer using the Transfer SDK, you can fill the `cos` section only and leave other sections empty.
 
 Example (with random credentials):
 
@@ -198,7 +210,7 @@ aoc:
   shared_inbox: TheSharedInbox
 ```
 
-> **Note:** Sections with HTTPS URLs have a parameter `verify`: set to `false` to disable server certificate validation for development environments.
+> **Note:** Sections with HTTPS URLs have a parameter `verify`. Set it to `false` to disable server certificate validation for development environments.
 
 Some relative paths are defined in [`config/paths.yaml`](config/paths.yaml) (keep those values intact).
 
