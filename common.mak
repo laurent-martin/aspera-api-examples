@@ -25,9 +25,9 @@ GBL_FILE_SAMPLE=$(GBL_DIR_TMP)This_is_a_test.txt
 DIR_TESTED_FLAG=./.tested/
 TEST_FLAGS=$(foreach var,$(TEST_CASES),$(DIR_TESTED_FLAG)$(var))
 .PHONY: all clean superclean clean_flags clean_daemon list
+all::
 list:
 	@echo "$(TEST_CASES)"
-all::
 # clean flags indicating test was run: force re-run of tests only
 clean_flags::
 	rm -f $(TEST_FLAGS)

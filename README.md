@@ -147,13 +147,13 @@ vi private/config.yaml
 
 Set the parameter `misc.platform` to the architecture used:
 
-- `windows-x86_64`
-- `osx-x86_64`
 - `osx-arm64`
+- `osx-x86_64`
+- `windows-x86_64`
 - `linux-x86_64`
-- `linux-ppc64le`
 - `linux-s390`
 - `linux-arm64`
+- `linux-ppc64le`
 - `aix-ppc64`
 
 The parameter `trsdk.url` can be set to `grpc://127.0.0.1:55002` (specify the local port that sdk will use).
