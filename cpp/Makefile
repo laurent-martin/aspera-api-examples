@@ -2,48 +2,58 @@ DIR_TOP=$(realpath ..)/
 TEST_CASES=server shares node_v2
 include $(DIR_TOP)common.mak
 # Executables are generated here:
-BUILD_DIR=build/
-SRC=src/
-# location of generated protobuf/grpc sources in SDK
-SDK_DIR_CPP=$(SDK_DIR_NOARCH)connectors/cpp/
-# where conan downloads libraries
+CPP_BUILD_DIR=build/
+# location of pre-generated protobuf/grpc sources provided in SDK
+CPP_GRPC_SDK_DIR=$(SDK_DIR_NOARCH)connectors/cpp/
+# comment this line to use the SDK provided in the SDK_DIR_NOARCH
+CPP_GRPC_SDK_DIR=
+# where conan will download libraries
 CONAN_HOME=$(CURDIR)/.conan2
 export CONAN_HOME
-BUILD_TYPE=Release
-CMAKE_VARS=\
+CONAN_PRESET=conan-release
+CMAKE_BUILD_TYPE=Release
+# variables used in CMakeLists.txt
+CMAKE_USER_VARS=\
 	-Daspera_proto_file=$(SDK_FILE_PROTO) \
-	-Dsdk_cpp_dir=$(SDK_DIR_CPP) \
-	-Dcompile_proto=TRUE \
+	-Dsdk_cpp_dir=$(CPP_GRPC_SDK_DIR) \
 	-Dtest_cases="$(subst $() $(),;,$(TEST_CASES))"
 # Execute all samples
 all:: $(TEST_FLAGS)
-# Execute one sample
-$(DIR_TESTED_FLAG)%: $(BUILD_DIR)/Makefile $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) src/%.cpp
+# Build and Execute one sample
+$(DIR_TESTED_FLAG)%: $(CPP_BUILD_DIR)/Makefile $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) src/%.cpp
 	@echo "== Test: $(notdir $@) ==========================="
-	cd $(BUILD_DIR) && cmake --build . --target $(notdir $@) -- VERBOSE=1
-	$(BUILD_DIR)$(notdir $@) $(GBL_FILE_SAMPLE)
+	cd $(CPP_BUILD_DIR) && cmake --build . --target $(notdir $@) -- VERBOSE=1
+	$(CPP_BUILD_DIR)$(notdir $@) $(GBL_FILE_SAMPLE)
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
 # Setup compilation environment
 # 1. Install dependencies
-# 2. Generate build files
-$(BUILD_DIR)/Makefile: CMakeLists.txt $(CONAN_HOME)/profiles/default
+# 2. Configure cmake
+# 3. Generate build files
+$(CPP_BUILD_DIR)/Makefile: CMakeLists.txt $(CONAN_HOME)/profiles/default
 	conan install . \
 		--output-folder=. \
 		--build=missing \
-		-s build_type=$(BUILD_TYPE)
-	cmake --preset conan-release $(CMAKE_VARS)
-	cd $(BUILD_DIR) && cmake .. \
+		-s build_type=$(CMAKE_BUILD_TYPE)
+	cmake --preset $(CONAN_PRESET)
+	cd $(CPP_BUILD_DIR) && cmake .. \
 		-G "Unix Makefiles" \
-		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
-		-DCMAKE_TOOLCHAIN_FILE=$(BUILD_TYPE)/generators/conan_toolchain.cmake \
-		$(CMAKE_VARS)
+		-DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
+		-DCMAKE_TOOLCHAIN_FILE=$(CMAKE_BUILD_TYPE)/generators/conan_toolchain.cmake \
+		$(CMAKE_USER_VARS)
 	@touch $@
+# Generate a default compilation profile
 $(CONAN_HOME)/profiles/default:
+	@for c in conan cmake protoc;do \
+		if ! command -v $$c &>/dev/null; then \
+			echo "$$c is not installed"; \
+			exit 1; \
+		fi; \
+	done
 	conan profile detect --force
 clean::
-	rm -fr $(BUILD_DIR)
+	rm -fr $(CPP_BUILD_DIR)
 superclean::
 	rm -f CMakeUserPresets.json
 	rm -fr $(CONAN_HOME)

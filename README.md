@@ -145,6 +145,8 @@ cp config/config.tmpl private/config.yaml
 vi private/config.yaml
 ```
 
+> **Note:** Although the format may look like the configuration file for `ascli`, a configuration file for `ascli` is not compatible with this one. You must create a new one.
+
 Set the parameter `misc.platform` to the architecture used:
 
 - `osx-arm64`
@@ -219,7 +221,7 @@ Some relative paths are defined in [`config/paths.yaml`](config/paths.yaml) (kee
 The Transfer SDK is a gRPC service that allows you to transfer files in an application.
 It is a client API that can be used in various languages.
 
-The file `transfer.proto` shall be used to generate the stub code for the client side of Transfer SDK using your own version of the language.
+The file `transfer.proto` describes in the remote procedure call interface provided by the daemon `asperatransferd`.
 
 ```text
  +----------------+
@@ -245,17 +247,37 @@ The file `transfer.proto` shall be used to generate the stub code for the client
         [or other method, systemd, or manual]-----[executes]------+
 ```
 
-Generated (stub) code is provided for convenience in the Transfer SDK.
-It can be used directly or it can be generated from the `transfer.proto` file.
+### Generated client source files
+
+Client applications must use the client source files generated from the `transfer.proto` file.
+
+Generated (stub) code is provided for convenience in the Transfer SDK for several languages.
+It can be used directly or the developer may choose to generate them from the `transfer.proto` file.
+For production and future compatibility it is recommended to generate the stub code from the `transfer.proto` file.
 If you generate stub code yourself, then you can benefit from support to latest platforms and versions.
 
 Most samples here generate the stub code from the `transfer.proto` file.
 
 Refer to [GRPC web site](https://grpc.io/) for instructions on how to generate the code.
 
-Sample programs use a common library: "test environment" which takes care of creating a configuration file and starting the Transfer SDK daemon.
+### Helper classes
 
-It is also possible to create a static file and start the Transfer SDK daemon using another method (for example, a systemd service), for just for tests by executing `asperatransferd` manually in a separate terminal.
+Sample programs use helper classes located in package `utils`:
+
+- `Configuration` reads configuration parameters from `config.yaml` so that it is easier to run any samples.
+- `TransferClient` creates a configuration file and starting the Transfer SDK daemon: `asperatransferd`
+- `Rest` for simple API calls on Rest APIs.
+
+### Daemon startup
+
+`asperatransferd` is a daemon that must be started before using the Transfer SDK.
+It drives the transfer of files between two endpoints using embedded `ascp`.
+The client app will connect to it using gRPC on the port specified.
+
+The way to start the daemon is not specified in the SDK.
+Developers have the choice to start it manually in a separate terminal, or to create a static configuration file and start it using another method (for example, a systemd service).
+
+Examples provided here start the daemon using the `TransferClient` class.
 
 ## HSTS Node API credentials
 

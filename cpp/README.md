@@ -45,12 +45,10 @@ linux$ sudo pip install conan
 Linux install:
 
 ```console
+redhat$ sudo dnf install -y protobuf-compiler protobuf-devel
 ubuntu$ sudo apt-get install protobuf-compiler
 ```
 
-```console
-redhat$ sudo dnf install -y protobuf-compiler protobuf-devel
-```
 
 
 ## Build and Run
