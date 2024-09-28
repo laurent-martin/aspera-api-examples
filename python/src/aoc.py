@@ -44,6 +44,7 @@ def get_bearer(scope):
         'aud': 'https://api.asperafiles.com/api/v1/oauth2/token',  # audience
         'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
         'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
+        'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
         'org': config['org'],
     }
     log.debug(jwt_payload)
@@ -51,7 +52,10 @@ def get_bearer(scope):
     data = {
         'scope': scope,
         'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        'assertion': jwt.encode(jwt_payload, private_key_pem, algorithm='RS256'),
+        'assertion': jwt.encode(
+            payload=jwt_payload,
+            key=private_key_pem,
+            algorithm='RS256'),
     }
 
     response = requests.post(
@@ -59,8 +63,8 @@ def get_bearer(scope):
         auth=requests.auth.HTTPBasicAuth(config['client_id'], config['client_secret']),
         data=data,
         headers={
-            'Accept': 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
         },
     )
     response.raise_for_status()

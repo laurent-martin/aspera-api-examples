@@ -5,15 +5,27 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
-// Generic REST client with basic and oauth
-// Replace with your best REST client object
-// or use openapi generator to generate stubs
+/// <summary>
+/// Generic REST client with basic and oauth.
+/// Replace with your best REST client object
+/// or use openapi generator to generate stubs.
+/// </summary>
 public class Rest
 {
+    // take come time back to account for time offset between client and server
+    private const int JWT_NOT_BEFORE_OFFSET_SEC = 60
+    // take some validity for the JWT
+    private const int JWT_EXPIRY_OFFSET_SEC = 600
     public StringDict mApiData;
     public Rest mOAuthAPI;
     private HttpClient mHttpClient;
 
+    /// <summary>
+    /// Read RSA private key from file.
+    /// </summary>
+    /// <param name="filename"></param>
+    /// <returns>RSA key</returns>
+    /// <exception cref="InvalidOperationException"></exception>
     private static RSA readKeyFromFile(string filename)
     {
         string pemContents = System.IO.File.ReadAllText(filename);
@@ -55,9 +67,9 @@ public class Rest
                     { "iss", mApiData["oauth_client_id"]},
                     { "sub", mApiData["oauth_jwt_subject"]},
                     { "aud", mApiData["oauth_jwt_audience"]},
-                    { "nbf", seconds_since_epoch - 60},
-                    { "iat", seconds_since_epoch - 60},
-                    { "exp", seconds_since_epoch + 300},
+                    { "nbf", seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC},
+                    { "iat", seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC},
+                    { "exp", seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC},
                 };
         // if client id starts with "aspera", add key "org" to payload
         if (mApiData["oauth_client_id"].StartsWith("aspera."))

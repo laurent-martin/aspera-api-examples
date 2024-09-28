@@ -30,19 +30,21 @@ transfer_sessions = 1
 
 
 def get_bearer(verify_cert):
-    '''generate a bearer token'''
+    '''
+    generate a bearer token
+    '''
     log.info('getting API authorization')
-    with open(config['private_key']) as fin:
-        private_key_pem = fin.read()
+    with open(config['private_key']) as key_file:
+        private_key_pem = key_file.read()
 
     seconds_since_epoch = int(calendar.timegm(time.gmtime()))
 
     jwt_payload = {
         'iss': config['client_id'],  # issuer
-        'aud': config['client_id'],  # audience
         'sub': f'user:{config["username"]}',  # subject
-        'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
+        'aud': config['client_id'],  # audience
         'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
+        'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
         'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
         'jti': str(uuid.uuid4()),
     }
