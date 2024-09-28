@@ -4,7 +4,7 @@
 # Helper methods to get API environment according to config file
 # Simplified function to start transfer and wait for it to finish
 import os
-import sys
+import re
 import json
 import time
 import grpc
@@ -43,7 +43,6 @@ class TransferClient:
         sdk_url = urlparse(self._tools.conf('trsdk', 'url'))
         self._server_address = sdk_url.hostname
         self._server_port = sdk_url.port
-        self._channel_address = f'{sdk_url.hostname}:{sdk_url.port}'
 
     def create_config_file(self, conf_file):
         # see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
@@ -109,13 +108,22 @@ class TransferClient:
             logging.error(utils.configuration.last_file_line(self._daemon_log))
             raise Exception('daemon startup failed')
         logging.info('Daemon started: %s', self._transfer_daemon_process.pid)
+        if self._server_port == 0:
+            last_line = utils.configuration.last_file_line(self._daemon_log)
+            data = json.loads(last_line)
+            port_match = re.search(r":(\d+)", data["msg"])
+            if not port_match:
+                raise Exception('Could not read listening port from log file')
+            self._server_port = port_match.group(1)
+            logging.info('Server port: %s', self._server_port)
 
     def connect_to_daemon(self):
         '''Connect to transfer manager daemon'''
+        channel_address = f'{self._server_address}:{self._server_port}'
         logging.info('Connecting to %s on: %s ...',
-                     TRANSFER_SDK_DAEMON, self._channel_address)
+                     TRANSFER_SDK_DAEMON, channel_address)
         # create a connection to the transfer manager daemon
-        channel = grpc.insecure_channel(self._channel_address)
+        channel = grpc.insecure_channel(channel_address)
         try:
             grpc.channel_ready_future(channel).result(timeout=5)
         except grpc.FutureTimeoutError:
