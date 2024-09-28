@@ -68,12 +68,23 @@ public class TransferClient {
 
 	/** Create configuration file for the Aspera Transfer SDK */
 	private void createConfFile(final String confFile) {
+		final String ascp_level = config.getParamStr("trsdk", "ascp_level");
+		int ascp_int_level = -1;
+		if (ascp_level.equals("info")) {
+			ascp_int_level = 0;
+		} else if (ascp_level.equals("debug")) {
+			ascp_int_level = 1;
+		} else if (ascp_level.equals("trace")) {
+			ascp_int_level = 2;
+		} else {
+			throw new IllegalArgumentException("Invalid ascp_level: " + ascp_level);
+		}
 		// Define the configuration JSON object
 		JSONObject sdk_config = new JSONObject() //
 				.put("address", grpcURL.getHost()) //
 				.put("port", grpcURL.getPort()) //
 				.put("log_directory", config.getLogFolder()) //
-				.put("log_level", "debug") //
+				.put("log_level", config.getParamStr("trsdk", "level")) //
 				.put("fasp_runtime", new JSONObject() //
 						.put("use_embedded", false) //
 						.put("user_defined", new JSONObject() //
@@ -81,7 +92,7 @@ public class TransferClient {
 								.put("etc", config.getPath("trsdk_noarch"))) //
 						.put("log", new JSONObject() //
 								.put("dir", config.getLogFolder()) //
-								.put("level", 0)));
+								.put("level", ascp_int_level)));
 		// Write the JSON to a file
 		try (final FileWriter fileWriter = new FileWriter(confFile)) {
 			fileWriter.write(sdk_config.toString());

@@ -69,20 +69,33 @@ class TransferClient {
     }
 
     void create_config_file(const std::string& conf_file) {
+        const std::string ascp_level = _config.param_str({"trsdk", "ascp_level"});
+        int ascp_int_level = -1;
+        if (ascp_level == "info") {
+            ascp_int_level = 0;
+        } else if (ascp_level == "debug") {
+            ascp_int_level = 1;
+        } else if (ascp_level == "trace") {
+            ascp_int_level = 2;
+        } else {
+            throw std::invalid_argument("Invalid ascp_level: " + ascp_level);
+        }
         // Prepare daemon configuration file
         const json::object config_info = {
             {"address", _server_address},
             {"port", _server_port},
             {"log_directory", _config.log_folder_path().string()},
-            {"log_level", "4"},  // 0 .. 4
+            {"log_level", _config.param_str({"trsdk", "level"})},
             {"fasp_runtime",
              {{"use_embedded", false},
               {"user_defined",
                {{"bin", _config.arch_folder_path().string()},
                 {"etc", _config.get_path("trsdk_noarch").string()}}},
               {"log",
-               {{"dir", _config.log_folder_path().string()},
-                {"level", 2}}}}}};
+               {
+                   {"dir", _config.log_folder_path().string()},
+                   {"level", ascp_level}
+               }}}}};
         const std::string config_data = json::serialize(config_info);
         LOG(debug) << LOG_ITEM("config") << config_data;
         std::ofstream conf_stream(conf_file);

@@ -105,12 +105,30 @@ public class TestEnvironment
             {
                 Console.WriteLine("ERROR: Failed to connect\nStarting daemon...");
                 var binFolder = Path.Combine(GetPath("sdk_root"), mConfig["misc"]["platform"]);
+                string ascp_level = mConfig["trsdk"]["ascp_level"];
+                int ascp_int_level = -1;
+                if (ascp_level == "info")
+                {
+                    ascp_int_level = 0;
+                }
+                else if (ascp_level == "debug")
+                {
+                    ascp_int_level = 1;
+                }
+                else if (ascp_level == "trace")
+                {
+                    ascp_int_level = 2;
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid ascp_level: " + ascp_level);
+                }
                 var configData = new
                 {
                     address = grpcUrl.Host,
                     port = grpcUrl.Port,
                     log_directory = Path.GetTempPath(),
-                    log_level = "debug",
+                    log_level = mConfig["trsdk"]["level"],
                     fasp_runtime = new
                     {
                         use_embedded = false,
@@ -122,7 +140,7 @@ public class TestEnvironment
                         log = new
                         {
                             dir = Path.GetTempPath(),
-                            level = 0,
+                            level = ascp_int_level,
                         },
                     },
                 };

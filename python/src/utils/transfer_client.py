@@ -35,22 +35,29 @@ class TransferClient:
 
     def __init__(self, tools):
         self._tools = tools
-        self._daemon_log = os.path.join(
-            self._tools._log_folder, DAEMON_LOG_FILE)
+        self._daemon_log = os.path.join(self._tools._log_folder, DAEMON_LOG_FILE)
         self._transfer_daemon_process = None
         self._transfer_service = None
-
         sdk_url = urlparse(self._tools.conf('trsdk', 'url'))
         self._server_address = sdk_url.hostname
         self._server_port = sdk_url.port
 
+    # see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
     def create_config_file(self, conf_file):
-        # see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
+        ascp_level = self._tools.conf('trsdk', 'ascp_level')
+        if ascp_level == 'info':
+            ascp_int_level = 0
+        elif ascp_level == 'debug':
+            ascp_int_level = 1
+        elif ascp_level == 'trace':
+            ascp_int_level = 2
+        else:
+            raise Exception('Invalid ascp_level: ' + ascp_level)
         config_info = {
             'address': self._server_address,
             'port': self._server_port,
             'log_directory': self._tools._log_folder,
-            'log_level': 'debug',
+            'log_level': self._tools.conf('trsdk', 'level'),
             'fasp_runtime': {
                 'use_embedded': False,
                 'user_defined': {
@@ -59,7 +66,7 @@ class TransferClient:
                 },
                 'log': {
                     'dir': self._tools._log_folder,
-                    'level': 2,
+                    'level': ascp_int_level,
                 },
             },
         }

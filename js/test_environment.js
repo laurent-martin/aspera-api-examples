@@ -36,11 +36,23 @@ module.exports = {
 	connect_to_api: (ready_rb) => {
 		const grpc_url = new URL(config['trsdk']['url'])
 		assert(grpc_url.protocol === 'grpc:', "Expecting gRPC protocol")
+		let ascp_level = config["trsdk"]["ascp_level"];
+		let ascp_int_level;
+		if (ascp_level === "info") {
+			ascp_int_level = 0;
+		} else if (ascp_level === "debug") {
+			ascp_int_level = 1;
+		} else if (ascp_level === "trace") {
+			ascp_int_level = 2;
+		} else {
+			throw new Error("Invalid ascp_level: " + ascp_level);
+		}
+
 		const daemon_conf = {
 			address: grpc_url.hostname,
 			port: parseInt(grpc_url.port),
 			log_directory: os.tmpdir(),
-			log_level: 'debug',
+			log_level: config["trsdk"]["level"],
 			fasp_runtime: {
 				use_embedded: false,
 				user_defined: {
@@ -49,7 +61,7 @@ module.exports = {
 				},
 				log: {
 					dir: os.tmpdir(),
-					level: 0,
+					level: ascp_int_level,
 				},
 			},
 		};
