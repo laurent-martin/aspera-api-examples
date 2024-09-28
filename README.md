@@ -170,8 +170,12 @@ Example (with random credentials):
 ```yaml
 misc:
   platform: osx-x86_64
+  level: debug
+  transfer_regular: true
 trsdk:
   url: grpc://127.0.0.1:55002
+  level: trace
+  ascp_level: trace
 web:
   port: 9080
 httpgw:
@@ -215,6 +219,14 @@ aoc:
 > **Note:** Sections with HTTPS URLs have a parameter `verify`. Set it to `false` to disable server certificate validation for development environments.
 
 Some relative paths are defined in [`config/paths.yaml`](config/paths.yaml) (keep those values intact).
+
+The following log levels can be set:
+
+- `misc.level`: sample code log level: `debug` `info` `warning` `error`
+- `trsdk.level`: asperatransferd log level: `trace` `debug` `info` `warning` `error` `fatal` `panic`
+- `trsdk.ascp_level`: ascp log level: `trace` `debug` `info`
+
+Some examples support setting port to zero in trsdk.url to use a random port.
 
 ## Transfer SDK
 
