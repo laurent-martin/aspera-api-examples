@@ -228,6 +228,8 @@ The following log levels can be set:
 
 Some examples support setting port to zero in trsdk.url to use a random port.
 
+Sample application generate a file `asperatransferd.conf` provided to the transfer sdk daemon, log level there are taken from the general yaml config file.
+
 ## Transfer SDK
 
 The Transfer SDK is a gRPC service that allows you to transfer files in an application.
@@ -246,7 +248,7 @@ The file `transfer.proto` describes in the remote procedure call interface provi
     +----------------------+        +------------+
     + generated stub code  +        + your code  +
     +----------------------+        +------------+
-              |                            |
+              |       [combine]            |
               +-----------+----------------+
                           |
                           v
