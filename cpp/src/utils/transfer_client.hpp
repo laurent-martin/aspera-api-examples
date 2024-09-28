@@ -94,7 +94,7 @@ class TransferClient {
               {"log",
                {
                    {"dir", _config.log_folder_path().string()},
-                   {"level", ascp_level}
+                   {"level", ascp_int_level}
                }}}}};
         const std::string config_data = json::serialize(config_info);
         LOG(debug) << LOG_ITEM("config") << config_data;
