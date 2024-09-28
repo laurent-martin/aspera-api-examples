@@ -29,7 +29,9 @@ transfer_sessions = 1
 
 
 def get_bearer(scope):
-    '''generate a bearer token for given scope using AoC API'''
+    '''
+    generate a bearer token for given scope using AoC API
+    '''
     log.info('getting API authorization for %s', scope)
     with open(config['private_key']) as key_file:
         private_key_pem = key_file.read()

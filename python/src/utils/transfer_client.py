@@ -42,8 +42,10 @@ class TransferClient:
         self._server_address = sdk_url.hostname
         self._server_port = sdk_url.port
 
-    # see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
     def create_config_file(self, conf_file):
+        '''
+        see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
+        '''
         ascp_level = self._tools.conf('trsdk', 'ascp_level')
         if ascp_level == 'info':
             ascp_int_level = 0
@@ -198,6 +200,7 @@ class TransferClient:
         self.wait_transfer(self.start_transfer(t_spec))
 
     def throw_on_error(self, status, error):
+        '''raise exception if status contains an error'''
         if status == transfer_manager.TransferStatus.FAILED:
             logging.error(utils.configuration.last_file_line(self._daemon_log))
             raise Exception("transfer failed: " + error.description)

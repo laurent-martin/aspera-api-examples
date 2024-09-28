@@ -11,13 +11,21 @@ IBM_CLOUD_OAUTH_URL = 'https://iam.cloud.ibm.com/identity/token'
 
 
 def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
-    '''Return Aspera Transfer Service node information for given bucket
-    Parameters
-    bucket      Name of bucket
-    endpoint    Storage endpoint ('https://...')
-    key         API Key
-    crn         Resource instance id
-    auth        Token endpoint
+    '''
+    Return Aspera Transfer Service node information for given bucket
+
+    Parameters:
+    bucket     : Name of bucket
+    endpoint   : Storage endpoint ('https://...')
+    key        : API Key
+    crn        : Resource instance id
+    auth       : Token endpoint
+
+    Returns:
+    Aspera Transfer Service node information
+
+    Raises:
+    Exception: in case of problem
     '''
     # Get bearer token to access COS S3 API
     # payload to generate auth token
@@ -85,10 +93,15 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
 
 
 def from_service_credentials(*, credentials, region):
-    '''Return parameters suitable for node given service credential information
-    Parameters
-    credentials  The structure for 'service credentials' (from json.load(file))
-    region       The region of bucket'
+    '''
+    Return parameters suitable for node given service credential information
+
+    Parameters:
+    credentials : The structure for 'service credentials' (from json.load(file))
+    region      : The region of bucket
+
+    Returns:
+    hash with keys 'endpoint', 'key', 'crn'
     '''
     # read and check format of service credentials
     if not isinstance(credentials, dict):
