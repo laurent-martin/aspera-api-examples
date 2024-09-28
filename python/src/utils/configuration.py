@@ -24,31 +24,22 @@ class Configuration:
     def __init__(self):
         self._file_list = sys.argv[1:]
         assert self._file_list, f'ERROR: Usage: {sys.argv[0]} <files to send>'
-        self._top_folder = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), '..', '..', '..'))
+        self._top_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
         self._log_folder = tempfile.gettempdir()
         # read project's relative paths config file
-        self._paths = yaml.load(
-            open(os.path.join(self._top_folder, *PATHS_FILE_REL.split('/'))), Loader=yaml.FullLoader
-        )
+        self._paths = yaml.load(open(os.path.join(self._top_folder, *PATHS_FILE_REL.split('/'))), Loader=yaml.FullLoader)
         # Read configuration from configuration file
-        self._config = yaml.load(
-            open(self.get_path('main_config')), Loader=yaml.FullLoader)
+        self._config = yaml.load(open(self.get_path('main_config')), Loader=yaml.FullLoader)
         # Error hint to help user to fix the issue
         self._error_hint = f'\nPlease check: SDK installed in {self._paths["sdk_root"]}, configuration file: {self._paths["main_config"]}'
         # folder with SDK binaries
-        self._arch_folder = os.path.join(
-            self.get_path('sdk_root'), self.conf('misc', 'platform'))
+        self._arch_folder = os.path.join(self.get_path('sdk_root'), self.conf('misc', 'platform'))
         assert os.path.exists(
             self._arch_folder
         ), f'ERROR: SDK not found in: {self._arch_folder}.{self._error_hint}'
-        log_level = getattr(logging, self.conf(
-            'misc', 'level').upper(), logging.WARN)
+        log_level = getattr(logging, self.conf('misc', 'level').upper(), logging.WARN)
         # set logger for debugging
-        logging.basicConfig(
-            format='%(levelname)-8s %(message)s',
-            level=log_level
-        )
+        logging.basicConfig(format='%(levelname)-8s %(message)s', level=log_level)
         # debug http: see: https://stackoverflow.com/questions/10588644
         if DEBUG_HTTP:
             HTTPConnection.debuglevel = 1
@@ -68,8 +59,7 @@ class Configuration:
 
     def get_path(self, name):
         '''Get configuration sub-path in project's root folder'''
-        item_path = os.path.join(
-            self._top_folder, *self._paths[name].split('/'))
+        item_path = os.path.join(self._top_folder, *self._paths[name].split('/'))
         assert os.path.exists(item_path), f'ERROR: {item_path} not found.{self._error_hint}'
         return item_path
 

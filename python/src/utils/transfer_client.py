@@ -74,8 +74,7 @@ class TransferClient:
 
         @return gRPC client
         '''
-        file_base = os.path.join(
-            self._tools._log_folder, TRANSFER_SDK_DAEMON)
+        file_base = os.path.join(self._tools._log_folder, TRANSFER_SDK_DAEMON)
         conf_file = f'{file_base}.conf'
         out_file = f'{file_base}.out'
         err_file = f'{file_base}.err'
@@ -108,20 +107,20 @@ class TransferClient:
             logging.error(utils.configuration.last_file_line(self._daemon_log))
             raise Exception('daemon startup failed')
         logging.info('Daemon started: %s', self._transfer_daemon_process.pid)
+        # port zero means: listen on any available port, but we need to know the real port
         if self._server_port == 0:
             last_line = utils.configuration.last_file_line(self._daemon_log)
-            data = json.loads(last_line)
-            port_match = re.search(r":(\d+)", data["msg"])
+            log_info = json.loads(last_line)
+            port_match = re.search(r":(\d+)", log_info["msg"])
             if not port_match:
                 raise Exception('Could not read listening port from log file')
             self._server_port = port_match.group(1)
-            logging.info('Server port: %s', self._server_port)
+            logging.info('Allocated server port: %s', self._server_port)
 
     def connect_to_daemon(self):
         '''Connect to transfer manager daemon'''
         channel_address = f'{self._server_address}:{self._server_port}'
-        logging.info('Connecting to %s on: %s ...',
-                     TRANSFER_SDK_DAEMON, channel_address)
+        logging.info('Connecting to %s on: %s ...', TRANSFER_SDK_DAEMON, channel_address)
         # create a connection to the transfer manager daemon
         channel = grpc.insecure_channel(channel_address)
         try:
@@ -130,8 +129,7 @@ class TransferClient:
             logging.error('Failed to connect')
             raise Exception('failed to connect.')
         # channel is ok, let's get the stub
-        self._transfer_service = transfer_manager_grpc.TransferServiceStub(
-            channel)
+        self._transfer_service = transfer_manager_grpc.TransferServiceStub(channel)
         logging.info('Connected !')
 
     def startup(self):
@@ -164,8 +162,7 @@ class TransferClient:
             transferSpec=ts_json,
         )
         # send start transfer request to transfer manager daemon
-        transfer_response = self._transfer_service.StartTransfer(
-            transfer_request)
+        transfer_response = self._transfer_service.StartTransfer(transfer_request)
         self.throw_on_error(transfer_response.status, transfer_response.error)
         return transfer_response.transferId
 
@@ -181,8 +178,7 @@ class TransferClient:
             # logging.debug('transfer info %s', transfer_info)
             # check transfer status in response, and exit if it's done
             status = transfer_info.status
-            logging.info('transfer: %s',
-                         transfer_manager.TransferStatus.Name(status))
+            logging.info('transfer: %s', transfer_manager.TransferStatus.Name(status))
             self.throw_on_error(status, transfer_info.error)
             if status == transfer_manager.COMPLETED:
                 break

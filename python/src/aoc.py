@@ -91,8 +91,7 @@ try:
 
     # Get dropbox information (shared inbox name in config file)
     log.info('getting shared inbox information')
-    response_data = aoc_api.get(
-        'dropboxes', params={'current_workspace_id': workspace_info['id'], 'q': config['shared_inbox']})
+    response_data = aoc_api.get('dropboxes', params={'current_workspace_id': workspace_info['id'], 'q': config['shared_inbox']})
     log.debug(response_data)
     if len(response_data) != 1:
         raise Exception(f'Found {len(response_data)} dropbox for {config["shared_inbox"]}')
