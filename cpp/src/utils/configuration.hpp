@@ -42,7 +42,7 @@ class Configuration {
           _top_folder_path(std::filesystem::absolute(argv[0]).parent_path().parent_path().parent_path()),
           _log_folder_path(std::filesystem::temp_directory_path()),
           _paths(load_yaml("paths", _top_folder_path / PATHS_FILE_REL)),
-          _config(load_yaml("main_config", get_path("main_config"))){
+          _config(load_yaml("main_config", get_path("main_config"))) {
         auto log_level = param_str({"misc", "level"});
         auto opt_level = magic_enum::enum_cast<boost::log::trivial::severity_level>(log_level);
         if (!opt_level.has_value()) {
@@ -150,7 +150,7 @@ class Configuration {
     // project folder
     const std::filesystem::path _top_folder_path;
     const std::filesystem::path _log_folder_path;
-    // config file with _paths
+    // config file with paths
     const YAML::Node _paths;
     const YAML::Node _config;
 
