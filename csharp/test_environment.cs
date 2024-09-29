@@ -134,7 +134,7 @@ public class Configuration
             {
                 Console.WriteLine("ERROR: Failed to connect\nStarting daemon...");
                 var binFolder = GetPath("sdk_runtime");
-                string ascp_level = _config["trsdk"]["ascp_level"];
+                string ascp_level = GetParam("trsdk", "ascp_level");
                 int ascp_int_level = -1;
                 if (ascp_level == "info")
                 {
@@ -157,7 +157,7 @@ public class Configuration
                     address = grpcUrl.Host,
                     port = grpcUrl.Port,
                     log_directory = Path.GetTempPath(),
-                    log_level = _config["trsdk"]["level"],
+                    log_level = GetParam("trsdk", "level"),
                     fasp_runtime = new
                     {
                         use_embedded = false,
@@ -319,7 +319,7 @@ public class Configuration
         // One-call simplified procedure to start daemon, transfer, and wait for it to finish
         if (mSdkClient == null)
         {
-            StartDaemon(_config["trsdk"]["url"]);
+            StartDaemon(GetParam("trsdk", "url"));
         }
 
         //aSpecObj.HttpFallback = false; // TODO: remove when transfer SDK bug fixed
