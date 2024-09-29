@@ -34,6 +34,7 @@ clean_flags::
 # simple clean
 clean:: clean_flags clean_daemon
 	rm -f $(TMPDIR)/asperatransferd.* $(TMPDIR)/aspera-scp-transfer*.log
+	rm -fr $(DIR_TESTED_FLAG)
 # clean all generated and compiled files
 superclean:: clean
 clean_daemon:
