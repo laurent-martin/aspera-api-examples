@@ -13,9 +13,9 @@ using StringDict = System.Collections.Generic.Dictionary<string, string>;
 public class Rest
 {
     // take come time back to account for time offset between client and server
-    private const int JWT_NOT_BEFORE_OFFSET_SEC = 60
+    private const int JWT_NOT_BEFORE_OFFSET_SEC = 60;
     // take some validity for the JWT
-    private const int JWT_EXPIRY_OFFSET_SEC = 600
+    private const int JWT_EXPIRY_OFFSET_SEC = 600;
     public StringDict mApiData;
     public Rest mOAuthAPI;
     private HttpClient mHttpClient;
