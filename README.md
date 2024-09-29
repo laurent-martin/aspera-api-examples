@@ -74,7 +74,7 @@ If you use Linux, macOS, AIX, etc...
     - Download the Aspera Transfer SDK.
     - Extract the SDK.
 
-    > **Note:** If you don't have internet access on the system then download the Transfer SDK on a system with internet from: <https://ibm.biz/aspera_transfer_sdk> and place the file here: `<main folder>/generated/trsdk/transfer_sdk.zip`
+    > **Note:** If you don't have internet access on the system then download the Transfer SDK on a system with internet from: <https://ibm.biz/aspera_transfer_sdk> and place the file here: `<main folder>/tmp/transfer_sdk.zip`
 
 2. Refer to [Configuration File](#configuration-file): Edit the file `private/config.yaml` and fill values.
 
@@ -102,14 +102,20 @@ If you use Linux, macOS, AIX, etc...
 2. Prepare the SDK folder
 
     ```dos
-    md generated
-    md generated\trsdk
-    mklink /D generated\trsdk\etc noarch
+    md tmp
     ```
 
-    > **Note:** Creation of the link `etc -> noarch` is because `ascp` will look for its license file `aspera-license` in one of `.` `./etc` `..` `../etc` `../..` `../../etc`
+3. Download [sdk.zip](https://ibm.biz/aspera_transfer_sdk) and extract its contents to `tmp/trsdk`
 
-3. Download [sdk.zip](https://ibm.biz/aspera_transfer_sdk) and extract its contents to `generated/trsdk`
+    > **Note:** If you don't have internet access on the system then download the Transfer SDK on a system with internet and place the file here: `<main folder>/tmp/transfer_sdk.zip`
+
+    ```dos
+    cd tmp
+    7z x transfer_sdk.zip
+    move trsdk\osx-arm64 sdk_runtime
+    move trsdk\noarch\aspera* sdk_runtime
+    move trsdk\noarch sdk_dev
+    ```
 
 4. Run the samples: see [Running sample programs](#running-sample-programs)
 
@@ -226,7 +232,7 @@ The following log levels can be set:
 - `trsdk.level`: asperatransferd log level: `trace` `debug` `info` `warning` `error` `fatal` `panic`
 - `trsdk.ascp_level`: ascp log level: `trace` `debug` `info`
 
-Some examples support setting port to zero in trsdk.url to use a random port.
+Some examples support setting port to zero in `trsdk.url` to use a random port.
 
 Sample application generate a file `asperatransferd.conf` provided to the transfer sdk daemon, log level there are taken from the general yaml config file.
 
