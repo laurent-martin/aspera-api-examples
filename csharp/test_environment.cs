@@ -1,6 +1,9 @@
 //using Transfersdk;
 using Grpc.Net.Client;
 using Newtonsoft.Json.Linq;
+using System;
+using System.IO;
+using System.Text;
 
 class Log
 {
@@ -10,6 +13,9 @@ class Log
         log.Debug($"{name}={Newtonsoft.Json.JsonConvert.SerializeObject(value, Newtonsoft.Json.Formatting.Indented)}");
     }
 }
+/// <summary>
+/// Interface for sample classes
+/// </summary>
 interface SampleInterface
 {
     void start(string[] files);
@@ -31,7 +37,12 @@ public class TestEnvironment
     const string pathsFile = "config/paths.yaml";
     const string sdkDaemonExecutable = "asperatransferd";
 
-    // @return absolute path for the named folder from configuration file
+    /// <summary>
+    /// Get absolute path for the named folder from configuration file
+    /// </summary>
+    /// <param name="name">name of configuration</param>
+    /// <returns>absolute path for the named folder from configuration file</returns>
+    /// <exception cref="Exception">if file does not exists</exception>
     string GetPath(string name)
     {
         // Get configuration sub-path in project's root folder
@@ -187,6 +198,35 @@ public class TestEnvironment
         }
     }
 
+    public static string LastFileLine(string filename)
+    {
+        // Open the file in binary mode and seek to the end
+        using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        {
+            if (file.Length == 0)
+                throw new InvalidOperationException("File is empty");
+
+            file.Seek(-1, SeekOrigin.End);
+            StringBuilder lastLine = new StringBuilder();
+            int byteRead;
+
+            // Read bytes in reverse until we encounter a newline or reach the start of the file
+            while (file.Position > 0 && (byteRead = file.ReadByte()) != '\n')
+            {
+                file.Seek(-2, SeekOrigin.Current);
+                lastLine.Insert(0, (char)byteRead);
+            }
+
+            // Read the last line in case we are already at the start of the file
+            if (file.Position == 0)
+            {
+                file.Seek(0, SeekOrigin.Begin);
+                lastLine.Insert(0, (char)file.ReadByte());
+            }
+
+            return lastLine.ToString();
+        }
+    }
     // Start the specified transfer
     // @return transfer id
     // @param aSpecObj transfer specification (JSON Object)
