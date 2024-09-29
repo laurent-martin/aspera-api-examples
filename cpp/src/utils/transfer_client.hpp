@@ -45,9 +45,9 @@ class TransferClient {
 
    public:
     TransferClient(
-        Configuration& tools,
+        Configuration& config,
         bool shutdown = true)
-        : _config(tools),
+        : _config(config),
           _auto_shutdown(shutdown),
           _daemon_log(_config.log_folder_path() / DAEMON_LOG_FILE),
           _transfer_daemon_process(nullptr),

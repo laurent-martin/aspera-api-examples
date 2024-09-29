@@ -22,7 +22,7 @@ try:
             'node_api': {
                 'url': shares_api_url,
                 'headers': [
-                    tools.basic_auth_header_key_value(config.param('shares', 'username'), config.param('shares', 'password'))
+                    utils.configuration.basic_auth_header_key_value(config.param('shares', 'username'), config.param('shares', 'password'))
                 ]
             }
         },
