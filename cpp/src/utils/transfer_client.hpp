@@ -40,6 +40,8 @@ class TransferClient {
     std::string _channel_address;
     std::unique_ptr<boost::process::child> _transfer_daemon_process;
     std::unique_ptr<trsdk::TransferService::Stub> _transfer_service;
+    // folder with SDK binaries
+    const std::filesystem::path _sdk_runtime_path;
 
    public:
     TransferClient(
@@ -49,15 +51,17 @@ class TransferClient {
           _auto_shutdown(shutdown),
           _daemon_log(_config.log_folder_path() / DAEMON_LOG_FILE),
           _transfer_daemon_process(nullptr),
-          _transfer_service(nullptr) {
+          _transfer_service(nullptr),
+          _sdk_runtime_path(_config.get_path("sdk_runtime"))  {
+        LOG(debug) << LOG_ITEM("sdk_folder") << _sdk_runtime_path.string();
         auto sdk_url = _config.param_str({"trsdk", "url"});
-        auto result = boost::urls::parse_uri(sdk_url);
-        if (!result) {
+        auto sdk_uri = boost::urls::parse_uri(sdk_url);
+        if (!sdk_uri) {
             throw std::runtime_error("Invalid trsdk url");
         }
-        LOG(debug) << LOG_ITEM("grpc url") << result.value();
-        _server_address = result.value().host();
-        _server_port = std::stoi(result.value().port());
+        LOG(debug) << LOG_ITEM("grpc url") << sdk_uri.value();
+        _server_address = sdk_uri.value().host();
+        _server_port = std::stoi(sdk_uri.value().port());
         _channel_address = _server_address + ":" + std::to_string(_server_port);
         LOG(debug) << LOG_ITEM("channel addr") << _channel_address;
     }
@@ -89,8 +93,8 @@ class TransferClient {
             {"fasp_runtime",
              {{"use_embedded", false},
               {"user_defined",
-               {{"bin", _config.arch_folder_path().string()},
-                {"etc", _config.get_path("trsdk_noarch").string()}}},
+               {{"bin", _sdk_runtime_path.string()},
+                {"etc", _sdk_runtime_path.string()}}},
               {"log",
                {
                    {"dir", _config.log_folder_path().string()},
@@ -109,7 +113,7 @@ class TransferClient {
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
-        const std::string command = std::string(_config.arch_folder_path() / TRANSFER_SDK_DAEMON) + " --config " + conf_file;
+        const std::string command = std::string(_sdk_runtime_path / TRANSFER_SDK_DAEMON) + " --config " + conf_file;
         LOG(debug) << LOG_ITEM("daemon out") << out_file;
         LOG(debug) << LOG_ITEM("daemon err") << err_file;
         LOG(debug) << LOG_ITEM("daemon log") << _daemon_log;

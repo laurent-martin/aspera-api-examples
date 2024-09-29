@@ -2,7 +2,7 @@ DIR_TOP=$(CURDIR)/../
 TEST_CASES=aoc node faspex5 server faspex4
 include $(DIR_TOP)common.mak
 SRC=src/
-GEMFILE=$(SDK_DIR_NOARCH)/connectors/ruby/Gemfile
+GEMFILE=$(SDK_DIR_DEV)/connectors/ruby/Gemfile
 all:: $(TEST_FLAGS)
 $(DIR_TESTED_FLAG)%: Gemfile.lock $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="

@@ -5,17 +5,14 @@
 import utils.configuration
 import utils.transfer_client
 
-test_env = utils.configuration.Configuration()
-transfer_client = utils.transfer_client.TransferClient(test_env).startup()
+config = utils.configuration.Configuration()
+transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    # get Shares information from config file
-    config = test_env.conf('shares')
-
-    shares_api_url = f'{config['url']}/node_api'
-    destination_folder = config['folder_upload']
+    shares_api_url = f'{config.param('shares', 'url')}/node_api'
+    destination_folder = config.param('shares', 'folder_upload')
     # if '/' not in destination_folder:
-    #    destination_folder = f'{config['folder_upload']}/'
+    #    destination_folder = f'{config.param('shares','folder_upload']}/'
     # share_name, subfolder = destination_folder.split('/', 1)
 
     # prepare transfer spec v2 for COS
@@ -25,7 +22,7 @@ try:
             'node_api': {
                 'url': shares_api_url,
                 'headers': [
-                    tools.basic_auth_header_key_value(config['username'], config['password'])
+                    tools.basic_auth_header_key_value(config.param('shares', 'username'), config.param('shares', 'password'))
                 ]
             }
         },
@@ -37,7 +34,7 @@ try:
     }
 
     # add file list in transfer spec
-    for f in test_env.file_list():
+    for f in config.file_list():
         # note: Shares API requires both source and destination to be set (unlike real node api)
         destination = f.split('/')[-1]
         # if subfolder:

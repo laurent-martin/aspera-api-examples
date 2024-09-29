@@ -8,30 +8,27 @@ import utils.rest
 
 destination_folder = '/'
 
-test_env = utils.configuration.Configuration()
-transfer_client = utils.transfer_client.TransferClient(test_env).startup()
+config = utils.configuration.Configuration()
+transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
     # get file to upload from command line
-    files_to_upload = test_env.file_list()
+    files_to_upload = config.file_list()
 
     # get Aspera Transfer Service Node information using service credential file
-    # config=test_env.conf('coscreds')
-    # with open(config['service_credential_file']) as f:
+    # config=config.param('coscreds')
+    # with open(config.param('cos','service_credential_file']) as f:
     #    credentials = json.load(f)
-    # info=utils.helper_aspera_cos.from_service_credentials(credentials=credentials,region=config['region'])
-    # cos_node_info=utils.helper_aspera_cos.node(bucket=config['bucket'],endpoint=info['endpoint'],key=info['key'],crn=info['crn'])
-
-    # get configuration parameters from config file
-    config = test_env.conf('cos')
+    # info=utils.helper_aspera_cos.from_service_credentials(credentials=credentials,region=config.param('cos','region'])
+    # cos_node_info=utils.helper_aspera_cos.node(bucket=config.param('cos','bucket'],endpoint=info['endpoint'],key=info['key'],crn=info['crn'])
 
     # get Aspera Transfer Service Node information for specified COS bucket
     cos_node_info = utils.helper_aspera_cos.node(
-        bucket=config['bucket'],
-        endpoint=config['endpoint'],
-        key=config['key'],
-        crn=config['crn'],
-        auth=config['auth'],
+        bucket=config.param('cos', 'bucket'),
+        endpoint=config.param('cos', 'endpoint'),
+        key=config.param('cos', 'key'),
+        crn=config.param('cos', 'crn'),
+        auth=config.param('cos', 'auth'),
     )
 
     node_api = utils.rest.Rest(

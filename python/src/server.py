@@ -8,22 +8,20 @@ import tempfile
 import os
 from urllib.parse import urlparse
 
-test_env = utils.configuration.Configuration()
-transfer_client = utils.transfer_client.TransferClient(test_env).startup()
+config = utils.configuration.Configuration()
+transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    config = test_env.conf('server')
-
     # where transferred files will be stored
     my_local_folder = tempfile.gettempdir()
 
-    server_url = urlparse(config['url'])
+    server_url = urlparse(config.param('server', 'url'))
     assert server_url.scheme == 'ssh', 'expecting SSH scheme for server URL'
 
     remote_host = server_url.hostname
     remote_port = server_url.port
-    remote_user = config['username']
-    remote_pass = config['password']
+    remote_user = config.param('server', 'username')
+    remote_pass = config.param('server', 'password')
 
     transfer_client._shutdown_after_transfer = False
 
@@ -38,12 +36,12 @@ try:
         'remote_password': remote_pass,
         'direction': 'receive',
         'destination_root': my_local_folder,
-        'paths': [{'source': config['file_download']}],
+        'paths': [{'source': config.param('server', 'file_download')}],
     }
     transfer_client.start_transfer_and_wait(t_spec_download)
 
     # location of downloaded file
-    local_file = os.path.join(my_local_folder, os.path.basename(config['file_download']))
+    local_file = os.path.join(my_local_folder, os.path.basename(config.param('server', 'file_download')))
 
     # Example 2: upload: single file upload to existing folder.
     log.info('======Test 2: upload file')
@@ -53,7 +51,7 @@ try:
         'remote_user': remote_user,
         'remote_password': remote_pass,
         'direction': 'send',
-        'destination_root': config['folder_upload'],
+        'destination_root': config.param('server', 'folder_upload'),
         # 'create_dir':True, # destination root is folder, else it assumes (one source) it is dest file name
         'paths': [{'source': local_file}],
         'tags': {'mysample_tag': 'hello'},
@@ -66,13 +64,13 @@ try:
     # but if destination is a folder, it will send same source filename into folder
     # so enforce folder creation, to be sure of what happens
     log.info('======Test 3: upload file to new folder')
-    t_spec_upload['destination_root'] = config['folder_upload']+'/new_folder'
+    t_spec_upload['destination_root'] = config.param('server', 'folder_upload')+'/new_folder'
     t_spec_upload['create_dir'] = True
     transfer_client.start_transfer_and_wait(t_spec_upload)
 
     # Example 4: upload: send to sub folder, but using file pairs
     log.info('======Test 4: upload file and rename')
-    t_spec_upload['destination_root'] = config['folder_upload']
+    t_spec_upload['destination_root'] = config.param('server', 'folder_upload')
     del t_spec_upload['create_dir']
     t_spec_upload['paths'] = [{'source': local_file, 'destination': 'xxx/newfilename.ext'}]
     transfer_client.start_transfer_and_wait(t_spec_upload)

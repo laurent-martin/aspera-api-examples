@@ -14,7 +14,7 @@ class Program
                 capitalized_name.Append(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(word));
             }
         }
-        // call the sample class, based on name
+        // call the sample class, based on name, keeping remaining args
         ((SampleInterface)Activator.CreateInstance(Type.GetType($"Sample{capitalized_name}", throwOnError: true))).start(args.Skip(1).ToArray());
     }
 }

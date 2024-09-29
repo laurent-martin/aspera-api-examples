@@ -31,13 +31,8 @@ class Configuration:
         # Read configuration from configuration file
         self._config = yaml.load(open(self.get_path('main_config')), Loader=yaml.FullLoader)
         # Error hint to help user to fix the issue
-        self._error_hint = f'\nPlease check: SDK installed in {self._paths["sdk_root"]}, configuration file: {self._paths["main_config"]}'
-        # folder with SDK binaries
-        self._arch_folder = os.path.join(self.get_path('sdk_root'), self.conf('misc', 'platform'))
-        assert os.path.exists(
-            self._arch_folder
-        ), f'ERROR: SDK not found in: {self._arch_folder}.{self._error_hint}'
-        log_level = getattr(logging, self.conf('misc', 'level').upper(), logging.WARN)
+        self._error_hint = f'\nPlease check: SDK installed in {self._paths["sdk_runtime"]}, configuration file: {self._paths["main_config"]}'
+        log_level = getattr(logging, self.param('misc', 'level').upper(), logging.WARN)
         # set logger for debugging
         logging.basicConfig(format='%(levelname)-8s %(message)s', level=log_level)
         # debug http: see: https://stackoverflow.com/questions/10588644
@@ -47,15 +42,14 @@ class Configuration:
             requests_log.setLevel(log_level)
             requests_log.propagate = True
 
-    def conf(self, *keys):
-        current_node = self._config
-
-        for key in keys:
-            if key in current_node:
-                current_node = current_node[key]
-            else:
-                raise KeyError(f"Key not found: {key}")
-        return current_node
+    def param(self, section, param, default=None):
+        if section not in self._config:
+            raise KeyError(f"Section not found: {section}")
+        if param not in self._config[section]:
+            if default is not None:
+                return default
+            raise KeyError(f"Param not found: {param}")
+        return self._config[section][param]
 
     def get_path(self, name):
         '''Get configuration sub-path in project's root folder'''

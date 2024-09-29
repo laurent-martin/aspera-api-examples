@@ -4,33 +4,30 @@
 import utils.configuration
 import utils.transfer_client
 
-test_env = utils.configuration.Configuration()
-transfer_client = utils.transfer_client.TransferClient(test_env).startup()
+config = utils.configuration.Configuration()
+transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    # get node information from config file
-    config = test_env.conf('node')
-
     # prepare transfer spec v2 for COS
     t_spec = {
         'title': 'send using Node API and ts v2',
         'session_initiation': {
             'node_api': {
-                'url': config['url'],
+                'url': config.param('node', 'url'),
                 'headers': [
-                    utils.configuration.basic_auth_header_key_value(config['username'], config['password'])
+                    utils.configuration.basic_auth_header_key_value(config.param('node', 'username'), config.param('node', 'password'))
                 ]
             }
         },
         'direction': 'send',
         'assets': {
-            'destination_root': config['folder_upload'],
+            'destination_root': config.param('node', 'folder_upload'),
             'paths': []
         },
     }
 
     # add file list in transfer spec
-    for f in test_env.file_list():
+    for f in config.file_list():
         t_spec['assets']['paths'].append({'source': f})
 
     # start transfer, using Transfer SDK

@@ -6,29 +6,26 @@ import utils.transfer_client
 import utils.rest
 import logging
 
-test_env = utils.configuration.Configuration()
-transfer_client = utils.transfer_client.TransferClient(test_env).startup()
+config = utils.configuration.Configuration()
+transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
     # get file to upload from command line
-    files_to_upload = test_env.file_list()
-
-    # get Shares information from config file
-    config = test_env.conf('shares')
+    files_to_upload = config.file_list()
 
     shares_api = utils.rest.Rest(
-        base_url=f"{config['url']}/node_api",
-        user=config['username'],
-        password=config['password'],
+        base_url=f"{config.param('shares', 'url')}/node_api",
+        user=config.param('shares', 'username'),
+        password=config.param('shares', 'password'),
         # verify certificate if not explicitly set to False
-        verify=not ('verify' in config and config['verify'] is False),
+        verify=config.param('shares', 'verify', True),
     )
 
     # call Node API with a single transfer request to get one transfer spec with Aspera token
     logging.info('Generating transfer spec')
     response_data = shares_api.post('files/upload_setup', {
         'transfer_requests': [
-            {'transfer_request': {'paths': [{'destination': config['folder_upload']}]}}
+            {'transfer_request': {'paths': [{'destination': config.param('shares', 'folder_upload')}]}}
         ]
     })
 

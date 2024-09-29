@@ -33,19 +33,19 @@ def get_bearer(scope):
     generate a bearer token for given scope using AoC API
     '''
     log.info('getting API authorization for %s', scope)
-    with open(config['private_key']) as key_file:
+    with open(config.param('aoc', 'private_key')) as key_file:
         private_key_pem = key_file.read()
 
     seconds_since_epoch = int(calendar.timegm(time.gmtime()))
 
     jwt_payload = {
-        'iss': config['client_id'],  # issuer
-        'sub': config['user_email'],  # subject
+        'iss': config.param('aoc', 'client_id'),  # issuer
+        'sub': config.param('aoc', 'user_email'),  # subject
         'aud': 'https://api.asperafiles.com/api/v1/oauth2/token',  # audience
         'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
         'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
         'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
-        'org': config['org'],
+        'org': config.param('aoc', 'org'),
     }
     log.debug(jwt_payload)
 
@@ -59,8 +59,8 @@ def get_bearer(scope):
     }
 
     response = requests.post(
-        url=f'{AOC_API_BASE}/oauth2/{config["org"]}/token',
-        auth=requests.auth.HTTPBasicAuth(config['client_id'], config['client_secret']),
+        url=f'{AOC_API_BASE}/oauth2/{config.param('aoc', "org")}/token',
+        auth=requests.auth.HTTPBasicAuth(config.param('aoc', 'client_id'), config.param('aoc', 'client_secret')),
         data=data,
         headers={
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -73,13 +73,10 @@ def get_bearer(scope):
     return f'Bearer {response_data["access_token"]}'
 
 
-test_env = utils.configuration.Configuration()
-transfer_client = utils.transfer_client.TransferClient(test_env).startup()
+config = utils.configuration.Configuration()
+transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    # get configuration parameters from config file
-    config = test_env.conf('aoc')
-
     aoc_api = utils.rest.Rest(
         base_url=AOC_API_BASE,
         headers={'Authorization': get_bearer('user:all')},
@@ -89,18 +86,18 @@ try:
     # response_data = aoc_api.get('self')
 
     log.info('getting workspace information')
-    response_data = aoc_api.get('workspaces', params={'q': config['workspace']})
+    response_data = aoc_api.get('workspaces', params={'q': config.param('aoc', 'workspace')})
     log.debug(response_data)
     if len(response_data) != 1:
-        raise Exception(f'Found {len(response_data)} workspace for {config["workspace"]}')
+        raise Exception(f'Found {len(response_data)} workspace for {config.param('aoc', "workspace")}')
     workspace_info = response_data[0]
 
     # Get dropbox information (shared inbox name in config file)
     log.info('getting shared inbox information')
-    response_data = aoc_api.get('dropboxes', params={'current_workspace_id': workspace_info['id'], 'q': config['shared_inbox']})
+    response_data = aoc_api.get('dropboxes', params={'current_workspace_id': workspace_info['id'], 'q': config.param('aoc', 'shared_inbox')})
     log.debug(response_data)
     if len(response_data) != 1:
-        raise Exception(f'Found {len(response_data)} dropbox for {config["shared_inbox"]}')
+        raise Exception(f'Found {len(response_data)} dropbox for {config.param('aoc', "shared_inbox")}')
     dropbox_info = response_data[0]
 
     #  create a new package (this allocates a reception folder on package storage)
@@ -166,7 +163,7 @@ try:
         t_spec['multi_session_threshold'] = 500000
 
     # add file list in transfer spec
-    for f in test_env.file_list():
+    for f in config.file_list():
         t_spec['paths'].append({'source': f})
 
     # Finally send files to package folder on server

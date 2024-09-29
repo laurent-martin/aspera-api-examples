@@ -2,27 +2,23 @@ using Newtonsoft.Json.Linq;
 
 class SampleServerUpload : SampleInterface
 {
-    public void start(string[] files)
+    public void start(string[] args)
     {
         Log.log.Debug("server upload");
-        var test_env = new TestEnvironment();
-        var server_conf = test_env.mConfig["server"];
-        var fasp_url = new Uri(server_conf["url"]);
+        var config = new Configuration(args);
+        var fasp_url = new Uri(config.GetParam("server","url"));
         var t_spec = new JObject{
             {"title", "server upload V1"},
             {"remote_host", fasp_url.Host},
             {"ssh_port", fasp_url.Port},
-            {"remote_user", server_conf["username"]},
-            {"remote_password", server_conf["password"]},
+            {"remote_user", config.GetParam("server","username")},
+            {"remote_password", config.GetParam("server","password")},
             {"direction", "send"},
-            {"destination_root", server_conf["folder_upload"]},
+            {"destination_root", config.GetParam("server","folder_upload")},
             {"paths", new JArray()},
         };
         // add file list in transfer spec
-        foreach (string f in files)
-        {
-            ((JArray)t_spec["paths"]).Add(new JObject { { "source", f } });
-        }
-        test_env.StartTransferAndWait(t_spec);
+        config.AddFilesToTransferSpec(t_spec);
+        config.StartTransferAndWait(t_spec);
     }
 }

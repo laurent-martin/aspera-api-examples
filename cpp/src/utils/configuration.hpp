@@ -42,8 +42,7 @@ class Configuration {
           _top_folder_path(std::filesystem::absolute(argv[0]).parent_path().parent_path().parent_path()),
           _log_folder_path(std::filesystem::temp_directory_path()),
           _paths(load_yaml("paths", _top_folder_path / PATHS_FILE_REL)),
-          _config(load_yaml("main_config", get_path("main_config"))),
-          _arch_folder_path(get_path("sdk_root") / param_str({"misc", "platform"})) {
+          _config(load_yaml("main_config", get_path("main_config"))){
         auto log_level = param_str({"misc", "level"});
         auto opt_level = magic_enum::enum_cast<boost::log::trivial::severity_level>(log_level);
         if (!opt_level.has_value()) {
@@ -55,7 +54,6 @@ class Configuration {
             throw std::runtime_error("ERROR");
         }
         LOG(debug) << LOG_ITEM("top_folder") << _top_folder_path.string();
-        LOG(debug) << LOG_ITEM("arch_folder") << _arch_folder_path.string();
         for (const auto& one_file : _file_list) {
             LOG(debug) << LOG_ITEM("file") << one_file;
         }
@@ -69,10 +67,6 @@ class Configuration {
 
     const std::filesystem::path& log_folder_path() const {
         return _log_folder_path;
-    }
-
-    const std::filesystem::path& arch_folder_path() const {
-        return _arch_folder_path;
     }
 
     // Dig to the yaml node by list of keys
@@ -102,7 +96,7 @@ class Configuration {
         // LOG(debug) << "get_path" << ": " << name;
         std::filesystem::path item_path = _top_folder_path / _paths[name].as<std::string>();
         if (!std::filesystem::exists(item_path)) {
-            LOG(error) << item_path.string() << " not found.\nPlease check: SDK installed in " << _paths["sdk_root"].as<std::string>() << ", configuration file: " << _paths["main_config"].as<std::string>();
+            LOG(error) << item_path.string() << " not found.\nPlease check: SDK installed in " << _paths["sdk_runtime"].as<std::string>() << ", configuration file: " << _paths["main_config"].as<std::string>();
             throw std::runtime_error("ERROR");
         }
         return item_path;
@@ -147,7 +141,9 @@ class Configuration {
     }
 
    private:
+    // logger
     boost::log::sources::severity_logger<boost::log::trivial::severity_level> _log;
+    // log initialization
     const bool _init_log;
     // list of files to transfer
     std::vector<std::string> _file_list;
@@ -157,8 +153,6 @@ class Configuration {
     // config file with _paths
     const YAML::Node _paths;
     const YAML::Node _config;
-    // folder with SDK binaries
-    const std::filesystem::path _arch_folder_path;
 
     YAML::Node load_yaml(const char* const name, const std::filesystem::path& path) {
         LOG(debug) << std::setw(ITEM_WIDTH) << name << ": " << path.string();

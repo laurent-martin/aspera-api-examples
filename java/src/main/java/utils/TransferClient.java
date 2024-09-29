@@ -40,7 +40,7 @@ public class TransferClient {
 	private String transferId;
 	private final URI grpcURL;
 	private final String daemonExecutable;
-	private final String archFolder;
+	private final String sdkRuntimeFolder;
 	private final String daemonLog;
 
 
@@ -51,9 +51,8 @@ public class TransferClient {
 		daemonLog = config.getLogFolder() + File.separator + DAEMON_LOG_FILE;
 		try {
 			grpcURL = new URI(config.getParamStr("trsdk", "url"));
-			final String platform = config.getParamStr("misc", "platform");
-			archFolder = config.getPath("sdk_root", platform);
-			daemonExecutable = config.getPath("sdk_root", platform, TRANSFER_SDK_DAEMON);
+			sdkRuntimeFolder = config.getPath("sdk_runtime");
+			daemonExecutable = config.getPath("sdk_runtime", TRANSFER_SDK_DAEMON);
 		} catch (final java.net.URISyntaxException e) {
 			throw new Error("problem with SDK URL: " + e.getMessage());
 		}
@@ -88,8 +87,8 @@ public class TransferClient {
 				.put("fasp_runtime", new JSONObject() //
 						.put("use_embedded", false) //
 						.put("user_defined", new JSONObject() //
-								.put("bin", archFolder) //
-								.put("etc", config.getPath("trsdk_noarch"))) //
+								.put("bin", sdkRuntimeFolder) //
+								.put("etc", sdkRuntimeFolder)) //
 						.put("log", new JSONObject() //
 								.put("dir", config.getLogFolder()) //
 								.put("level", ascp_int_level)));

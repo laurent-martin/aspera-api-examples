@@ -1,22 +1,22 @@
 GBL_FILE_PATHS=$(DIR_TOP)config/paths.yaml
-# folder with architecture independent files from the transfer SDK
-SDK_DIR_NOARCH=$(DIR_TOP)$(shell sed -n -e 's/^trsdk_noarch: //p' < $(GBL_FILE_PATHS))/
 # main folder for generated/downloaded files/temporary files
-GBL_DIR_TMP=$(DIR_TOP)$(shell sed -n -e 's/^temp_gene: //p' $(GBL_FILE_PATHS))/
+GBL_DIR_TMP=$(DIR_TOP)$(shell sed -n -e 's/^temp: //p' $(GBL_FILE_PATHS))/
 # location of transfer.proto
 SDK_FILE_PROTO=$(DIR_TOP)$(shell sed -n -e 's/^proto: //p' $(GBL_FILE_PATHS))
 # user's config file path
 GBL_FILE_CONFIG=$(DIR_TOP)$(shell sed -n -e 's/^main_config: //p' $(GBL_FILE_PATHS))
+# folder with architecture independent files from the transfer SDK
+SDK_DIR_DEV=$(DIR_TOP)$(shell sed -n -e 's/^sdk_dev: //p' < $(GBL_FILE_PATHS))/
 # location of extracted transfer SDK
-SDK_DIR_ROOT=$(DIR_TOP)$(shell sed -n -e 's/^sdk_root: //p' $(GBL_FILE_PATHS))/
-# location of platform specific transfer SDK files (binaries)
-SDK_DIR_ARCH=$(SDK_DIR_ROOT)$(shell sed -n -e 's/^ *platform: //p' $(GBL_FILE_CONFIG) 2> /dev/null)/
+SDK_DIR_RUNTIME=$(DIR_TOP)$(shell sed -n -e 's/^sdk_runtime: //p' $(GBL_FILE_PATHS))/
+# name of the current platform (os-cpu)
+PLATFORM=$(shell sed -n -e 's/^ *platform: //p' $(GBL_FILE_CONFIG) 2> /dev/null)
 # downloaded SDK file
-SDK_FILE_ZIP=$(SDK_DIR_ROOT)transfer_sdk.zip
+SDK_FILE_ZIP=$(GBL_DIR_TMP)transfer_sdk.zip
 # SDK executables
-SDK_FILE_EXECS=$(SDK_DIR_ARCH)asperatransferd
+SDK_FILE_EXECS=$(SDK_DIR_RUNTIME)asperatransferd
 # required files for running the samples
-FILES_RUNTIME=$(GBL_FILE_CONFIG) $(SDK_DIR_ARCH)asperatransferd
+FILES_RUNTIME=$(GBL_FILE_CONFIG) $(SDK_DIR_RUNTIME)asperatransferd
 # template configuration file
 GBL_FILE_CONF_TMPL=$(DIR_TOP)config/config.tmpl
 # sample file to transfer
@@ -49,20 +49,20 @@ $(DIR_TESTED_FLAG):
 # config file info https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
 # download transfer SDK
 SDK_URL=https://ibm.biz/aspera_transfer_sdk
-#SDK_URL=https://eudemo.asperademo.com/download/sdk-1.1.2-753f662.zip
 $(SDK_FILE_ZIP):
-	mkdir -p $(SDK_DIR_ROOT)
+	mkdir -p $(GBL_DIR_TMP)
 	curl -L $(SDK_URL) -o $(SDK_FILE_ZIP)
 # Extract transfer SDK
-# Note: Create the "etc" link because "ascp" expects to find "aspera-license" in one of . .. ../.. ./etc ../etc ../../etc
-# modify the target date, so that they are newer (else in archive it's older)
-DIR_EXPECTED_LIC=$(SDK_DIR_ROOT)etc
-$(SDK_DIR_ARCH)asperatransferd $(SDK_FILE_PROTO): $(SDK_FILE_ZIP)
-	unzip -qud $(SDK_DIR_ROOT) $(SDK_FILE_ZIP)
+$(SDK_DIR_RUNTIME)asperatransferd $(SDK_FILE_PROTO): $(SDK_FILE_ZIP)
+	rm -fr $(SDK_DIR_RUNTIME) $(SDK_DIR_DEV)
+	mkdir -p $(SDK_DIR_RUNTIME)
+	unzip -qu $(SDK_FILE_ZIP) '$(PLATFORM)/*' 'noarch/*' -d $(SDK_DIR_RUNTIME)
+	mv $(SDK_DIR_RUNTIME)$(PLATFORM)/* $(SDK_DIR_RUNTIME)
+	mv $(SDK_DIR_RUNTIME)noarch/aspera* $(SDK_DIR_RUNTIME)
+	mv $(SDK_DIR_RUNTIME)noarch $(SDK_DIR_DEV)
+	rmdir $(SDK_DIR_RUNTIME)$(PLATFORM)
 	test -f $(SDK_FILE_PROTO)
-	$(SDK_DIR_ARCH)/asperatransferd version | sed -Ee 's|^(.*) version (.*)\..*$$|<product><name>\1</name><version>\2</version></product>|' > $(SDK_DIR_ARCH)product-info.mf
-	rm -f $(DIR_EXPECTED_LIC)
-	ln -s noarch $(DIR_EXPECTED_LIC)
+	$(SDK_DIR_RUNTIME)/asperatransferd version | sed -Ee 's|^(.*) version (.*)\..*$$|<product><name>\1</name><version>\2</version></product>|' > $(SDK_DIR_RUNTIME)product-info.mf
 	touch $@
 $(GBL_FILE_CONFIG):
 	mkdir -p $$(dirname $@)

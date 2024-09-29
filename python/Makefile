@@ -13,7 +13,7 @@ PY_GRPC_GEN_DIR=$(PYENV_DIR)grpc_aspera/
 # python grpc source code files, generated from proto file, also present in SDK
 PY_GRPC_SDK_SRCS=transfer_pb2.py transfer_pb2_grpc.py
 # location of pre-generated protobuf/grpc sources provided in SDK
-PY_GRPC_SDK_DIR=$(SDK_DIR_NOARCH)connectors/python/
+PY_GRPC_SDK_DIR=$(SDK_DIR_DEV)connectors/python/
 # comment out this file to use generated grpc source code from SDK
 PY_GRPC_SDK_DIR=
 # python grpc source code files used by sample code with full path

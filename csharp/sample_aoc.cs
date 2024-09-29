@@ -6,24 +6,23 @@ class SampleAoc : SampleInterface
 {
     int transfer_sessions = 1;
 
-    public void start(string[] files)
+    public void start(string[] args)
     {
-        var test_env = new TestEnvironment();
-        var aoc_config = test_env.mConfig["aoc"];
+        var config = new Configuration(args);
         Log.log.Debug("aoc saas");
         Rest aoc_api = new Rest(new Dictionary<string, string>(){
             {"base_url","https://api.ibmaspera.com/api/v1"},
             {"type","oauth2"},
             {"oauth_type","jwt"},
-            {"oauth_file_private_key",aoc_config["private_key"]},
-            {"oauth_client_id",aoc_config["client_id"]},
-            {"oauth_client_secret",aoc_config["client_secret"]},
-            {"oauth_jwt_subject",aoc_config["user_email"]},
+            {"oauth_file_private_key",config.GetParam("aoc","private_key")},
+            {"oauth_client_id",config.GetParam("aoc","client_id")},
+            {"oauth_client_secret",config.GetParam("aoc","client_secret")},
+            {"oauth_jwt_subject",config.GetParam("aoc","user_email")},
             {"oauth_jwt_audience","https://api.asperafiles.com/api/v1/oauth2/token"},
-            {"oauth_base_url",$"https://api.ibmaspera.com/api/v1/oauth2/{aoc_config["org"]}"},
+            {"oauth_base_url",$"https://api.ibmaspera.com/api/v1/oauth2/{config.GetParam("aoc","org")}"},
             {"oauth_path_token","token"},
             {"oauth_scope","user:all"},
-            {"aoc_org",aoc_config["org"]},
+            {"aoc_org",config.GetParam("aoc","org")},
         });
         // REST call
         var self_data = aoc_api.read("self");
@@ -32,7 +31,7 @@ class SampleAoc : SampleInterface
         string default_workspace_id = (string)(self_data["data"]["default_workspace_id"]);
         var workspace_info = aoc_api.read($"workspaces/{default_workspace_id}")["data"];
         // this user must be registered, else different code is needed
-        string recipient_email = aoc_config["user_email"];
+        string recipient_email = config.GetParam("aoc","user_email");
         // find recipient information
         var user_lookup = aoc_api.read("contacts", new JObject{
                     {"current_workspace_id",workspace_info["id"]},
@@ -96,11 +95,8 @@ class SampleAoc : SampleInterface
             t_spec["multi_session_threshold"] = 500000;
         }
         // add file list in transfer spec
-        foreach (string f in files)
-        {
-            ((JArray)t_spec["paths"]).Add(new JObject { { "source", f } });
-        }
+        config.AddFilesToTransferSpec(t_spec);
         // Finally send files to package folder on server
-        test_env.StartTransferAndWait(t_spec);
+        config.StartTransferAndWait(t_spec);
     }
 }

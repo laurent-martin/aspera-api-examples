@@ -33,20 +33,22 @@ DEBUG_HTTP = False
 class TransferClient:
     '''Transfer Client using Aspera Transfer SDK'''
 
-    def __init__(self, tools):
-        self._tools = tools
-        self._daemon_log = os.path.join(self._tools._log_folder, DAEMON_LOG_FILE)
+    def __init__(self, config):
+        self._config = config
+        self._daemon_log = os.path.join(self._config._log_folder, DAEMON_LOG_FILE)
         self._transfer_daemon_process = None
         self._transfer_service = None
-        sdk_url = urlparse(self._tools.conf('trsdk', 'url'))
+        sdk_url = urlparse(self._config.param('trsdk', 'url'))
         self._server_address = sdk_url.hostname
         self._server_port = sdk_url.port
+        # folder with SDK binaries
+        self._sdk_runtime_folder = self._config.get_path('sdk_runtime')
 
     def create_config_file(self, conf_file):
         '''
         see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
         '''
-        ascp_level = self._tools.conf('trsdk', 'ascp_level')
+        ascp_level = self._config.param('trsdk', 'ascp_level')
         if ascp_level == 'info':
             ascp_int_level = 0
         elif ascp_level == 'debug':
@@ -58,16 +60,16 @@ class TransferClient:
         config_info = {
             'address': self._server_address,
             'port': self._server_port,
-            'log_directory': self._tools._log_folder,
-            'log_level': self._tools.conf('trsdk', 'level'),
+            'log_directory': self._config._log_folder,
+            'log_level': self._config.param('trsdk', 'level'),
             'fasp_runtime': {
                 'use_embedded': False,
                 'user_defined': {
-                    'bin': self._tools._arch_folder,
-                    'etc': self._tools.get_path('trsdk_noarch'),
+                    'bin': self._sdk_runtime_folder,
+                    'etc': self._sdk_runtime_folder,
                 },
                 'log': {
-                    'dir': self._tools._log_folder,
+                    'dir': self._config._log_folder,
                     'level': ascp_int_level,
                 },
             },
@@ -83,12 +85,12 @@ class TransferClient:
 
         @return gRPC client
         '''
-        file_base = os.path.join(self._tools._log_folder, TRANSFER_SDK_DAEMON)
+        file_base = os.path.join(self._config._log_folder, TRANSFER_SDK_DAEMON)
         conf_file = f'{file_base}.conf'
         out_file = f'{file_base}.out'
         err_file = f'{file_base}.err'
         command = ' '.join([
-            os.path.join(self._tools._arch_folder, TRANSFER_SDK_DAEMON),
+            os.path.join(self._sdk_runtime_folder, TRANSFER_SDK_DAEMON),
             '--config',
             conf_file,
         ])
@@ -96,7 +98,7 @@ class TransferClient:
         logging.debug('daemon err: %s', err_file)
         logging.debug('daemon log: %s', self._daemon_log)
         logging.debug('ascp log: %s', os.path.join(
-            self._tools._log_folder, ASCP_LOG_FILE))
+            self._config._log_folder, ASCP_LOG_FILE))
         logging.debug('command: %s', command)
         self.create_config_file(conf_file)
         logging.info('Starting daemon...')

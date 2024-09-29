@@ -7,19 +7,16 @@ import utils.helper_aspera_cos
 import utils.rest
 import logging as log
 
-test_env = utils.configuration.Configuration()
-transfer_client = utils.transfer_client.TransferClient(test_env)
+config = utils.configuration.Configuration()
+transfer_client = utils.transfer_client.TransferClient(config)
 
 try:
-    # get Aspera Transfer Service Node information for specified COS bucket
-    config = test_env.conf('cos')
-
     node_info = utils.helper_aspera_cos.node(
-        bucket=config['bucket'],
-        endpoint=config['endpoint'],
-        key=config['key'],
-        crn=config['crn'],
-        auth=config['auth'],
+        bucket=config.param('cos', 'bucket'),
+        endpoint=config.param('cos', 'endpoint'),
+        key=config.param('cos', 'key'),
+        crn=config.param('cos', 'crn'),
+        auth=config.param('cos', 'auth'),
     )
 
     node_api = utils.rest.Rest(

@@ -20,22 +20,23 @@ interface SampleInterface
 {
     void start(string[] files);
 }
-public class TestEnvironment
+public class Configuration
 {
+    private string[] _fileList;
     // general test configuration parameters
-    public Dictionary<string, Dictionary<string, string>> mConfig;
+    private Dictionary<string, Dictionary<string, string>> _config;
     // general path structure
-    Dictionary<string, string> mPaths;
-    string mErrorHint;
-    string mTopFolder;
-    System.Diagnostics.Process mTransferDaemonProcess = null;
-    Transfersdk.TransferService.TransferServiceClient mSdkClient = null;
-    public bool mShutdownAfterTransfer = true;
-    List<StreamWriter> mStreams = new List<StreamWriter>();
+    private Dictionary<string, string> mPaths;
+    private string mErrorHint;
+    private string mTopFolder;
+    private System.Diagnostics.Process mTransferDaemonProcess = null;
+    private Transfersdk.TransferService.TransferServiceClient mSdkClient = null;
+    private bool mShutdownAfterTransfer = true;
+    private List<StreamWriter> mStreams = new List<StreamWriter>();
 
     // config file with sub-paths in project's root folder
-    const string pathsFile = "config/paths.yaml";
-    const string sdkDaemonExecutable = "asperatransferd";
+    private const string PATHS_FILE_REL = "config/paths.yaml";
+    private const string TRANSFER_SDK_DAEMON = "asperatransferd";
 
     /// <summary>
     /// Get absolute path for the named folder from configuration file
@@ -53,15 +54,32 @@ public class TestEnvironment
         }
         return itemPath;
     }
-    public TestEnvironment()
+    public string GetParam(string section, string key)
     {
+        if (!_config.ContainsKey(section) || !_config[section].ContainsKey(key))
+        {
+            throw new Exception($"ERROR: {section}.{key} not found in configuration file.{mErrorHint}");
+        }
+        return _config[section][key];
+    }
+    public void AddFilesToTransferSpec(JObject aSpecObj)
+    {
+        // add file list in transfer spec
+        foreach (string f in _fileList)
+        {
+            ((JArray)aSpecObj["paths"]).Add(new JObject { { "source", f } });
+        }
+    }
+    public Configuration(string[] args)
+    {
+        _fileList = args;
         // init logger
         log4net.Config.BasicConfigurator.Configure();
         // get project root folder
         mTopFolder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".."));
 
         // read project's relative paths config file
-        using (var reader = new StreamReader(Path.Combine(mTopFolder, pathsFile)))
+        using (var reader = new StreamReader(Path.Combine(mTopFolder, PATHS_FILE_REL)))
         {
             mPaths = new YamlDotNet.Serialization.DeserializerBuilder()
                 .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
@@ -69,11 +87,11 @@ public class TestEnvironment
         }
 
         // Error hint to help user fix the issue
-        mErrorHint = $"\nPlease check: SDK installed in {mPaths["sdk_root"]}, configuration file: {mPaths["main_config"]}";
+        mErrorHint = $"\nPlease check: SDK installed in {mPaths["sdk_runtime"]}, configuration file: {mPaths["main_config"]}";
         // Read configuration from configuration file
         using (var reader = new StreamReader(Path.Combine(mTopFolder, mPaths["main_config"])))
         {
-            mConfig = new YamlDotNet.Serialization.DeserializerBuilder()
+            _config = new YamlDotNet.Serialization.DeserializerBuilder()
                 .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
                 .Build().Deserialize<Dictionary<string, Dictionary<string, string>>>(reader);
         }
@@ -107,7 +125,7 @@ public class TestEnvironment
         {
             try
             {
-                Console.WriteLine($"Connecting to {sdkDaemonExecutable} using gRPC: {grpcUrl.Host} {grpcUrl.Port}...");
+                Console.WriteLine($"Connecting to {TRANSFER_SDK_DAEMON} using gRPC: {grpcUrl.Host} {grpcUrl.Port}...");
                 client.GetAPIVersion(new Transfersdk.APIVersionRequest());
                 Console.WriteLine("SUCCESS: connected");
                 mSdkClient = client;
@@ -115,8 +133,8 @@ public class TestEnvironment
             catch (Exception)
             {
                 Console.WriteLine("ERROR: Failed to connect\nStarting daemon...");
-                var binFolder = Path.Combine(GetPath("sdk_root"), mConfig["misc"]["platform"]);
-                string ascp_level = mConfig["trsdk"]["ascp_level"];
+                var binFolder = GetPath("sdk_runtime");
+                string ascp_level = _config["trsdk"]["ascp_level"];
                 int ascp_int_level = -1;
                 if (ascp_level == "info")
                 {
@@ -139,14 +157,14 @@ public class TestEnvironment
                     address = grpcUrl.Host,
                     port = grpcUrl.Port,
                     log_directory = Path.GetTempPath(),
-                    log_level = mConfig["trsdk"]["level"],
+                    log_level = _config["trsdk"]["level"],
                     fasp_runtime = new
                     {
                         use_embedded = false,
                         user_defined = new
                         {
                             bin = binFolder,
-                            etc = GetPath("trsdk_noarch"),
+                            etc = binFolder,
                         },
                         log = new
                         {
@@ -159,7 +177,7 @@ public class TestEnvironment
                 var tmpFileBase = Path.Combine(Path.GetTempPath(), "daemon");
                 var confFile = tmpFileBase + ".conf";
                 File.WriteAllText(confFile, Newtonsoft.Json.JsonConvert.SerializeObject(configData));
-                var exec_full_path = Path.Combine(binFolder, sdkDaemonExecutable);
+                var exec_full_path = Path.Combine(binFolder, TRANSFER_SDK_DAEMON);
                 var exec_args = $"--config {confFile}";
                 var command = $"{exec_full_path} {exec_args}";
                 Thread.Sleep(1000);
@@ -301,7 +319,7 @@ public class TestEnvironment
         // One-call simplified procedure to start daemon, transfer, and wait for it to finish
         if (mSdkClient == null)
         {
-            StartDaemon(mConfig["trsdk"]["url"]);
+            StartDaemon(_config["trsdk"]["url"]);
         }
 
         //aSpecObj.HttpFallback = false; // TODO: remove when transfer SDK bug fixed

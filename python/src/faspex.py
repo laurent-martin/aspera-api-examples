@@ -6,23 +6,20 @@ import utils.transfer_client
 import utils.rest
 import logging as log
 
-test_env = utils.configuration.Configuration()
-transfer_client = utils.transfer_client.TransferClient(test_env).startup()
+config = utils.configuration.Configuration()
+transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    # get configuration parameters from config file
-    config = test_env.conf('faspex')
-
     faspex_api = utils.rest.Rest(
-        config['url'],
-        user=config['username'],
-        password=config['password'],
+        config.param('faspex', 'url'),
+        user=config.param('faspex', 'username'),
+        password=config.param('faspex', 'password'),
         # verify certificate if not explicitly set to False
-        verify=not ('verify' in config and config['verify'] is False),
+        verify=config.param('faspex', 'verify', True),
     )
 
     # files to send
-    package_files = test_env.file_list()
+    package_files = config.file_list()
 
     # package creation information for Faspex API v3 : POST /send
     log.info('Creating package')

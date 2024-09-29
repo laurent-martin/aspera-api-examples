@@ -4,8 +4,8 @@ include $(DIR_TOP)common.mak
 # Executables are generated here:
 CPP_BUILD_DIR=build/
 # location of pre-generated protobuf/grpc sources provided in SDK
-CPP_GRPC_SDK_DIR=$(SDK_DIR_NOARCH)connectors/cpp/
-# comment this line to use the SDK provided in the SDK_DIR_NOARCH
+CPP_GRPC_SDK_DIR=$(SDK_DIR_DEV)connectors/cpp/
+# comment this line to use the SDK provided in the SDK_DIR_DEV
 CPP_GRPC_SDK_DIR=
 # where conan will download libraries
 CONAN_HOME=$(CURDIR)/.conan2

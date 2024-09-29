@@ -6,26 +6,23 @@ import utils.transfer_client
 import utils.rest
 import logging as log
 
-test_env = utils.configuration.Configuration()
-transfer_client = utils.transfer_client.TransferClient(test_env).startup()
+config = utils.configuration.Configuration()
+transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    # get node information from config file
-    config = test_env.conf('node')
-
     node_api = utils.rest.Rest(
-        config['url'],
-        user=config['username'],
-        password=config['password'],
+        config.param('node', 'url'),
+        user=config.param('node', 'username'),
+        password=config.param('node', 'password'),
         # verify certificate if not explicitly set to False
-        verify=not ('verify' in config and config['verify'] is False),
+        verify=config.param('node', 'verify', True),
     )
 
     # call Node API with a single transfer request to get one transfer spec with Aspera token
     log.info('Generating transfer spec')
     response_data = node_api.post('files/upload_setup', {
         'transfer_requests': [
-            {'transfer_request': {'paths': [{'destination': config['folder_upload']}]}}
+            {'transfer_request': {'paths': [{'destination': config.param('node', 'folder_upload')}]}}
         ]
     })
 
@@ -34,7 +31,7 @@ try:
 
     # add file list in transfer spec
     t_spec['paths'] = []
-    for f in test_env.file_list():
+    for f in config.file_list():
         t_spec['paths'].append({'source': f})
 
     # start transfer, here we use the FASP Manager, but the newer Transfer SDK can be used as well

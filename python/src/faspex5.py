@@ -34,15 +34,15 @@ def get_bearer(verify_cert):
     generate a bearer token
     '''
     log.info('getting API authorization')
-    with open(config['private_key']) as key_file:
+    with open(config.param('faspex5', 'private_key')) as key_file:
         private_key_pem = key_file.read()
 
     seconds_since_epoch = int(calendar.timegm(time.gmtime()))
 
     jwt_payload = {
-        'iss': config['client_id'],  # issuer
-        'sub': f'user:{config["username"]}',  # subject
-        'aud': config['client_id'],  # audience
+        'iss': config.param('faspex5', 'client_id'),  # issuer
+        'sub': f'user:{config.param('faspex5', "username")}',  # subject
+        'aud': config.param('faspex5', 'client_id'),  # audience
         'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
         'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
         'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
@@ -51,7 +51,7 @@ def get_bearer(verify_cert):
     log.debug(jwt_payload)
 
     data = {
-        'client_id': config['client_id'],
+        'client_id': config.param('faspex5', 'client_id'),
         'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
         'assertion': jwt.encode(
             payload=jwt_payload,
@@ -62,8 +62,8 @@ def get_bearer(verify_cert):
     }
 
     response = requests.post(
-        url=f'{config["url"]}{F5_API_PATH_TOKEN}',
-        auth=requests.auth.HTTPBasicAuth(config['client_id'], config['client_secret']),
+        url=f'{config.param('faspex5', "url")}{F5_API_PATH_TOKEN}',
+        auth=requests.auth.HTTPBasicAuth(config.param('faspex5', 'client_id'), config.param('faspex5', 'client_secret')),
         data=data,
         headers={
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -77,20 +77,17 @@ def get_bearer(verify_cert):
     return f'Bearer {response_data["access_token"]}'
 
 
-test_env = utils.configuration.Configuration()
-transfer_client = utils.transfer_client.TransferClient(test_env).startup()
+config = utils.configuration.Configuration()
+transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    # get configuration parameters from config file
-    config = test_env.conf('faspex5')
-
     # verify certificate if not explicitly set to False
-    verify_cert = not ('verify' in config and config['verify'] is False)
+    verify_cert = config.param('faspex5', 'verify', True)
 
     # bearer token is valid for some time and can (should) be re-used, until expired, then refresh it
     # in this example we generate a new bearer token for each script invocation
     f5_api = utils.rest.Rest(
-        base_url=f'{config["url"]}{F5_API_PATH_V5}',
+        base_url=f'{config.param('faspex5', "url")}{F5_API_PATH_V5}',
         headers={'Authorization': get_bearer(verify_cert)},
         verify=verify_cert,
     )
@@ -99,13 +96,13 @@ try:
     log.info(f'creating package "{package_name}"')
     package_info = f5_api.post('packages', {
         'title': package_name,
-        'recipients': [{'name': config['username']}],  # send to myself (for test)
+        'recipients': [{'name': config.param('faspex5', 'username')}],  # send to myself (for test)
     })
     log.debug(package_info)
 
     # build payload to specify files to send
     files_to_send = {'paths': []}
-    for f in test_env.file_list():
+    for f in config.file_list():
         files_to_send['paths'].append({'source': f})
 
     log.info('getting transfer spec')
@@ -118,7 +115,7 @@ try:
 
     # add file list in transfer spec
     t_spec['paths'] = []
-    for f in test_env.file_list():
+    for f in config.file_list():
         t_spec['paths'].append({'source': f})
 
     # not used in transfer sdk
