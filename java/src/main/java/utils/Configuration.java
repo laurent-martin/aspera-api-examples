@@ -4,16 +4,16 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Locale;
-import java.io.RandomAccessFile;
 import java.nio.file.FileSystems;
-import org.yaml.snakeyaml.Yaml;
+import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.IOException;
+import org.yaml.snakeyaml.Yaml;
 
 // read configuration file and provide interface for transfer
 public class Configuration {
 	private static final Logger LOGGER = Logger.getLogger(Configuration.class.getName());
-	static final String PATHS_FILES = "config/paths.yaml";
+	private static final String PATHS_FILES = "config/paths.yaml";
 
 	// config filer loaded from yaml
 	private final String[] fileList;
@@ -95,9 +95,9 @@ public class Configuration {
 	}
 
 	// Get the last line of a file
-	public static String lastFileLine(String filename) {
-		LOGGER.log(Level.FINE, "Reading last line of file: {0}", filename);
-		File file = new File(filename);
+	public static String lastFileLine(String filePath) {
+		LOGGER.log(Level.FINE, "Reading last line of file: {0}", filePath);
+		File file = new File(filePath);
 		try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
 			final long fileLength = randomAccessFile.length();
 			if (fileLength == 0) {
