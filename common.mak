@@ -59,11 +59,12 @@ $(SDK_DIR_RUNTIME)asperatransferd $(SDK_FILE_PROTO): $(SDK_FILE_ZIP)
 	mkdir -p $(SDK_DIR_RUNTIME)
 	unzip -qu $(SDK_FILE_ZIP) '$(PLATFORM)/*' 'noarch/*' -d $(SDK_DIR_RUNTIME)
 	mv $(SDK_DIR_RUNTIME)$(PLATFORM)/* $(SDK_DIR_RUNTIME)
-	mv $(SDK_DIR_RUNTIME)noarch/aspera* $(SDK_DIR_RUNTIME)
+	test -e $(SDK_DIR_RUNTIME)aspera-license || mv $(SDK_DIR_RUNTIME)noarch/aspera-license $(SDK_DIR_RUNTIME)
 	mv $(SDK_DIR_RUNTIME)noarch $(SDK_DIR_DEV)
 	rmdir $(SDK_DIR_RUNTIME)$(PLATFORM)
 	test -f $(SDK_FILE_PROTO)
 	$(SDK_DIR_RUNTIME)/asperatransferd version | sed -Ee 's|^(.*) version (.*)\..*$$|<product><name>\1</name><version>\2</version></product>|' > $(SDK_DIR_RUNTIME)product-info.mf
+	echo '<CONF/>' > $(SDK_DIR_RUNTIME)aspera.conf
 	touch $@
 $(GBL_FILE_CONFIG):
 	mkdir -p $$(dirname $@)
