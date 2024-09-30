@@ -51,6 +51,14 @@ This repository is structured like this:
 
 - Other folders, one per programming language, show samples using the **Aspera Transfer SDK** and **Aspera Applications REST APIs**
 
+Inside each language folder, you will find:
+
+- `README.md` : a specific README for the language
+- `Makefile` : a makefile to run the samples
+- `src` : source code
+- `src/utils` : helper classes
+- `src/examples` : sample programs
+
 Sample programs will use server addresses and credentials from a YAML configuration file.
 Once the configuration file is created, sample programs can be run directly.
 
