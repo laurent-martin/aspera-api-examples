@@ -21,7 +21,9 @@ $(DIR_TESTED_FLAG)%: $(SAMPLE_JAR) $(GBL_FILE_SAMPLE)
 $(SAMPLE_JAR): $(FILES_RUNTIME)
 	gradle -version
 	gradle build $(GRADLE_PROPS)
-clean:: clean_flags
+clean::
+	rm -fr .gradle bin
+clean_lang:
 	if test -d .gradle;then gradle clean $(GRADLE_PROPS); fi
 superclean::
 	rm -fr .gradle bin

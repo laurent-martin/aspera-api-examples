@@ -26,6 +26,7 @@ DIR_TESTED_FLAG=./.tested/
 TEST_FLAGS=$(foreach var,$(TEST_CASES),$(DIR_TESTED_FLAG)$(var))
 .PHONY: all clean superclean clean_flags clean_daemon list
 all::
+# list of test cases
 list:
 	@echo "$(TEST_CASES)"
 # clean flags indicating test was run: force re-run of tests only

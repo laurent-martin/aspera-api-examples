@@ -12,6 +12,8 @@ $(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(GBL_FILE_SAMPLE)
 build:
 	dotnet build $(PROPERTIES)
 clean::
+	rm -fr bin obj
+clean_lang:
 	dotnet clean
 superclean::
 	rm -fr dist obj bin
