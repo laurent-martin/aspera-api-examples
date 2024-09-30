@@ -10,8 +10,7 @@ class Aoc : SampleInterface
     {
         var config = new Configuration(args);
         var transfer_client = new TransferClient(config);
-        Log.log.Debug("aoc saas");
-        Rest aoc_api = new Rest(new Dictionary<string, string>(){
+        var aoc_api = new Rest(new Dictionary<string, string>(){
             {"base_url","https://api.ibmaspera.com/api/v1"},
             {"type","oauth2"},
             {"oauth_type","jwt"},
@@ -29,17 +28,17 @@ class Aoc : SampleInterface
         var self_data = aoc_api.read("self");
         Log.DumpJObject("self_data", self_data);
         // we use the default workspace of the user
-        string default_workspace_id = (string)(self_data["data"]["default_workspace_id"]);
-        var workspace_info = aoc_api.read($"workspaces/{default_workspace_id}")["data"];
+        string default_workspace_id = (string)(self_data["default_workspace_id"]);
+        var workspace_info = aoc_api.read($"workspaces/{default_workspace_id}");
         // this user must be registered, else different code is needed
-        string recipient_email = config.GetParam("aoc","user_email");
+        string recipient_email = config.GetParam("aoc", "user_email");
         // find recipient information
-        var user_lookup = aoc_api.read("contacts", new JObject{
+        JArray user_lookup = (JArray)aoc_api.read("contacts", new JObject{
                     {"current_workspace_id",workspace_info["id"]},
                     {"q",recipient_email},
                 });
         // hopefully we get only one user result
-        var recipient_user_id = ((JArray)user_lookup["data"])[0];
+        var recipient_user_id = user_lookup[0];
         // build list of recipient (list of hash)
         var recipient_list = new JArray{new JObject{
             {"id",recipient_user_id["source_id"]},
@@ -52,8 +51,8 @@ class Aoc : SampleInterface
             {"file_names",new JArray{"/file"}},
             {"note","my note"},
             {"recipients",recipient_list},
-        })["data"];
-        var node_info = aoc_api.read($"nodes/{package_info["node_id"]}")["data"];
+        });
+        var node_info = aoc_api.read($"nodes/{package_info["node_id"]}");
         // validate package once files have been put inside. This triggers email emission
         aoc_api.update($"packages/{package_info["id"]}", new JObject{
             { "sent",true},

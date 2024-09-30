@@ -4,7 +4,6 @@ class Server : SampleInterface
 {
     public void start(string[] args)
     {
-        Log.log.Debug("server upload");
         var config = new Configuration(args);
         var transfer_client = new TransferClient(config);
         var fasp_url = new Uri(config.GetParam("server","url"));

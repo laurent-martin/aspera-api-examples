@@ -1,5 +1,6 @@
-using System.Net.Http;
+//using System.Net.Http;
 using System.Net.Http.Headers;
+// for RSA
 using System.Security.Cryptography;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -16,8 +17,8 @@ public class Rest
     private const int JWT_NOT_BEFORE_OFFSET_SEC = 60;
     // take some validity for the JWT
     private const int JWT_EXPIRY_OFFSET_SEC = 600;
-    public StringDict mApiData;
-    public Rest mOAuthAPI;
+    private StringDict mApiData;
+    private Rest mOAuthAPI;
     private HttpClient mHttpClient;
 
     /// <summary>
@@ -89,14 +90,24 @@ public class Rest
         {
             token_params["scope"] = scope;
         }
-        var data = mOAuthAPI.create(mApiData["oauth_path_token"], token_params)["data"];
+        JObject data = (JObject)mOAuthAPI.create(mApiData["oauth_path_token"], token_params);
         return (string)data["access_token"];
     }
     public string get_bearer(string scope)
     {
         return $"Bearer {get_bearer_token(scope)}";
     }
-    public JObject call(HttpMethod operation, string subpath, JObject json_params = null, JObject url_params = null, StringDict headers = null)
+    /// <summary>
+    /// Call REST API.
+    /// </summary>
+    /// <param name="operation">GET, ...</param>
+    /// <param name="subpath">endpoint</param>
+    /// <param name="json_params"></param>
+    /// <param name="url_params"></param>
+    /// <param name="headers"></param>
+    /// <returns></returns>
+    /// <exception cref="System.Exception"></exception>
+    public JContainer call(HttpMethod operation, string subpath, JObject json_params = null, JObject url_params = null, StringDict headers = null)
     {
         string uri_string = mApiData["base_url"] + "/" + subpath;
         var builder = new System.UriBuilder(uri_string);// { Query = collection.ToString() };
@@ -140,7 +151,7 @@ public class Rest
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encoded);
                 break;
             default:
-                throw new System.Exception("error");
+                throw new System.Exception("wrong auth type");
         }
         if (json_params != null)
         {
@@ -171,33 +182,33 @@ public class Rest
         {
             throw new System.Exception($"ERROR: {response.StatusCode} {response.ReasonPhrase}");
         }
-        JContainer stuff = null;
+        JContainer result = null;
         if (resp_str.Length != 0)
         {
             if (resp_str.StartsWith("["))
             {
-                stuff = JArray.Parse(resp_str);
+                result = JArray.Parse(resp_str);
             }
             else
             {
-                stuff = JObject.Parse(resp_str);
+                result = JObject.Parse(resp_str);
             }
         }
-        return new JObject { { "data", stuff } };
+        return result;
     }
-    public JObject create(string subpath, JObject json_params)
+    public JContainer create(string subpath, JObject json_params)
     {
         return call(operation: HttpMethod.Post, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } }, json_params: json_params);
     }
-    public JObject read(string subpath, JObject url_params = null)
+    public JContainer read(string subpath, JObject url_params = null)
     {
         return call(operation: HttpMethod.Get, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } }, url_params: url_params);
     }
-    public JObject update(string subpath, JObject json_params)
+    public JContainer update(string subpath, JObject json_params)
     {
         return call(operation: HttpMethod.Put, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } }, json_params: json_params);
     }
-    public JObject delete(string subpath)
+    public JContainer delete(string subpath)
     {
         return call(operation: HttpMethod.Delete, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } });
     }

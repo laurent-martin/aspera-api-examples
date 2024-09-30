@@ -7,7 +7,6 @@ class Faspex5 : SampleInterface
         var config = new Configuration(args);
         var transfer_client = new TransferClient(config);
         int transfer_sessions = 1;
-        Log.log.Debug("faspex 5");
         Rest f5_api = new Rest(new Dictionary<string, string>(){
             {"base_url",$"{config.GetParam("faspex5","url")}/api/v5"},
             {"type","oauth2"},
@@ -29,13 +28,13 @@ class Faspex5 : SampleInterface
             {"recipients",new JArray{new JObject{{"name",config.GetParam("faspex5","username")}}}}, // send to myself (for test)
         };
         // create a new package with Faspex 5 API (this allocates a reception folder on package storage)
-        var package_info = f5_api.create("packages", package_creation)["data"];
+        var package_info = f5_api.create("packages", package_creation);
         Log.DumpJObject("package_info", package_info);
         // build payload to specify files to send
         var files_to_send = new JObject { { "paths", new JArray() } };
         // add file list in transfer spec
         config.AddFilesToTransferSpec(files_to_send);
-        var t_spec = f5_api.create($"packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect", files_to_send)["data"];
+        var t_spec = f5_api.create($"packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect", files_to_send);
         Log.DumpJObject("t_spec", t_spec);
         // optional: multi session
         if (transfer_sessions != 1)
