@@ -7,6 +7,8 @@ CPP_BUILD_DIR=build/
 CPP_GRPC_SDK_DIR=$(SDK_DIR_DEV)connectors/cpp/
 # comment this line to use the SDK provided in the SDK_DIR_DEV
 CPP_GRPC_SDK_DIR=
+# location of sample code
+EXAMPLES_DIR=src/examples/
 # where conan will download libraries
 CONAN_HOME=$(CURDIR)/.conan2
 export CONAN_HOME
@@ -16,11 +18,12 @@ CMAKE_BUILD_TYPE=Release
 CMAKE_USER_VARS=\
 	-Daspera_proto_file=$(SDK_FILE_PROTO) \
 	-Dsdk_cpp_dir=$(CPP_GRPC_SDK_DIR) \
+	-Dexamples_dir=$(EXAMPLES_DIR) \
 	-Dtest_cases="$(subst $() $(),;,$(TEST_CASES))"
 # Execute all samples
 all:: $(TEST_FLAGS)
 # Build and Execute one sample
-$(DIR_TESTED_FLAG)%: $(CPP_BUILD_DIR)/Makefile $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) src/%.cpp
+$(DIR_TESTED_FLAG)%: $(CPP_BUILD_DIR)/Makefile $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) $(EXAMPLES_DIR)%.cpp
 	@echo "== Test: $(notdir $@) ==========================="
 	cd $(CPP_BUILD_DIR) && cmake --build . --target $(notdir $@) -- VERBOSE=1
 	$(CPP_BUILD_DIR)$(notdir $@) $(GBL_FILE_SAMPLE)

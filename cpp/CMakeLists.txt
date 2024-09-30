@@ -50,7 +50,9 @@ endif()
 add_library(aspera_client ${gen_out_sources})
 target_link_libraries(aspera_client protobuf::libprotobuf gRPC::grpc++)
 
+include_directories("src")
+
 foreach(_target ${test_cases})
-  add_executable(${_target} "src/${_target}.cpp")
+  add_executable(${_target} "${examples_dir}${_target}.cpp")
   target_link_libraries(${_target} aspera_client yaml-cpp::yaml-cpp magic_enum::magic_enum ${Boost_LIBRARIES})
 endforeach()
