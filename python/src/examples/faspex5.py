@@ -41,7 +41,7 @@ def get_bearer(verify_cert):
 
     jwt_payload = {
         'iss': config.param('faspex5', 'client_id'),  # issuer
-        'sub': f'user:{config.param('faspex5', "username")}',  # subject
+        'sub': f'user:{config.param("faspex5", "username")}',  # subject
         'aud': config.param('faspex5', 'client_id'),  # audience
         'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
         'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
@@ -62,7 +62,7 @@ def get_bearer(verify_cert):
     }
 
     response = requests.post(
-        url=f'{config.param('faspex5', "url")}{F5_API_PATH_TOKEN}',
+        url=f'{config.param("faspex5", "url")}{F5_API_PATH_TOKEN}',
         auth=requests.auth.HTTPBasicAuth(config.param('faspex5', 'client_id'), config.param('faspex5', 'client_secret')),
         data=data,
         headers={
@@ -87,7 +87,7 @@ try:
     # bearer token is valid for some time and can (should) be re-used, until expired, then refresh it
     # in this example we generate a new bearer token for each script invocation
     f5_api = utils.rest.Rest(
-        base_url=f'{config.param('faspex5', "url")}{F5_API_PATH_V5}',
+        base_url=f'{config.param("faspex5", "url")}{F5_API_PATH_V5}',
         headers={'Authorization': get_bearer(verify_cert)},
         verify=verify_cert,
     )
