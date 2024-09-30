@@ -1,4 +1,4 @@
-package client;
+package examples;
 
 import ibm.aspera.transferservice.Transfer;
 import org.json.JSONObject;
