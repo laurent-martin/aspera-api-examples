@@ -5,6 +5,7 @@ class SampleFaspex5 : SampleInterface
     public void start(string[] args)
     {
         var config = new Configuration(args);
+        var transfer_client = new TransferClient(config);
         int transfer_sessions = 1;
         Log.log.Debug("faspex 5");
         Rest f5_api = new Rest(new Dictionary<string, string>(){
@@ -45,6 +46,6 @@ class SampleFaspex5 : SampleInterface
         // add file list in transfer spec
         t_spec["paths"] = files_to_send["paths"];
         // Finally send files to package folder on server
-        config.StartTransferAndWait((JObject)t_spec);
+        transfer_client.StartTransferAndWait((JObject)t_spec);
     }
 }

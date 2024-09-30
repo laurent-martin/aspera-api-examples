@@ -1,117 +1,18 @@
-//using Transfersdk;
 using Grpc.Net.Client;
 using Newtonsoft.Json.Linq;
-using System;
-using System.IO;
-using System.Text;
-
-class Log
+public class TransferClient
 {
-    public static readonly log4net.ILog log = log4net.LogManager.GetLogger(typeof(Log));
-    public static void DumpJObject(string name, Object value)
-    {
-        log.Debug($"{name}={Newtonsoft.Json.JsonConvert.SerializeObject(value, Newtonsoft.Json.Formatting.Indented)}");
-    }
-}
-/// <summary>
-/// Interface for sample classes
-/// </summary>
-interface SampleInterface
-{
-    void start(string[] files);
-}
-public class Configuration
-{
-    private string[] _fileList;
-    // general test configuration parameters
-    private Dictionary<string, Dictionary<string, string>> _config;
-    // general path structure
-    private Dictionary<string, string> mPaths;
-    private string mErrorHint;
-    private string mTopFolder;
+    private const string TRANSFER_SDK_DAEMON = "asperatransferd";
+    private Configuration _config;
     private System.Diagnostics.Process mTransferDaemonProcess = null;
     private Transfersdk.TransferService.TransferServiceClient mSdkClient = null;
     private bool mShutdownAfterTransfer = true;
     private List<StreamWriter> mStreams = new List<StreamWriter>();
 
-    // config file with sub-paths in project's root folder
-    private const string PATHS_FILE_REL = "config/paths.yaml";
-    private const string TRANSFER_SDK_DAEMON = "asperatransferd";
 
-    /// <summary>
-    /// Get absolute path for the named folder from configuration file
-    /// </summary>
-    /// <param name="name">name of configuration</param>
-    /// <returns>absolute path for the named folder from configuration file</returns>
-    /// <exception cref="Exception">if file does not exists</exception>
-    string GetPath(string name)
+    public TransferClient(Configuration config)
     {
-        // Get configuration sub-path in project's root folder
-        var itemPath = Path.Combine(mTopFolder, mPaths[name]);
-        if (!Directory.Exists(itemPath))
-        {
-            throw new Exception($"ERROR: {itemPath} not found.{mErrorHint}");
-        }
-        return itemPath;
-    }
-    public string GetParam(string section, string key)
-    {
-        if (!_config.ContainsKey(section) || !_config[section].ContainsKey(key))
-        {
-            throw new Exception($"ERROR: {section}.{key} not found in configuration file.{mErrorHint}");
-        }
-        return _config[section][key];
-    }
-    public void AddFilesToTransferSpec(JObject aSpecObj)
-    {
-        // add file list in transfer spec
-        foreach (string f in _fileList)
-        {
-            ((JArray)aSpecObj["paths"]).Add(new JObject { { "source", f } });
-        }
-    }
-    public Configuration(string[] args)
-    {
-        _fileList = args;
-        // init logger
-        log4net.Config.BasicConfigurator.Configure();
-        // get project root folder
-        mTopFolder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".."));
-
-        // read project's relative paths config file
-        using (var reader = new StreamReader(Path.Combine(mTopFolder, PATHS_FILE_REL)))
-        {
-            mPaths = new YamlDotNet.Serialization.DeserializerBuilder()
-                .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
-                .Build().Deserialize<Dictionary<string, string>>(reader);
-        }
-
-        // Error hint to help user fix the issue
-        mErrorHint = $"\nPlease check: SDK installed in {mPaths["sdk_runtime"]}, configuration file: {mPaths["main_config"]}";
-        // Read configuration from configuration file
-        using (var reader = new StreamReader(Path.Combine(mTopFolder, mPaths["main_config"])))
-        {
-            _config = new YamlDotNet.Serialization.DeserializerBuilder()
-                .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
-                .Build().Deserialize<Dictionary<string, Dictionary<string, string>>>(reader);
-        }
-    }
-    // capture stdout or stderr for the started process (asperatransferd)
-    public System.Diagnostics.DataReceivedEventHandler captureStream(string tmpFileBase, string type)
-    {
-        var logFile = $"{tmpFileBase}.{type}";
-        Console.WriteLine($"std{type}: {logFile}");
-        var logStream = new StreamWriter(new FileStream(logFile, FileMode.Append, FileAccess.Write));
-        logStream.WriteLine($"Starting new {type} log");
-        mStreams.Add(logStream);
-        return new System.Diagnostics.DataReceivedEventHandler(
-            (sender, e) =>
-            {
-                if (!String.IsNullOrEmpty(e.Data))
-                {
-                    logStream.WriteLine(e.Data);
-                }
-            });
+        _config = config;
     }
     // Start transfer manager daemon if not already running and return gRPC client
     public void StartDaemon(string sdkGrpcUrl)
@@ -133,8 +34,8 @@ public class Configuration
             catch (Exception)
             {
                 Console.WriteLine("ERROR: Failed to connect\nStarting daemon...");
-                var binFolder = GetPath("sdk_runtime");
-                string ascp_level = GetParam("trsdk", "ascp_level");
+                var binFolder = _config.GetPath("sdk_runtime");
+                string ascp_level = _config.GetParam("trsdk", "ascp_level");
                 int ascp_int_level = -1;
                 if (ascp_level == "info")
                 {
@@ -157,7 +58,7 @@ public class Configuration
                     address = grpcUrl.Host,
                     port = grpcUrl.Port,
                     log_directory = Path.GetTempPath(),
-                    log_level = GetParam("trsdk", "level"),
+                    log_level = _config.GetParam("trsdk", "level"),
                     fasp_runtime = new
                     {
                         use_embedded = false,
@@ -213,36 +114,6 @@ public class Configuration
         {
             mTransferDaemonProcess.BeginOutputReadLine();
             mTransferDaemonProcess.BeginErrorReadLine();
-        }
-    }
-
-    public static string LastFileLine(string filename)
-    {
-        // Open the file in binary mode and seek to the end
-        using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        {
-            if (file.Length == 0)
-                throw new InvalidOperationException("File is empty");
-
-            file.Seek(-1, SeekOrigin.End);
-            StringBuilder lastLine = new StringBuilder();
-            int byteRead;
-
-            // Read bytes in reverse until we encounter a newline or reach the start of the file
-            while (file.Position > 0 && (byteRead = file.ReadByte()) != '\n')
-            {
-                file.Seek(-2, SeekOrigin.Current);
-                lastLine.Insert(0, (char)byteRead);
-            }
-
-            // Read the last line in case we are already at the start of the file
-            if (file.Position == 0)
-            {
-                file.Seek(0, SeekOrigin.Begin);
-                lastLine.Insert(0, (char)file.ReadByte());
-            }
-
-            return lastLine.ToString();
         }
     }
     // Start the specified transfer
@@ -319,7 +190,7 @@ public class Configuration
         // One-call simplified procedure to start daemon, transfer, and wait for it to finish
         if (mSdkClient == null)
         {
-            StartDaemon(GetParam("trsdk", "url"));
+            StartDaemon(_config.GetParam("trsdk", "url"));
         }
 
         //aSpecObj.HttpFallback = false; // TODO: remove when transfer SDK bug fixed
@@ -336,5 +207,22 @@ public class Configuration
                 Shutdown();
             }
         }
+    }
+    // capture stdout or stderr for the started process (asperatransferd)
+    public System.Diagnostics.DataReceivedEventHandler captureStream(string tmpFileBase, string type)
+    {
+        var logFile = $"{tmpFileBase}.{type}";
+        Console.WriteLine($"std{type}: {logFile}");
+        var logStream = new StreamWriter(new FileStream(logFile, FileMode.Append, FileAccess.Write));
+        logStream.WriteLine($"Starting new {type} log");
+        mStreams.Add(logStream);
+        return new System.Diagnostics.DataReceivedEventHandler(
+            (sender, e) =>
+            {
+                if (!String.IsNullOrEmpty(e.Data))
+                {
+                    logStream.WriteLine(e.Data);
+                }
+            });
     }
 }

@@ -9,6 +9,7 @@ class SampleAoc : SampleInterface
     public void start(string[] args)
     {
         var config = new Configuration(args);
+        var transfer_client = new TransferClient(config);
         Log.log.Debug("aoc saas");
         Rest aoc_api = new Rest(new Dictionary<string, string>(){
             {"base_url","https://api.ibmaspera.com/api/v1"},
@@ -97,6 +98,6 @@ class SampleAoc : SampleInterface
         // add file list in transfer spec
         config.AddFilesToTransferSpec(t_spec);
         // Finally send files to package folder on server
-        config.StartTransferAndWait(t_spec);
+        transfer_client.StartTransferAndWait(t_spec);
     }
 }

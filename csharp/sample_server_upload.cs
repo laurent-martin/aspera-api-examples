@@ -6,6 +6,7 @@ class SampleServerUpload : SampleInterface
     {
         Log.log.Debug("server upload");
         var config = new Configuration(args);
+        var transfer_client = new TransferClient(config);
         var fasp_url = new Uri(config.GetParam("server","url"));
         var t_spec = new JObject{
             {"title", "server upload V1"},
@@ -19,6 +20,6 @@ class SampleServerUpload : SampleInterface
         };
         // add file list in transfer spec
         config.AddFilesToTransferSpec(t_spec);
-        config.StartTransferAndWait(t_spec);
+        transfer_client.StartTransferAndWait(t_spec);
     }
 }
