@@ -36,6 +36,8 @@ def get_bearer(scope):
     with open(config.param('aoc', 'private_key')) as key_file:
         private_key_pem = key_file.read()
 
+    tenant_name = config.param('aoc', 'org')
+
     seconds_since_epoch = int(calendar.timegm(time.gmtime()))
 
     jwt_payload = {
@@ -45,7 +47,7 @@ def get_bearer(scope):
         'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
         'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
         'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
-        'org': config.param('aoc', 'org'),
+        'org': tenant_name,
     }
     log.debug(jwt_payload)
 
@@ -59,7 +61,7 @@ def get_bearer(scope):
     }
 
     response = requests.post(
-        url=f'{AOC_API_BASE}/oauth2/{config.param('aoc', "org")}/token',
+        url=f'{AOC_API_BASE}/oauth2/{tenant_name}/token',
         auth=requests.auth.HTTPBasicAuth(config.param('aoc', 'client_id'), config.param('aoc', 'client_secret')),
         data=data,
         headers={
@@ -84,20 +86,21 @@ try:
 
     # simple api call:
     # response_data = aoc_api.get('self')
-
-    log.info('getting workspace information')
-    response_data = aoc_api.get('workspaces', params={'q': config.param('aoc', 'workspace')})
+    workspace_name = config.param('aoc', 'workspace')
+    log.info(f'getting workspace information for {workspace_name}')
+    response_data = aoc_api.get('workspaces', params={'q': workspace_name})
     log.debug(response_data)
     if len(response_data) != 1:
-        raise Exception(f'Found {len(response_data)} workspace for {config.param('aoc', "workspace")}')
+        raise Exception(f'Found {len(response_data)} workspace for {workspace_name}')
     workspace_info = response_data[0]
 
     # Get dropbox information (shared inbox name in config file)
+    shared_inbox_name = config.param('aoc', 'shared_inbox')
     log.info('getting shared inbox information')
-    response_data = aoc_api.get('dropboxes', params={'current_workspace_id': workspace_info['id'], 'q': config.param('aoc', 'shared_inbox')})
+    response_data = aoc_api.get('dropboxes', params={'current_workspace_id': workspace_info['id'], 'q': shared_inbox_name})
     log.debug(response_data)
     if len(response_data) != 1:
-        raise Exception(f'Found {len(response_data)} dropbox for {config.param('aoc', "shared_inbox")}')
+        raise Exception(f'Found {len(response_data)} dropbox for {shared_inbox_name}')
     dropbox_info = response_data[0]
 
     #  create a new package (this allocates a reception folder on package storage)
