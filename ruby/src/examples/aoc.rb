@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require 'aspera/api/aoc'
-require_relative 'utils/configuration'
+require_relative '../utils/configuration'
 
 test_env = Configuration.instance
 

@@ -3,7 +3,7 @@
 
 # Example: transfer a file using one of the provided transfer agents
 
-require_relative 'utils/configuration'
+require_relative '../utils/configuration'
 
 test_env = Configuration.instance
 

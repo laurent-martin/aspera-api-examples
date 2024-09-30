@@ -1,9 +1,8 @@
-# test file to transfer, here generated file, but could be real file with a path
-DIR_TOP=$(CURDIR)/../
+DIR_TOP=$(realpath ..)/
 TEST_CASES=server server_v2
 # cos
 include $(DIR_TOP)common.mak
-SRC=$(CURDIR)/
+SRC=./
 all:: $(TEST_FLAGS)
 $(DIR_TESTED_FLAG)%: node_modules/.package-lock.json $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="

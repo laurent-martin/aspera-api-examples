@@ -5,7 +5,7 @@
 # this example makes use of class Aspera::Rest for REST calls
 # alternatively class RestClient of gem rest-client could be used
 
-require_relative 'utils/configuration'
+require_relative '../utils/configuration'
 
 test_env = Configuration.instance
 

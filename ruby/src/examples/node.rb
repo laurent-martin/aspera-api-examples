@@ -5,7 +5,7 @@
 # location of ascp can be specified with env var "ascp"
 # temp folder can be specified with env var "tmp"
 
-require_relative 'utils/configuration'
+require_relative '../utils/configuration'
 
 test_env = Configuration.instance
 
