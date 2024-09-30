@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // laurent.martin.aspera@fr.ibm.com
-const test_environment = require('./test_environment.js');
+const test_environment = require('../utils/test_environment');
 const path = require('path')
 const assert = require('assert');
 

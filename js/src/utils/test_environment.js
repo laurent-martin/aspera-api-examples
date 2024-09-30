@@ -7,7 +7,7 @@ const assert = require('assert')
 const os = require('os')
 const { spawn } = require('child_process')
 
-const top_folder = path.resolve(path.dirname(__filename), '..')
+const top_folder = path.resolve(path.dirname(__filename), '..', '..', '..')
 const paths_file = "config/paths.yaml"
 const paths = yaml.load(fs.readFileSync(path.join(top_folder, paths_file), 'utf8'))
 function get_path(name) {
