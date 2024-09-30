@@ -3,15 +3,15 @@
 
 ## Get started
 
-To run a sample manually (samples are `server_upload`, `faspex5` and `aoc`):
+To run a sample manually (samples are `server`, `faspex5` and `aoc`):
 
 ```bash
-dotnet run server_upload 'faux:///test1?1k'
+dotnet run -p:Proto_File=/path/to/transfer.proto server 'faux:///test1?1k'
 ```
 
-Execute: `make` to run all tests, or to test a single sample: `make .tested.server`
+Execute: `make` to run all tests, or to test a single sample: `make .tested/server`
 
-> **Note:** The `proto` file is used on the file by use of tag `<Protobuf>` (from package [Grpc.Tools](https://www.nuget.org/packages/Grpc.Tools/)) in the `.csproj` file.
+> **Note:** The `proto` file is specified with tag `<Protobuf>` (from package [Grpc.Tools](https://www.nuget.org/packages/Grpc.Tools/)) in the `.csproj` file.
 >
 > **Note:** Alternatively, one could use pre-generated `.cs` files provided in SDK: `../generated/trsdk/noarch/connectors/csharp/TransferService` or use `protoc` to compile the proto file to source stubs.
 
