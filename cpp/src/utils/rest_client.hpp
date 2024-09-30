@@ -29,7 +29,10 @@ class RestClient {
         _authorization = basic_auth_header(user, pass);
     }
 
-    json::object post(std::string subpath, json::object payload) {
+    json::object call(
+        const http::verb operation,
+        const std::string& subpath,
+        const json::object& payload) {
         const std::string json_body = json::serialize(payload);
         const auto base_uri = boost::urls::parse_uri(_base_url).value();
         std::string port = base_uri.port();
@@ -47,7 +50,7 @@ class RestClient {
         auto it = resolver.resolve(base_uri.host(), port);
         connect(sock_stream.lowest_layer(), it);
         sock_stream.handshake(ssl::stream_base::handshake_type::client);
-        http::request<http::string_body> request{http::verb::post, path, HTTP_1_1};
+        http::request<http::string_body> request{operation, path, HTTP_1_1};
         request.set(http::field::host, base_uri.host());
         request.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
         if (!_authorization.empty())
@@ -68,6 +71,9 @@ class RestClient {
         if (ec)
             throw boost::system::system_error{ec};
         return json::parse(response.body()).as_object();
+    }
+    json::object post(std::string subpath, json::object payload) {
+        return call(http::verb::post, subpath, payload);
     }
     // Create a basic auth header
     static inline std::string basic_auth_header(const std::string& username, const std::string& password) {
