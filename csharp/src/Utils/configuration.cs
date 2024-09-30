@@ -1,8 +1,4 @@
-//using Transfersdk;
 using Newtonsoft.Json.Linq;
-using System;
-using System.IO;
-using System.Text;
 
 class Log
 {
@@ -11,13 +7,6 @@ class Log
     {
         log.Debug($"{name}={Newtonsoft.Json.JsonConvert.SerializeObject(value, Newtonsoft.Json.Formatting.Indented)}");
     }
-}
-/// <summary>
-/// Interface for sample classes
-/// </summary>
-interface SampleInterface
-{
-    void start(string[] files);
 }
 public class Configuration
 {
@@ -99,7 +88,7 @@ public class Configuration
                 throw new InvalidOperationException("File is empty");
 
             file.Seek(-1, SeekOrigin.End);
-            StringBuilder lastLine = new StringBuilder();
+            var lastLine = new System.Text.StringBuilder();
             int byteRead;
 
             // Read bytes in reverse until we encounter a newline or reach the start of the file

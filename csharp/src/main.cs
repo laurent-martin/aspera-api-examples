@@ -1,3 +1,10 @@
+/// <summary>
+/// Interface for sample classes
+/// </summary>
+interface SampleInterface
+{
+    void start(string[] files);
+}
 class Program
 {
     static void Main(string[] args)
@@ -15,6 +22,6 @@ class Program
             }
         }
         // call the sample class, based on name, keeping remaining args
-        ((SampleInterface)Activator.CreateInstance(Type.GetType($"Sample{capitalized_name}", throwOnError: true))).start(args.Skip(1).ToArray());
+        ((SampleInterface)Activator.CreateInstance(Type.GetType(capitalized_name.ToString(), throwOnError: true))).start(args.Skip(1).ToArray());
     }
 }

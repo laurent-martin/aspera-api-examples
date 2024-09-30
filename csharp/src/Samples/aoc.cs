@@ -2,7 +2,7 @@
 // Sample to call Aspera On Cloud (AoC) API using .NET
 using Newtonsoft.Json.Linq;
 
-class SampleAoc : SampleInterface
+class Aoc : SampleInterface
 {
     int transfer_sessions = 1;
 

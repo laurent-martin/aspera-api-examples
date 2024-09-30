@@ -1,6 +1,6 @@
 using Newtonsoft.Json.Linq;
 
-class SampleServerUpload : SampleInterface
+class Server : SampleInterface
 {
     public void start(string[] args)
     {

@@ -1,6 +1,6 @@
 using Newtonsoft.Json.Linq;
 
-class SampleFaspex5 : SampleInterface
+class Faspex5 : SampleInterface
 {
     public void start(string[] args)
     {
