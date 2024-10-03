@@ -4,9 +4,9 @@ use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::io;
+use std::io::Write;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
-
 const PATHS_FILE_REL: &str = "config/paths.yaml";
 const ITEM_WIDTH: usize = 12;
 
@@ -21,7 +21,23 @@ pub struct Configuration {
 impl Configuration {
     pub fn new() -> Result<Self, Box<dyn Error>> {
         // Initialize logger
-        env_logger::init();
+        env_logger::Builder::new()
+            .filter_level(log::LevelFilter::Debug)
+            .format(|buf: &mut env_logger::fmt::Formatter, record| {
+                writeln!(buf, "{}: {}", record.level(), record.args())
+            })
+            .init();
+
+        // Initialize paths
+        let top_folder_path = env::current_dir()?.parent().unwrap().to_path_buf();
+        let log_folder_path = std::env::temp_dir();
+
+        // Load YAML files
+        let paths = Self::load_yaml("paths", top_folder_path.join(PATHS_FILE_REL))?;
+        let config = Self::load_yaml(
+            "config",
+            top_folder_path.join(Self::get_path_from_yaml(&paths, "main_config")?),
+        )?;
         // Collect command-line arguments (argc and argv equivalent in Rust)
         let args: Vec<String> = env::args().collect();
         if args.len() < 2 {
@@ -31,18 +47,7 @@ impl Configuration {
                 "No files provided",
             )));
         }
-
-        // Initialize paths
-        let top_folder_path = env::current_dir()?.parent().unwrap().to_path_buf();
-        let log_folder_path = std::env::temp_dir();
         let file_list = args[2..].to_vec();
-
-        // Load YAML files
-        let paths = Self::load_yaml("paths", top_folder_path.join(PATHS_FILE_REL))?;
-        let config = Self::load_yaml(
-            "main_config",
-            top_folder_path.join(Self::get_path_from_yaml(&paths, "main_config")?),
-        )?;
 
         Ok(Self {
             log_folder_path,
@@ -204,5 +209,18 @@ impl Configuration {
 
     fn get_path_from_yaml(yaml: &serde_yaml::Value, key: &str) -> io::Result<String> {
         Ok(yaml[key].as_str().unwrap_or("").to_string())
+    }
+    fn get_level_filter(level: &str) -> Result<log::LevelFilter, Box<dyn Error>> {
+        match level.to_lowercase().as_str() {
+            "error" => Ok(log::LevelFilter::Error),
+            "warn" => Ok(log::LevelFilter::Warn),
+            "info" => Ok(log::LevelFilter::Info),
+            "debug" => Ok(log::LevelFilter::Debug),
+            //"trace" => Ok(log::LevelFilter::Trace),
+            _ => Err(Box::new(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("Invalid log level: {}", level),
+            ))),
+        }
     }
 }

@@ -98,6 +98,7 @@ impl TransferClient {
         let out_path = self.daemon_file_path("out");
         let err_path = self.daemon_file_path("err");
         let log_path = self.config.log_folder_path().join(DAEMON_LOG_FILE);
+        let ascp_log_path = self.config.log_folder_path().join(ASCP_LOG_FILE);
         self.daemon_create_config_file(&conf_path)?;
         let stdout_file = File::create(out_path.clone())?;
         let stderr_file = File::create(err_path.clone())?;
@@ -109,6 +110,7 @@ impl TransferClient {
         log::debug!("daemon err: {err_path:?}");
         log::debug!("daemon conf: {conf_path:?}");
         log::debug!("daemon log: {log_path:?}");
+        log::debug!("ascp log: {ascp_log_path:?}");
         log::debug!("starting: {log_path:?} {}", args.join(" "));
 
         // Start the subprocess in the background
@@ -234,8 +236,8 @@ impl TransferClient {
             return Err("Transfer failed".into());
         }
         if status == TransferStatus::UnknownStatus {
-            log::error!("Unknown transfer id: {:?}", response);
-            return Err("Transfer status unknown".into());
+            log::error!("Unknown transfer id: {transfer_id:?}");
+            return Err("Unknown transfer id".into());
         }
         Ok(())
     }
