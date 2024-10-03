@@ -1,4 +1,3 @@
-use log::info;
 use rust::utils::configuration::Configuration;
 use rust::utils::transfer_client::TransferClient;
 use serde_json::json;
@@ -8,11 +7,10 @@ use url::Url;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let config = Configuration::new()?;
-    let mut transfer_client: TransferClient = TransferClient::new(Arc::new(config));
-    transfer_client.startup().await?;
+    let config = Arc::new(Configuration::new()?);
+    let mut transfer_client: TransferClient = TransferClient::new(Arc::clone(&config));
     let server_url = config.param_str("server", "url")?;
-    info!("Server URL: {}", server_url);
+    log::info!("Server URL: {server_url}");
     let server_uri = Url::parse(&server_url)?;
     assert_eq!(server_uri.scheme(), "ssh");
     // Create V2 transfer spec
@@ -34,7 +32,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     });
     config.add_files_to_ts("assets.paths", &mut transfer_spec)?;
     transfer_client
-        .start_transfer_and_wait(&transfer_spec)
+        .transfer_start_and_wait(&transfer_spec)
         .await?;
     Ok(())
 }

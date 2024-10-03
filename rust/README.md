@@ -18,5 +18,4 @@ Init:
 
 ## gRPC
 
-Samples use the `tonic` crate.
-It uses `tokio` as the async runtime.
+Samples use the `tonic` crate for gRPC and the `tokio` crate for the async runtime.

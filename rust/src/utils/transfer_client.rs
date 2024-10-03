@@ -52,7 +52,7 @@ impl TransferClient {
         }
     }
 
-    pub fn create_config_file(&self, conf_file: &PathBuf) -> Result<(), Box<dyn Error>> {
+    pub fn daemon_create_config_file(&self, conf_file: &PathBuf) -> Result<(), Box<dyn Error>> {
         let ascp_level = self.config.param_str("trsdk", "ascp_level")?;
         let ascp_int_level = match ascp_level.as_str() {
             "info" => 0,
@@ -78,7 +78,6 @@ impl TransferClient {
                 }
             }
         });
-
         let config_data = serde_json::to_string(&config_info).map_err(|e| e.to_string())?;
         let mut conf_stream = File::create(conf_file).map_err(|e| e.to_string())?;
         conf_stream
@@ -87,29 +86,30 @@ impl TransferClient {
         Ok(())
     }
 
+    // Create a path to the daemon file with the given extension
     fn daemon_file_path(&self, file_ext: &str) -> PathBuf {
         self.config
             .log_folder_path()
             .join(format!("{}.{}", TRANSFER_SDK_DAEMON, file_ext))
     }
 
-    pub fn start_daemon(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn daemon_start(&mut self) -> Result<(), Box<dyn Error>> {
         let conf_path = self.daemon_file_path("conf");
         let out_path = self.daemon_file_path("out");
         let err_path = self.daemon_file_path("err");
         let log_path = self.config.log_folder_path().join(DAEMON_LOG_FILE);
-        self.create_config_file(&conf_path)?;
+        self.daemon_create_config_file(&conf_path)?;
         let stdout_file = File::create(out_path.clone())?;
         let stderr_file = File::create(err_path.clone())?;
         let sdk_runtime_path = self.config.get_path("sdk_runtime")?;
         let sdk_path: PathBuf = sdk_runtime_path.join(TRANSFER_SDK_DAEMON);
         let command = sdk_path.to_str().ok_or("Invalid path")?;
         let args = ["--config", conf_path.to_str().ok_or("Invalid path")?];
-        log::debug!("daemon out: {:?}", out_path);
-        log::debug!("daemon err: {:?}", err_path);
-        log::debug!("daemon conf: {:?}", conf_path);
-        log::debug!("daemon log: {:?}", log_path);
-        log::debug!("starting: {:?} {}", log_path, args.join(" "));
+        log::debug!("daemon out: {out_path:?}");
+        log::debug!("daemon err: {err_path:?}");
+        log::debug!("daemon conf: {conf_path:?}");
+        log::debug!("daemon log: {log_path:?}");
+        log::debug!("starting: {log_path:?} {}", args.join(" "));
 
         // Start the subprocess in the background
         let mut daemon_process: Child = Command::new(command)
@@ -117,14 +117,8 @@ impl TransferClient {
             .stdout(Stdio::from(stdout_file))
             .stderr(Stdio::from(stderr_file))
             .spawn()?;
-
-        // Print the PID of the child process
         log::debug!("Started process with PID: {}", daemon_process.id());
-
-        // Wait for 2 seconds
         thread::sleep(Duration::from_secs(2));
-
-        // Check if the child process is still running
         match daemon_process.try_wait() {
             Ok(Some(status)) => {
                 return Err(format!("Process has finished with exit status: {:?}", status).into());
@@ -139,15 +133,15 @@ impl TransferClient {
         self.daemon_process = Some(daemon_process);
         Ok(())
     }
-
-    pub async fn startup(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    // start daemon and connect to it
+    pub async fn daemon_startup(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         if self.transfer_service.is_none() {
-            self.start_daemon()?;
-            self.connect_to_daemon().await?;
+            self.daemon_start()?;
+            self.daemon_connect().await?;
         }
         Ok(())
     }
-
+    // helper function to get mutable reference to transfer_service
     pub fn get_transfer_service(
         &mut self,
     ) -> Result<&mut TransferServiceClient<Channel>, Box<dyn Error>> {
@@ -158,21 +152,23 @@ impl TransferClient {
             .map(|client| &mut **client)
     }
 
-    pub async fn connect_to_daemon(&mut self) -> Result<(), Box<dyn Error>> {
+    pub async fn daemon_connect(&mut self) -> Result<(), Box<dyn Error>> {
         let channel_address = format!("http://{}:{}", self.server_address, self.server_port);
         let mut client = TransferServiceClient::connect(channel_address).await?;
         self.transfer_service = Some(Box::new(client.clone()));
         let instance_info_response = client.get_info(InstanceInfoRequest {}).await?;
-        log::debug!("Connected to daemon: {:?}", instance_info_response);
+        log::debug!("Connected to daemon: {instance_info_response:?}");
         Ok(())
     }
 
-    pub async fn start_transfer(
+    pub async fn transfer_start(
         &mut self,
         transfer_spec: &serde_json::Value,
     ) -> Result<String, Box<dyn Error>> {
         // display transfer spec in log
         log::debug!("transfer_spec: {:?}", transfer_spec);
+        // start the daemon if needed
+        self.daemon_startup().await?;
         let request = TransferRequest {
             transfer_type: TransferType::FileRegular.into(),
             transfer_spec: transfer_spec.to_string(),
@@ -183,18 +179,16 @@ impl TransferClient {
         // return field .transfer_id from response
         Ok(response.into_inner().transfer_id)
     }
-    pub async fn start_transfer_and_wait(
+    pub async fn transfer_start_and_wait(
         &mut self,
         transfer_spec: &serde_json::Value,
     ) -> Result<String, Box<dyn Error>> {
-        // Ensure daemon is started and we are connected
-        self.startup().await?; // Ensure this returns a Result type
-        let transfer_id = self.start_transfer(transfer_spec).await?;
-        self.wait_transfer(&transfer_id).await?;
+        let transfer_id = self.transfer_start(transfer_spec).await?;
+        self.transfer_wait(&transfer_id).await?;
         Ok(transfer_id)
     }
 
-    pub async fn wait_transfer(
+    pub async fn transfer_wait(
         &mut self,
         transfer_id: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -212,24 +206,36 @@ impl TransferClient {
             let status = TransferStatus::from_i32(query_transfer_response.status)
                 .unwrap_or(TransferStatus::UnknownStatus);
             log::info!("transfer: {:?}", status.as_str_name());
+            Self::transfer_check_failed_status(status, &query_transfer_response, transfer_id)?;
             if status == TransferStatus::Completed {
                 break;
-            } else if status == TransferStatus::Failed {
-                log::debug!(
-                    "query_transfer_response: {:?}",
-                    query_transfer_response.transfer_info
-                );
-                return Err("Transfer failed".into());
             }
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
         Ok(())
     }
 
-    pub fn shutdown(&mut self) -> Result<(), String> {
+    pub fn daemon_shutdown(&mut self) -> Result<(), String> {
         if let Some(ref mut daemon_process) = self.daemon_process {
             log::debug!("Shutting down daemon...");
             daemon_process.kill().map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    }
+    // check if transfer is failed
+    // if failed, log error and return error
+    fn transfer_check_failed_status(
+        status: TransferStatus,
+        response: &QueryTransferResponse,
+        transfer_id: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        if status == TransferStatus::Failed {
+            log::error!("Transfer failed: {:?}", response.transfer_info);
+            return Err("Transfer failed".into());
+        }
+        if status == TransferStatus::UnknownStatus {
+            log::error!("Unknown transfer id: {:?}", response);
+            return Err("Transfer status unknown".into());
         }
         Ok(())
     }
@@ -237,6 +243,6 @@ impl TransferClient {
 //destructor
 impl Drop for TransferClient {
     fn drop(&mut self) {
-        self.shutdown().unwrap();
+        self.daemon_shutdown().unwrap();
     }
 }

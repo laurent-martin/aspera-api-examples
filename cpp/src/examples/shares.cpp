@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
             json::object response_data = shares_api.post("files/upload_setup", transfer_setup_request);
             json::object transfer_specification = response_data["transfer_specs"].as_array()[0].as_object()["transfer_spec"].as_object();
             config.add_files_to_ts(transfer_specification["paths"].as_array());
-            transfer_client.start_transfer_and_wait(transfer_specification);
+            transfer_client.transfer_start_and_wait(transfer_specification);
         }
         {
             const std::string source_file_path_in_shares = destination_folder_in_shares + "/" + std::filesystem::path(argv[1]).filename().string();
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
             json::object response_data = shares_api.post("files/download_setup", transfer_setup_request);
             json::object transfer_specification = response_data["transfer_specs"].as_array()[0].as_object()["transfer_spec"].as_object();
             transfer_specification["destination_root"] = std::filesystem::temp_directory_path().string();
-            transfer_client.start_transfer_and_wait(transfer_specification);
+            transfer_client.transfer_start_and_wait(transfer_specification);
         }
         return 0;
     } catch (const std::exception& e) {
