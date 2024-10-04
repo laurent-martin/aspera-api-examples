@@ -8,7 +8,7 @@ use std::io::Write;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 const PATHS_FILE_REL: &str = "config/paths.yaml";
-const ITEM_WIDTH: usize = 12;
+//const ITEM_WIDTH: usize = 12;
 
 pub struct Configuration {
     log_folder_path: PathBuf,
@@ -27,28 +27,28 @@ impl Configuration {
                 writeln!(buf, "{}: {}", record.level(), record.args())
             })
             .init();
-
-        // Initialize paths
         let top_folder_path = env::current_dir()?.parent().unwrap().to_path_buf();
         let log_folder_path = std::env::temp_dir();
-
-        // Load YAML files
         let paths = Self::load_yaml("paths", top_folder_path.join(PATHS_FILE_REL))?;
         let config = Self::load_yaml(
             "config",
             top_folder_path.join(Self::get_path_from_yaml(&paths, "main_config")?),
         )?;
+        let value = Self::get_subkey_value(config.clone(), "misc", "level")?;
+        let log_level = value.as_str().ok_or("log level is not a valid string")?;
+        // set general log level
+        log::set_max_level(Self::get_level_filter(log_level)?);
         // Collect command-line arguments (argc and argv equivalent in Rust)
         let args: Vec<String> = env::args().collect();
-        if args.len() < 2 {
+        // first arg is executable path
+        let file_list = args[1..].to_vec();
+        if file_list.len() == 0 {
             log::error!("No file(s) to transfer provided.");
             return Err(Box::new(io::Error::new(
                 io::ErrorKind::Other,
                 "No files provided",
             )));
         }
-        let file_list = args[2..].to_vec();
-
         Ok(Self {
             log_folder_path,
             top_folder_path,
@@ -57,11 +57,10 @@ impl Configuration {
             config,
         })
     }
-
     pub fn log_folder_path(&self) -> &Path {
         &self.log_folder_path
     }
-
+    // get value from yaml file
     fn get_subkey_value(
         yaml: serde_yaml::Value,
         key: &str,
@@ -86,7 +85,6 @@ impl Configuration {
     pub fn param_str(&self, key1: &str, key2: &str) -> Result<String, Box<dyn Error>> {
         // Use the helper function to retrieve the nested value
         let value = Self::get_subkey_value(self.config.clone(), key1, key2)?;
-
         // Check if the retrieved value is a string, return an error if not
         value.as_str().map(|s| s.to_string()).ok_or(
             format!(
@@ -96,7 +94,19 @@ impl Configuration {
             .into(),
         )
     }
+    pub fn param_bool(&self, key1: &str, key2: &str) -> Result<bool, Box<dyn Error>> {
+        // Use the helper function to retrieve the nested value
+        let value = Self::get_subkey_value(self.config.clone(), key1, key2)?;
 
+        // Check if the retrieved value is a boolean, return an error if not
+        value.as_bool().ok_or(
+            format!(
+                "Value for key '{}' and subkey '{}' is not a valid boolean",
+                key1, key2
+            )
+            .into(),
+        )
+    }
     pub fn get_path(&self, name: &str) -> io::Result<PathBuf> {
         let item_path = self
             .top_folder_path
@@ -107,7 +117,6 @@ impl Configuration {
         }
         Ok(item_path)
     }
-
     pub fn add_files_to_ts(
         &self,
         path: &str,
@@ -153,8 +162,7 @@ impl Configuration {
 
         Ok(())
     }
-
-    fn last_file_line(filename: &str) -> io::Result<String> {
+    pub fn last_file_line(filename: &Path) -> io::Result<String> {
         let mut file = File::open(filename)?;
 
         // Start by seeking to the end of the file
@@ -187,26 +195,16 @@ impl Configuration {
             String::from_utf8(buffer).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         Ok(last_line)
     }
-    fn load_yaml(name: &str, path: PathBuf) -> Result<serde_yaml::Value, Box<dyn Error>> {
-        log::debug!("{:width$}: {}", name, path.display(), width = ITEM_WIDTH); // Open the file and propagate the error if any
+    fn load_yaml(_name: &str, path: PathBuf) -> Result<serde_yaml::Value, Box<dyn Error>> {
+        //log::debug!("{:width$}: {}", name, path.display(), width = ITEM_WIDTH);
         let mut file = File::open(path)?;
-
-        // Read the file contents into a string
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-
-        // Parse the YAML string into a `Value` and propagate any error
         let yaml: serde_yaml::Value = serde_yaml::from_str(&contents)?;
-
-        let yaml_dump = serde_yaml::to_string(&yaml)?;
-
-        // Log the parsed YAML value
-        log::debug!("{}:\n{}", name, yaml_dump);
-
-        // Return the parsed YAML value
+        //let yaml_dump = serde_yaml::to_string(&yaml)?;
+        //log::debug!("{}:\n{}", name, yaml_dump);
         Ok(yaml)
     }
-
     fn get_path_from_yaml(yaml: &serde_yaml::Value, key: &str) -> io::Result<String> {
         Ok(yaml[key].as_str().unwrap_or("").to_string())
     }

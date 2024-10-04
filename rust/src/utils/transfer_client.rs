@@ -1,4 +1,5 @@
 use super::configuration::Configuration;
+use regex::Regex;
 use serde_json::json;
 use std::error::Error;
 use std::fs::File;
@@ -26,12 +27,14 @@ use transfer::TransferType;
 const TRANSFER_SDK_DAEMON: &str = "asperatransferd";
 const DAEMON_LOG_FILE: &str = "asperatransferd.log";
 const ASCP_LOG_FILE: &str = "aspera-scp-transfer.log";
-const MAX_CONNECTION_WAIT_SEC: u64 = 10;
+//const MAX_CONNECTION_WAIT_SEC: u64 = 10;
+const PORT_REGEX: &str = r":([0-9]+) ";
 
 pub struct TransferClient {
     config: Arc<Configuration>,
     server_address: String,
     server_port: u16,
+    log_path: PathBuf,
     transfer_service: Option<Box<TransferServiceClient<Channel>>>,
     daemon_process: Option<Child>,
 }
@@ -41,12 +44,14 @@ impl TransferClient {
         let sdk_url = config.param_str("trsdk", "url").expect("Invalid trsdk url");
         let sdk_uri = url::Url::parse(&sdk_url).expect("Failed to parse SDK URL");
         let server_address = sdk_uri.host().expect("No host found").to_string();
-        let server_port = sdk_uri.port().unwrap_or(22); // Default to port 22
+        let server_port = sdk_uri.port().unwrap_or(22);
+        let log_path = config.log_folder_path().join(DAEMON_LOG_FILE);
 
         TransferClient {
             config,
             server_address,
             server_port,
+            log_path,
             transfer_service: None,
             daemon_process: None,
         }
@@ -97,7 +102,6 @@ impl TransferClient {
         let conf_path = self.daemon_file_path("conf");
         let out_path = self.daemon_file_path("out");
         let err_path = self.daemon_file_path("err");
-        let log_path = self.config.log_folder_path().join(DAEMON_LOG_FILE);
         let ascp_log_path = self.config.log_folder_path().join(ASCP_LOG_FILE);
         self.daemon_create_config_file(&conf_path)?;
         let stdout_file = File::create(out_path.clone())?;
@@ -109,9 +113,9 @@ impl TransferClient {
         log::debug!("daemon out: {out_path:?}");
         log::debug!("daemon err: {err_path:?}");
         log::debug!("daemon conf: {conf_path:?}");
-        log::debug!("daemon log: {log_path:?}");
+        log::debug!("daemon log: {:?}", self.log_path);
         log::debug!("ascp log: {ascp_log_path:?}");
-        log::debug!("starting: {log_path:?} {}", args.join(" "));
+        log::debug!("starting: {command} {}", args.join(" "));
 
         // Start the subprocess in the background
         let mut daemon_process: Child = Command::new(command)
@@ -120,20 +124,49 @@ impl TransferClient {
             .stderr(Stdio::from(stderr_file))
             .spawn()?;
         log::debug!("Started process with PID: {}", daemon_process.id());
-        thread::sleep(Duration::from_secs(2));
+        thread::sleep(Duration::from_secs(1));
         match daemon_process.try_wait() {
             Ok(Some(status)) => {
-                return Err(format!("Process has finished with exit status: {:?}", status).into());
+                return Err(format!("Daemon has finished with exit status: {:?}", status).into());
             }
             Ok(None) => {
-                log::debug!("Process is still running.");
+                log::debug!("Daemon is running.");
             }
             Err(e) => {
                 return Err(format!("Error checking process status: {}", e).into());
             }
         }
         self.daemon_process = Some(daemon_process);
+        // if port zero is specified, then the daemon selects the port
+        if self.server_port == 0 {
+            let re: Regex = Regex::new(PORT_REGEX)?;
+            let msg = self.last_log_message()?;
+            if let Some(captures) = re.captures(msg.as_str()) {
+                if let Some(port_match) = captures.get(1) {
+                    self.server_port = port_match
+                        .as_str()
+                        .parse::<u16>()
+                        .ok()
+                        .expect("port is not integer?");
+                    log::debug!("port from logs: {}", self.server_port);
+                }
+            }
+            if self.server_port == 0 {
+                return Err("Could not read port from log file".into());
+            }
+        }
         Ok(())
+    }
+    // get last log message of transfer daemon
+    fn last_log_message(&self) -> Result<String, Box<dyn Error>> {
+        let json_str = Configuration::last_file_line(&self.log_path)?;
+        //log::debug!("last line: {json_str}");
+        let parsed: serde_json::Value = serde_json::from_str(json_str.as_str())?;
+        let msg = parsed
+            .get("msg")
+            .and_then(|v| v.as_str()) // S'assure que "msg" est une chaîne
+            .ok_or("Field 'msg' not found or invalid")?;
+        Ok(msg.to_string())
     }
     // start daemon and connect to it
     pub async fn daemon_startup(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -158,8 +191,8 @@ impl TransferClient {
         let channel_address = format!("http://{}:{}", self.server_address, self.server_port);
         let mut client = TransferServiceClient::connect(channel_address).await?;
         self.transfer_service = Some(Box::new(client.clone()));
-        let instance_info_response = client.get_info(InstanceInfoRequest {}).await?;
-        log::debug!("Connected to daemon: {instance_info_response:?}");
+        let _instance_info_response = client.get_info(InstanceInfoRequest {}).await?;
+        log::debug!("Connected to daemon.");
         Ok(())
     }
 
@@ -208,6 +241,7 @@ impl TransferClient {
             let status = TransferStatus::from_i32(query_transfer_response.status)
                 .unwrap_or(TransferStatus::UnknownStatus);
             log::info!("transfer: {:?}", status.as_str_name());
+            //log::debug!("response: {:?}", query_transfer_response);
             Self::transfer_check_failed_status(status, &query_transfer_response, transfer_id)?;
             if status == TransferStatus::Completed {
                 break;
@@ -231,12 +265,16 @@ impl TransferClient {
         response: &QueryTransferResponse,
         transfer_id: &str,
     ) -> Result<(), Box<dyn Error>> {
+        if let Some(err) = &response.error {
+            log::error!("Error code: {}", err.code);
+            log::error!("Error description: {}", err.description);
+        }
         if status == TransferStatus::Failed {
             log::error!("Transfer failed: {:?}", response.transfer_info);
             return Err("Transfer failed".into());
         }
         if status == TransferStatus::UnknownStatus {
-            log::error!("Unknown transfer id: {transfer_id:?}");
+            log::error!("Unknown transfer id: {transfer_id:?} : {response:?}");
             return Err("Unknown transfer id".into());
         }
         Ok(())
