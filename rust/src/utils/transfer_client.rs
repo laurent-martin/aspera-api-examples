@@ -44,7 +44,7 @@ impl TransferClient {
         let sdk_url = config.param_str("trsdk", "url").expect("Invalid trsdk url");
         let sdk_uri = url::Url::parse(&sdk_url).expect("Failed to parse SDK URL");
         let server_address = sdk_uri.host().expect("No host found").to_string();
-        let server_port = sdk_uri.port().unwrap_or(22);
+        let server_port = sdk_uri.port().unwrap_or(33001);
         let log_path = config.log_folder_path().join(DAEMON_LOG_FILE);
 
         TransferClient {

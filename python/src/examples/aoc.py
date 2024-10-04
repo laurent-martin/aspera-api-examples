@@ -44,9 +44,9 @@ def get_bearer(scope):
         'iss': config.param('aoc', 'client_id'),  # issuer
         'sub': config.param('aoc', 'user_email'),  # subject
         'aud': 'https://api.asperafiles.com/api/v1/oauth2/token',  # audience
+        'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
         'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
         'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
-        'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
         'org': tenant_name,
     }
     log.debug(jwt_payload)
