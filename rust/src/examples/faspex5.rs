@@ -8,8 +8,11 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // config file parameters for sample code
     let config = Arc::new(Configuration::new()?);
+    // simplified transfer client
     let mut transfer_client: TransferClient = TransferClient::new(Arc::clone(&config));
+    // Faspex 5 API
     let faspex_base_url = config.param_str("faspex5", "url")?;
     let mut f5_api = rest::Client::new(
         &format!("{faspex_base_url}/api/v5"),

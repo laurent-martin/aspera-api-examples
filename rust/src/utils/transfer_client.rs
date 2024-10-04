@@ -46,7 +46,6 @@ impl TransferClient {
         let server_address = sdk_uri.host().expect("No host found").to_string();
         let server_port = sdk_uri.port().unwrap_or(33001);
         let log_path = config.log_folder_path().join(DAEMON_LOG_FILE);
-
         TransferClient {
             config,
             server_address,
