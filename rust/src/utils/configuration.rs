@@ -4,9 +4,9 @@ use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::io;
-use std::io::Write;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
+
 const PATHS_FILE_REL: &str = "config/paths.yaml";
 //const ITEM_WIDTH: usize = 12;
 
