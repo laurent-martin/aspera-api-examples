@@ -1,5 +1,5 @@
-use rust::utils::configuration::Configuration;
-use rust::utils::transfer_client::TransferClient;
+use samples::utils::configuration::Configuration;
+use samples::utils::transfer_client::TransferClient;
 use serde_json::json;
 use std::error::Error;
 use std::sync::Arc;

@@ -1,7 +1,6 @@
 use serde_json::Value;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tonic::client;
 
 pub const MIME_JSON: &str = "application/json";
 pub const MIME_FORM: &str = "application/x-www-form-urlencoded";
