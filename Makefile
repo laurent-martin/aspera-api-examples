@@ -1,7 +1,7 @@
 # main folder (location of this makefile)
 DIR_TOP=$(CURDIR)/
 include $(DIR_TOP)common.mak
-SECTIONS=cpp csharp java js python ruby web
+SECTIONS=cpp csharp golang java js python ruby rust web
 .PHONY: cleantmp template
 template:
 	cd doc && make

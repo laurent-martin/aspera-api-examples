@@ -5,28 +5,29 @@
 // Arguments are separated by a space or tab characters.
 // Argument containing spaces must be enclosed in double quotes.
 // In this case double quotes and backslashes must be escaped with a backslash.
-// The answer is a single TLV (Type-Length-Value) possibly containing multiple sub-TLV.
+// The answer is a single TLV (Tag-Length-Value) possibly containing multiple sub-TLV.
 // Each TLV is composed of:
-// - Type is a single byte
+// - Tag is a single byte
 // - Length is a 4-byte big-endian integer
 // - Value is a buffer of Length bytes
 // There are 3 different methods to decode buffer lists in CommandResult (legacy):
 // - .Info:Info.dev : This TLV appears multiple times in the result
-// - .Df:Mounts.mounts : All fields of `mounts` are at the same level, and type 1 denotes a new mount object
+// - .Df:Mounts.mounts : All fields of `mounts` are at the same level, and tag 1 denotes a new mount object
 // - .Dir:Vec<Stat> : It is one large TLV that contains sub-TLVs of type Stat
 // cspell:ignore ascmd zstr ctype codeset fcount errno errstr zmode zuid zgid zctime zmtime zatime dcount
 
 use std::error::Error;
-use std::io::{BufReader, Read, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::path::Path;
 
 // sizes of TLV components
 const TYPE_SIZE: usize = 1;
 const LENGTH_SIZE: usize = 4;
+const END_OF_BUFFER: u8 = 0;
 // the executable command
 pub const ASCMD_COMMAND: &str = "ascmd";
 
-/// A TLV (Type-Length-Value) structure
+/// A TLV (Tag-Length-Value) structure
 #[derive(Debug)]
 struct TypeValue {
     t: u8,
@@ -70,6 +71,7 @@ impl Info {
         let reader: &mut BufReader<&[u8]> = &mut BufReader::new(data);
         while let Ok(tlv) = read_tlv(reader) {
             match tlv.t {
+                END_OF_BUFFER => break,
                 1 => info.platform = decode_zstr("platform", &tlv.v)?,
                 2 => info.version = decode_zstr("version", &tlv.v)?,
                 3 => info.lang = decode_zstr("lang", &tlv.v)?,
@@ -82,7 +84,7 @@ impl Info {
                 10 => info.dev.push(decode_zstr("dev", &tlv.v)?),
                 11 => info.browse_caps = decode_zstr("browse_caps", &tlv.v)?,
                 12 => info.protocol = decode_u64("protocol", &tlv.v)?,
-                _ => return Err(format!("Unknown TLV type: {}", tlv.t).into()),
+                _ => return Err(format!("Unknown TLV tag: {}", tlv.t).into()),
             }
         }
         Ok(info)
@@ -116,6 +118,7 @@ impl Mounts {
         let reader: &mut BufReader<&[u8]> = &mut BufReader::new(data);
         while let Ok(tlv) = read_tlv(reader) {
             match tlv.t {
+                END_OF_BUFFER => break,
                 1 => {
                     // if there was an ongoing data, then store it
                     if let Some(one) = mnt.take() {
@@ -144,7 +147,7 @@ impl Mounts {
                 7 => mnt.as_mut().unwrap().fcount = decode_u64("fcount", &tlv.v)?,
                 8 => mnt.as_mut().unwrap().errno = decode_u32("errno", &tlv.v)?,
                 9 => mnt.as_mut().unwrap().errstr = decode_zstr("errstr", &tlv.v)?,
-                _ => return Err(format!("Unknown TLV type: {}", tlv.t).into()),
+                _ => return Err(format!("Unknown TLV tag: {}", tlv.t).into()),
             }
         }
         if let Some(one) = mnt.take() {
@@ -201,6 +204,7 @@ impl Stat {
         let reader: &mut BufReader<&[u8]> = &mut BufReader::new(data);
         while let Ok(tlv) = read_tlv(reader) {
             match tlv.t {
+                END_OF_BUFFER => break,
                 1 => stat.name = decode_zstr("name", &tlv.v)?,
                 2 => stat.size = decode_u64("size", &tlv.v)?,
                 3 => stat.mode = decode_u32("mode", &tlv.v)?,
@@ -218,7 +222,7 @@ impl Stat {
                 15 => stat.symlink = decode_zstr("symlink", &tlv.v)?,
                 16 => stat.errno = decode_u32("errno", &tlv.v)?,
                 17 => stat.errstr = decode_zstr("errstr", &tlv.v)?,
-                _ => return Err(format!("Unknown TLV type: {}", tlv.t).into()),
+                _ => return Err(format!("Unknown TLV tag: {}", tlv.t).into()),
             }
         }
         Ok(stat)
@@ -248,12 +252,13 @@ impl Size {
         let reader: &mut BufReader<&[u8]> = &mut BufReader::new(data);
         while let Ok(tlv) = read_tlv(reader) {
             match tlv.t {
+                END_OF_BUFFER => break,
                 1 => size.size = decode_u64("size", &tlv.v)?,
                 2 => size.fcount = decode_u32("fcount", &tlv.v)?,
                 3 => size.dcount = decode_u32("dcount", &tlv.v)?,
                 4 => size.failed_fcount = decode_u32("failed_fcount", &tlv.v)?,
                 5 => size.failed_dcount = decode_u32("failed_dcount", &tlv.v)?,
-                _ => return Err(format!("Unknown TLV type: {}", tlv.t).into()),
+                _ => return Err(format!("Unknown TLV tag: {}", tlv.t).into()),
             }
         }
         Ok(size)
@@ -277,9 +282,10 @@ impl CommandError {
         let reader: &mut BufReader<&[u8]> = &mut BufReader::new(data);
         while let Ok(tlv) = read_tlv(reader) {
             match tlv.t {
+                END_OF_BUFFER => break,
                 1 => error.errno = decode_u32("errno", &tlv.v)?,
                 2 => error.errstr = decode_zstr("errstr", &tlv.v)?,
-                _ => return Err(format!("Unknown TLV type: {}", tlv.t).into()),
+                _ => return Err(format!("Unknown TLV tag: {}", tlv.t).into()),
             }
         }
         Ok(error)
@@ -301,8 +307,9 @@ impl Md5sum {
         let reader: &mut BufReader<&[u8]> = &mut BufReader::new(data);
         while let Ok(tlv) = read_tlv(reader) {
             match tlv.t {
+                END_OF_BUFFER => break,
                 1 => md5sum.md5sum = decode_zstr("md5sum", &tlv.v)?,
-                _ => return Err(format!("Unknown TLV type: {}", tlv.t).into()),
+                _ => return Err(format!("Unknown TLV tag: {}", tlv.t).into()),
             }
         }
         Ok(md5sum)
@@ -331,11 +338,11 @@ impl CommandResult {
                 let mut dir = Vec::new();
                 let reader: &mut BufReader<&[u8]> = &mut BufReader::new(&type_value.v);
                 while let Ok(tlv) = read_tlv(reader) {
-                    // check type is 1, else return Error
-                    if tlv.t != 1 {
-                        return Err(format!("Expected type 1, got {}", tlv.t).into());
+                    match tlv.t {
+                        END_OF_BUFFER => break,
+                        1 => dir.push(Stat::new(&tlv.v)?),
+                        _ => return Err(format!("Expected tag 1, got {}", tlv.t).into()),
                     }
-                    dir.push(Stat::new(&tlv.v)?);
                 }
                 Ok(CommandResult::Dir(dir))
             }
@@ -346,7 +353,7 @@ impl CommandResult {
             7 => Ok(CommandResult::Exit(())),
             8 => Ok(CommandResult::Df(Mounts::new(&type_value.v)?)),
             9 => Ok(CommandResult::Md5sum(Md5sum::new(&type_value.v)?)),
-            _ => Err(format!("Unknown TLV type: {}", type_value.t).into()),
+            _ => Err(format!("Unknown TLV tag: {}", type_value.t).into()),
         }
     }
 }
@@ -403,9 +410,9 @@ impl<I: Write, O: Read> AsCmd<I, O> {
         // Read the first TLV response
         let data = read_tlv(&mut initial_reader)?;
         if data.t != 5 {
-            return Err("Expected type 5".into());
+            return Err("Expected tag 5".into());
         }
-        let info = Info::new(&data.v);
+        let info = Info::new(&data.v)?;
         log::debug!("initial info: {:?}", info);
         Ok(ascmd)
     }
@@ -611,13 +618,21 @@ fn decode_u32(name: &str, buf: &Vec<u8>) -> Result<u32, Box<dyn Error>> {
 /// ### Arguments
 /// * `reader` - the buffer reader
 /// ### Returns
-/// The read TLV or an error
+/// The read TLV or an error, TLV type is END_OF_BUFFER if no more bytes available at the beginning
 fn read_tlv(reader: &mut BufReader<impl Read>) -> Result<TypeValue, Box<dyn Error>> {
-    // Read the type byte (T)
+    // Check if the buffer is empty before attempting to read
+    if reader.fill_buf()?.is_empty() {
+        // Return a TypeValue with type 0 and an empty value
+        return Ok(TypeValue {
+            t: END_OF_BUFFER,
+            v: vec![],
+        });
+    }
+    // Read the tag byte (T)
     let mut type_byte = [0; TYPE_SIZE];
     reader
         .read_exact(&mut type_byte)
-        .map_err(|_| "Failed to read type byte")?;
+        .map_err(|_| "Failed to read tag byte")?;
     let t = type_byte[0];
     // Read the length bytes (L)
     let mut length_bytes = [0; LENGTH_SIZE];
