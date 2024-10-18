@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -95,10 +97,7 @@ func NewConfiguration() (*Configuration, error) {
 	}
 
 	// Set logging level based on config
-	logLevel, err := c.paramStr("misc", "level")
-	if err != nil {
-		return nil, err
-	}
+	logLevel := c.ParamStr("misc", "level")
 	logger.Debugf("log level: %s", logLevel)
 
 	if len(c.FileList) == 0 {
@@ -121,23 +120,20 @@ func (c *Configuration) param(key1 string, key2 string) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("key %s not found", key1)
 	}
-	// display type of val1
-	c.Log.Debugf("type of val1: %T", val1)
 	val2, ok := val1.(map[string]interface{})[key2]
 	if !ok {
 		return nil, fmt.Errorf("key %s not found", key2)
 	}
-	c.Log.Debugf("type of val2: %T", val2)
 	return val2, nil
 }
 
-// paramStr gets a string from the configuration file.
-func (c *Configuration) paramStr(key1 string, key2 string) (string, error) {
+// ParamStr gets a string from the configuration file.
+func (c *Configuration) ParamStr(key1 string, key2 string) string {
 	val, err := c.param(key1, key2)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	return val.(string), nil
+	return val.(string)
 }
 
 // getPath retrieves the path for a specified key in the test environment.
@@ -205,4 +201,30 @@ func loadYAML(filePath string) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return obj, nil
+}
+
+// AddFilesToTS simulates adding files to the transfer spec
+func (c *Configuration) AddFilesToTS(key string, transferSpec map[string]interface{}) error {
+	// Here, you can add actual file paths to the "paths" key in the transfer spec
+	paths := []string{"file1.txt", "file2.txt"} // Example files
+	spec, ok := transferSpec["assets"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("assets not found in transfer spec")
+	}
+
+	spec["paths"] = append(spec["paths"].([]string), paths...)
+	return nil
+}
+
+// Helper function to get the port or default value
+func GetPortOrDefault(u *url.URL, defaultPort int) int {
+	result := defaultPort
+	if u.Port() != "" {
+		port, err := strconv.Atoi(u.Port())
+		if err != nil {
+			panic(err)
+		}
+		result = port
+	}
+	return result
 }

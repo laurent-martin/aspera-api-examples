@@ -1,5 +1,5 @@
 DIR_TOP=$(realpath ..)/
-TEST_CASES=server_cmd
+TEST_CASES=server_cmd server
 include $(DIR_TOP)common.mak
 # location of sample code
 EXAMPLES_DIR=src/examples/

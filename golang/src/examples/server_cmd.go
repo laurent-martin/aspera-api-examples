@@ -1,5 +1,5 @@
 // cspell:ignore ascmd zstr ctype codeset fcount errno errstr zmode zuid zgid zctime zmtime zatime dcount tlvs
-package main
+package main2
 
 import (
 	"aspera_examples/src/utils"
