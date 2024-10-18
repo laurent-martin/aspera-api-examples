@@ -113,10 +113,14 @@ func testLocal() error {
 }
 
 func main() {
-	logger = zap.NewExample().Sugar()
-	utils.SetLogger(logger)
+	config, err := utils.NewConfiguration()
+	if err != nil {
+		log.Fatal(err)
+	}
+	logger = config.Log
+	utils.SetLogger(config.Log)
 	defer logger.Sync()
-	err := testLocal()
+	err = testLocal()
 	if err != nil {
 		log.Fatal(err)
 	}
