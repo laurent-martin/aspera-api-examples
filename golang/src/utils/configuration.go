@@ -31,7 +31,7 @@ type Configuration struct {
 	Config    map[string]interface{}
 }
 
-// NewConfiguration initializes a Configuration instance, loading YAML configuration files and setting up logging.
+// Initializes a Configuration instance, loading YAML configuration files and setting up logging.
 func NewConfiguration() (*Configuration, error) {
 	// Create an atomic level that can be dynamically changed
 	atomicLevel := zap.NewAtomicLevelAt(zapcore.DebugLevel)
@@ -113,7 +113,11 @@ func NewConfiguration() (*Configuration, error) {
 	return c, nil
 }
 
-// param digs into the config based on a key list and returns the result.
+// Digs into the config based on a key list and returns the result.
+//
+// Parameters:
+//   - key1: first level key in map
+//   - key2: second level key in map
 func (c *Configuration) param(key1 string, key2 string) (interface{}, error) {
 	val1, ok := c.Config[key1]
 	if !ok {
@@ -126,7 +130,7 @@ func (c *Configuration) param(key1 string, key2 string) (interface{}, error) {
 	return val2, nil
 }
 
-// ParamStr gets a string from the configuration file.
+// Gets a string from the configuration file.
 func (c *Configuration) ParamStr(key1 string, key2 string) string {
 	val, err := c.param(key1, key2)
 	if err != nil {
@@ -135,7 +139,7 @@ func (c *Configuration) ParamStr(key1 string, key2 string) string {
 	return val.(string)
 }
 
-// GetPath retrieves the path for a specified key in the test environment.
+// Retrieves the path for a specified key in the test environment.
 func (c *Configuration) GetPath(name string) string {
 	itemPath := filepath.Join(c.TopFolder, c.Paths[name].(string))
 	if _, err := os.Stat(itemPath); os.IsNotExist(err) {
@@ -145,42 +149,41 @@ func (c *Configuration) GetPath(name string) string {
 }
 
 // Gets the last line of a file.
+//
+// Parameters:
+//   - filename: path to the log file.
 func LastFileLine(filename string) (string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
-
-	// Se positionner à la fin du fichier
 	stat, err := file.Stat()
 	if err != nil {
 		return "", err
 	}
-
-	// Lire le fichier en arrière avec un buffer de lecture
 	var offset int64 = stat.Size() - 1
 	var lastLine []byte
 	buf := make([]byte, 1)
-
 	for offset >= 0 {
 		file.Seek(offset, 0)
 		_, err := file.Read(buf)
 		if err != nil {
 			return "", err
 		}
-
 		if buf[0] == '\n' && offset != stat.Size()-1 { // On saute le dernier \n
 			break
 		}
 		lastLine = append([]byte{buf[0]}, lastLine...)
 		offset--
 	}
-
 	return string(lastLine), nil
 }
 
-// loadYAML loads a YAML file and returns its contents as a map.
+// Loads a YAML file and returns its contents as a map.
+//
+// Parameters:
+//   - filename: path to the yaml file.
 func loadYAML(filePath string) (map[string]interface{}, error) {
 	obj := make(map[string]interface{})
 	yamlFile, err := os.ReadFile(filePath)
@@ -194,6 +197,11 @@ func loadYAML(filePath string) (map[string]interface{}, error) {
 	return obj, nil
 }
 
+// Add files provided on command line to the transfer specification.
+//
+// Parameters:
+//   - dotPath: path in map of transfer spec
+//   - transferSpec: transfer specification map
 func (c *Configuration) AddFilesToTS(dotPath string, transferSpec map[string]interface{}) error {
 	keys := strings.Split(dotPath, ".")
 	lastKey := keys[len(keys)-1]
@@ -223,6 +231,10 @@ func (c *Configuration) AddFilesToTS(dotPath string, transferSpec map[string]int
 }
 
 // Helper function to get the port or default value
+//
+// Parameters:
+//   - u: URL object
+//   - defaultPort: default port value
 func GetPortOrDefault(u *url.URL, defaultPort int) int {
 	result := defaultPort
 	if u.Port() != "" {

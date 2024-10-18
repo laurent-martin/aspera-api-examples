@@ -610,6 +610,9 @@ func NewAsCmd(stdin io.WriteCloser, stdout io.ReadCloser, host string, version u
 }
 
 // Sends a command to ascmd
+//
+// Parameters:
+//   - command: the command to send, without leading "as_" and trailing "\n"
 func (a *AsCmd) sendCommand(command string) error {
 	command = fmt.Sprintf("as_%s\n", command)
 	logger.Debugf("sending command: %s", command)
