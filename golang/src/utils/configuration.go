@@ -1,14 +1,13 @@
 package utils
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -24,12 +23,12 @@ const (
 // Configuration provides common environment settings for the application.
 // It includes methods for configuration loading, logging, file utilities, and more.
 type Configuration struct {
-	Log           *zap.SugaredLogger
-	FileList      []string
-	TopFolderPath string
-	LogFolderPath string
-	Paths         map[string]interface{}
-	Config        map[string]interface{}
+	Log       *zap.SugaredLogger
+	FileList  []string
+	TopFolder string
+	LogFolder string
+	Paths     map[string]interface{}
+	Config    map[string]interface{}
 }
 
 // NewConfiguration initializes a Configuration instance, loading YAML configuration files and setting up logging.
@@ -88,12 +87,12 @@ func NewConfiguration() (*Configuration, error) {
 	}
 
 	c := &Configuration{
-		Log:           logger,
-		FileList:      os.Args[1:],
-		TopFolderPath: topFolderPath,
-		LogFolderPath: os.TempDir(),
-		Paths:         paths,
-		Config:        config,
+		Log:       logger,
+		FileList:  os.Args[1:],
+		TopFolder: topFolderPath,
+		LogFolder: os.TempDir(),
+		Paths:     paths,
+		Config:    config,
 	}
 
 	// Set logging level based on config
@@ -106,7 +105,7 @@ func NewConfiguration() (*Configuration, error) {
 	}
 
 	// Logging paths and files
-	c.Log.Debugf("top_folder: %s", c.TopFolderPath)
+	c.Log.Debugf("top_folder: %s", c.TopFolder)
 	for _, file := range c.FileList {
 		c.Log.Debugf("file: %s", file)
 	}
@@ -136,57 +135,49 @@ func (c *Configuration) ParamStr(key1 string, key2 string) string {
 	return val.(string)
 }
 
-// getPath retrieves the path for a specified key in the test environment.
-func (c *Configuration) getPath(name string) (string, error) {
-	itemPath := filepath.Join(c.TopFolderPath, c.Paths[name].(string))
+// GetPath retrieves the path for a specified key in the test environment.
+func (c *Configuration) GetPath(name string) string {
+	itemPath := filepath.Join(c.TopFolder, c.Paths[name].(string))
 	if _, err := os.Stat(itemPath); os.IsNotExist(err) {
-		c.Log.Errorf("%s not found", itemPath)
-		return "", errors.New("path not found")
+		c.Log.Fatalf("%s not found", itemPath)
 	}
-	return itemPath, nil
+	return itemPath
 }
 
-// lastFileLine gets the last line of a file.
-func lastFileLine(filename string) (string, error) {
+// Gets the last line of a file.
+func LastFileLine(filename string) (string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 
-	// Get file size
-	fileInfo, err := file.Stat()
+	// Se positionner à la fin du fichier
+	stat, err := file.Stat()
 	if err != nil {
 		return "", err
 	}
 
-	fileSize := fileInfo.Size()
-
-	var lastLine string
+	// Lire le fichier en arrière avec un buffer de lecture
+	var offset int64 = stat.Size() - 1
+	var lastLine []byte
 	buf := make([]byte, 1)
-	// Start reading from the end of the file
-	for {
-		if _, err := file.ReadAt(buf, fileSize-1); err == nil && buf[0] == '\n' {
+
+	for offset >= 0 {
+		file.Seek(offset, 0)
+		_, err := file.Read(buf)
+		if err != nil {
+			return "", err
+		}
+
+		if buf[0] == '\n' && offset != stat.Size()-1 { // On saute le dernier \n
 			break
 		}
-		fileSize--
-		if fileSize <= 0 {
-			break
-		}
+		lastLine = append([]byte{buf[0]}, lastLine...)
+		offset--
 	}
 
-	// Read the last line
-	file.Seek(fileSize, io.SeekStart)
-	scanner := bufio.NewScanner(file)
-	if scanner.Scan() {
-		lastLine = scanner.Text()
-	}
-
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-
-	return lastLine, nil
+	return string(lastLine), nil
 }
 
 // loadYAML loads a YAML file and returns its contents as a map.
@@ -203,16 +194,31 @@ func loadYAML(filePath string) (map[string]interface{}, error) {
 	return obj, nil
 }
 
-// AddFilesToTS simulates adding files to the transfer spec
-func (c *Configuration) AddFilesToTS(key string, transferSpec map[string]interface{}) error {
-	// Here, you can add actual file paths to the "paths" key in the transfer spec
-	paths := []string{"file1.txt", "file2.txt"} // Example files
-	spec, ok := transferSpec["assets"].(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("assets not found in transfer spec")
+func (c *Configuration) AddFilesToTS(dotPath string, transferSpec map[string]interface{}) error {
+	keys := strings.Split(dotPath, ".")
+	lastKey := keys[len(keys)-1]
+	m := transferSpec
+	for _, key := range keys[:len(keys)-1] {
+		if val, ok := m[key]; ok {
+			if nestedMap, ok := val.(map[string]interface{}); ok {
+				m = nestedMap
+			} else {
+				return fmt.Errorf("key %s is not a map", key)
+			}
+		} else {
+			return fmt.Errorf("key %s not found in map", key)
+		}
 	}
-
-	spec["paths"] = append(spec["paths"].([]string), paths...)
+	if pathsArray, ok := m[lastKey].([]map[string]string); ok {
+		for _, filePath := range c.FileList {
+			pathsArray = append(pathsArray, map[string]string{
+				"source": filePath,
+			})
+		}
+		m[lastKey] = pathsArray
+	} else {
+		return fmt.Errorf("%s is not a valid array", lastKey)
+	}
 	return nil
 }
 

@@ -13,7 +13,7 @@ func main() {
 		config.Log.Fatalf("Error loading configuration: %v", err)
 	}
 	// Create transfer client
-	//transferClient := NewTransferClient(config)
+	transferClient := utils.NewTransferClient(config)
 	// Get server URL
 	serverURL := config.ParamStr("server", "url")
 	config.Log.Debugf("Server URL: %s", serverURL)
@@ -39,7 +39,7 @@ func main() {
 		"direction": "send",
 		"assets": map[string]interface{}{
 			"destination_root": config.ParamStr("server", "folder_upload"),
-			"paths":            []string{}, // To be filled later
+			"paths":            []map[string]string{}, // To be filled later
 		},
 	}
 	// Add files to transfer spec (for simplicity, assuming no files to add in this example)
@@ -48,7 +48,7 @@ func main() {
 		config.Log.Fatalf("Error adding files to transfer spec: %v", err)
 	}
 	// Start the transfer and wait
-	//err = transferClient.TransferStartAndWait(transferSpec)
+	err = transferClient.StartTransferAndWait(transferSpec)
 	if err != nil {
 		config.Log.Fatalf("Error during transfer: %v", err)
 	}
