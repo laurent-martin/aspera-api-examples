@@ -65,7 +65,7 @@ $(SDK_DIR_RUNTIME)asperatransferd $(SDK_FILE_PROTO): $(SDK_FILE_ZIP)
 	test -f $(SDK_FILE_PROTO)
 	$(SDK_DIR_RUNTIME)/asperatransferd version | sed -Ee 's|^(.*) version (.*)\..*$$|<product><name>\1</name><version>\2</version></product>|' > $(SDK_DIR_RUNTIME)product-info.mf
 	echo '<CONF/>' > $(SDK_DIR_RUNTIME)aspera.conf
-	touch $@
+	touch $(SDK_DIR_RUNTIME)asperatransferd $(SDK_FILE_PROTO)
 $(GBL_FILE_CONFIG):
 	mkdir -p $$(dirname $@)
 	cp $(GBL_FILE_CONF_TMPL) $@
