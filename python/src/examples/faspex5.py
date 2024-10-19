@@ -28,11 +28,11 @@ try:
     f5_api.setVerify(config.param('faspex5', 'verify', True))
     f5_api.setAuthBearer(
         token_url=f'{config.param("faspex5", "url")}{F5_API_PATH_TOKEN}',
-        aud=config.param('faspex5', 'client_id'),
+        key_pem_path=config.param('faspex5', 'private_key'),
         client_id=config.param('faspex5', 'client_id'),
         client_secret=config.param('faspex5', 'client_secret'),
-        key_pem_path=config.param('faspex5', 'private_key'),
         iss=config.param('faspex5', 'client_id'),
+        aud=config.param('faspex5', 'client_id'),
         sub=f'user:{config.param("faspex5", "username")}',
     )
     f5_api.setDefaultScope()
