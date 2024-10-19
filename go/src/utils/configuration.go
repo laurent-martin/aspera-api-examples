@@ -139,6 +139,14 @@ func (c *Configuration) ParamStr(key1 string, key2 string) string {
 	return val.(string)
 }
 
+func (c *Configuration) ParamBool(key1 string, key2 string, def bool) bool {
+	val, err := c.param(key1, key2)
+	if err != nil {
+		return def
+	}
+	return val.(bool)
+}
+
 // Retrieves the path for a specified key in the test environment.
 func (c *Configuration) GetPath(name string) string {
 	itemPath := filepath.Join(c.TopFolder, c.Paths[name].(string))
