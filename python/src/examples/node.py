@@ -10,17 +10,13 @@ config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    node_api = utils.rest.Rest(
-        config.param('node', 'url'),
-        user=config.param('node', 'username'),
-        password=config.param('node', 'password'),
-        # verify certificate if not explicitly set to False
-        verify=config.param('node', 'verify', True),
-    )
+    node_api = utils.rest.Rest(config.param('node', 'url'))
+    node_api.setAuthBasic(config.param('node', 'username'), config.param('node', 'password'))
+    node_api.setVerify(config.param('node', 'verify', True))
 
     # call Node API with a single transfer request to get one transfer spec with Aspera token
     log.info('Generating transfer spec')
-    response_data = node_api.post('files/upload_setup', {
+    response_data = node_api.create('files/upload_setup', {
         'transfer_requests': [
             {'transfer_request': {'paths': [{'destination': config.param('node', 'folder_upload')}]}}
         ]

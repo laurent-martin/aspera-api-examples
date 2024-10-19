@@ -31,11 +31,9 @@ try:
         auth=config.param('cos', 'auth'),
     )
 
-    node_api = utils.rest.Rest(
-        base_url=cos_node_info['url'],
-        auth=cos_node_info['auth'],
-        headers=cos_node_info['headers'],
-    )
+    node_api = utils.rest.Rest(cos_node_info['url'])
+    node_api.setAuthBasic(cos_node_info['auth'][0], cos_node_info['auth'][1])
+    node_api.addHeaders(cos_node_info['headers'])
 
     # call Node API with one transfer request to get one transfer spec
     response_data = node_api.post('files/upload_setup', {
@@ -55,7 +53,7 @@ try:
     for f in files_to_upload:
         t_spec['paths'].append({'source': f})
 
-    # start transfer
-    transfer_client.start_transfer_and_wait(t_spec)
+        # start transfer
+        transfer_client.start_transfer_and_wait(t_spec)
 finally:
     transfer_client.shutdown()

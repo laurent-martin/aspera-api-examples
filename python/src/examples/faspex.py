@@ -10,20 +10,16 @@ config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    faspex_api = utils.rest.Rest(
-        config.param('faspex', 'url'),
-        user=config.param('faspex', 'username'),
-        password=config.param('faspex', 'password'),
-        # verify certificate if not explicitly set to False
-        verify=config.param('faspex', 'verify', True),
-    )
+    faspex_api = utils.rest.Rest(config.param('faspex', 'url'))
+    faspex_api.setAuthBasic(config.param('faspex', 'username'), config.param('faspex', 'password'))
+    faspex_api.setVerify(config.param('faspex', 'verify', True))
 
     # files to send
     package_files = config.file_list()
 
     # package creation information for Faspex API v3 : POST /send
     log.info('Creating package')
-    response_data = faspex_api.post('send', {
+    response_data = faspex_api.create('send', {
         'delivery': {
             'title': 'Sent from python example',
             'recipients': ['admin'],

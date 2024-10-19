@@ -80,7 +80,7 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
 
     return {
         'url': ats_url,
-        'auth': requests.auth.HTTPBasicAuth(ats_ak_id, ats_ak_secret),
+        'auth': [ats_ak_id, ats_ak_secret],
         'headers': {
             'X-Aspera-Storage-Credentials': json.dumps(aspera_storage_credentials)
         },

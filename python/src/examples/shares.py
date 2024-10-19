@@ -13,17 +13,13 @@ try:
     # get file to upload from command line
     files_to_upload = config.file_list()
 
-    shares_api = utils.rest.Rest(
-        base_url=f"{config.param('shares', 'url')}/node_api",
-        user=config.param('shares', 'username'),
-        password=config.param('shares', 'password'),
-        # verify certificate if not explicitly set to False
-        verify=config.param('shares', 'verify', True),
-    )
+    shares_api = utils.rest.Rest(f"{config.param('shares', 'url')}/node_api")
+    shares_api.setAuthBasic(config.param('shares', 'username'), config.param('shares', 'password'))
+    shares_api.setVerify(config.param('shares', 'verify', True))
 
     # call Node API with a single transfer request to get one transfer spec with Aspera token
     logging.info('Generating transfer spec')
-    response_data = shares_api.post('files/upload_setup', {
+    response_data = shares_api.create('files/upload_setup', {
         'transfer_requests': [
             {'transfer_request': {'paths': [{'destination': config.param('shares', 'folder_upload')}]}}
         ]

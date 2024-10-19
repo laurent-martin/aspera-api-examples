@@ -27,68 +27,28 @@ package_name = 'sample package'
 # number of parallel transfer sessions (typically, 1)
 transfer_sessions = 1
 
-
-def get_bearer(scope):
-    '''
-    generate a bearer token for given scope using AoC API
-    '''
-    log.info('getting API authorization for %s', scope)
-    with open(config.param('aoc', 'private_key')) as key_file:
-        private_key_pem = key_file.read()
-
-    tenant_name = config.param('aoc', 'org')
-
-    seconds_since_epoch = int(calendar.timegm(time.gmtime()))
-
-    jwt_payload = {
-        'iss': config.param('aoc', 'client_id'),  # issuer
-        'sub': config.param('aoc', 'user_email'),  # subject
-        'aud': 'https://api.asperafiles.com/api/v1/oauth2/token',  # audience
-        'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
-        'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
-        'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
-        'org': tenant_name,
-    }
-    log.debug(jwt_payload)
-
-    data = {
-        'scope': scope,
-        'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        'assertion': jwt.encode(
-            payload=jwt_payload,
-            key=private_key_pem,
-            algorithm='RS256'),
-    }
-
-    response = requests.post(
-        url=f'{AOC_API_BASE}/oauth2/{tenant_name}/token',
-        auth=requests.auth.HTTPBasicAuth(config.param('aoc', 'client_id'), config.param('aoc', 'client_secret')),
-        data=data,
-        headers={
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json',
-        },
-    )
-    response.raise_for_status()
-    response_data = response.json()
-
-    return f'Bearer {response_data["access_token"]}'
-
-
 config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    aoc_api = utils.rest.Rest(
-        base_url=AOC_API_BASE,
-        headers={'Authorization': get_bearer('user:all')},
+    aoc_api = utils.rest.Rest(AOC_API_BASE)
+    aoc_api.setAuthBearer(
+        token_url=f'{AOC_API_BASE}/oauth2/{config.param('aoc', 'org')}/token',
+        aud='https://api.asperafiles.com/api/v1/oauth2/token',
+        client_id=config.param('aoc', 'client_id'),
+        client_secret=config.param('aoc', 'client_secret'),
+        key_pem_path=config.param('aoc', 'private_key'),
+        iss=config.param('aoc', 'client_id'),
+        sub=config.param('aoc', 'user_email'),
+        add={'org': config.param('aoc', 'org')},
     )
+    aoc_api.setDefaultScope('user:all')
 
     # simple api call:
-    # response_data = aoc_api.get('self')
+    # response_data = aoc_api.read('self')
     workspace_name = config.param('aoc', 'workspace')
     log.info(f'getting workspace information for {workspace_name}')
-    response_data = aoc_api.get('workspaces', params={'q': workspace_name})
+    response_data = aoc_api.read('workspaces', params={'q': workspace_name})
     log.debug(response_data)
     if len(response_data) != 1:
         raise Exception(f'Found {len(response_data)} workspace for {workspace_name}')
@@ -97,7 +57,7 @@ try:
     # Get dropbox information (shared inbox name in config file)
     shared_inbox_name = config.param('aoc', 'shared_inbox')
     log.info('getting shared inbox information')
-    response_data = aoc_api.get('dropboxes', params={'current_workspace_id': workspace_info['id'], 'q': shared_inbox_name})
+    response_data = aoc_api.read('dropboxes', params={'current_workspace_id': workspace_info['id'], 'q': shared_inbox_name})
     log.debug(response_data)
     if len(response_data) != 1:
         raise Exception(f'Found {len(response_data)} dropbox for {shared_inbox_name}')
@@ -105,7 +65,7 @@ try:
 
     #  create a new package (this allocates a reception folder on package storage)
     log.info('creating package')
-    package_info = aoc_api.post('packages', {
+    package_info = aoc_api.create('packages', {
         'workspace_id': workspace_info['id'],
         'recipients': [{'id': dropbox_info['id'], 'type': 'dropbox'}],
         'name': package_name,
@@ -115,12 +75,12 @@ try:
 
     #  get node information for the node on which package must be created
     log.info('getting node information')
-    node_info = aoc_api.get(f'nodes/{package_info["node_id"]}')
+    node_info = aoc_api.read(f'nodes/{package_info["node_id"]}')
     log.debug(node_info)
 
     # tell Aspera how many transfers to expect in package (can also be done after transfer)
     log.info('telling expected transfers')
-    aoc_api.put(
+    aoc_api.update(
         f'packages/{package_info["id"]}',
         {'sent': True, 'transfers_expected': transfer_sessions},
     )
@@ -129,7 +89,7 @@ try:
     # (all tags are not mandatory, but some are, like 'node')
     t_spec = {
         'direction': 'send',
-        'token': get_bearer(f"node.{node_info['access_key']}:user:all"),
+        'token': aoc_api.getBearerToken(f"node.{node_info['access_key']}:user:all"),
         'tags': {
             'aspera': {
                 'app': 'packages',
