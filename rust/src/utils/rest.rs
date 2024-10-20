@@ -1,8 +1,8 @@
 // cspell:ignore reqwest jsonwebtoken
 use serde_json::Value;
+use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::collections::HashMap;
 
 pub const MIME_JSON: &str = "application/json";
 pub const MIME_FORM: &str = "application/x-www-form-urlencoded";
@@ -24,10 +24,19 @@ pub struct BearerData {
     pub sub: String,
     pub add: Option<String>,
 }
+pub struct BasicData {
+    pub username: String,
+    pub password: String,
+}
+pub enum AuthData {
+    Bearer(BearerData),
+    Basic(BasicData),
+    None,
+}
 
 pub struct Rest {
     base_url: String,
-    auth: Option<BearerData>,
+    auth: AuthData,
     headers: HashMap<String, String>,
     client: reqwest::Client,
 }
@@ -51,17 +60,23 @@ impl Rest {
         }
         Ok(Self {
             base_url: base_url.to_string(),
-            auth: None,
+            auth: AuthData::None,
             headers: HashMap::new(),
             client: client_builder.build()?,
         })
+    }
+    pub fn set_basic(&mut self, username: &str, password: &str) {
+        self.auth = AuthData::Basic(BasicData {
+            username: username.to_owned(),
+            password: password.to_owned(),
+        });
     }
     /// API is authenticated using a bearer token.
     ///
     /// ### Arguments
     /// * `auth_data` - Information for JWT generation
     pub fn set_bearer(&mut self, auth_data: BearerData) {
-        self.auth = Some(auth_data);
+        self.auth = AuthData::Bearer(auth_data);
     }
 
     /// Set the default scope for the bearer token and update the headers
@@ -70,15 +85,12 @@ impl Rest {
     /// * `scope` - The scope to set
     pub async fn set_default_scope(&mut self, scope: Option<String>) -> Result<(), Box<dyn Error>> {
         let token = self.get_bearer_token(scope).await?;
-        self.headers.insert(
-            "Authorization".to_string(),
-            token,
-        );
+        self.headers.insert("Authorization".to_string(), token);
         Ok(())
     }
 
     /// Get a bearer token from the server
-    /// 
+    ///
     /// ### Arguments
     /// * `scope` - The scope to set
     pub async fn get_bearer_token(
@@ -86,8 +98,11 @@ impl Rest {
         scope: Option<String>,
     ) -> Result<String, Box<dyn Error>> {
         let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as usize;
-        let auth = self.auth.clone().unwrap();
-        
+        // get copy of self.auth as BearerData, else return error
+        let auth = match &self.auth {
+            AuthData::Bearer(auth) => auth.clone(),
+            _ => return Err(anyhow::anyhow!("Bearer").into()),
+        };
         let claims = Claims {
             iss: auth.client_id.to_owned(),
             sub: auth.sub.to_owned(),
@@ -113,9 +128,13 @@ impl Rest {
         }
         // debug data
         log::debug!("Bearer data: {:?}", data);
-        let response= self.client
+        let response = self
+            .client
             .post(auth.token_url)
-            .basic_auth(auth.client_id.to_owned(), Some(auth.client_secret.to_owned()))       
+            .basic_auth(
+                auth.client_id.to_owned(),
+                Some(auth.client_secret.to_owned()),
+            )
             .header("Accept", MIME_JSON)
             .header("Content-Type", MIME_FORM)
             .form(&data)
@@ -123,11 +142,11 @@ impl Rest {
             .await?;
         // check response error
         if !response.status().is_success() {
-            return Err(anyhow::anyhow!("Failed to get access token: {}", response.status()).into());
+            return Err(
+                anyhow::anyhow!("Failed to get access token: {}", response.status()).into(),
+            );
         }
-        let jdata: Value = response
-            .json()
-            .await?;        
+        let jdata: Value = response.json().await?;
         let token = jdata["access_token"]
             .as_str()
             .ok_or_else(|| anyhow::anyhow!("Failed to get access token from response"))?;
@@ -135,7 +154,7 @@ impl Rest {
     }
 
     /// CRUD: Create
-    /// 
+    ///
     /// ### Arguments
     /// * `path` - The path to the API endpoint
     /// * `value` - The JSON value to send
@@ -158,11 +177,15 @@ impl Rest {
         if let Some(query) = query {
             request_builder = request_builder.query(query);
         }
+        // add basic if here
+        if let AuthData::Basic(data) = &self.auth {
+            request_builder = request_builder.basic_auth(&data.username, Some(&data.password));
+        }
         let response = request_builder.json(value).send().await?;
         // check http code and transform to error
         if !response.status().is_success() {
             return Err(anyhow::anyhow!("Failed to create: {}", response.status()).into());
-        }        
+        }
         Ok(response.json().await?)
     }
 }
