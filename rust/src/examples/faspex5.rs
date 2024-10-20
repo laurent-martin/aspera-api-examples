@@ -6,6 +6,9 @@ use serde_json::Value;
 use std::error::Error;
 use std::sync::Arc;
 
+const F5_API_PATH_V5: &str = "/api/v5";
+const F5_API_PATH_TOKEN: &str = "/auth/token";
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // config file parameters for sample code
@@ -14,18 +17,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut transfer_client: TransferClient = TransferClient::new(Arc::clone(&config));
     // Faspex 5 API
     let faspex_base_url = config.param_str("faspex5", "url")?;
-    let mut f5_api = rest::Client::new(
-        &format!("{faspex_base_url}/api/v5"),
+    let mut f5_api = rest::Rest::new(
+        &format!("{faspex_base_url}{F5_API_PATH_V5}"),
         config.param_bool("faspex5", "verify")?,
     )?;
-    f5_api
-        .auth_jwt(
-            &format!("{faspex_base_url}/auth/token"),
-            &config.param_str("faspex5", "client_id")?,
-            &config.param_str("faspex5", "username")?,
-            &config.param_str("faspex5", "private_key")?,
-        )
-        .await?;
+    f5_api.set_bearer(rest::BearerData {
+        token_url: format!("{faspex_base_url}{F5_API_PATH_TOKEN}"),
+        key_pem_path: config.param_str("faspex5", "private_key")?,
+        client_id: config.param_str("faspex5", "client_id")?,
+        client_secret: config.param_str("faspex5", "client_secret")?,
+        iss: config.param_str("faspex5", "client_id")?,
+        aud: config.param_str("faspex5", "client_id")?,
+        sub: format!("user:{}", config.param_str("faspex5", "username")?),
+        add: None,
+    });
+    f5_api.set_default_scope(None).await?;
     // Create package
     let res: Value = f5_api
         .create(
