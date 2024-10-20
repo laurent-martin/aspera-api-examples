@@ -11,7 +11,7 @@ use std::process::{Command, Stdio};
 use std::sync::Arc;
 use url::Url;
 
-/// perform file system operations
+/// Perform file system operations
 fn perform_tests<I: Write, O: Read>(
     ascmd_agent: &mut server::AsCmd<I, O>,
     existing_file: &Path,

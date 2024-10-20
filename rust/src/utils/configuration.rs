@@ -18,6 +18,7 @@ pub struct Configuration {
     config: serde_yaml::Value,
 }
 
+/// Parameters from configuration files
 impl Configuration {
     pub fn new() -> Result<Self, Box<dyn Error>> {
         // Initialize logger
@@ -60,7 +61,7 @@ impl Configuration {
     pub fn log_folder_path(&self) -> &Path {
         &self.log_folder_path
     }
-    // get value from yaml file
+    /// Get value from yaml file
     fn get_subkey_value(
         yaml: serde_yaml::Value,
         key: &str,
