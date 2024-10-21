@@ -19,7 +19,8 @@ JWT_NOT_BEFORE_OFFSET_SEC = 300
 JWT_EXPIRY_OFFSET_SEC = 3600
 
 # AoC API base URL: https://developer.ibm.com/apis/catalog?search=%22aspera%20on%20cloud%20api%22
-AOC_API_BASE = 'https://api.ibmaspera.com/api/v1'
+AOC_API_V1_BASE_URL = 'https://api.ibmaspera.com/api/v1'
+AOC_OAUTH_AUDIENCE = 'https://api.asperafiles.com/api/v1/oauth2/token'
 
 # name of package to send
 package_name = 'sample package'
@@ -31,14 +32,14 @@ config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    aoc_api = utils.rest.Rest(AOC_API_BASE)
+    aoc_api = utils.rest.Rest(AOC_API_V1_BASE_URL)
     aoc_api.setAuthBearer(
-        token_url=f'{AOC_API_BASE}/oauth2/{config.param('aoc', 'org')}/token',
-        aud='https://api.asperafiles.com/api/v1/oauth2/token',
+        token_url=f'{AOC_API_V1_BASE_URL}/oauth2/{config.param('aoc', 'org')}/token',
+        key_pem_path=config.param('aoc', 'private_key'),
         client_id=config.param('aoc', 'client_id'),
         client_secret=config.param('aoc', 'client_secret'),
-        key_pem_path=config.param('aoc', 'private_key'),
         iss=config.param('aoc', 'client_id'),
+        aud=AOC_OAUTH_AUDIENCE,
         sub=config.param('aoc', 'user_email'),
         add={'org': config.param('aoc', 'org')},
     )

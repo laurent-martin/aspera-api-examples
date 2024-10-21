@@ -5,20 +5,22 @@ using Newtonsoft.Json.Linq;
 class Aoc : SampleInterface
 {
     int transfer_sessions = 1;
+    const string AOC_API_V1_BASE_URL = "https://api.ibmaspera.com/api/v1";
+    const string AOC_OAUTH_AUDIENCE = "https://api.asperafiles.com/api/v1/oauth2/token";
 
     public void start(string[] args)
     {
         var config = new Configuration(args);
         var transfer_client = new TransferClient(config);
         var aoc_api = new Rest(new Dictionary<string, string>(){
-            {"base_url","https://api.ibmaspera.com/api/v1"},
+            {"base_url",AOC_API_V1_BASE_URL},
             {"type","oauth2"},
             {"oauth_type","jwt"},
             {"oauth_file_private_key",config.GetParam("aoc","private_key")},
             {"oauth_client_id",config.GetParam("aoc","client_id")},
             {"oauth_client_secret",config.GetParam("aoc","client_secret")},
             {"oauth_jwt_subject",config.GetParam("aoc","user_email")},
-            {"oauth_jwt_audience","https://api.asperafiles.com/api/v1/oauth2/token"},
+            {"oauth_jwt_audience",AOC_OAUTH_AUDIENCE},
             {"oauth_base_url",$"https://api.ibmaspera.com/api/v1/oauth2/{config.GetParam("aoc","org")}"},
             {"oauth_path_token","token"},
             {"oauth_scope","user:all"},
