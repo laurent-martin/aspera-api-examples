@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 const PATHS_FILE_REL: &str = "config/paths.yaml";
 //const ITEM_WIDTH: usize = 12;
 
+/// Centralized configuration parameters for code examples.
 pub struct Configuration {
     log_folder_path: PathBuf,
     top_folder_path: PathBuf,

@@ -30,6 +30,9 @@ path = "src/examples/server.rs"
 name = "faspex5"
 path = "src/examples/faspex5.rs"
 [[bin]]
+name = "aoc"
+path = "src/examples/aoc.rs"
+[[bin]]
 name = "server_cmd"
 path = "src/examples/server_cmd.rs"
 

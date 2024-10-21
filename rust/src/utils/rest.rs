@@ -13,34 +13,30 @@ const JWT_NOT_BEFORE_OFFSET_SEC: usize = 60;
 // Validity period for JW Token
 const JWT_EXPIRY_OFFSET_SEC: usize = 600;
 
+/// Information needed to generate a bearer token
 #[derive(Clone)]
 pub struct BearerData {
     pub token_url: String,
-    pub aud: String,
+    pub key_pem_path: String,
     pub client_id: String,
     pub client_secret: String,
-    pub key_pem_path: String,
     pub iss: String,
+    pub aud: String,
     pub sub: String,
-    pub add: Option<String>,
+    pub org: Option<String>,
 }
+/// Information needed to generate a basic token
 pub struct BasicData {
     pub username: String,
     pub password: String,
 }
+/// Enum to store the authentication data
 pub enum AuthData {
     Bearer(BearerData),
     Basic(BasicData),
     None,
 }
-
-pub struct Rest {
-    base_url: String,
-    auth: AuthData,
-    headers: HashMap<String, String>,
-    client: reqwest::Client,
-}
-// JWT Claims structure
+/// JWT Claims structure
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct Claims {
     iss: String,
@@ -50,9 +46,21 @@ struct Claims {
     nbf: usize,
     iat: usize,
     jti: String,
+    org: Option<String>,
 }
-
+/// REST API client
+pub struct Rest {
+    base_url: String,
+    auth: AuthData,
+    headers: HashMap<String, String>,
+    client: reqwest::Client,
+}
 impl Rest {
+    /// Create a new REST API client
+    ///
+    /// ### Arguments
+    /// * `base_url` - The base URL for the API
+    /// * `verify` - Whether to verify SSL certificates
     pub fn new(base_url: &str, verify: bool) -> Result<Self, Box<dyn Error>> {
         let mut client_builder = reqwest::Client::builder();
         if !verify {
@@ -65,6 +73,11 @@ impl Rest {
             client: client_builder.build()?,
         })
     }
+    /// API is authenticated using basic auth.
+    ///
+    /// ### Arguments
+    /// * `username` - The username
+    /// * `password` - The password
     pub fn set_basic(&mut self, username: &str, password: &str) {
         self.auth = AuthData::Basic(BasicData {
             username: username.to_owned(),
@@ -104,13 +117,14 @@ impl Rest {
             _ => return Err(anyhow::anyhow!("Bearer").into()),
         };
         let claims = Claims {
-            iss: auth.client_id.to_owned(),
+            iss: auth.iss.to_owned(),
             sub: auth.sub.to_owned(),
-            aud: auth.client_id.to_owned(),
+            aud: auth.aud.to_owned(),
             iat: now - JWT_NOT_BEFORE_OFFSET_SEC,
             nbf: now - JWT_NOT_BEFORE_OFFSET_SEC,
             exp: now + JWT_EXPIRY_OFFSET_SEC,
             jti: uuid::Uuid::new_v4().to_string(),
+            org: auth.org.to_owned(),
         };
         let private_key = std::fs::read_to_string(auth.key_pem_path)?;
         let assertion = jsonwebtoken::encode(
@@ -130,7 +144,7 @@ impl Rest {
         log::debug!("Bearer data: {:?}", data);
         let response = self
             .client
-            .post(auth.token_url)
+            .post(auth.token_url) // "http://localhost:12345")//
             .basic_auth(
                 auth.client_id.to_owned(),
                 Some(auth.client_secret.to_owned()),
@@ -143,14 +157,15 @@ impl Rest {
         // check response error
         if !response.status().is_success() {
             return Err(
-                anyhow::anyhow!("Failed to get access token: {}", response.status()).into(),
+                anyhow::anyhow!("Failed to get access token: {}", "response.status()").into(),
             );
         }
         let jdata: Value = response.json().await?;
         let token = jdata["access_token"]
             .as_str()
             .ok_or_else(|| anyhow::anyhow!("Failed to get access token from response"))?;
-        Ok(token.to_string())
+        log::debug!("Bearer token: {:?}", token);
+        Ok(format!("Bearer {token}"))
     }
 
     /// CRUD: Create
@@ -159,15 +174,16 @@ impl Rest {
     /// * `path` - The path to the API endpoint
     /// * `value` - The JSON value to send
     /// * `query` - Optional query parameters
-    pub async fn create(
+    pub async fn call(
         &self,
+        method: reqwest::Method,
         path: &str,
-        value: &Value,
+        value: Option<&Value>,
         query: Option<&[(&str, &str)]>,
-    ) -> Result<Value, Box<dyn Error>> {
+    ) -> Result<Option<Value>, Box<dyn Error>> {
         let mut request_builder: reqwest::RequestBuilder = self
             .client
-            .post(&format!("{}/{path}", self.base_url))
+            .request(method, &format!("{}/{path}", self.base_url))
             .header("Content-Type", MIME_JSON)
             .header("Accept", MIME_JSON);
         // loop on headers and add them to the request
@@ -181,11 +197,51 @@ impl Rest {
         if let AuthData::Basic(data) = &self.auth {
             request_builder = request_builder.basic_auth(&data.username, Some(&data.password));
         }
-        let response = request_builder.json(value).send().await?;
+        // add json value if present
+        if let Some(value) = value {
+            request_builder = request_builder.json(value);
+        }
+        let response = request_builder.send().await?;
         // check http code and transform to error
         if !response.status().is_success() {
-            return Err(anyhow::anyhow!("Failed to create: {}", response.status()).into());
+            log::debug!("response: {:?}", response);
+            log::debug!("response.text: {:?}", response.text().await?);
+            return Err(anyhow::anyhow!("Failed to create: {}", "response.status()").into());
         }
-        Ok(response.json().await?)
+        match response.json().await {
+            Ok(value) => Ok(Some(value)),
+            Err(_) => Ok(None),
+        }
+    }
+    pub async fn create(
+        &self,
+        path: &str,
+        value: &Value,
+        query: Option<&[(&str, &str)]>,
+    ) -> Result<Value, Box<dyn Error>> {
+        Ok(self
+            .call(reqwest::Method::POST, path, Some(value), query)
+            .await?
+            .unwrap())
+    }
+    pub async fn read(
+        &self,
+        path: &str,
+        query: Option<&[(&str, &str)]>,
+    ) -> Result<Value, Box<dyn Error>> {
+        Ok(self
+            .call(reqwest::Method::GET, path, None, query)
+            .await?
+            .unwrap())
+    }
+    pub async fn update(&self, path: &str, value: &Value) -> Result<(), Box<dyn Error>> {
+        let _ = self
+            .call(reqwest::Method::PUT, path, Some(value), None)
+            .await?;
+        Ok(())
+    }
+    pub async fn delete(&self, path: &str) -> Result<(), Box<dyn Error>> {
+        let _ = self.call(reqwest::Method::DELETE, path, None, None).await?;
+        Ok(())
     }
 }

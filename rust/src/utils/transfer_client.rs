@@ -30,6 +30,7 @@ const ASCP_LOG_FILE: &str = "aspera-scp-transfer.log";
 //const MAX_CONNECTION_WAIT_SEC: u64 = 10;
 const PORT_REGEX: &str = r":([0-9]+) ";
 
+/// Simplified interface for the Aspera Transfer SDK
 pub struct TransferClient {
     config: Arc<Configuration>,
     server_address: String,
@@ -55,8 +56,8 @@ impl TransferClient {
             daemon_process: None,
         }
     }
-
-    pub fn daemon_create_config_file(&self, conf_file: &PathBuf) -> Result<(), Box<dyn Error>> {
+    /// Create a configuration file for the daemon
+    fn daemon_create_config_file(&self, conf_file: &PathBuf) -> Result<(), Box<dyn Error>> {
         let ascp_level = self.config.param_str("trsdk", "ascp_level")?;
         let ascp_int_level = match ascp_level.as_str() {
             "info" => 0,
@@ -90,7 +91,7 @@ impl TransferClient {
         Ok(())
     }
 
-    // Create a path to the daemon file with the given extension
+    /// Create a path to the daemon file with the given extension
     fn daemon_file_path(&self, file_ext: &str) -> PathBuf {
         self.config
             .log_folder_path()
@@ -156,7 +157,7 @@ impl TransferClient {
         }
         Ok(())
     }
-    // get last log message of transfer daemon
+    /// Get last log message of transfer daemon.
     fn last_log_message(&self) -> Result<String, Box<dyn Error>> {
         let json_str = Configuration::last_file_line(&self.log_path)?;
         //log::debug!("last line: {json_str}");
@@ -167,7 +168,7 @@ impl TransferClient {
             .ok_or("Field 'msg' not found or invalid")?;
         Ok(msg.to_string())
     }
-    // start daemon and connect to it
+    /// start daemon and connect to it
     pub async fn daemon_startup(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         if self.transfer_service.is_none() {
             self.daemon_start()?;
@@ -175,7 +176,7 @@ impl TransferClient {
         }
         Ok(())
     }
-    // helper function to get mutable reference to transfer_service
+    /// helper function to get mutable reference to transfer_service
     pub fn get_transfer_service(
         &mut self,
     ) -> Result<&mut TransferServiceClient<Channel>, Box<dyn Error>> {
@@ -185,7 +186,7 @@ impl TransferClient {
             .ok_or_else(|| "Client is not initialized".into())
             .map(|client| &mut **client)
     }
-
+    /// Connect to the daemon
     pub async fn daemon_connect(&mut self) -> Result<(), Box<dyn Error>> {
         let channel_address = format!("http://{}:{}", self.server_address, self.server_port);
         let mut client = TransferServiceClient::connect(channel_address).await?;
@@ -195,6 +196,13 @@ impl TransferClient {
         Ok(())
     }
 
+    /// Start a transfer and return the transfer ID
+    ///
+    /// ### Arguments
+    /// * `transfer_spec` - The transfer specification as a JSON value
+    ///
+    /// ### Returns
+    /// The transfer ID
     pub async fn transfer_start(
         &mut self,
         transfer_spec: &serde_json::Value,
@@ -213,6 +221,7 @@ impl TransferClient {
         // return field .transfer_id from response
         Ok(response.into_inner().transfer_id)
     }
+    /// Start a transfer and wait for it to complete
     pub async fn transfer_start_and_wait(
         &mut self,
         transfer_spec: &serde_json::Value,
@@ -221,7 +230,7 @@ impl TransferClient {
         self.transfer_wait(&transfer_id).await?;
         Ok(transfer_id)
     }
-
+    /// Wait for a transfer to complete and display status.
     pub async fn transfer_wait(
         &mut self,
         transfer_id: &str,
@@ -249,7 +258,7 @@ impl TransferClient {
         }
         Ok(())
     }
-
+    /// Shutdown the daemon (kill)
     pub fn daemon_shutdown(&mut self) -> Result<(), String> {
         if let Some(ref mut daemon_process) = self.daemon_process {
             log::debug!("Shutting down daemon...");
@@ -257,8 +266,8 @@ impl TransferClient {
         }
         Ok(())
     }
-    // check if transfer is failed
-    // if failed, log error and return error
+    /// Check if transfer is failed.
+    /// If failed, log error and return error
     fn transfer_check_failed_status(
         status: TransferStatus,
         response: &QueryTransferResponse,
@@ -279,9 +288,8 @@ impl TransferClient {
         Ok(())
     }
 }
-//destructor
 impl Drop for TransferClient {
     fn drop(&mut self) {
-        self.daemon_shutdown().unwrap();
+        let _ = self.daemon_shutdown();
     }
 }

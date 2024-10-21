@@ -29,7 +29,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         iss: config.param_str("faspex5", "client_id")?,
         aud: config.param_str("faspex5", "client_id")?,
         sub: format!("user:{}", config.param_str("faspex5", "username")?),
-        add: None,
+        org: None,
     });
     f5_api.set_default_scope(None).await?;
     // Create package
@@ -50,14 +50,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Create transfer spec
     let mut upload_request = json!({});
     config.add_files_to_ts("paths", &mut upload_request)?;
-    let transfer_spec_res: Value = f5_api
+    let mut transfer_spec: Value = f5_api
         .create(
             &format!("packages/{package_id}/transfer_spec/upload"),
             &upload_request,
             Some(&[("transfer_type", "connect")]),
         )
         .await?;
-    let mut transfer_spec = transfer_spec_res.clone();
+    // remove key "authentication" from transfer spec
     transfer_spec
         .as_object_mut()
         .unwrap()
