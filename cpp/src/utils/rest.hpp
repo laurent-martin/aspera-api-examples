@@ -15,18 +15,21 @@ namespace ssl = boost::asio::ssl;
 
 namespace utils {
 // simple REST client using boost
-class RestClient {
+class Rest {
    private:
     // base url, including possibly path
     const std::string _base_url;
-    // Authorization header
-    std::string _authorization;
+    std::unordered_map<http::field, std::string> _headers;
+    bool _verify;
 
    public:
-    RestClient(std::string base_url) : _base_url(base_url), _authorization() {}
+    Rest(std::string base_url)
+        : _base_url(base_url),
+          _headers(),
+          _verify(true) {}
 
     void set_basic(const std::string& user, const std::string& pass) {
-        _authorization = basic_auth_header(user, pass);
+        _headers.insert({http::field::authorization, basic_auth_header(user, pass)});
     }
 
     json::object call(
@@ -53,11 +56,13 @@ class RestClient {
         http::request<http::string_body> request{operation, path, HTTP_1_1};
         request.set(http::field::host, base_uri.host());
         request.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-        if (!_authorization.empty())
-            request.set(http::field::authorization, _authorization);
         request.set(http::field::content_type, MIME_TYPE_JSON);
         request.set(http::field::accept, MIME_TYPE_JSON);
         request.set(http::field::content_length, std::to_string(json_body.size()));
+        // add all headers
+        for (const auto& [key, value] : _headers) {
+            request.set(key, value);
+        }
         request.body() = json_body;
         http::write(sock_stream, request);
         http::response<http::string_body> response;
@@ -72,7 +77,7 @@ class RestClient {
             throw boost::system::system_error{ec};
         return json::parse(response.body()).as_object();
     }
-    json::object post(std::string subpath, json::object payload) {
+    json::object create(std::string subpath, json::object payload) {
         return call(http::verb::post, subpath, payload);
     }
     // Create a basic auth header
