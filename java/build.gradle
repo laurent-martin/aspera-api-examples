@@ -1,4 +1,5 @@
 plugins {
+    id 'java'
     id 'application'
     // https://github.com/johnrengelman/shadow
     id 'com.github.johnrengelman.shadow' version '7.1.2'
@@ -19,6 +20,18 @@ def protocVersion = '3.25.3'
 // variables that can be set with -Pproto_dir=... -Pproto_file=...
 def proto_dir = project.hasProperty('proto_dir') ? project.getProperty('proto_dir') : "$projectDir/build/resources/main"
 def proto_file = project.hasProperty('proto_file') ? project.getProperty('proto_file') : 'transfer.proto'
+
+def javaVersion = 23
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaVersion)
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.release = javaVersion
+}
 
 application {
   mainClass = 'COSFileUploadExample'
