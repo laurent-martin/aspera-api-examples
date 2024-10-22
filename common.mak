@@ -71,3 +71,4 @@ $(GBL_FILE_CONFIG):
 	cp $(GBL_FILE_CONF_TMPL) $@
 	@echo 'Created file $@ using template $(GBL_FILE_CONF_TMPL), refer to README.md'
 	@echo "\033[5m>>>> Edit and customize $@ <<<<\033[0m"
+# cspell:ignore killall

@@ -25,3 +25,6 @@ transfertype
 transferspec
 transferid
 PYTHONPATH
+protobuf
+proto
+tmpl
