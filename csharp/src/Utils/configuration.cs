@@ -44,12 +44,12 @@ public class Configuration
         }
         return _config[section][key];
     }
-    public void AddFilesToTransferSpec(JObject aSpecObj)
+    public void AddFilesToTransferSpec(string where, JObject aSpecObj)
     {
         // add file list in transfer spec
         foreach (string f in _fileList)
         {
-            ((JArray)aSpecObj["paths"]).Add(new JObject { { "source", f } });
+            ((JArray)aSpecObj[where]).Add(new JObject { { "source", f } });
         }
     }
     public Configuration(string[] args)

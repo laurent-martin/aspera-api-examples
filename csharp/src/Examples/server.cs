@@ -18,7 +18,7 @@ class Server : SampleInterface
             {"paths", new JArray()},
         };
         // add file list in transfer spec
-        config.AddFilesToTransferSpec(t_spec);
+        config.AddFilesToTransferSpec("paths",t_spec);
         transfer_client.StartTransferAndWait(t_spec);
     }
 }
