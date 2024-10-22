@@ -5,13 +5,9 @@
 import utils.configuration
 import utils.transfer_client
 import utils.rest
-import requests
-import requests.auth
 import logging as log
-import jwt
-import calendar
-import time
 import uuid
+import base64
 
 # take 5 minutes back to account for time offset between client and server
 JWT_NOT_BEFORE_OFFSET_SEC = 300
@@ -31,6 +27,14 @@ transfer_sessions = 1
 config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
 
+
+def generate_cookie(app: str, user_name: str, user_id: str) -> str:
+    encoded_app = base64.b64encode(app.encode('utf-8')).decode('utf-8')
+    encoded_user_name = base64.b64encode(user_name.encode('utf-8')).decode('utf-8')
+    encoded_user_id = base64.b64encode(user_id.encode('utf-8')).decode('utf-8')
+    return f"aspera.aoc:{encoded_app}:{encoded_user_name}:{encoded_user_id}"
+
+
 try:
     aoc_api = utils.rest.Rest(AOC_API_V1_BASE_URL)
     aoc_api.setAuthBearer(
@@ -45,8 +49,11 @@ try:
     )
     aoc_api.setDefaultScope('user:all')
 
-    # simple api call:
-    # response_data = aoc_api.read('self')
+    # get my information
+    user_info = aoc_api.read('self')
+    log.debug(user_info)
+
+    # get workspace information
     workspace_name = config.param('aoc', 'workspace')
     log.info(f'getting workspace information for {workspace_name}')
     response_data = aoc_api.read('workspaces', params={'q': workspace_name})
@@ -116,7 +123,7 @@ try:
         'remote_user': 'xfer',
         'ssh_port': 33001,
         'fasp_port': 33001,
-        # 'cookie': 'aspera.aoc:cGFja2FnZXM=:TGF1cmVudCBNYXJ0aW4=:bGF1cmVudC5tYXJ0aW4uYXNwZXJhQGZyLmlibS5jb20=',
+        'cookie': generate_cookie('packages', user_info['name'], user_info['email']),
         'create_dir': True,
         'target_rate_kbps': 2000000,
         'paths': []
