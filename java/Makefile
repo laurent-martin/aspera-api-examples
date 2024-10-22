@@ -26,4 +26,4 @@ clean::
 clean_lang:
 	if test -d .gradle;then gradle clean $(GRADLE_PROPS); fi
 superclean::
-	rm -fr .gradle bin
+	rm -fr build
