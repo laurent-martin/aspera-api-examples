@@ -8,6 +8,8 @@ import java.nio.file.FileSystems;
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.IOException;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.yaml.snakeyaml.Yaml;
 
 // read configuration file and provide interface for transfer
@@ -125,5 +127,15 @@ public class Configuration {
 		} catch (final IOException e) {
 			throw new Error(e.getMessage());
 		}
+	}
+
+	/**
+	 * Fill the transfer spec with the file paths provided on command line
+	 */
+	public void addFilesToTs(final JSONObject transferSpec) {
+		final var paths = new JSONArray();
+		for (final var fileToSend : getFileList())
+			paths.put(new JSONObject().put("source", fileToSend));
+		transferSpec.put("paths", paths);
 	}
 }

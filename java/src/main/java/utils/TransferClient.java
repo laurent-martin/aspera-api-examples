@@ -327,14 +327,4 @@ public class TransferClient {
 		}
 		LOGGER.log(Level.FINE, "L: Finished monitoring loop");
 	}
-
-	/**
-	 * Fill the transfer spec with the file paths provided on command line
-	 */
-	public void fillFilePaths(final JSONObject transferSpec) {
-		final var paths = new JSONArray();
-		for (final var fileToSend : config.getFileList())
-			paths.put(new JSONObject().put("source", fileToSend));
-		transferSpec.put("paths", paths);
-	}
 }

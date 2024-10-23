@@ -4,7 +4,6 @@ package utils;
 import kong.unirest.core.Unirest;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.json.JSONObject;
 import io.jsonwebtoken.JwtBuilder;
 import java.io.IOException;
 import java.security.GeneralSecurityException;

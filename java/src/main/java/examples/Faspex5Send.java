@@ -24,32 +24,30 @@ public class Faspex5Send {
 			final String apiBaseUrl = faspexBaseUrl + F5_API_PATH_V5;
 			final var f5API = new Rest(apiBaseUrl);
 			f5API.setVerify(config.getParamBool("faspex5", "verify"));
-			final Map<String, String> authData = Map.of(//
-					"token_url", faspexBaseUrl + F5_API_PATH_TOKEN, //
-					"key_pem_path", config.getParamStr("faspex5", "private_key"), //
-					"client_id", config.getParamStr("faspex5", "client_id"), //
-					"client_secret", config.getParamStr("faspex5", "client_secret"), //
-					"iss", config.getParamStr("faspex5", "client_id"), //
-					"aud", config.getParamStr("faspex5", "client_id"), //
-					"sub", "user:" + config.getParamStr("faspex5", "username") //
-			);
-			f5API.setAuthBearer(authData);
+			f5API.setAuthBearer(Map.ofEntries(//
+					Map.entry("token_url", faspexBaseUrl + F5_API_PATH_TOKEN), //
+					Map.entry("key_pem_path", config.getParamStr("faspex5", "private_key")), //
+					Map.entry("client_id", config.getParamStr("faspex5", "client_id")), //
+					Map.entry("client_secret", config.getParamStr("faspex5", "client_secret")), //
+					Map.entry("iss", config.getParamStr("faspex5", "client_id")), //
+					Map.entry("aud", config.getParamStr("faspex5", "client_id")), //
+					Map.entry("sub", "user:" + config.getParamStr("faspex5", "username")) //
+			));
 			f5API.setDefaultScope(Optional.empty());
-
-			// Faspex API: Prepare package creation information: we send to ourselves
-			// Faspex REST API: Create package and get creation information
+			// Faspex REST API: Create package (to myself) and get package information
 			final JSONObject package_info = (JSONObject) f5API.create("packages", new JSONObject()//
 					.put("title", "test title")//
 					.put("recipients", new JSONArray()//
 							.put(new JSONObject()//
 									.put("name", config.getParamStr("faspex5", "username")))));
-
 			// Faspex REST API: Create transfer spec
 			final JSONObject uploadRequest = new JSONObject();
-			transferClient.fillFilePaths(uploadRequest);
-			final JSONObject transfer_spec = (JSONObject)f5API.create("packages/" + package_info.getString("id") + "/transfer_spec/upload",uploadRequest,Map.of("transfer_type", "connect"));
+			config.addFilesToTs(uploadRequest);
+			final JSONObject transfer_spec = (JSONObject) f5API.create(
+					"packages/" + package_info.getString("id") + "/transfer_spec/upload",
+					uploadRequest, Map.of("transfer_type", "connect"));
 			transfer_spec.remove("authentication");
-			transferClient.fillFilePaths(transfer_spec);
+			config.addFilesToTs(transfer_spec);
 			// API: Transfer SDK: transfer files into package
 			transferClient.start_transfer_and_wait(transfer_spec);
 		} catch (final Exception e) {
