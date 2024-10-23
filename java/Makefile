@@ -22,7 +22,7 @@ $(DIR_TESTED_FLAG)%: $(SAMPLE_JAR) $(GBL_FILE_SAMPLE)
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
-$(SAMPLE_JAR): $(FILES_RUNTIME)
+$(SAMPLE_JAR): $(FILES_RUNTIME) $(shell find src -name "*.java") build.gradle
 	gradle -version
 	gradle build $(GRADLE_PROPS)
 clean::
