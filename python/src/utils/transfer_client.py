@@ -48,15 +48,6 @@ class TransferClient:
         '''
         see https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
         '''
-        ascp_level = self._config.param('trsdk', 'ascp_level')
-        if ascp_level == 'info':
-            ascp_int_level = 0
-        elif ascp_level == 'debug':
-            ascp_int_level = 1
-        elif ascp_level == 'trace':
-            ascp_int_level = 2
-        else:
-            raise Exception('Invalid ascp_level: ' + ascp_level)
         config_info = {
             'address': self._server_address,
             'port': self._server_port,
@@ -70,7 +61,7 @@ class TransferClient:
                 },
                 'log': {
                     'dir': self._config._log_folder,
-                    'level': ascp_int_level,
+                    'level': ascp_level(self._config.param('trsdk', 'ascp_level')),
                 },
             },
         }
@@ -208,3 +199,14 @@ class TransferClient:
             raise Exception("transfer failed: " + error.description)
         if status == transfer_manager.TransferStatus.UNKNOWN_STATUS:
             raise Exception("unknown transfer id: " + error.description)
+
+
+def ascp_level(level_string):
+    if level_string == 'info':
+        return 0
+    elif level_string == 'debug':
+        return 1
+    elif level_string == 'trace':
+        return 2
+    else:
+        raise Exception('Invalid ascp_level: ' + level_string)
