@@ -164,7 +164,7 @@ class TransferClient {
         LOG(info) << "transfer id: " << transfer_id << ", status: " << TransferStatus_to_string(start_transfer_response.status());
         return transfer_id;
     }
-// 
+    //
     void wait_transfer(const std::string& transfer_id) {
         // wait until finished, check every second
         while (true) {
@@ -189,18 +189,19 @@ class TransferClient {
     }
 
    private:
-    void daemon_create_config_file(const std::string& conf_file) {
-        const std::string ascp_level = _config.param_str({"trsdk", "ascp_level"});
-        int ascp_int_level = -1;
-        if (ascp_level == "info") {
-            ascp_int_level = 0;
-        } else if (ascp_level == "debug") {
-            ascp_int_level = 1;
-        } else if (ascp_level == "trace") {
-            ascp_int_level = 2;
+    /** Convert log level for ascp from string to int */
+    static int ascp_level(const std::string& level) {
+        if (level == "info") {
+            return 0;
+        } else if (level == "debug") {
+            return 1;
+        } else if (level == "trace") {
+            return 2;
         } else {
-            throw std::invalid_argument("Invalid ascp_level: " + ascp_level);
+            throw std::invalid_argument("Invalid ascp_level: " + level);
         }
+    }
+    void daemon_create_config_file(const std::string& conf_file) {
         // Prepare daemon configuration file
         const json::object config_info = {
             {"address", _server_address},
@@ -214,12 +215,14 @@ class TransferClient {
                 {"etc", _sdk_runtime_path.string()}}},
               {"log",
                {{"dir", _config.log_folder_path().string()},
-                {"level", ascp_int_level}}}}}};
+                {"level", ascp_level(_config.param_str({"trsdk", "ascp_level"}))}}}}}};
         const std::string config_data = json::serialize(config_info);
         LOG(debug) << LOG_ITEM("config") << config_data;
         std::ofstream conf_stream(conf_file);
         conf_stream << config_data;
-        conf_stream.close();
+        if (!conf_stream) {
+            throw std::ios_base::failure("Failed to open configuration file");
+        }
     }
 
     void transfer_check_failed_status(const trsdk::TransferStatus& status, const trsdk::Error& error) {

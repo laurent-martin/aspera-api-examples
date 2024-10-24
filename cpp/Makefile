@@ -23,7 +23,7 @@ CMAKE_USER_VARS=\
 # Execute all samples
 all:: $(TEST_FLAGS)
 # Build and Execute one sample
-$(DIR_TESTED_FLAG)%: $(CPP_BUILD_DIR)/Makefile $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) $(EXAMPLES_DIR)%.cpp
+$(DIR_TESTED_FLAG)%: $(CPP_BUILD_DIR)/Makefile $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) $(shell find src -name "*.hpp") $(EXAMPLES_DIR)%.cpp
 	@echo "== Test: $(notdir $@) ==========================="
 	cd $(CPP_BUILD_DIR) && cmake --build . --target $(notdir $@) -- VERBOSE=1
 	$(CPP_BUILD_DIR)$(notdir $@) $(GBL_FILE_SAMPLE)
