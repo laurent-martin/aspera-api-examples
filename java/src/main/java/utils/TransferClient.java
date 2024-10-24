@@ -34,28 +34,31 @@ public class TransferClient {
 	// process for the daemon
 	private Process daemon_process;
 	private ManagedChannel channel;
+	private final String serverAddress;
+	private final int serverPort;
 	// Aspera client API (synchronous)
-	public TransferServiceGrpc.TransferServiceBlockingStub transferService = null;
+	public TransferServiceGrpc.TransferServiceBlockingStub transferService;
 	// several transfer session may be started but for the example we use only one
-	private String transferId;
-	private final URI grpcURL;
-	private final String daemonExecutable;
 	private final String sdkRuntimeFolder;
 	private final String daemonLog;
+	private String transferId;
 
 
 	public TransferClient(final Configuration aConfig) {
 		config = aConfig;
-		transferId = null;
+		daemon_process = null;
+		transferService = null;
 		channel = null;
-		daemonLog = config.getLogFolder() + File.separator + DAEMON_LOG_FILE;
 		try {
-			grpcURL = new URI(config.getParamStr("trsdk", "url"));
-			sdkRuntimeFolder = config.getPath("sdk_runtime");
-			daemonExecutable = config.getPath("sdk_runtime", TRANSFER_SDK_DAEMON);
-		} catch (final java.net.URISyntaxException e) {
-			throw new Error("problem with SDK URL: " + e.getMessage());
+		final URI grpcURL= new URI(config.getParamStr("trsdk", "url"));
+		serverAddress = grpcURL.getHost();
+		serverPort = grpcURL.getPort();
+		} catch (final Exception e) {
+			throw new Error("invalid grpc url: " + e.getMessage());
 		}
+		sdkRuntimeFolder = config.getPath("sdk_runtime");
+		daemonLog = config.getLogFolder() + File.separator + DAEMON_LOG_FILE;
+		transferId = null;
 	}
 
 	/** @return current session transfer id */
@@ -69,8 +72,8 @@ public class TransferClient {
 	private void createConfFile(final String confFile) {
 		// Define the configuration JSON object
 		JSONObject sdk_config = new JSONObject() //
-				.put("address", grpcURL.getHost()) //
-				.put("port", grpcURL.getPort()) //
+				.put("address", serverAddress) //
+				.put("port", serverPort) //
 				.put("log_directory", config.getLogFolder()) //
 				.put("log_level", config.getParamStr("trsdk", "level")) //
 				.put("fasp_runtime", new JSONObject() //
@@ -111,6 +114,7 @@ public class TransferClient {
 		String sdk_conf_path = file_base + ".conf";
 		createConfFile(sdk_conf_path);
 		try {
+			 final String daemonExecutable= sdkRuntimeFolder+ File.separator + TRANSFER_SDK_DAEMON;
 			String[] command = new String[] {daemonExecutable, "-c", sdk_conf_path};
 			// LOGGER.log(Level.INFO, "{0} {1}","daemon out", out_file);
 			// LOGGER.log(Level.INFO, "{0} {1}","daemon err", err_file);
@@ -141,7 +145,7 @@ public class TransferClient {
 			throw new Error("already connected to daemon");
 		LOGGER.log(Level.INFO, "L: Connecting to daemon");
 		// comm channel for grpc
-		channel = ManagedChannelBuilder.forAddress(grpcURL.getHost(), grpcURL.getPort())
+		channel = ManagedChannelBuilder.forAddress(serverAddress, serverPort)
 				.usePlaintext().build();
 		// create a connection to the Transfer SDK daemon
 		// Note that this is a synchronous client here
@@ -154,7 +158,7 @@ public class TransferClient {
 		LOGGER.log(Level.INFO, "OK: Daemon is here, API v = {0}", infoResponse.getApiVersion());
 	}
 
-	public void daemon_shutdown() {
+	public void shutdown() {
 		if (daemon_process != null) {
 			LOGGER.log(Level.INFO, "L: Shutting down daemon");
 			daemon_process.destroy();
@@ -179,7 +183,6 @@ public class TransferClient {
 			session_start_streaming(transferSpec);
 		}
 		session_wait_for_completion();
-		daemon_shutdown();
 	}
 
 	/** Start one transfer session */

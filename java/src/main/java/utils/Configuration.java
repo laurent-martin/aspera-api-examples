@@ -80,20 +80,11 @@ public class Configuration {
 	 * is provided, we use the path from the reference file
 	 * 
 	 * @param name the name of the path in the reference file
-	 * @param sub_path the sub path to append to the path
 	 * @return the path as String
 	 */
-	public String getPath(String name, String... sub_path) {
-		// path elements are:
-		// - the top folder
-		// - the path from the reference file specified by name
-		// - additional optional paths
-		final String[] completePath = new String[sub_path.length + 1];
-		completePath[0] = name == null ? PATHS_FILES : paths.get(name);
-		// optional additional paths after the named file path
-		System.arraycopy(sub_path, 0, completePath, 1, sub_path.length);
-		// concatenate all the path elements, including top folder
-		return FileSystems.getDefault().getPath(topFolder, completePath).toString();
+	public String getPath(final String name) {
+		final String subPath = name == null ? PATHS_FILES : paths.get(name);
+		return FileSystems.getDefault().getPath(topFolder, subPath).toString();
 	}
 
 	// Get the last line of a file

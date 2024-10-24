@@ -84,26 +84,29 @@ public class PersistentUploadExample {
 			throws Exception, IOException, java.net.URISyntaxException {
 		final Configuration config = new Configuration(args);
 		final TransferClient transferClient = new TransferClient(config);
-		final URI server_ssh_url = new URI(config.getParamStr("server", "url"));
-		// transfer spec version 1 (JSON)
-		final JSONObject transferSpec = new JSONObject().put("title", "server upload V1")
-				.put("remote_host", server_ssh_url.getHost())
-				.put("ssh_port", server_ssh_url.getPort())
-				.put("remote_user", config.getParamStr("server", "username"))
-				.put("remote_password", config.getParamStr("server", "password"))
-				.put("direction", "send")
-				.put("destination_root", config.getParamStr("server", "folder_upload"));
-		transferClient.daemon_startup();
-		transferClient.daemon_connect();
-		// start persistent transfer session
-		transferClient.session_start(transferSpec, Transfer.TransferType.FILE_PERSISTENT);
-		final TimerTask timerTask =
-				new FileUploadTask(transferClient, config.getParamInt("server", "persist_max"));
-		final Timer timer = new Timer(true);
-		// 1.task 2.initial delay(ms) 3.execution period(ms)
-		timer.scheduleAtFixedRate(timerTask, 1000, config.getParamInt("server", "persist_ms"));
-		transferClient.session_wait_for_completion();
-		transferClient.daemon_shutdown();
+		try {
+			final URI server_ssh_url = new URI(config.getParamStr("server", "url"));
+			// transfer spec version 1 (JSON)
+			final JSONObject transferSpec = new JSONObject().put("title", "server upload V1")
+					.put("remote_host", server_ssh_url.getHost())
+					.put("ssh_port", server_ssh_url.getPort())
+					.put("remote_user", config.getParamStr("server", "username"))
+					.put("remote_password", config.getParamStr("server", "password"))
+					.put("direction", "send")
+					.put("destination_root", config.getParamStr("server", "folder_upload"));
+			transferClient.daemon_startup();
+			transferClient.daemon_connect();
+			// start persistent transfer session
+			transferClient.session_start(transferSpec, Transfer.TransferType.FILE_PERSISTENT);
+			final TimerTask timerTask =
+					new FileUploadTask(transferClient, config.getParamInt("server", "persist_max"));
+			final Timer timer = new Timer(true);
+			// 1.task 2.initial delay(ms) 3.execution period(ms)
+			timer.scheduleAtFixedRate(timerTask, 1000, config.getParamInt("server", "persist_ms"));
+			transferClient.session_wait_for_completion();
+		} finally {
+			transferClient.shutdown();
+		}
 		LOGGER.log(Level.FINE, "L: exiting program");
 	}
 }
