@@ -24,11 +24,17 @@ class Rest:
         self.headers = {}
 
     def setAuthBasic(self, user, password):
+        """
+        Provide Basic authentication info.
+        """
         self.auth = 'Basic'
         self.authData = None
         self.headers['Authorization'] = requests.auth._basic_auth_str(user, password)
 
     def setAuthBearer(self, token_url, aud, client_id, client_secret, key_pem_path, iss, sub, add=None):
+        """
+        Provide OAuth 2 bearer parameters to generate a bearer token with JWT.
+        """
         self.auth = 'Bearer'
         self.authData = {
             'token_url': token_url,
@@ -104,12 +110,21 @@ class Rest:
         return f'Bearer {response_data["access_token"]}'
 
     def setVerify(self, verify):
+        """
+        Disable remote server certificate validation with False.
+        """
         self.verify = verify
 
     def addHeaders(self, headers):
+        """
+        Add provided headers for all subsequent calls.
+        """
         self.headers.update(headers)
 
-    def _send_request(self, method, endpoint, headers=None, data=None, params=None):
+    def call(self, method, endpoint, headers=None, data=None, params=None):
+        """
+        Lower level HTTP request.
+        """
         url = f'{self.base_url}/{endpoint}'
         merged_headers = {'Accept': MIME_JSON}
         if method in ['POST', 'PUT']:
@@ -117,7 +132,6 @@ class Rest:
         if headers:
             merged_headers.update(headers)
         merged_headers.update(self.headers)
-
         response = requests.request(
             method=method,
             url=url,
@@ -127,16 +141,18 @@ class Rest:
             params=params
         )
         response.raise_for_status()
-        return response.json() if method != 'PUT' else None
+        if method == 'PUT' or method == 'DELETE':
+            return None
+        return response.json()
 
     def create(self, endpoint, data):
-        return self._send_request('POST', endpoint, data=data)
+        return self.call('POST', endpoint, data=data)
 
     def read(self, endpoint, params=None):
-        return self._send_request('GET', endpoint, params=params)
+        return self.call('GET', endpoint, params=params)
 
     def update(self, endpoint, data):
-        return self._send_request('PUT', endpoint, data=data)
+        return self.call('PUT', endpoint, data=data)
 
     def delete(self, endpoint):
-        return self._send_request('DELETE', endpoint)
+        return self.call('DELETE', endpoint)
