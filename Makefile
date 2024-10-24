@@ -1,5 +1,6 @@
 # main folder (location of this makefile)
 DIR_TOP=$(CURDIR)/
+# the bulk of rules are in common.mak
 include $(DIR_TOP)common.mak
 SECTIONS=cpp csharp go java js python ruby rust web
 .PHONY: cleantmp template

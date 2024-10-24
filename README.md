@@ -259,20 +259,21 @@ The file `transfer.proto` describes in the remote procedure call interface provi
      [protoc]
          |
          v
-    +----------------------+        +------------+
-    + generated stub code  +        + your code  +
-    +----------------------+        +------------+
-              |       [combine]            |
-              +-----------+----------------+
-                          |
-                          v
-                    +------------+                      +---------------------+
-                    | client app |-----[connect to]---->| Transfer SDK daemon |
-                    +------------+                      +---------------------+
-                          |                                       ^
-                          +-------------[executes]----------------+
-                                                                  |
-        [or other method, systemd, or manual]-----[executes]------+
++----------------------+        +------------+
++ generated stub code  +        + your code  +
++----------------------+        +------------+
+          | [combine]                  |
+          +-----+----------------------+
+                |
+                v
+          +------------+                      +---------------------+
+          | client app |-----[connect to]---->| Transfer SDK daemon |
+          +------------+                      +---------------------+
+                |                                       ^      | [executes]
+                +-------------[executes]----------------+      v
+                                                        |   +------+
+[or other method, systemd, or manual]---[executes]------+   | ascp |
+                                                            +------+
 ```
 
 ### Generated client source files
@@ -296,6 +297,48 @@ Sample programs use helper classes located in package `utils`:
 - `TransferClient` creates a configuration file and starting the Transfer SDK daemon: `asperatransferd`
 - `Rest` for simple API calls on Rest APIs.
 
+### Runtime files
+
+The Transfer SDK requires the following runtime files:
+
+- `asperatransferd` : executable that provides the gRPC service
+- `ascp` : executable that actually transfers the files
+- `ascp4` : another version of ascp
+- `async` : executable for async operations
+- `libafwsfeed` : a library for `ascp` for web sockets
+- `aspera-license` : the license file for `ascp` (free use)
+
+Optional files:
+
+- `aspera.conf` : the configuration file for `ascp`
+- `product-info.mf` : XML file with information on SDK version
+
+### `aspera.conf`
+
+This file is optional for `ascp` when used in client mode.
+
+The very minimum content is:
+
+```xml
+<CONF/>
+```
+
+It is possible to set some client parameters, like:
+
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<CONF version="2">
+<default>
+    <file_system>
+        <storage_rc><adaptive>true</adaptive></storage_rc>
+        <resume_suffix>.aspera-ckpt</resume_suffix>
+        <partial_file_suffix>.partial</partial_file_suffix>
+        <replace_illegal_chars>_</replace_illegal_chars>
+    </file_system>
+</default>
+</CONF>
+```
+
 ### Daemon startup
 
 `asperatransferd` is a daemon that must be started before using the Transfer SDK.
@@ -306,6 +349,11 @@ The way to start the daemon is not specified in the SDK.
 Developers have the choice to start it manually in a separate terminal, or to create a static configuration file and start it using another method (for example, a systemd service).
 
 Examples provided here start the daemon using the `TransferClient` class.
+
+When `asperatransferd` starts, if no configuration file is provided with option `--config`, then it expects to find `ascp`, `ascp4`, `async`, `libafwsfeed`, `aspera-license` in specific folders.
+In order to place all file in the same folder, then the configuration file must be provided and folders must be set.
+
+The Makefile provided in the samples downloads the SDK and extracts it in a single folder, then the examples generate the configuration file accordingly.
 
 ## HSTS Node API credentials
 
