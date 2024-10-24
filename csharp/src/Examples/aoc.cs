@@ -16,7 +16,6 @@ class Aoc : SampleInterface
         var transfer_client = new TransferClient(config);
         try
         {
-            transfer_client.Startup();
             var aoc_api = new Rest(AOC_API_V1_BASE_URL);
             aoc_api.setAuthBearer(new StringDict{
                 {"token_url",$"https://api.ibmaspera.com/api/v1/oauth2/{config.GetParam("aoc","org")}/token"},
@@ -39,9 +38,9 @@ class Aoc : SampleInterface
             string recipient_email = config.GetParam("aoc", "user_email");
             // find recipient information
             JArray user_lookup = (JArray)aoc_api.read("contacts", new JObject{
-                    {"current_workspace_id",workspace_info["id"]},
-                    {"q",recipient_email},
-                });
+                {"current_workspace_id",workspace_info["id"]},
+                {"q",recipient_email},
+            });
             // hopefully we get only one user result
             var recipient_user_id = user_lookup[0];
             // build list of recipient (list of hash)

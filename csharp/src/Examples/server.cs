@@ -8,7 +8,6 @@ class Server : SampleInterface
         var transfer_client = new TransferClient(config);
         try
         {
-            transfer_client.Startup();
             var fasp_url = new Uri(config.GetParam("server", "url"));
             var t_spec = new JObject{
                 {"title", "server upload V1"},

@@ -17,7 +17,6 @@ class Faspex5 : SampleInterface
         var transfer_client = new TransferClient(config);
         try
         {
-            transfer_client.Startup();
             var f5_api = new Rest($"{config.GetParam("faspex5", "url")}{F5_API_PATH_V5}");
             f5_api.setAuthBearer(new StringDict{
                 {"token_url",$"{config.GetParam("faspex5", "url")}{F5_API_PATH_TOKEN}"},
@@ -35,9 +34,9 @@ class Faspex5 : SampleInterface
             Log.DumpJObject("user_profile", user_profile);
             // Faspex 5 package creation information
             var package_creation = new JObject{
-            {"title",package_name},
-            {"recipients",new JArray{new JObject{{"name",config.GetParam("faspex5","username")}}}}, // send to myself (for test)
-        };
+                {"title",package_name},
+                {"recipients",new JArray{new JObject{{"name",config.GetParam("faspex5","username")}}}}, // send to myself (for test)
+            };
             // create a new package with Faspex 5 API (this allocates a reception folder on package storage)
             var package_info = f5_api.create("packages", package_creation);
             Log.DumpJObject("package_info", package_info);
