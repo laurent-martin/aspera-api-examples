@@ -1,7 +1,7 @@
 
 #include "utils/configuration.hpp"
-#include "utils/transfer_client.hpp"
 #include "utils/rest.hpp"
+#include "utils/transfer_client.hpp"
 
 #define LOG(level) LOGGER(config.log(), level)
 
@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
                 {"transfer_requests", json::array{json::object{{"transfer_request", json::object{{"paths", json::array{json::object{{"destination", destination_folder_in_shares}}}}}}}}}};
             json::object response_data = shares_api.create("files/upload_setup", transfer_setup_request);
             json::object transfer_specification = response_data["transfer_specs"].as_array()[0].as_object()["transfer_spec"].as_object();
-            config.add_files_to_ts(transfer_specification["paths"].as_array());
+            config.add_sources(transfer_specification, "paths");
             transfer_client.transfer_start_and_wait(transfer_specification);
         }
         {

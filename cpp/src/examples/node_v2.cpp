@@ -1,6 +1,6 @@
 #include "utils/configuration.hpp"
-#include "utils/transfer_client.hpp"
 #include "utils/rest.hpp"
+#include "utils/transfer_client.hpp"
 
 #define LOG(level) LOGGER(config.log(), level)
 
@@ -24,7 +24,7 @@ int main(const int argc, const char* const argv[]) {
             {"assets",
              {{"destination_root", config.param_str({"node", "folder_upload"})},
               {"paths", json::array()}}}};
-        config.add_files_to_ts(transfer_spec_v2["assets"].as_object()["paths"].as_array());
+        config.add_sources(transfer_spec_v2, "assets.paths");
         transfer_client.transfer_start_and_wait(transfer_spec_v2);
         return 0;
     } catch (const std::exception& e) {

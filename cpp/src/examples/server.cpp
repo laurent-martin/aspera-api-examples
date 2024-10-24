@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
             {"assets",
              {{"destination_root", config.param_str({"server", "folder_upload"})},
               {"paths", json::array()}}}};
-        config.add_files_to_ts(transfer_spec["assets"].as_object()["paths"].as_array(), true);
+        config.add_sources(transfer_spec, "assets.paths", true);
         transfer_client.transfer_start_and_wait(transfer_spec);
         return 0;
     } catch (const std::exception& e) {

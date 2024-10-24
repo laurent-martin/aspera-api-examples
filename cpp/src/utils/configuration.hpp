@@ -2,6 +2,8 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/json.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
@@ -14,6 +16,8 @@
 #include <fstream>
 #include <iostream>
 #include <magic_enum.hpp>
+#include <string>
+#include <vector>
 
 namespace json = boost::json;
 
@@ -128,15 +132,32 @@ class Configuration {
         return last_line;
     }
 
-    // Add files to the transfer spec
-    void add_files_to_ts(json::array& paths, bool add_destination = false) {
-        paths.clear();
-        for (const auto& one_file : _file_list) {
-            json::object one = json::object{{"source", one_file}};
-            if (add_destination) {
-                one["destination"] = std::string(std::filesystem::path(one_file).filename());
+    // Set source files in the transfer spec at the specified key.
+    void add_sources(json::object& transfer_spec, const std::string& path, bool add_destination = false) const {
+        std::vector<std::string> keys;
+        boost::split(keys, path, boost::is_any_of("."), boost::token_compress_on);
+        json::object* current_node = &transfer_spec;
+
+        // Iterate through all keys except the last one
+        for (size_t i = 0; i < keys.size() - 1; ++i) {
+            const std::string& key = keys[i];
+            if (current_node->contains(key) && current_node->at(key).is_object()) {
+                current_node = &current_node->at(key).as_object();
+            } else {
+                throw std::runtime_error("Key is not a valid object: " + key);
             }
-            paths.push_back(one);
+        }
+
+        // Access or create the final list at the last key
+        // json::array& paths = current_node->emplace(keys.back(), json::array{}).first->value().as_array();
+        json::array& paths = current_node->insert_or_assign(keys.back(), json::array{}).first->value().as_array();
+        // Add files to the paths array
+        for (const auto& f : _file_list) {
+            json::object source = {{"source", f}};
+            if (add_destination) {
+                source["destination"] = std::filesystem::path(f).filename().string();
+            }
+            paths.push_back(source);
         }
     }
 
