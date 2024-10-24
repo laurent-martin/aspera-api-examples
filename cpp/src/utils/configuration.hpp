@@ -167,12 +167,13 @@ class Configuration {
     // log initialization
     const bool _init_log;
     // list of files to transfer
-    std::vector<std::string> _file_list;
+    const std::vector<std::string> _file_list;
     // project folder
     const std::filesystem::path _top_folder_path;
     const std::filesystem::path _log_folder_path;
     // config file with paths
     const YAML::Node _paths;
+    // config file with parameters (server addresses ...)
     const YAML::Node _config;
 
     YAML::Node load_yaml(const char* const name, const std::filesystem::path& path) {
@@ -180,6 +181,7 @@ class Configuration {
         return YAML::LoadFile(path.string());
     }
 
+    // Initialize the logging system
     bool init_log() {
         boost::log::add_common_attributes();
         boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::info);
