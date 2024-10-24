@@ -36,6 +36,9 @@ public class Configuration
                 .Build().Deserialize<Dictionary<string, Dictionary<string, string>>>(reader);
         }
     }
+    public string LogFolder(){
+        return Path.GetTempPath();
+    }
 
 
     /// <summary>

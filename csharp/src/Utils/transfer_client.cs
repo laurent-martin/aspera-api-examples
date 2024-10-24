@@ -3,126 +3,147 @@ using Newtonsoft.Json.Linq;
 public class TransferClient
 {
     private const string TRANSFER_SDK_DAEMON = "asperatransferd";
+    private const string DAEMON_LOG_FILE = "asperatransferd.log";
+    private const string ASCP_LOG_FILE = "aspera-scp-transfer.log";
     private Configuration _config;
     private System.Diagnostics.Process mTransferDaemonProcess = null;
     private Transfersdk.TransferService.TransferServiceClient mSdkClient = null;
-    private bool mShutdownAfterTransfer = true;
     private List<StreamWriter> mStreams = new List<StreamWriter>();
+    private string _sdkRuntimeFolder;
+    private string _serverAddress;
+    private int _serverPort;
+    private string _daemonLog;
 
 
     public TransferClient(Configuration config)
     {
         _config = config;
+        _sdkRuntimeFolder = _config.GetPath("sdk_runtime");
+        var confUrl = new Uri(_config.GetParam("trsdk", "url"));
+        _serverAddress = confUrl.Host;
+        _serverPort = confUrl.Port;
+        _daemonLog = Path.Combine(_config.LogFolder(), DAEMON_LOG_FILE);
     }
 
-    private int AscpLevel(string level)
+    public void CreateConfigFile(string confFile)
     {
-        if (level == "info")
+        var configInfo = new
         {
-            return 0;
-        }
-        else if (level == "debug")
-        {
-            return 1;
-        }
-        else if (level == "trace")
-        {
-            return 2;
-        }
-        else
-        {
-            throw new ArgumentException("Invalid ascp_level: " + level);
-        }
+            address = _serverAddress,
+            port = _serverPort,
+            log_directory = _config.LogFolder(),
+            log_level = _config.GetParam("trsdk", "level"),
+            fasp_runtime = new
+            {
+                use_embedded = false,
+                user_defined = new
+                {
+                    bin = _sdkRuntimeFolder,
+                    etc = _sdkRuntimeFolder,
+                },
+                log = new
+                {
+                    dir = _config.LogFolder(),
+                    level = AscpLevel(_config.GetParam("trsdk", "ascp_level")),
+                },
+            },
+        };
+        File.WriteAllText(confFile, Newtonsoft.Json.JsonConvert.SerializeObject(configInfo));
     }
+
     // Start transfer manager daemon if not already running and return gRPC client
-    public void StartDaemon(string sdkGrpcUrl)
+    public void StartDaemon()
     {
-        var confUrl = new Uri(sdkGrpcUrl);
-        var grpcUrl = new Uri($"http://{confUrl.Host}:{confUrl.Port}");
-        AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
-        var client = new Transfersdk.TransferService.TransferServiceClient(GrpcChannel.ForAddress(grpcUrl));
 
-        for (int i = 0; i < 2 && mSdkClient == null; i++)
+        Log.log.Info("ERROR: Failed to connect\nStarting daemon...");
+
+        var fileBase = Path.Combine(_config.LogFolder(), TRANSFER_SDK_DAEMON);
+        var confFile = fileBase + ".conf";
+        var outFile = fileBase + ".out";
+        var errFile = fileBase + ".err";
+        var exec_full_path = Path.Combine(_sdkRuntimeFolder, TRANSFER_SDK_DAEMON);
+        var exec_args = $"--config {confFile}";
+        var command = $"{exec_full_path} {exec_args}";
+        Log.log.Debug($"daemon out: {outFile}");
+        Log.log.Debug($"daemon err: {errFile}");
+        Log.log.Debug($"daemon log: {_daemonLog}");
+        Log.log.Debug($"ascp log: {Path.Combine(_config.LogFolder(), ASCP_LOG_FILE)}");
+        Log.log.Debug($"command: {command}");
+        CreateConfigFile(confFile);
+        Log.log.Info("Starting daemon...");
+        mTransferDaemonProcess = new System.Diagnostics.Process
         {
-            try
+            StartInfo = new System.Diagnostics.ProcessStartInfo
             {
-                Console.WriteLine($"Connecting to {TRANSFER_SDK_DAEMON} using gRPC: {grpcUrl.Host} {grpcUrl.Port}...");
-                client.GetAPIVersion(new Transfersdk.APIVersionRequest());
-                Console.WriteLine("SUCCESS: connected");
-                mSdkClient = client;
+                FileName = exec_full_path,
+                Arguments = exec_args,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
             }
-            catch (Exception)
-            {
-                Console.WriteLine("ERROR: Failed to connect\nStarting daemon...");
-                var binFolder = _config.GetPath("sdk_runtime");
-                var configData = new
-                {
-                    address = grpcUrl.Host,
-                    port = grpcUrl.Port,
-                    log_directory = Path.GetTempPath(),
-                    log_level = _config.GetParam("trsdk", "level"),
-                    fasp_runtime = new
-                    {
-                        use_embedded = false,
-                        user_defined = new
-                        {
-                            bin = binFolder,
-                            etc = binFolder,
-                        },
-                        log = new
-                        {
-                            dir = Path.GetTempPath(),
-                            level = AscpLevel(_config.GetParam("trsdk", "ascp_level")),
-                        },
-                    },
-                };
-
-                var tmpFileBase = Path.Combine(Path.GetTempPath(), "daemon");
-                var confFile = tmpFileBase + ".conf";
-                File.WriteAllText(confFile, Newtonsoft.Json.JsonConvert.SerializeObject(configData));
-                var exec_full_path = Path.Combine(binFolder, TRANSFER_SDK_DAEMON);
-                var exec_args = $"--config {confFile}";
-                var command = $"{exec_full_path} {exec_args}";
-                Thread.Sleep(1000);
-                Console.WriteLine($"Starting: {command}");
-                mTransferDaemonProcess = new System.Diagnostics.Process
-                {
-                    StartInfo = new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = exec_full_path,
-                        Arguments = exec_args,
-                        RedirectStandardInput = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                    }
-                };
-                mTransferDaemonProcess.OutputDataReceived += captureStream(tmpFileBase, "out");
-                mTransferDaemonProcess.ErrorDataReceived += captureStream(tmpFileBase, "err");
-                mTransferDaemonProcess.Start();
-
-                // wait for daemon to be ready
-                Thread.Sleep(5000);
-            }
+        };
+        mTransferDaemonProcess.OutputDataReceived += captureStream(outFile);
+        mTransferDaemonProcess.ErrorDataReceived += captureStream(errFile);
+        mTransferDaemonProcess.Start();
+        // wait for daemon to be ready
+        Thread.Sleep(2000);
+        if (mTransferDaemonProcess.HasExited)
+        {
+            Log.log.Error($"Daemon not started.");
+            Log.log.Error($"Exited with code: {mTransferDaemonProcess.ExitCode}");
+            Log.log.Error($"Check daemon log: {_daemonLog}");
+            mTransferDaemonProcess.WaitForExit();
+            mTransferDaemonProcess = null;
+            //logging.error(utils.configuration.last_file_line(self._daemon_log));
+            throw new Exception("daemon startup failed");
         }
-
+        mTransferDaemonProcess.BeginOutputReadLine();
+        mTransferDaemonProcess.BeginErrorReadLine();
+    }
+    public void ConnectToDaemon()
+    {
+        AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+        var grpcUrl = new Uri($"http://{_serverAddress}:{_serverPort}");
+        Log.log.Info($"Connecting to {TRANSFER_SDK_DAEMON} on {grpcUrl} ...");
+        mSdkClient = new Transfersdk.TransferService.TransferServiceClient(GrpcChannel.ForAddress(grpcUrl));
+        mSdkClient.GetAPIVersion(new Transfersdk.APIVersionRequest());
+        Log.log.Info("Connected !");
+    }
+    public void Startup()
+    {
         if (mSdkClient == null)
         {
-            Console.WriteLine("ERROR: daemon not started or cannot be started.\nCheck the logs: daemon.err and daemon.out (see paths above).");
-            Environment.Exit(1);
-        }
-        if (mTransferDaemonProcess != null)
-        {
-            mTransferDaemonProcess.BeginOutputReadLine();
-            mTransferDaemonProcess.BeginErrorReadLine();
+            StartDaemon();
+            ConnectToDaemon();
         }
     }
+    // Shutdown transfer manager daemon, if needed
+    public void Shutdown()
+    {
+        mSdkClient = null;
+        // Shutdown transfer manager daemon, if needed
+        if (mTransferDaemonProcess != null)
+        {
+            Log.log.Info("Stopping Transfer daemon...");
+            mTransferDaemonProcess.Kill();
+            mTransferDaemonProcess.WaitForExit();
+            mTransferDaemonProcess = null;
+            Log.log.Info("Transfer daemon has been terminated.");
+            foreach (var stream in mStreams)
+            {
+                stream.Close();
+            }
+        }
+    }
+
     // Start the specified transfer
     // @return transfer id
     // @param aSpecObj transfer specification (JSON Object)
     public string StartTransfer(JObject aSpecObj)
     {
+        Log.log.Info(aSpecObj);
         // Start a transfer and return transfer id
         var transferRequest = new Transfersdk.TransferRequest
         {
@@ -135,7 +156,7 @@ public class TransferClient
 
         if (transferResponse.Status == Transfersdk.TransferStatus.Failed)
         {
-            Console.WriteLine($"ERROR: {transferResponse.Error.Description}");
+            Log.log.Info($"ERROR: {transferResponse.Error.Description}");
             Environment.Exit(1);
         }
 
@@ -163,60 +184,18 @@ public class TransferClient
         }
     }
 
-    // Shutdown transfer manager daemon, if needed
-    public void Shutdown()
-    {
-        // Shutdown transfer manager daemon, if needed
-        if (mTransferDaemonProcess != null)
-        {
-            Console.WriteLine("Stopping Transfer daemon...");
-            mTransferDaemonProcess.Kill();
-            mTransferDaemonProcess.WaitForExit();
-            mTransferDaemonProcess = null;
-            Console.WriteLine("Transfer daemon has been terminated.");
-            foreach (var stream in mStreams)
-            {
-                stream.Close();
-            }
-        }
-        else
-        {
-            Console.WriteLine("Transfer daemon not started by this process or already terminated.");
-        }
-    }
 
     // One-call simplified procedure to start daemon, transfer, and wait for it to finish
     // @param aSpecObj transfer specification (JSON Object)
     public void StartTransferAndWait(JObject aSpecObj)
     {
-        // One-call simplified procedure to start daemon, transfer, and wait for it to finish
-        if (mSdkClient == null)
-        {
-            StartDaemon(_config.GetParam("trsdk", "url"));
-        }
-
-        //aSpecObj.HttpFallback = false; // TODO: remove when transfer SDK bug fixed
-        Console.WriteLine(aSpecObj); // Logging transfer specification
-        try
-        {
-            var aTransferId = StartTransfer(aSpecObj);
-            WaitTransfer(aTransferId);
-        }
-        finally
-        {
-            if (mShutdownAfterTransfer)
-            {
-                Shutdown();
-            }
-        }
+        Startup();
+        WaitTransfer(StartTransfer(aSpecObj));
     }
     // capture stdout or stderr for the started process (asperatransferd)
-    public System.Diagnostics.DataReceivedEventHandler captureStream(string tmpFileBase, string type)
+    public System.Diagnostics.DataReceivedEventHandler captureStream(string logFile)
     {
-        var logFile = $"{tmpFileBase}.{type}";
-        Console.WriteLine($"std{type}: {logFile}");
         var logStream = new StreamWriter(new FileStream(logFile, FileMode.Append, FileAccess.Write));
-        logStream.WriteLine($"Starting new {type} log");
         mStreams.Add(logStream);
         return new System.Diagnostics.DataReceivedEventHandler(
             (sender, e) =>
@@ -226,5 +205,24 @@ public class TransferClient
                     logStream.WriteLine(e.Data);
                 }
             });
+    }
+    private static int AscpLevel(string level)
+    {
+        if (level == "info")
+        {
+            return 0;
+        }
+        else if (level == "debug")
+        {
+            return 1;
+        }
+        else if (level == "trace")
+        {
+            return 2;
+        }
+        else
+        {
+            throw new ArgumentException("Invalid ascp_level: " + level);
+        }
     }
 }
