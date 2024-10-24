@@ -33,26 +33,21 @@ class TransferClient {
 #define LOG(level) LOGGER(_config.log(), level)
    private:
     Configuration& _config;
-    const bool _auto_shutdown;
-    const std::string _daemon_log;
     std::string _server_address;
     uint16_t _server_port;
-    std::string _channel_address;
     std::unique_ptr<boost::process::child> _transfer_daemon_process;
     std::unique_ptr<trsdk::TransferService::Stub> _transfer_service;
     // folder with SDK binaries
     const std::filesystem::path _sdk_runtime_path;
+    const std::string _daemon_log;
 
    public:
-    TransferClient(
-        Configuration& config,
-        bool shutdown = true)
+    TransferClient(Configuration& config)
         : _config(config),
-          _auto_shutdown(shutdown),
-          _daemon_log(_config.log_folder_path() / DAEMON_LOG_FILE),
           _transfer_daemon_process(nullptr),
           _transfer_service(nullptr),
-          _sdk_runtime_path(_config.get_path("sdk_runtime")) {
+          _sdk_runtime_path(_config.get_path("sdk_runtime")),
+          _daemon_log(_config.log_folder_path() / DAEMON_LOG_FILE) {
         LOG(debug) << LOG_ITEM("sdk_folder") << _sdk_runtime_path.string();
         auto sdk_url = _config.param_str({"trsdk", "url"});
         auto sdk_uri = boost::urls::parse_uri(sdk_url);
@@ -62,14 +57,10 @@ class TransferClient {
         LOG(debug) << LOG_ITEM("grpc url") << sdk_uri.value();
         _server_address = sdk_uri.value().host();
         _server_port = std::stoi(sdk_uri.value().port());
-        _channel_address = _server_address + ":" + std::to_string(_server_port);
-        LOG(debug) << LOG_ITEM("channel addr") << _channel_address;
     }
 
     ~TransferClient() {
-        if (_auto_shutdown) {
-            daemon_shutdown();
-        }
+        daemon_shutdown();
     }
     // Start the transfer SDK daemon process
     void daemon_start() {
@@ -103,6 +94,7 @@ class TransferClient {
     }
     // Connect to the transfer SDK daemon
     void daemon_connect() {
+        const std::string _channel_address = _server_address + ":" + std::to_string(_server_port);
         LOG(info) << "Connecting to " << TRANSFER_SDK_DAEMON << " on: " << _channel_address << " ...";
         const auto channel = grpc::CreateChannel(_channel_address, grpc::InsecureChannelCredentials());
         _transfer_service = trsdk::TransferService::NewStub(channel);
