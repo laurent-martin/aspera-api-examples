@@ -6,13 +6,13 @@ import time
 import uuid
 import logging as log
 
+# take come time back to account for time offset between client and server
+JWT_CLIENT_SERVER_OFFSET_SEC = 60
+# take some validity for the JWT
+JWT_VALIDITY_SEC = 600
 MIME_JSON = 'application/json'
 MIME_WWW = 'application/x-www-form-urlencoded'
-
-# take come time back to account for time offset between client and server
-JWT_NOT_BEFORE_OFFSET_SEC = 60
-# take some validity for the JWT
-JWT_EXPIRY_OFFSET_SEC = 600
+IETF_GRANT_JWT = 'urn:ietf:params:oauth:grant-type:jwt-bearer'
 
 
 class Rest:
@@ -72,9 +72,9 @@ class Rest:
             'iss': self.authData['iss'],  # issuer
             'sub': self.authData['sub'],  # subject
             'aud': self.authData['aud'],  # audience
-            'iat': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # issued at
-            'nbf': seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC,  # not before
-            'exp': seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC,  # expiration
+            'iat': seconds_since_epoch - JWT_CLIENT_SERVER_OFFSET_SEC,  # issued at
+            'nbf': seconds_since_epoch - JWT_CLIENT_SERVER_OFFSET_SEC,  # not before
+            'exp': seconds_since_epoch + JWT_VALIDITY_SEC,  # expiration
             'jti': str(uuid.uuid4()),
         }
         if self.authData['add'] is not None:
@@ -83,7 +83,7 @@ class Rest:
 
         data = {
             'client_id': self.authData['client_id'],
-            'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            'grant_type': IETF_GRANT_JWT,
             'assertion': jwt.encode(
                 payload=jwt_payload,
                 key=private_key_pem,

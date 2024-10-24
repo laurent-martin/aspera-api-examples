@@ -20,11 +20,12 @@ import org.json.JSONArray;
 
 public class Rest {
     static private final Logger logger = Logger.getLogger(Rest.class.getName());
+    
+    private static final int JWT_CLIENT_SERVER_OFFSET_SEC = 60;
+    private static final int JWT_VALIDITY_SEC = 600;
     private static final String MIME_JSON = "application/json";
-    private static final String MIME_FORM = "application/x-www-form-urlencoded";
+    private static final String MIME_WWW = "application/x-www-form-urlencoded";
     private static final String IETF_GRANT_JWT = "urn:ietf:params:oauth:grant-type:jwt-bearer";
-    private static final int JWT_NOT_BEFORE_OFFSET_SEC = 60;
-    private static final int JWT_EXPIRY_OFFSET_SEC = 600;
 
     private final String baseUrl;
     private final Map<String, String> headers;
@@ -63,9 +64,9 @@ public class Rest {
             jwt_payload.put("iss", authData.get("iss"));
             jwt_payload.put("sub", authData.get("sub"));
             jwt_payload.put("aud", authData.get("aud"));
-            jwt_payload.put("iat", epochDate - JWT_NOT_BEFORE_OFFSET_SEC);
-            jwt_payload.put("nbf", epochDate - JWT_NOT_BEFORE_OFFSET_SEC);
-            jwt_payload.put("exp", epochDate + JWT_EXPIRY_OFFSET_SEC);
+            jwt_payload.put("iat", epochDate - JWT_CLIENT_SERVER_OFFSET_SEC);
+            jwt_payload.put("nbf", epochDate - JWT_CLIENT_SERVER_OFFSET_SEC);
+            jwt_payload.put("exp", epochDate + JWT_VALIDITY_SEC);
             jwt_payload.put("jti", UUID.randomUUID().toString());
 
             final JwtBuilder assertion = Jwts.builder()//
@@ -87,7 +88,7 @@ public class Rest {
             final var req = Unirest.post(authData.get("token_url"))//
                     .basicAuth(authData.get("client_id"), authData.get("client_secret"))//
                     .header("Accept", MIME_JSON)//
-                    .header("Content-Type", MIME_FORM)//
+                    .header("Content-Type", MIME_WWW)//
                     .fields(www_form);
 
             final var response = req.asJson();

@@ -14,6 +14,26 @@ public class TransferClient
     {
         _config = config;
     }
+
+    private int AscpLevel(string level)
+    {
+        if (level == "info")
+        {
+            return 0;
+        }
+        else if (level == "debug")
+        {
+            return 1;
+        }
+        else if (level == "trace")
+        {
+            return 2;
+        }
+        else
+        {
+            throw new ArgumentException("Invalid ascp_level: " + level);
+        }
+    }
     // Start transfer manager daemon if not already running and return gRPC client
     public void StartDaemon(string sdkGrpcUrl)
     {
@@ -35,24 +55,6 @@ public class TransferClient
             {
                 Console.WriteLine("ERROR: Failed to connect\nStarting daemon...");
                 var binFolder = _config.GetPath("sdk_runtime");
-                string ascp_level = _config.GetParam("trsdk", "ascp_level");
-                int ascp_int_level = -1;
-                if (ascp_level == "info")
-                {
-                    ascp_int_level = 0;
-                }
-                else if (ascp_level == "debug")
-                {
-                    ascp_int_level = 1;
-                }
-                else if (ascp_level == "trace")
-                {
-                    ascp_int_level = 2;
-                }
-                else
-                {
-                    throw new ArgumentException("Invalid ascp_level: " + ascp_level);
-                }
                 var configData = new
                 {
                     address = grpcUrl.Host,
@@ -70,7 +72,7 @@ public class TransferClient
                         log = new
                         {
                             dir = Path.GetTempPath(),
-                            level = ascp_int_level,
+                            level = AscpLevel(_config.GetParam("trsdk", "ascp_level")),
                         },
                     },
                 };

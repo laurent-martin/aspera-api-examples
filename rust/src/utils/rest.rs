@@ -4,14 +4,14 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub const MIME_JSON: &str = "application/json";
-pub const MIME_FORM: &str = "application/x-www-form-urlencoded";
-pub const IETF_GRANT_JWT: &str = "urn:ietf:params:oauth:grant-type:jwt-bearer";
-
 // Offset allowed between client and server
-const JWT_NOT_BEFORE_OFFSET_SEC: usize = 60;
+const JWT_CLIENT_SERVER_OFFSET_SEC: usize = 60;
 // Validity period for JW Token
-const JWT_EXPIRY_OFFSET_SEC: usize = 600;
+const JWT_VALIDITY_SEC: usize = 600;
+const MIME_JSON: &str = "application/json";
+const MIME_WWW: &str = "application/x-www-form-urlencoded";
+const IETF_GRANT_JWT: &str = "urn:ietf:params:oauth:grant-type:jwt-bearer";
+
 
 /// Information needed to generate a bearer token
 #[derive(Clone)]
@@ -120,9 +120,9 @@ impl Rest {
             iss: auth.iss.to_owned(),
             sub: auth.sub.to_owned(),
             aud: auth.aud.to_owned(),
-            iat: now - JWT_NOT_BEFORE_OFFSET_SEC,
-            nbf: now - JWT_NOT_BEFORE_OFFSET_SEC,
-            exp: now + JWT_EXPIRY_OFFSET_SEC,
+            iat: now - JWT_CLIENT_SERVER_OFFSET_SEC,
+            nbf: now - JWT_CLIENT_SERVER_OFFSET_SEC,
+            exp: now + JWT_VALIDITY_SEC,
             jti: uuid::Uuid::new_v4().to_string(),
             org: auth.org.to_owned(),
         };
@@ -150,7 +150,7 @@ impl Rest {
                 Some(auth.client_secret.to_owned()),
             )
             .header("Accept", MIME_JSON)
-            .header("Content-Type", MIME_FORM)
+            .header("Content-Type", MIME_WWW)
             .form(&data)
             .send()
             .await?;

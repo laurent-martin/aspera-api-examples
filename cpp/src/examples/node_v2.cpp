@@ -1,6 +1,6 @@
 #include "utils/configuration.hpp"
-#include "utils/rest.hpp"
 #include "utils/transfer_client.hpp"
+#include "utils/rest.hpp"
 
 #define LOG(level) LOGGER(config.log(), level)
 
@@ -10,6 +10,7 @@ int main(const int argc, const char* const argv[]) {
         utils::TransferClient transfer_client(config);
         transfer_client.daemon_startup();
         const std::string node_api_url = config.param_str({"node", "url"});
+        LOG(info) << LOG_ITEM("Node URL") << node_api_url;
         const std::string header_authorization = utils::Rest::basic_auth_header(config.param_str({"node", "username"}), config.param_str({"node", "password"}));
         json::object transfer_spec_v2 = {
             {"title", "send using Node API and ts v2"},

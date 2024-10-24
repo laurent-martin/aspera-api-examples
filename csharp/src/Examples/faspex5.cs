@@ -33,7 +33,7 @@ class Faspex5 : SampleInterface
         // build payload to specify files to send
         var files_to_send = new JObject { { "paths", new JArray() } };
         // add file list in transfer spec
-        config.AddFilesToTransferSpec("paths",files_to_send);
+        config.AddSources(files_to_send, "paths");
         var t_spec = f5_api.create($"packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect", files_to_send);
         Log.DumpJObject("t_spec", t_spec);
         // optional: multi session

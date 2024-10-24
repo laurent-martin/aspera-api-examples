@@ -97,7 +97,7 @@ class Aoc : SampleInterface
             t_spec["multi_session_threshold"] = 500000;
         }
         // add file list in transfer spec
-        config.AddFilesToTransferSpec("paths",t_spec);
+        config.AddSources(t_spec, "paths");
         // Finally send files to package folder on server
         transfer_client.StartTransferAndWait(t_spec);
     }

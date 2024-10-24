@@ -10,48 +10,6 @@ class Log
 }
 public class Configuration
 {
-    private string[] _fileList;
-    // general test configuration parameters
-    private Dictionary<string, Dictionary<string, string>> _config;
-    // general path structure
-    private Dictionary<string, string> mPaths;
-    private string mErrorHint;
-    private string mTopFolder;
-    // config file with sub-paths in project's root folder
-    private const string PATHS_FILE_REL = "config/paths.yaml";
-
-    /// <summary>
-    /// Get absolute path for the named folder from configuration file
-    /// </summary>
-    /// <param name="name">name of configuration</param>
-    /// <returns>absolute path for the named folder from configuration file</returns>
-    /// <exception cref="Exception">if file does not exists</exception>
-    public string GetPath(string name)
-    {
-        // Get configuration sub-path in project's root folder
-        var itemPath = Path.Combine(mTopFolder, mPaths[name]);
-        if (!Directory.Exists(itemPath))
-        {
-            throw new Exception($"ERROR: {itemPath} not found.{mErrorHint}");
-        }
-        return itemPath;
-    }
-    public string GetParam(string section, string key)
-    {
-        if (!_config.ContainsKey(section) || !_config[section].ContainsKey(key))
-        {
-            throw new Exception($"ERROR: {section}.{key} not found in configuration file.{mErrorHint}");
-        }
-        return _config[section][key];
-    }
-    public void AddFilesToTransferSpec(string where, JObject aSpecObj)
-    {
-        // add file list in transfer spec
-        foreach (string f in _fileList)
-        {
-            ((JArray)aSpecObj[where]).Add(new JObject { { "source", f } });
-        }
-    }
     public Configuration(string[] args)
     {
         _fileList = args;
@@ -79,6 +37,39 @@ public class Configuration
         }
     }
 
+
+    /// <summary>
+    /// Get absolute path for the named folder from configuration file
+    /// </summary>
+    /// <param name="name">name of configuration</param>
+    /// <returns>absolute path for the named folder from configuration file</returns>
+    /// <exception cref="Exception">if file does not exists</exception>
+    public string GetPath(string name)
+    {
+        // Get configuration sub-path in project's root folder
+        var itemPath = Path.Combine(mTopFolder, mPaths[name]);
+        if (!Directory.Exists(itemPath))
+        {
+            throw new Exception($"ERROR: {itemPath} not found.{mErrorHint}");
+        }
+        return itemPath;
+    }
+    public string GetParam(string section, string key)
+    {
+        if (!_config.ContainsKey(section) || !_config[section].ContainsKey(key))
+        {
+            throw new Exception($"ERROR: {section}.{key} not found in configuration file.{mErrorHint}");
+        }
+        return _config[section][key];
+    }
+    public void AddSources(JObject aSpecObj, string where)
+    {
+        // add file list in transfer spec
+        foreach (string f in _fileList)
+        {
+            ((JArray)aSpecObj[where]).Add(new JObject { { "source", f } });
+        }
+    }
     public static string LastFileLine(string filename)
     {
         // Open the file in binary mode and seek to the end
@@ -108,4 +99,14 @@ public class Configuration
             return lastLine.ToString();
         }
     }
+
+    private string[] _fileList;
+    // general test configuration parameters
+    private Dictionary<string, Dictionary<string, string>> _config;
+    // general path structure
+    private Dictionary<string, string> mPaths;
+    private string mErrorHint;
+    private string mTopFolder;
+    // config file with sub-paths in project's root folder
+    private const string PATHS_FILE_REL = "config/paths.yaml";
 }

@@ -6,14 +6,17 @@
 #include <boost/json.hpp>
 #include <boost/url/parse.hpp>
 
-#define HTTP_1_1 11
-#define MIME_TYPE_JSON "application/json"
-
 namespace json = boost::json;
 namespace http = boost::beast::http;
 namespace ssl = boost::asio::ssl;
 
 namespace utils {
+inline constexpr const int HTTP_1_1 = 11;
+inline constexpr const int JWT_CLIENT_SERVER_OFFSET_SEC = 60;
+inline constexpr const int JWT_VALIDITY_SEC = 600;
+inline constexpr const char* const MIME_JSON = "application/json";
+inline constexpr const char* const MIME_WWW = "application/x-www-form-urlencoded";
+
 // simple REST client using boost
 class Rest {
    private:
@@ -56,8 +59,8 @@ class Rest {
         http::request<http::string_body> request{operation, path, HTTP_1_1};
         request.set(http::field::host, base_uri.host());
         request.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-        request.set(http::field::content_type, MIME_TYPE_JSON);
-        request.set(http::field::accept, MIME_TYPE_JSON);
+        request.set(http::field::content_type, MIME_JSON);
+        request.set(http::field::accept, MIME_JSON);
         request.set(http::field::content_length, std::to_string(json_body.size()));
         // add all headers
         for (const auto& [key, value] : _headers) {

@@ -15,9 +15,9 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <magic_enum.hpp>
 #include <string>
 #include <vector>
+#include <magic_enum.hpp>
 
 namespace json = boost::json;
 

@@ -6,6 +6,17 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
+public static class Const
+{
+    // take come time back to account for time offset between client and server
+    public const int JWT_CLIENT_SERVER_OFFSET_SEC = 60;
+    // take some validity for the JWT
+    public const int JWT_VALIDITY_SEC = 600;
+    public const string MIME_JSON = "application/json";
+    public const string MIME_WWW = "application/x-www-form-urlencoded";
+    public const string IETF_GRANT_JWT = "urn:ietf:params:oauth:grant-type:jwt-bearer";
+}
+
 /// <summary>
 /// Generic REST client with basic and oauth.
 /// Replace with your best REST client object
@@ -13,44 +24,6 @@ using StringDict = System.Collections.Generic.Dictionary<string, string>;
 /// </summary>
 public class Rest
 {
-    // take come time back to account for time offset between client and server
-    private const int JWT_NOT_BEFORE_OFFSET_SEC = 60;
-    // take some validity for the JWT
-    private const int JWT_EXPIRY_OFFSET_SEC = 600;
-    private StringDict mApiData;
-    private Rest mOAuthAPI;
-    private HttpClient mHttpClient;
-
-    /// <summary>
-    /// Read RSA private key from file.
-    /// </summary>
-    /// <param name="filename"></param>
-    /// <returns>RSA key</returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    private static RSA readKeyFromFile(string filename)
-    {
-        string pemContents = System.IO.File.ReadAllText(filename);
-        const string RsaPrivateKeyHeader = "-----BEGIN RSA PRIVATE KEY-----";
-        const string RsaPrivateKeyFooter = "-----END RSA PRIVATE KEY-----";
-
-        if (!pemContents.StartsWith(RsaPrivateKeyHeader))
-        {
-            throw new InvalidOperationException();
-        }
-        int endIdx = pemContents.IndexOf(
-            RsaPrivateKeyFooter,
-            RsaPrivateKeyHeader.Length,
-            StringComparison.Ordinal);
-
-        string base64 = pemContents.Substring(
-            RsaPrivateKeyHeader.Length,
-            endIdx - RsaPrivateKeyHeader.Length);
-
-        byte[] der = Convert.FromBase64String(base64);
-        RSA rsa = RSA.Create();
-        rsa.ImportRSAPrivateKey(der, out _);
-        return rsa;
-    }
     public Rest(StringDict api_data)
     {
         // shallow copy sufficient here
@@ -68,9 +41,9 @@ public class Rest
                     { "iss", mApiData["oauth_client_id"]},
                     { "sub", mApiData["oauth_jwt_subject"]},
                     { "aud", mApiData["oauth_jwt_audience"]},
-                    { "nbf", seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC},
-                    { "iat", seconds_since_epoch - JWT_NOT_BEFORE_OFFSET_SEC},
-                    { "exp", seconds_since_epoch + JWT_EXPIRY_OFFSET_SEC},
+                    { "nbf", seconds_since_epoch - Const.JWT_CLIENT_SERVER_OFFSET_SEC},
+                    { "iat", seconds_since_epoch - Const.JWT_CLIENT_SERVER_OFFSET_SEC},
+                    { "exp", seconds_since_epoch + Const.JWT_VALIDITY_SEC},
                 };
         // if client id starts with "aspera", add key "org" to payload
         if (mApiData["oauth_client_id"].StartsWith("aspera."))
@@ -166,10 +139,10 @@ public class Rest
                 request.Content = new StringContent(
                     JsonConvert.SerializeObject(json_params),
                     System.Text.Encoding.UTF8,
-                    "application/json");
+                    Const.MIME_JSON);
             }
         }
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(Const.MIME_JSON));
         Log.DumpJObject("req", request);
         if (request.Content != null)
         {
@@ -198,18 +171,52 @@ public class Rest
     }
     public JContainer create(string subpath, JObject json_params)
     {
-        return call(operation: HttpMethod.Post, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } }, json_params: json_params);
+        return call(operation: HttpMethod.Post, subpath: subpath, headers: new StringDict { { "Accept", Const.MIME_JSON } }, json_params: json_params);
     }
     public JContainer read(string subpath, JObject url_params = null)
     {
-        return call(operation: HttpMethod.Get, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } }, url_params: url_params);
+        return call(operation: HttpMethod.Get, subpath: subpath, headers: new StringDict { { "Accept", Const.MIME_JSON } }, url_params: url_params);
     }
     public JContainer update(string subpath, JObject json_params)
     {
-        return call(operation: HttpMethod.Put, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } }, json_params: json_params);
+        return call(operation: HttpMethod.Put, subpath: subpath, headers: new StringDict { { "Accept", Const.MIME_JSON } }, json_params: json_params);
     }
     public JContainer delete(string subpath)
     {
-        return call(operation: HttpMethod.Delete, subpath: subpath, headers: new StringDict { { "Accept", "application/json" } });
+        return call(operation: HttpMethod.Delete, subpath: subpath, headers: new StringDict { { "Accept", Const.MIME_JSON } });
+    }
+    private StringDict mApiData;
+    private Rest mOAuthAPI;
+    private HttpClient mHttpClient;
+
+    /// <summary>
+    /// Read RSA private key from file.
+    /// </summary>
+    /// <param name="filename"></param>
+    /// <returns>RSA key</returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    private static RSA readKeyFromFile(string filename)
+    {
+        string pemContents = System.IO.File.ReadAllText(filename);
+        const string RsaPrivateKeyHeader = "-----BEGIN RSA PRIVATE KEY-----";
+        const string RsaPrivateKeyFooter = "-----END RSA PRIVATE KEY-----";
+
+        if (!pemContents.StartsWith(RsaPrivateKeyHeader))
+        {
+            throw new InvalidOperationException();
+        }
+        int endIdx = pemContents.IndexOf(
+            RsaPrivateKeyFooter,
+            RsaPrivateKeyHeader.Length,
+            StringComparison.Ordinal);
+
+        string base64 = pemContents.Substring(
+            RsaPrivateKeyHeader.Length,
+            endIdx - RsaPrivateKeyHeader.Length);
+
+        byte[] der = Convert.FromBase64String(base64);
+        RSA rsa = RSA.Create();
+        rsa.ImportRSAPrivateKey(der, out _);
+        return rsa;
     }
 }
