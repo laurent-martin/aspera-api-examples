@@ -36,7 +36,7 @@ func main() {
 			"paths":            []map[string]string{}, // To be filled later
 		},
 	}
-	err = config.AddFilesToTS("assets.paths", transferSpec)
+	err = config.AddSources(transferSpec, "assets.paths")
 	if err != nil {
 		config.Log.Fatalf("Error adding files to transfer spec: %v", err)
 	}

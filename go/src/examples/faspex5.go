@@ -46,7 +46,7 @@ func main() {
 
 	// Build payload to specify files to send
 	filesToSend := map[string]interface{}{"paths": []map[string]string{}}
-	config.AddFilesToTS("paths", filesToSend)
+	config.AddSources(filesToSend, "paths")
 
 	config.Log.Debugf("Getting transfer spec")
 	tSpec, err := f5API.Create(fmt.Sprintf("packages/%v/transfer_spec/upload?transfer_type=connect", packageResp["id"]), filesToSend)
@@ -62,7 +62,7 @@ func main() {
 
 	// Add file list in transfer spec
 	tSpec["paths"] = []map[string]string{}
-	config.AddFilesToTS("paths", tSpec)
+	config.AddSources(tSpec, "paths")
 
 	// Remove authentication (not used in transfer sdk)
 	delete(tSpec, "authentication")

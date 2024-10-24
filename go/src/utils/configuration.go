@@ -210,7 +210,7 @@ func loadYAML(filePath string) (map[string]interface{}, error) {
 // Parameters:
 //   - dotPath: path in map of transfer spec
 //   - transferSpec: transfer specification map
-func (c *Configuration) AddFilesToTS(dotPath string, transferSpec map[string]interface{}) error {
+func (c *Configuration) AddSources(transferSpec map[string]interface{}, dotPath string) error {
 	keys := strings.Split(dotPath, ".")
 	lastKey := keys[len(keys)-1]
 	m := transferSpec
