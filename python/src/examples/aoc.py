@@ -9,17 +9,12 @@ import logging as log
 import uuid
 import base64
 
-# take 5 minutes back to account for time offset between client and server
-JWT_NOT_BEFORE_OFFSET_SEC = 300
-# one hour validity for token
-JWT_EXPIRY_OFFSET_SEC = 3600
-
 # AoC API base URL: https://developer.ibm.com/apis/catalog?search=%22aspera%20on%20cloud%20api%22
 AOC_API_V1_BASE_URL = 'https://api.ibmaspera.com/api/v1'
 AOC_OAUTH_AUDIENCE = 'https://api.asperafiles.com/api/v1/oauth2/token'
 
 # name of package to send
-package_name = 'sample package'
+package_name = 'sample package Python'
 
 # number of parallel transfer sessions (typically, 1)
 transfer_sessions = 1

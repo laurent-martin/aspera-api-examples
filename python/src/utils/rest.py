@@ -18,7 +18,6 @@ IETF_GRANT_JWT = 'urn:ietf:params:oauth:grant-type:jwt-bearer'
 class Rest:
     def __init__(self, base_url):
         self.base_url = base_url
-        self.auth = None
         self.authData = None
         self.verify = True
         self.headers = {}
@@ -27,7 +26,6 @@ class Rest:
         """
         Provide Basic authentication info.
         """
-        self.auth = 'Basic'
         self.authData = None
         self.headers['Authorization'] = requests.auth._basic_auth_str(user, password)
 
@@ -35,7 +33,6 @@ class Rest:
         """
         Provide OAuth 2 bearer parameters to generate a bearer token with JWT.
         """
-        self.auth = 'Bearer'
         self.authData = {
             'token_url': token_url,
             'aud': aud,
@@ -81,7 +78,7 @@ class Rest:
             jwt_payload.update(self.authData['add'])
         log.debug(jwt_payload)
 
-        data = {
+        token_parameters = {
             'client_id': self.authData['client_id'],
             'grant_type': IETF_GRANT_JWT,
             'assertion': jwt.encode(
@@ -93,12 +90,12 @@ class Rest:
         }
 
         if scope is not None:
-            data['scope'] = scope
+            token_parameters['scope'] = scope
 
         response = requests.post(
             url=self.authData['token_url'],
             auth=requests.auth.HTTPBasicAuth(self.authData['client_id'], self.authData['client_secret']),
-            data=data,
+            data=token_parameters,
             headers={
                 'Content-Type': MIME_WWW,
                 'Accept': MIME_JSON,
