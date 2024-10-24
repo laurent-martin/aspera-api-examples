@@ -67,17 +67,6 @@ public class TransferClient {
 
 	/** Create configuration file for the Aspera Transfer SDK */
 	private void createConfFile(final String confFile) {
-		final String ascp_level = config.getParamStr("trsdk", "ascp_level");
-		int ascp_int_level = -1;
-		if (ascp_level.equals("info")) {
-			ascp_int_level = 0;
-		} else if (ascp_level.equals("debug")) {
-			ascp_int_level = 1;
-		} else if (ascp_level.equals("trace")) {
-			ascp_int_level = 2;
-		} else {
-			throw new IllegalArgumentException("Invalid ascp_level: " + ascp_level);
-		}
 		// Define the configuration JSON object
 		JSONObject sdk_config = new JSONObject() //
 				.put("address", grpcURL.getHost()) //
@@ -91,13 +80,27 @@ public class TransferClient {
 								.put("etc", sdkRuntimeFolder)) //
 						.put("log", new JSONObject() //
 								.put("dir", config.getLogFolder()) //
-								.put("level", ascp_int_level)));
+								.put("level",
+										ascpLevel(config.getParamStr("trsdk", "ascp_level")))));
 		// Write the JSON to a file
 		try (final FileWriter fileWriter = new FileWriter(confFile)) {
 			fileWriter.write(sdk_config.toString());
 		} catch (final IOException e) {
 			e.printStackTrace();
 			throw new Error("problem with SDK configuration file: " + e.getMessage());
+		}
+	}
+
+	/** Convert log level for ascp from string to int */
+	private int ascpLevel(String level) {
+		if (level.equals("info")) {
+			return 0;
+		} else if (level.equals("debug")) {
+			return 1;
+		} else if (level.equals("trace")) {
+			return 2;
+		} else {
+			throw new IllegalArgumentException("Invalid ascp_level: " + level);
 		}
 	}
 
