@@ -4,7 +4,7 @@ This sample application shows how to build an Aspera-transfer-enabled web applic
 
 - the Aspera Connect SDK
 - the Aspera HTTP Gateway SDK
-- the Aspera Desktop Client SDK (not implemented yet)
+- the Aspera Desktop Client SDK ([not implemented yet](https://ibm.github.io/aspera-browser-sdk-js/))
 
 ![screenshot](doc/screenshot.png)
 
