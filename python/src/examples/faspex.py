@@ -14,16 +14,13 @@ try:
     faspex_api.setAuthBasic(config.param('faspex', 'username'), config.param('faspex', 'password'))
     faspex_api.setVerify(config.param('faspex', 'verify', True))
 
-    # files to send
-    package_files = config.file_list()
-
     # package creation information for Faspex API v3 : POST /send
     log.info('Creating package')
     response_data = faspex_api.create('send', {
         'delivery': {
             'title': 'Sent from python example',
             'recipients': ['admin'],
-            'sources': [{'paths': package_files}],
+            'sources': [{'paths': config.file_list()}],
         }
     })
     log.debug('resp=%s', response_data)
@@ -35,9 +32,7 @@ try:
     t_spec = response_data['xfer_sessions'][0]
 
     # add file list in transfer spec
-    t_spec['paths'] = []
-    for f in package_files:
-        t_spec['paths'].append({'source': f})
+    config.add_sources(t_spec, 'paths')
 
     # send files into package
     transfer_client.start_transfer_and_wait(t_spec)

@@ -27,8 +27,7 @@ try:
     }
 
     # add file list in transfer spec
-    for f in config.file_list():
-        t_spec['assets']['paths'].append({'source': f})
+    config.add_sources(t_spec, 'assets.paths')
 
     # start transfer, using Transfer SDK
     transfer_client.start_transfer_and_wait(t_spec)

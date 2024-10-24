@@ -26,9 +26,7 @@ try:
     t_spec = response_data['transfer_specs'][0]['transfer_spec']
 
     # add file list in transfer spec
-    t_spec['paths'] = []
-    for f in config.file_list():
-        t_spec['paths'].append({'source': f})
+    config.add_sources(t_spec, 'paths')
 
     # start transfer, here we use the FASP Manager, but the newer Transfer SDK can be used as well
     transfer_client.start_transfer_and_wait(t_spec)

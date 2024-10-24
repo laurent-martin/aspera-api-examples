@@ -134,8 +134,7 @@ try:
         t_spec['multi_session_threshold'] = 500000
 
     # add file list in transfer spec
-    for f in config.file_list():
-        t_spec['paths'].append({'source': f})
+    config.add_sources(t_spec, 'paths')
 
     # Finally send files to package folder on server
     transfer_client.start_transfer_and_wait(t_spec)

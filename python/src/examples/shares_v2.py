@@ -5,6 +5,11 @@
 import utils.configuration
 import utils.transfer_client
 
+####################
+# IMPORTANT: this does not work well, use shares.py instead
+####################
+
+
 config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
 
@@ -34,14 +39,7 @@ try:
     }
 
     # add file list in transfer spec
-    for f in config.file_list():
-        # note: Shares API requires both source and destination to be set (unlike real node api)
-        destination = f.split('/')[-1]
-        # if subfolder:
-        # destination = f'{destination_folder}/{destination}'
-        t_spec['assets']['paths'].append(
-            {'source': f,
-             'destination': destination})
+    config.add_sources(t_spec, 'assets.paths', True)
 
     # start transfer, using Transfer SDK
     transfer_client.start_transfer_and_wait(t_spec)

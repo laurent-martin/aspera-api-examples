@@ -10,9 +10,6 @@ config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    # get file to upload from command line
-    files_to_upload = config.file_list()
-
     shares_api = utils.rest.Rest(f"{config.param('shares', 'url')}/node_api")
     shares_api.setAuthBasic(config.param('shares', 'username'), config.param('shares', 'password'))
     shares_api.setVerify(config.param('shares', 'verify', True))
@@ -29,9 +26,7 @@ try:
     t_spec = response_data['transfer_specs'][0]['transfer_spec']
 
     # add file list in transfer spec
-    t_spec['paths'] = []
-    for f in files_to_upload:
-        t_spec['paths'].append({'source': f})
+    config.add_sources(t_spec, 'paths')
 
     # start transfer, using Transfer SDK
     transfer_client.start_transfer_and_wait(t_spec)

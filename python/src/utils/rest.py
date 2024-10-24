@@ -42,11 +42,18 @@ class Rest:
         }
 
     def setDefaultScope(self, scope=None):
+        """
+        A OAuth 2 bearer is generated using JWT.
+
+        In this example we generate a new bearer token for each script invocation.
+
+        But in real code, as the bearer token is valid for some time, it should be re-used, until expired, then refresh it.
+        """
         self.headers['Authorization'] = self.getBearerToken(scope)
 
     def getBearerToken(self, scope=None):
         '''
-        generate a bearer token
+        Generate a bearer token.
         '''
         # self.authData['token_url'] = 'http://localhost:12345'
         log.info('getting API authorization')

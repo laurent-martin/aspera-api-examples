@@ -7,11 +7,10 @@ import utils.transfer_client
 config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
 
-try:
-    # get file to upload from command line
-    files_to_upload = config.file_list()
-    destination_folder = '/'
+# destination folder in COS
+destination_folder = '/'
 
+try:
     # prepare transfer spec v2 for COS
     t_spec = {
         'title': 'send to COS using ts v2',
@@ -31,8 +30,7 @@ try:
     }
 
     # add file list in transfer spec
-    for f in files_to_upload:
-        t_spec['assets']['paths'].append({'source': f})
+    config.add_sources(t_spec, 'assets.paths')
 
     # start transfer, using Transfer SDK
     transfer_client.start_transfer_and_wait(t_spec)

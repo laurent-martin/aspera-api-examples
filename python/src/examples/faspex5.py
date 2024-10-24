@@ -46,12 +46,11 @@ try:
     log.debug(package_info)
 
     # build payload to specify files to send
-    files_to_send = {'paths': []}
-    for f in config.file_list():
-        files_to_send['paths'].append({'source': f})
+    upload_request = {}
+    config.add_sources(upload_request, 'paths')
 
     log.info('getting transfer spec')
-    t_spec = f5_api.create(f'packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect', files_to_send)
+    t_spec = f5_api.create(f'packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect', upload_request)
 
     # optional: multi session
     if transfer_sessions != 1:
@@ -59,9 +58,7 @@ try:
         t_spec['multi_session_threshold'] = 500000
 
     # add file list in transfer spec
-    t_spec['paths'] = []
-    for f in config.file_list():
-        t_spec['paths'].append({'source': f})
+    config.add_sources(t_spec, 'paths')
 
     # not used in transfer sdk
     del t_spec['authentication']

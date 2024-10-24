@@ -12,9 +12,6 @@ config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    # get file to upload from command line
-    files_to_upload = config.file_list()
-
     # get Aspera Transfer Service Node information using service credential file
     # config=config.param('coscreds')
     # with open(config.param('cos','service_credential_file']) as f:
@@ -49,11 +46,9 @@ try:
     t_spec.update(cos_node_info['tspec'])
 
     # add file list in transfer spec
-    t_spec['paths'] = []
-    for f in files_to_upload:
-        t_spec['paths'].append({'source': f})
+    config.add_sources(t_spec, 'paths')
 
-        # start transfer
-        transfer_client.start_transfer_and_wait(t_spec)
+    # start transfer
+    transfer_client.start_transfer_and_wait(t_spec)
 finally:
     transfer_client.shutdown()

@@ -58,8 +58,35 @@ class Configuration:
         return item_path
 
     def file_list(self):
-        '''Get list of files to transfer'''
+        '''
+        Get list of files to transfer.
+
+        It comes directly from the sample's command line arguments.
+        '''
         return self._file_list
+
+    def add_sources(self, t_spec: dict, path: str, destination=None):
+        """
+        Add source file list to transfer spec.
+
+        List of file come directly from command line argument to sample code.
+
+        The `path` is usually either 'paths' for a transfer spec V1,
+        or 'assets.paths' for a transfer spec V2.
+        """
+        keys = path.split('.')
+        current_node = t_spec
+        for key in keys[:-1]:
+            if isinstance(current_node, dict):
+                current_node = current_node.get(key)
+            else:
+                raise KeyError(f"key is not a dict: {key}")
+        paths = current_node[keys[-1]] = []
+        for f in self._file_list:
+            source = {'source': f}
+            if destination is not None:
+                source['destination'] = f.split('/')[-1]
+            paths.append(source)
 
 
 def basic_authorization(username, password):
