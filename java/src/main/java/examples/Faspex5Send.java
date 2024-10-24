@@ -42,12 +42,12 @@ public class Faspex5Send {
 									.put("name", config.getParamStr("faspex5", "username")))));
 			// Faspex REST API: Create transfer spec
 			final JSONObject uploadRequest = new JSONObject();
-			config.addFilesToTs(uploadRequest);
+			config.addSources(uploadRequest,"paths",null);
 			final JSONObject transfer_spec = (JSONObject) f5API.create(
 					"packages/" + package_info.getString("id") + "/transfer_spec/upload",
 					uploadRequest, Map.of("transfer_type", "connect"));
 			transfer_spec.remove("authentication");
-			config.addFilesToTs(transfer_spec);
+			config.addSources(transfer_spec,"paths",null);
 			// API: Transfer SDK: transfer files into package
 			transferClient.start_transfer_and_wait(transfer_spec);
 		} catch (final Exception e) {

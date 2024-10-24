@@ -132,10 +132,30 @@ public class Configuration {
 	/**
 	 * Fill the transfer spec with the file paths provided on command line
 	 */
-	public void addFilesToTs(final JSONObject transferSpec) {
-		final var paths = new JSONArray();
-		for (final var fileToSend : getFileList())
-			paths.put(new JSONObject().put("source", fileToSend));
-		transferSpec.put("paths", paths);
-	}
+	public void addSources(JSONObject tSpec, String path, String destination) {
+        final String[] keys = path.split("\\.");
+        JSONObject currentNode = tSpec;
+        for (int i = 0; i < keys.length - 1; i++) {
+            if (currentNode.has(keys[i])) {
+                Object nextNode = currentNode.get(keys[i]);
+                if (nextNode instanceof JSONObject) {
+                    currentNode = (JSONObject) nextNode;
+                } else {
+                    throw new IllegalArgumentException("key is not a JSONObject: " + keys[i]);
+                }
+            } else {
+				throw new IllegalArgumentException("No such key: " + keys[i]);
+			}
+        }
+        final JSONArray paths = new JSONArray();
+        currentNode.put(keys[keys.length - 1], paths);
+        for (String file : fileList) {
+            JSONObject source = new JSONObject();
+            source.put("source", file);
+            if (destination != null) {
+                source.put("destination", file.substring(file.lastIndexOf('/') + 1));
+            }
+            paths.put(source);
+        }
+    }
 }
