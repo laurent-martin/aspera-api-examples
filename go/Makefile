@@ -20,7 +20,7 @@ $(BUILD_DIR).exists:
 	@touch $@
 all:: $(TEST_FLAGS)
 export SDK_FILE_PROTO
-$(BUILD_DIR)%: $(BUILD_DIR).exists $(EXAMPLES_DIR)%.go
+$(BUILD_DIR)%: $(BUILD_DIR).exists $(EXAMPLES_DIR)%.go $(shell find src/utils -name "*.go")
 	go build -o $@ $(EXAMPLES_DIR)$(notdir $@).go
 # Build and Execute one sample
 $(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) $(GO_FILES_GRPC) $(BUILD_DIR)%

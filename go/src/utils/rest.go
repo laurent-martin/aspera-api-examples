@@ -17,10 +17,10 @@ import (
 )
 
 const (
-	JWTNotBeforeOffsetSec = 60
-	JWTExpiryOffsetSec    = 600
-	MIME_JSON             = "application/json"
-	MIME_WWW              = "application/x-www-form-urlencoded"
+	JWT_CLIENT_SERVER_OFFSET_SEC = 60
+	JWT_VALIDITY_SEC             = 600
+	MIME_JSON                    = "application/json"
+	MIME_WWW                     = "application/x-www-form-urlencoded"
 )
 
 // Rest is a client to interact with REST APIs
@@ -85,9 +85,9 @@ func (r *Rest) getBearer(scope string) string {
 		"iss": r.AuthData["iss"],
 		"sub": r.AuthData["sub"],
 		"aud": r.AuthData["aud"],
-		"nbf": secondsSinceEpoch - JWTNotBeforeOffsetSec,
-		"exp": secondsSinceEpoch + JWTExpiryOffsetSec,
-		"iat": secondsSinceEpoch - JWTNotBeforeOffsetSec,
+		"nbf": secondsSinceEpoch - JWT_CLIENT_SERVER_OFFSET_SEC,
+		"exp": secondsSinceEpoch + JWT_VALIDITY_SEC,
+		"iat": secondsSinceEpoch - JWT_CLIENT_SERVER_OFFSET_SEC,
 		"jti": uuid.NewV4().String(),
 	}
 
