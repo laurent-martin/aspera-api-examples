@@ -123,16 +123,18 @@ class Rest:
         Lower level HTTP request.
         """
         url = f'{self.base_url}/{endpoint}'
-        merged_headers = {'Accept': MIME_JSON}
+        req_headers = {}
+        if method != 'PUT' and method != 'DELETE':
+            req_headers['Accept'] = MIME_JSON
         if method in ['POST', 'PUT']:
-            merged_headers['Content-Type'] = MIME_JSON
+            req_headers['Content-Type'] = MIME_JSON
+        req_headers.update(self.headers)
         if headers:
-            merged_headers.update(headers)
-        merged_headers.update(self.headers)
+            req_headers.update(headers)
         response = requests.request(
             method=method,
             url=url,
-            headers=merged_headers,
+            headers=req_headers,
             verify=self.verify,
             json=data,
             params=params
