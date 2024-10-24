@@ -24,77 +24,109 @@ public static class Const
 /// </summary>
 public class Rest
 {
-    public Rest(StringDict api_data)
+    public Rest(string base_url)
     {
-        // shallow copy sufficient here
-        mApiData = api_data.ToDictionary(entry => entry.Key, entry => entry.Value);
-
+        mBaseUrl = base_url;
         mHttpClient = new HttpClient
         {
-            BaseAddress = new Uri(mApiData["base_url"])
+            BaseAddress = new Uri(mBaseUrl)
         };
+        mHeaders = new StringDict();
+        mAuthData = null;
+    }
+    public void setAuthBasic(string username, string password)
+    {
+        mHeaders.Add("Authorization", "Basic " + Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(username + ":" + password)));
+        //var encoded = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes($"{mAuthData["basic_username"]}:{mAuthData["basic_password"]}"));
+        //request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encoded);
+    }
+
+    public void setAuthBearer(StringDict auth)
+    {
+        // shallow copy sufficient here
+        mAuthData = auth.ToDictionary(entry => entry.Key, entry => entry.Value);
+    }
+    public void setDefaultScope(string scope)
+    {
+        mHeaders.Add("Authorization", get_bearer_token(scope));
+    }
+    public void setHeader(string name, string value)
+    {
+        mHeaders.Add(name, value);
     }
     public string get_bearer_token(string scope)
     {
+        RSA private_key = readKeyFromFile(mAuthData["key_pem_path"]);
         long seconds_since_epoch = System.DateTimeOffset.Now.ToUnixTimeSeconds();
-        var payload = new JObject{
-                    { "iss", mApiData["oauth_client_id"]},
-                    { "sub", mApiData["oauth_jwt_subject"]},
-                    { "aud", mApiData["oauth_jwt_audience"]},
+        var jwt_payload = new JObject{
+                    { "iss", mAuthData["iss"]},
+                    { "sub", mAuthData["sub"]},
+                    { "aud", mAuthData["aud"]},
                     { "nbf", seconds_since_epoch - Const.JWT_CLIENT_SERVER_OFFSET_SEC},
                     { "iat", seconds_since_epoch - Const.JWT_CLIENT_SERVER_OFFSET_SEC},
                     { "exp", seconds_since_epoch + Const.JWT_VALIDITY_SEC},
                 };
-        // if client id starts with "aspera", add key "org" to payload
-        if (mApiData["oauth_client_id"].StartsWith("aspera."))
+        // if client id starts with "aspera", add key "org" to jwt_payload
+        if (mAuthData.ContainsKey("org") && mAuthData["client_id"].StartsWith("aspera"))
         {
-            payload["org"] = mApiData["aoc_org"];
+            jwt_payload["org"] = mAuthData["org"];
         }
-        Log.DumpJObject("payload", payload);
-        var private_key = readKeyFromFile(mApiData["oauth_file_private_key"]);
-        string assertion = Jose.JWT.Encode(JsonConvert.SerializeObject(payload), private_key, Jose.JwsAlgorithm.RS256, extraHeaders: new Dictionary<string, object> { { "typ", "JWT" } });
-        var token_params = new JObject{
-            {"www_body_params",true},
-            {"client_id",mApiData["oauth_client_id"]},
-            {"grant_type","urn:ietf:params:oauth:grant-type:jwt-bearer"},
+        Log.DumpJObject("jwt_payload", jwt_payload);
+        string assertion = Jose.JWT.Encode(JsonConvert.SerializeObject(jwt_payload), private_key, Jose.JwsAlgorithm.RS256, extraHeaders: new Dictionary<string, object> { { "typ", "JWT" } });
+        var token_parameters = new JObject{
+            {"client_id",mAuthData["client_id"]},
+            {"grant_type",Const.IETF_GRANT_JWT},
             {"assertion",assertion},
         };
         if (scope != null)
         {
-            token_params["scope"] = scope;
+            token_parameters["scope"] = scope;
         }
-        JObject data = (JObject)mOAuthAPI.create(mApiData["oauth_path_token"], token_params);
-        return (string)data["access_token"];
-    }
-    public string get_bearer(string scope)
-    {
-        return $"Bearer {get_bearer_token(scope)}";
+        Rest oauth_api = new Rest(mAuthData["token_url"]);
+        oauth_api.setAuthBasic(mAuthData["client_id"], mAuthData["client_secret"]);
+        //oauth_api.setHeader("Content-Type", Const.MIME_WWW);
+        JObject data = (JObject)oauth_api.call(
+            operation: HttpMethod.Post,
+            body: token_parameters,
+            body_type: "www");
+        return "Bearer " + (string)data["access_token"];
     }
     /// <summary>
     /// Call REST API.
     /// </summary>
     /// <param name="operation">GET, ...</param>
     /// <param name="subpath">endpoint</param>
-    /// <param name="json_params"></param>
-    /// <param name="url_params"></param>
+    /// <param name="body"></param>
+    /// <param name="query"></param>
     /// <param name="headers"></param>
     /// <returns></returns>
     /// <exception cref="System.Exception"></exception>
-    public JContainer call(HttpMethod operation, string subpath, JObject json_params = null, JObject url_params = null, StringDict headers = null)
+    public JContainer call(
+        HttpMethod operation,
+        string subpath = null,
+        JObject body = null,
+        string body_type = "json",
+        JObject query = null,
+        StringDict headers = null
+        )
     {
-        string uri_string = mApiData["base_url"] + "/" + subpath;
-        var builder = new System.UriBuilder(uri_string);// { Query = collection.ToString() };
-        if (url_params != null)
+        string uri_string = mBaseUrl;
+        if (subpath != null)
         {
-            var query = url_params.Properties().ToDictionary(p => p.Name, p => p.Value.ToString());
+            uri_string = uri_string + "/" + subpath;
+        }
+        var builder = new System.UriBuilder(uri_string);
+        if (query != null)
+        {
+            var q_dict = query.Properties().ToDictionary(p => p.Name, p => p.Value.ToString());
             string query_string = "";
-            foreach (var key in query.Keys)
+            foreach (var key in q_dict.Keys)
             {
                 if (query_string.Length != 0)
                 {
                     query_string = query_string + "&";
                 }
-                query_string = query_string + System.Uri.EscapeDataString(key) + "=" + System.Uri.EscapeDataString("" + query[key]);
+                query_string = query_string + System.Uri.EscapeDataString(key) + "=" + System.Uri.EscapeDataString("" + q_dict[key]);
             }
             builder.Query = query_string;
         }
@@ -103,46 +135,34 @@ public class Rest
             Method = operation,
             RequestUri = builder.Uri
         };
-        switch (mApiData["type"])
+        // depends on operation
+        foreach (var header in mHeaders)
         {
-            case "oauth2":
-                mOAuthAPI = new Rest(new StringDict(){
-                    {"base_url",mApiData["oauth_base_url"]},
-                    {"type","basic"},
-                    {"basic_username",mApiData["oauth_client_id"]},
-                    {"basic_password",mApiData["oauth_client_secret"]},
-                });
-                string scope = null;
-                if (mApiData.ContainsKey("oauth_scope"))
-                {
-                    scope = mApiData["oauth_scope"];
-                }
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", get_bearer_token(scope));
-                break;
-            case "basic":
-                var encoded = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes($"{mApiData["basic_username"]}:{mApiData["basic_password"]}"));
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encoded);
-                break;
-            default:
-                throw new System.Exception("wrong auth type");
+            request.Headers.Add(header.Key, header.Value);
         }
-        if (json_params != null)
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(Const.MIME_JSON));
+        if (headers != null)
         {
-            Log.log.Debug($"json_params {json_params}");
-            if (json_params.ContainsKey("www_body_params"))
+            foreach (var header in headers)
             {
-                json_params.Remove("www_body_params");
-                request.Content = new FormUrlEncodedContent(json_params.Properties().ToDictionary(p => p.Name, p => p.Value.ToString()));
+                request.Headers.Add(header.Key, header.Value);
+            }
+        }
+        if (body != null)
+        {
+            Log.log.Debug($"body {body}");
+            if (body_type == "www")
+            {
+                request.Content = new FormUrlEncodedContent(body.Properties().ToDictionary(p => p.Name, p => p.Value.ToString()));
             }
             else
             {
                 request.Content = new StringContent(
-                    JsonConvert.SerializeObject(json_params),
+                    JsonConvert.SerializeObject(body),
                     System.Text.Encoding.UTF8,
                     Const.MIME_JSON);
             }
         }
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(Const.MIME_JSON));
         Log.DumpJObject("req", request);
         if (request.Content != null)
         {
@@ -169,24 +189,25 @@ public class Rest
         }
         return result;
     }
-    public JContainer create(string subpath, JObject json_params)
+    public JContainer create(string subpath, JObject body)
     {
-        return call(operation: HttpMethod.Post, subpath: subpath, headers: new StringDict { { "Accept", Const.MIME_JSON } }, json_params: json_params);
+        return call(operation: HttpMethod.Post, subpath: subpath, body: body);
     }
-    public JContainer read(string subpath, JObject url_params = null)
+    public JContainer read(string subpath, JObject query = null)
     {
-        return call(operation: HttpMethod.Get, subpath: subpath, headers: new StringDict { { "Accept", Const.MIME_JSON } }, url_params: url_params);
+        return call(operation: HttpMethod.Get, subpath: subpath, query: query);
     }
-    public JContainer update(string subpath, JObject json_params)
+    public JContainer update(string subpath, JObject body)
     {
-        return call(operation: HttpMethod.Put, subpath: subpath, headers: new StringDict { { "Accept", Const.MIME_JSON } }, json_params: json_params);
+        return call(operation: HttpMethod.Put, subpath: subpath, body: body);
     }
     public JContainer delete(string subpath)
     {
-        return call(operation: HttpMethod.Delete, subpath: subpath, headers: new StringDict { { "Accept", Const.MIME_JSON } });
+        return call(operation: HttpMethod.Delete, subpath: subpath);
     }
-    private StringDict mApiData;
-    private Rest mOAuthAPI;
+    private string mBaseUrl;
+    private StringDict mAuthData;
+    private StringDict mHeaders;
     private HttpClient mHttpClient;
 
     /// <summary>

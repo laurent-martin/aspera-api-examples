@@ -1,36 +1,36 @@
 // Laurent Martin IBM Aspera 2018
 // Sample to call Aspera On Cloud (AoC) API using .NET
 using Newtonsoft.Json.Linq;
+using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
 class Aoc : SampleInterface
 {
-    int transfer_sessions = 1;
     const string AOC_API_V1_BASE_URL = "https://api.ibmaspera.com/api/v1";
     const string AOC_OAUTH_AUDIENCE = "https://api.asperafiles.com/api/v1/oauth2/token";
+    const string package_name = "sample package C#";
+    const int transfer_sessions = 1;
 
     public void start(string[] args)
     {
         var config = new Configuration(args);
         var transfer_client = new TransferClient(config);
-        var aoc_api = new Rest(new Dictionary<string, string>(){
-            {"base_url",AOC_API_V1_BASE_URL},
-            {"type","oauth2"},
-            {"oauth_type","jwt"},
-            {"oauth_file_private_key",config.GetParam("aoc","private_key")},
-            {"oauth_client_id",config.GetParam("aoc","client_id")},
-            {"oauth_client_secret",config.GetParam("aoc","client_secret")},
-            {"oauth_jwt_subject",config.GetParam("aoc","user_email")},
-            {"oauth_jwt_audience",AOC_OAUTH_AUDIENCE},
-            {"oauth_base_url",$"https://api.ibmaspera.com/api/v1/oauth2/{config.GetParam("aoc","org")}"},
-            {"oauth_path_token","token"},
-            {"oauth_scope","user:all"},
-            {"aoc_org",config.GetParam("aoc","org")},
+        var aoc_api = new Rest(AOC_API_V1_BASE_URL);
+        aoc_api.setAuthBearer(new StringDict{
+            {"token_url",$"https://api.ibmaspera.com/api/v1/oauth2/{config.GetParam("aoc","org")}/token"},
+            {"key_pem_path",config.GetParam("aoc","private_key")},
+            {"client_id",config.GetParam("aoc","client_id")},
+            {"client_secret",config.GetParam("aoc","client_secret")},
+            {"iss",config.GetParam("aoc","client_id")},
+            {"aud",AOC_OAUTH_AUDIENCE},
+            {"sub",config.GetParam("aoc","user_email")},
+            {"org",config.GetParam("aoc","org")},
         });
+        aoc_api.setDefaultScope("user:all");
         // REST call
-        var self_data = aoc_api.read("self");
-        Log.DumpJObject("self_data", self_data);
+        var user_info = aoc_api.read("self");
+        Log.DumpJObject("user_info", user_info);
         // we use the default workspace of the user
-        string default_workspace_id = (string)(self_data["default_workspace_id"]);
+        string default_workspace_id = (string)(user_info["default_workspace_id"]);
         var workspace_info = aoc_api.read($"workspaces/{default_workspace_id}");
         // this user must be registered, else different code is needed
         string recipient_email = config.GetParam("aoc", "user_email");
@@ -65,7 +65,7 @@ class Aoc : SampleInterface
         var t_spec = new JObject{
             {"direction", "send"},
             {"paths", new JArray()},
-            {"token", aoc_api.get_bearer($"node.{node_info["access_key"]}:user:all" )},
+            {"token", aoc_api.get_bearer_token($"node.{node_info["access_key"]}:user:all" )},
             {"tags", new JObject{
                 {"aspera", new JObject{
                     {"app", "packages"},

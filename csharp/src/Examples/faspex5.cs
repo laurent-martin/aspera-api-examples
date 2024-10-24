@@ -1,30 +1,38 @@
 using Newtonsoft.Json.Linq;
+using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
 class Faspex5 : SampleInterface
 {
+    // base path for v5 api
+    const string F5_API_PATH_V5 = "/api/v5";
+    // path for oauth2 token generation
+    const string F5_API_PATH_TOKEN = "/auth/token";
+
+    const string package_name = "sample package C#";
+    const int transfer_sessions = 1;
+
     public void start(string[] args)
     {
         var config = new Configuration(args);
         var transfer_client = new TransferClient(config);
-        int transfer_sessions = 1;
-        Rest f5_api = new Rest(new Dictionary<string, string>(){
-            {"base_url",$"{config.GetParam("faspex5","url")}/api/v5"},
-            {"type","oauth2"},
-            {"oauth_type","jwt"},
-            {"oauth_file_private_key",config.GetParam("faspex5","private_key")},
-            {"oauth_client_id",config.GetParam("faspex5","client_id")},
-            {"oauth_client_secret",config.GetParam("faspex5","client_secret")},
-            {"oauth_jwt_subject","user:"+config.GetParam("faspex5","username")},
-            {"oauth_jwt_audience",config.GetParam("faspex5","client_id")},
-            {"oauth_base_url",$"{config.GetParam("faspex5","url")}/auth"},
-            {"oauth_path_token","token"},
+        var f5_api = new Rest($"{config.GetParam("faspex5", "url")}{F5_API_PATH_V5}");
+        f5_api.setAuthBearer(new StringDict{
+            {"token_url",$"{config.GetParam("faspex5", "url")}{F5_API_PATH_TOKEN}"},
+            {"key_pem_path",config.GetParam("faspex5","private_key")},
+            {"client_id",config.GetParam("faspex5","client_id")},
+            {"client_secret",config.GetParam("faspex5","client_secret")},
+            {"iss",config.GetParam("faspex5","client_id")},
+            {"aud",config.GetParam("faspex5","client_id")},
+            {"sub","user:"+config.GetParam("faspex5","username")},
         });
+        f5_api.setDefaultScope("user:all");
+
         var user_profile = f5_api.read("account/preferences");
         Log.log.Debug($"user_profile: {user_profile}");
         Log.DumpJObject("user_profile", user_profile);
         // Faspex 5 package creation information
         var package_creation = new JObject{
-            {"title","test title"},
+            {"title",package_name},
             {"recipients",new JArray{new JObject{{"name",config.GetParam("faspex5","username")}}}}, // send to myself (for test)
         };
         // create a new package with Faspex 5 API (this allocates a reception folder on package storage)
