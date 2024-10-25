@@ -30,7 +30,6 @@ inline constexpr const int MAX_CONNECTION_WAIT_SEC = 10;
 // - conf file generation, startup and shutdown of asperatransferd
 // - transfer of files and monitoring
 class TransferClient {
-#define LOG(level) LOGGER(_config.log(), level)
    private:
     Configuration& _config;
     std::string _server_address;
@@ -226,6 +225,5 @@ class TransferClient {
             throw std::runtime_error("unknown transfer id: " + error.description());
         }
     }
-#undef LOG
 };
 }  // namespace utils

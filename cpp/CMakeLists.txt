@@ -20,6 +20,8 @@ find_package(Protobuf CONFIG REQUIRED)
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
 find_package(gRPC CONFIG REQUIRED)
 message(STATUS "Using gRPC ${gRPC_VERSION}")
+find_package(openssl CONFIG REQUIRED)
+message(STATUS "Using openssl ${openssl_VERSION}")
 
 # Create the source directory where files will be gen_out
 set(gen_src_dir "${CMAKE_CURRENT_BINARY_DIR}/grpc_gen_src")
@@ -54,5 +56,10 @@ include_directories("src")
 
 foreach(_target ${test_cases})
   add_executable(${_target} "${examples_dir}${_target}.cpp")
-  target_link_libraries(${_target} aspera_client yaml-cpp::yaml-cpp magic_enum::magic_enum ${Boost_LIBRARIES})
+  target_link_libraries(${_target}
+    aspera_client
+    ${yaml-cpp_LIBRARIES}
+    ${magic_enum_LIBRARIES}
+    ${openssl_LIBRARIES}
+    ${Boost_LIBRARIES})
 endforeach()

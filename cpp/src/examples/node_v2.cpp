@@ -2,8 +2,6 @@
 #include "utils/transfer_client.hpp"
 #include "utils/rest.hpp"
 
-#define LOG(level) LOGGER(config.log(), level)
-
 int main(const int argc, const char* const argv[]) {
     try {
         utils::Configuration config(argc, argv);

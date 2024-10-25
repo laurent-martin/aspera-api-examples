@@ -15,18 +15,19 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <magic_enum.hpp>
 #include <string>
 #include <vector>
-#include <magic_enum.hpp>
 
 namespace json = boost::json;
-
-#define LOGGER(logger, level) BOOST_LOG_SEV(logger, boost::log::trivial::level)
-#define LOG_ITEM(item) std::setw(utils::ITEM_WIDTH) << item << ": "
 
 namespace utils {
 inline constexpr const char* PATHS_FILE_REL = "config/paths.yaml";
 inline constexpr const int ITEM_WIDTH = 12;
+// logger
+inline boost::log::sources::severity_logger<boost::log::trivial::severity_level> global_logger;
+#define LOG(level) BOOST_LOG_SEV(utils::global_logger, boost::log::trivial::level)
+#define LOG_ITEM(item) std::setw(utils::ITEM_WIDTH) << item << ": "
 
 // Provide a common environment for tests, including:
 // - configuration file parameters
@@ -35,13 +36,11 @@ inline constexpr const int ITEM_WIDTH = 12;
 //      - read last line of file
 //      - file list as command line parameters
 class Configuration {
-#define LOG(level) LOGGER(_log, level)
    public:
     Configuration(
         const int argc,
         const char* const argv[])
-        : _log(),
-          _init_log(init_log()),
+        : _init_log(init_log()),
           _file_list(argv + 1, argv + argc),
           _top_folder_path(std::filesystem::absolute(argv[0]).parent_path().parent_path().parent_path()),
           _log_folder_path(std::filesystem::temp_directory_path()),
@@ -106,11 +105,6 @@ class Configuration {
         return item_path;
     }
 
-    // @return the logger
-    auto& log() {
-        return _log;
-    }
-
     // Get the last line of a file
     static std::string last_file_line(const std::string& filename) {
         // ate: seek to the end of the file
@@ -162,8 +156,6 @@ class Configuration {
     }
 
    private:
-    // logger
-    boost::log::sources::severity_logger<boost::log::trivial::severity_level> _log;
     // log initialization
     const bool _init_log;
     // list of files to transfer
@@ -192,7 +184,5 @@ class Configuration {
             << boost::log::expressions::smessage);
         return true;
     }
-
-#undef LOG
 };
 }  // namespace utils
