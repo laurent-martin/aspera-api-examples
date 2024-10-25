@@ -1,5 +1,5 @@
 DIR_TOP=$(realpath ..)/
-TEST_CASES=server shares node_v2
+TEST_CASES=server shares node_v2 faspex5
 include $(DIR_TOP)common.mak
 # Executables are generated here:
 CPP_BUILD_DIR=build/

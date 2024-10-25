@@ -33,7 +33,7 @@ inline constexpr const int JWT_VALIDITY_SEC = 600;
 inline constexpr const char* const MIME_JSON = "application/json";
 inline constexpr const char* const MIME_WWW = "application/x-www-form-urlencoded";
 inline constexpr const char* const IETF_GRANT_JWT = "urn:ietf:params:oauth:grant-type:jwt-bearer";
-inline const json::object no_body;
+inline const json::object json_empty;
 
 enum BodyType {
     NONE,
@@ -83,11 +83,11 @@ class Rest {
         _auth_data = auth_data;
     }
 
-    void set_default_scope(const char* scope) {
-        _headers.insert({http::field::authorization, "Bearer " + get_bearer_token(scope)});
+    void set_default_scope(const char* scope = nullptr) {
+        _headers.insert({http::field::authorization, get_bearer_token(scope)});
     }
 
-    std::string get_bearer_token(const char* scope) {
+    std::string get_bearer_token(const char* scope = nullptr) {
         std::string private_key_pem = read_file(_auth_data.at("key_pem_path"));
 
         auto seconds_since_epoch = std::time(nullptr);
@@ -111,6 +111,7 @@ class Rest {
         if (scope != nullptr) {
             token_parameters.insert_or_assign("scope", scope);
         }
+        LOG(debug) << "parameters: " << token_parameters;
 
         Rest oauth_api(_auth_data.at("token_url"));
         oauth_api.set_verify(_verify);
@@ -122,9 +123,9 @@ class Rest {
     json::object call(
         const http::verb method,
         const std::string& endpoint = "",
-        const json::object& body = no_body,
+        const json::object& body = json_empty,
         BodyType body_type = BodyType::NONE,
-        const json::object& query = no_body  //
+        const json::object& query = json_empty  //
     ) {
         LOG(debug) << "Calling: " << method << " on " << endpoint;
         const auto base_uri = boost::urls::parse_uri(_base_url).value();
@@ -137,7 +138,10 @@ class Rest {
         }
         std::string endpoint_full_path = base_uri.path();
         if (!endpoint.empty())
-            endpoint_full_path = endpoint_full_path + "/" + endpoint;
+            endpoint_full_path += "/" + endpoint;
+        if (!query.empty()) {
+            endpoint_full_path += "?" + build_query(query);
+        }
         http::request<http::string_body> request{method, endpoint_full_path, HTTP_1_1};
         request.set(http::field::host, base_uri.host());
         request.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
@@ -152,13 +156,7 @@ class Rest {
             }
             case BodyType::WWW:
                 request.set(http::field::content_type, MIME_WWW);
-                std::string www_body;
-                for (const auto& [key, val] : body) {
-                    if (!www_body.empty()) www_body += '&';
-                    www_body += boost::urls::encode(boost::json::serialize(key), boost::urls::pchars) + '=' +
-                                boost::urls::encode(boost::json::serialize(val), boost::urls::pchars);
-                }
-                request.body() = www_body;
+                request.body() = build_query(body);
                 request.prepare_payload();
                 break;
         }
@@ -173,7 +171,7 @@ class Rest {
         for (const auto& [key, value] : _headers) {
             request.set(key, value);
         }
-
+        LOG(debug) << "Request: " << request;
         boost::asio::io_service io_svc;
         ssl::context ssl_context(ssl::context::sslv23_client);
         ssl::stream<boost::asio::ip::tcp::socket> sock_stream = {io_svc, ssl_context};
@@ -196,16 +194,17 @@ class Rest {
         LOG(debug) << "Code: " << response.result_int();
         // check HTTP status is success
         if (response.result_int() >= 300) {
+            LOG(debug) << "Response: " << response.body();
             throw std::runtime_error("HTTP error: " + std::to_string(response.result_int()));
         }
         LOG(debug) << "Result: " << response.body();
         return json::parse(response.body()).as_object();
     }
-    json::object create(std::string endpoint, json::object body) {
-        return call(http::verb::post, endpoint, body, BodyType::JSON);
+    json::object create(std::string endpoint, json::object body, json::object query = json_empty) {
+        return call(http::verb::post, endpoint, body, BodyType::JSON, query);
     }
-    json::object read(std::string endpoint, json::object query = no_body) {
-        return call(http::verb::get, endpoint, no_body, BodyType::NONE, query);
+    json::object read(std::string endpoint, json::object query = json_empty) {
+        return call(http::verb::get, endpoint, json_empty, BodyType::NONE, query);
     }
     json::object update(std::string endpoint, json::object body) {
         return call(http::verb::put, endpoint, body, BodyType::JSON);
@@ -259,7 +258,7 @@ class Rest {
         const json::object& header = {}) {
         json::object full_header = header;
         full_header.insert_or_assign("alg", alg);
-        std::string unsigned_token = base64url_encode(json::serialize(header)) + "." + base64url_encode(json::serialize(payload));
+        std::string unsigned_token = base64url_encode(json::serialize(full_header)) + "." + base64url_encode(json::serialize(payload));
         std::string signature = sign_with_rsa(unsigned_token, key_pem);
         return unsigned_token + "." + signature;
     }
@@ -269,6 +268,15 @@ class Rest {
             throw std::runtime_error("Could not open file: " + file_path);
         }
         return std::string((std::istreambuf_iterator<char>(file_stream)), std::istreambuf_iterator<char>());
+    }
+    static std::string build_query(const json::object& query) {
+        std::string query_string;
+        for (const auto& [key, val] : query) {
+            if (!query_string.empty()) query_string += '&';
+            query_string += boost::urls::encode(key, boost::urls::pchars) + '=' +
+                            boost::urls::encode(val.as_string(), boost::urls::pchars);
+        }
+        return query_string;
     }
 };
 }  // namespace utils

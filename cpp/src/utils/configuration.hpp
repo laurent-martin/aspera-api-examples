@@ -90,8 +90,15 @@ class Configuration {
 
     // Get a string from the configuration file
     // @param keys list of keys to dig to get the value
+    // @return string value
     std::string param_str(const std::vector<std::string>& keys) {
         return param(keys).as<std::string>();
+    }
+    // Get a boolean from the configuration file
+    // @param keys list of keys to dig to get the value
+    // @return boolean value
+    bool param_bool(const std::vector<std::string>& keys, bool default_value = false) {
+        return param(keys).as<bool>();
     }
 
     // get the path of the item in the test environment
