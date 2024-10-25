@@ -22,6 +22,18 @@ class Rest:
         self.verify = True
         self.headers = {}
 
+    def setVerify(self, verify):
+        """
+        Disable remote server certificate validation with False.
+        """
+        self.verify = verify
+
+    def addHeaders(self, headers):
+        """
+        Add provided headers for all subsequent calls.
+        """
+        self.headers.update(headers)
+
     def setAuthBasic(self, user, password):
         """
         Provide Basic authentication info.
@@ -103,18 +115,6 @@ class Rest:
         response.raise_for_status()
         response_data = response.json()
         return f'Bearer {response_data["access_token"]}'
-
-    def setVerify(self, verify):
-        """
-        Disable remote server certificate validation with False.
-        """
-        self.verify = verify
-
-    def addHeaders(self, headers):
-        """
-        Add provided headers for all subsequent calls.
-        """
-        self.headers.update(headers)
 
     def call(self, method, endpoint=None, body=None, query=None, headers=None):
         """
