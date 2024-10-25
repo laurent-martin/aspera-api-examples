@@ -11,6 +11,8 @@ func main() {
 		config.Log.Fatalf("Error loading configuration: %v", err)
 	}
 	transferClient := utils.NewTransferClient(config)
+	defer transferClient.Shutdown()
+
 	serverURL := config.ParamStr("server", "url")
 	config.Log.Debugf("Server URL: %s", serverURL)
 	serverURI, err := url.Parse(serverURL)
