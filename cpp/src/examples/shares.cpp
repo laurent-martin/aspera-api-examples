@@ -4,9 +4,9 @@
 #include "utils/transfer_client.hpp"
 
 int main(int argc, char* argv[]) {
+    utils::Configuration config(argc, argv);
+    utils::TransferClient transfer_client(config);
     try {
-        utils::Configuration config(argc, argv);
-        utils::TransferClient transfer_client(config);
         const std::string shares_api_url = config.param_str({"shares", "url"}) + "/node_api";
         LOG(info) << "Shares API URL: " << shares_api_url;
         utils::Rest shares_api(shares_api_url);

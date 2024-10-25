@@ -2,9 +2,9 @@
 #include "utils/transfer_client.hpp"
 
 int main(int argc, char* argv[]) {
+    utils::Configuration config(argc, argv);
+    utils::TransferClient transfer_client(config);
     try {
-        utils::Configuration config(argc, argv);
-        utils::TransferClient transfer_client(config);
         std::string server_url = config.param_str({"server", "url"});
         LOG(info) << LOG_ITEM("Server URL") << server_url;
         auto server_uri = boost::urls::parse_uri(server_url).value();
