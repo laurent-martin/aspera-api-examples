@@ -26,15 +26,15 @@ try:
     # in this example we generate a new bearer token for each script invocation
     f5_api = utils.rest.Rest(f'{config.param("faspex5", "url")}{F5_API_PATH_V5}')
     f5_api.setVerify(config.param('faspex5', 'verify', True))
-    f5_api.setAuthBearer(
-        token_url=f'{config.param("faspex5", "url")}{F5_API_PATH_TOKEN}',
-        key_pem_path=config.param('faspex5', 'private_key'),
-        client_id=config.param('faspex5', 'client_id'),
-        client_secret=config.param('faspex5', 'client_secret'),
-        iss=config.param('faspex5', 'client_id'),
-        aud=config.param('faspex5', 'client_id'),
-        sub=f'user:{config.param("faspex5", "username")}',
-    )
+    f5_api.setAuthBearer({
+        'token_url': f'{config.param("faspex5", "url")}{F5_API_PATH_TOKEN}',
+        'key_pem_path': config.param('faspex5', 'private_key'),
+        'client_id': config.param('faspex5', 'client_id'),
+        'client_secret': config.param('faspex5', 'client_secret'),
+        'iss': config.param('faspex5', 'client_id'),
+        'aud': config.param('faspex5', 'client_id'),
+        'sub': f'user:{config.param("faspex5", "username")}',
+    })
     f5_api.setDefaultScope()
 
     # create a new package with Faspex 5 API (this allocates a reception folder on package storage)

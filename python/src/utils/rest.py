@@ -29,20 +29,18 @@ class Rest:
         self.authData = None
         self.headers['Authorization'] = requests.auth._basic_auth_str(user, password)
 
-    def setAuthBearer(self, token_url, aud, client_id, client_secret, key_pem_path, iss, sub, add=None):
+    def setAuthBearer(self, auth_data):
         """
         Provide OAuth 2 bearer parameters to generate a bearer token with JWT.
+        :param auth_data: Dictionary containing necessary OAuth2 and JWT parameters.
         """
-        self.authData = {
-            'token_url': token_url,
-            'aud': aud,
-            'client_id': client_id,
-            'client_secret': client_secret,
-            'key_pem_path': key_pem_path,
-            'iss': iss,
-            'sub': sub,
-            'add': add,
-        }
+        mandatory_keys = {'token_url', 'aud', 'client_id', 'client_secret', 'key_pem_path', 'iss', 'sub'}
+        missing_keys = mandatory_keys - auth_data.keys()
+
+        if missing_keys:
+            raise ValueError(f"Missing mandatory keys in auth_data: {', '.join(missing_keys)}")
+
+        self.authData = auth_data
 
     def setDefaultScope(self, scope=None):
         """
@@ -74,8 +72,8 @@ class Rest:
             'exp': seconds_since_epoch + JWT_VALIDITY_SEC,  # expiration
             'jti': str(uuid.uuid4()),
         }
-        if self.authData['add'] is not None:
-            jwt_payload.update(self.authData['add'])
+        if 'org' in self.authData:
+            jwt_payload['org'] = self.authData['org']
         log.debug(jwt_payload)
 
         token_parameters = {
