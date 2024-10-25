@@ -118,11 +118,13 @@ class Rest:
         """
         self.headers.update(headers)
 
-    def call(self, method, endpoint, headers=None, data=None, params=None):
+    def call(self, method, endpoint=None, body=None, query=None, headers=None):
         """
         Lower level HTTP request.
         """
-        url = f'{self.base_url}/{endpoint}'
+        url = self.base_url
+        if endpoint is not None:
+            url = f'{url}/{endpoint}'
         req_headers = {}
         if method != 'PUT' and method != 'DELETE':
             req_headers['Accept'] = MIME_JSON
@@ -136,8 +138,8 @@ class Rest:
             url=url,
             headers=req_headers,
             verify=self.verify,
-            json=data,
-            params=params
+            json=body,
+            params=query
         )
         response.raise_for_status()
         if method == 'PUT' or method == 'DELETE':
@@ -145,13 +147,13 @@ class Rest:
         return response.json()
 
     def create(self, endpoint, data):
-        return self.call('POST', endpoint, data=data)
+        return self.call('POST', endpoint, body=data)
 
     def read(self, endpoint, params=None):
-        return self.call('GET', endpoint, params=params)
+        return self.call('GET', endpoint, query=params)
 
     def update(self, endpoint, data):
-        return self.call('PUT', endpoint, data=data)
+        return self.call('PUT', endpoint, body=data)
 
     def delete(self, endpoint):
         return self.call('DELETE', endpoint)

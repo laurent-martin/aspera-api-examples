@@ -59,15 +59,15 @@ impl Rest {
     /// Create a new REST API client
     ///
     /// ### Arguments
-    /// * `base_url` - The base URL for the API
+    /// * `url` - The base URL for the API
     /// * `verify` - Whether to verify SSL certificates
-    pub fn new(base_url: &str, verify: bool) -> Result<Self, Box<dyn Error>> {
+    pub fn new(url: &str, verify: bool) -> Result<Self, Box<dyn Error>> {
         let mut client_builder = reqwest::Client::builder();
         if !verify {
             client_builder = client_builder.danger_accept_invalid_certs(true);
         }
         Ok(Self {
-            base_url: base_url.to_string(),
+            base_url: url.to_string(),
             auth: AuthData::None,
             headers: HashMap::new(),
             client: client_builder.build()?,
@@ -171,19 +171,19 @@ impl Rest {
     /// CRUD: Create
     ///
     /// ### Arguments
-    /// * `path` - The path to the API endpoint
+    /// * `endpoint` - The endpoint to the API endpoint
     /// * `value` - The JSON value to send
     /// * `query` - Optional query parameters
     pub async fn call(
         &self,
         method: reqwest::Method,
-        path: &str,
-        value: Option<&Value>,
+        endpoint: &str,
+        body: Option<&Value>,
         query: Option<&[(&str, &str)]>,
     ) -> Result<Option<Value>, Box<dyn Error>> {
         let mut request_builder: reqwest::RequestBuilder = self
             .client
-            .request(method, &format!("{}/{path}", self.base_url))
+            .request(method, &format!("{}/{endpoint}", self.base_url))
             .header("Content-Type", MIME_JSON)
             .header("Accept", MIME_JSON);
         // loop on headers and add them to the request
@@ -197,8 +197,8 @@ impl Rest {
         if let AuthData::Basic(data) = &self.auth {
             request_builder = request_builder.basic_auth(&data.username, Some(&data.password));
         }
-        // add json value if present
-        if let Some(value) = value {
+        // add json body if present
+        if let Some(value) = body {
             request_builder = request_builder.json(value);
         }
         let response = request_builder.send().await?;
@@ -215,33 +215,33 @@ impl Rest {
     }
     pub async fn create(
         &self,
-        path: &str,
+        endpoint: &str,
         value: &Value,
         query: Option<&[(&str, &str)]>,
     ) -> Result<Value, Box<dyn Error>> {
         Ok(self
-            .call(reqwest::Method::POST, path, Some(value), query)
+            .call(reqwest::Method::POST, endpoint, Some(value), query)
             .await?
             .unwrap())
     }
     pub async fn read(
         &self,
-        path: &str,
+        endpoint: &str,
         query: Option<&[(&str, &str)]>,
     ) -> Result<Value, Box<dyn Error>> {
         Ok(self
-            .call(reqwest::Method::GET, path, None, query)
+            .call(reqwest::Method::GET, endpoint, None, query)
             .await?
             .unwrap())
     }
-    pub async fn update(&self, path: &str, value: &Value) -> Result<(), Box<dyn Error>> {
+    pub async fn update(&self, endpoint: &str, value: &Value) -> Result<(), Box<dyn Error>> {
         let _ = self
-            .call(reqwest::Method::PUT, path, Some(value), None)
+            .call(reqwest::Method::PUT, endpoint, Some(value), None)
             .await?;
         Ok(())
     }
-    pub async fn delete(&self, path: &str) -> Result<(), Box<dyn Error>> {
-        let _ = self.call(reqwest::Method::DELETE, path, None, None).await?;
+    pub async fn delete(&self, endpoint: &str) -> Result<(), Box<dyn Error>> {
+        let _ = self.call(reqwest::Method::DELETE, endpoint, None, None).await?;
         Ok(())
     }
 }

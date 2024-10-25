@@ -20,7 +20,7 @@ import org.json.JSONArray;
 
 public class Rest {
     static private final Logger logger = Logger.getLogger(Rest.class.getName());
-    
+
     private static final int JWT_CLIENT_SERVER_OFFSET_SEC = 60;
     private static final int JWT_VALIDITY_SEC = 600;
     private static final String MIME_JSON = "application/json";
@@ -107,26 +107,29 @@ public class Rest {
 
     public Object call(//
             String method, //
-            String path, //
-            Optional<JSONObject> value, //
-            Optional<Map<String, String>> queryParams//
+            String endpoint, //
+            Optional<JSONObject> body, //
+            Optional<Map<String, String>> query//
     ) throws Exception {
-        final String url = baseUrl + "/" + path;
+        String url = baseUrl;
+        if (endpoint != null) {
+            url = url + "/" + endpoint;
+        }
         // final String url = "http://localhost:12345";
-        value.ifPresent(v -> logger.log(Level.FINE, "Body: {0}", v));
-        queryParams.ifPresent(q -> q
+        body.ifPresent(v -> logger.log(Level.FINE, "Body: {0}", v));
+        query.ifPresent(q -> q
                 .forEach((k, v) -> logger.log(Level.FINE, "param>> {0}={1}", new Object[] {k, v})));
         var request_builder = Unirest//
                 .request(method, url) //
                 .header("Content-Type", MIME_JSON)//
                 .header("Accept", MIME_JSON).body("");
         headers.forEach(request_builder::header);
-        queryParams.ifPresent(p -> {
+        query.ifPresent(p -> {
             for (var e : p.entrySet()) {
                 request_builder.queryString(e.getKey(), e.getValue());
             }
         });
-        value.ifPresent(v -> request_builder.body(v.toString()));
+        body.ifPresent(v -> request_builder.body(v.toString()));
         final var response = request_builder.asString();
         if (!response.isSuccess()) {
             logger.log(Level.SEVERE, "Request failed with status: {0}", response.getStatus());
@@ -138,25 +141,25 @@ public class Rest {
         return new JSONObject(response.getBody().toString());
     }
 
-    public Object create(String path, JSONObject value) throws Exception {
-        return call("POST", path, Optional.of(value), Optional.empty());
+    public Object create(String endpoint, JSONObject data) throws Exception {
+        return call("POST", endpoint, Optional.of(data), Optional.empty());
     }
 
-    public Object create(String path, JSONObject value, Map<String, String> queryParams)
+    public Object create(String endpoint, JSONObject data, Map<String, String> params)
             throws Exception {
-        return call("POST", path, Optional.of(value), Optional.of(queryParams));
+        return call("POST", endpoint, Optional.of(data), Optional.of(params));
     }
 
-    public Object read(String path, Map<String, String> queryParams) throws Exception {
-        return call("GET", path, Optional.empty(), Optional.of(queryParams));
+    public Object read(String endpoint, Map<String, String> params) throws Exception {
+        return call("GET", endpoint, Optional.empty(), Optional.of(params));
     }
 
-    public void update(String path, JSONObject value) throws Exception {
-        call("PUT", path, Optional.of(value), Optional.empty());
+    public void update(String endpoint, JSONObject data) throws Exception {
+        call("PUT", endpoint, Optional.of(data), Optional.empty());
     }
 
-    public void delete(String path) throws Exception {
-        call("DELETE", path, Optional.empty(), Optional.empty());
+    public void delete(String endpoint) throws Exception {
+        call("DELETE", endpoint, Optional.empty(), Optional.empty());
     }
 
 }

@@ -32,9 +32,9 @@ type Rest struct {
 }
 
 // NewRest creates a new Rest client
-func NewRest(baseURL string) *Rest {
+func NewRest(url string) *Rest {
 	return &Rest{
-		BaseURL:  baseURL,
+		BaseURL:  url,
 		Verify:   true,
 		Headers:  map[string]string{},
 		AuthData: map[string]string{},
@@ -126,23 +126,28 @@ func (r *Rest) getBearer(scope string) string {
 }
 
 // Call handles generic HTTP requests for GET, POST, PUT, DELETE
-func (r *Rest) Call(method, endpoint string, data interface{}, params map[string]string) (map[string]interface{}, error) {
+func (r *Rest) Call(
+	method string,
+	endpoint string,
+	body interface{},
+	query map[string]string,
+) (map[string]interface{}, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	// Marshal the body if data is provided
+	// Marshal the body if body is provided
 	var bodyBytes []byte
 	var err error
-	if data != nil {
+	if body != nil {
 		if r.Headers["Content-Type"] == MIME_WWW {
 			values := url.Values{}
-			for key, value := range data.(map[string]string) {
+			for key, value := range body.(map[string]string) {
 				values.Set(key, value)
 			}
 			bodyBytes = []byte(values.Encode())
 		} else {
-			bodyBytes, err = json.Marshal(data)
+			bodyBytes, err = json.Marshal(body)
 			if err != nil {
 				return nil, err
 			}
@@ -164,9 +169,9 @@ func (r *Rest) Call(method, endpoint string, data interface{}, params map[string
 	}
 
 	// Add query parameters for GET requests
-	if params != nil && method == http.MethodGet {
+	if query != nil && method == http.MethodGet {
 		q := req.URL.Query()
-		for k, v := range params {
+		for k, v := range query {
 			q.Add(k, v)
 		}
 		req.URL.RawQuery = q.Encode()

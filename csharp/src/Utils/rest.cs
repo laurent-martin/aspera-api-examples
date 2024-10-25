@@ -24,9 +24,9 @@ public static class Const
 /// </summary>
 public class Rest
 {
-    public Rest(string base_url)
+    public Rest(string url)
     {
-        mBaseUrl = base_url;
+        mBaseUrl = url;
         mHttpClient = new HttpClient
         {
             BaseAddress = new Uri(mBaseUrl)
@@ -86,7 +86,7 @@ public class Rest
         oauth_api.setAuthBasic(mAuthData["client_id"], mAuthData["client_secret"]);
         //oauth_api.setHeader("Content-Type", Const.MIME_WWW);
         JObject data = (JObject)oauth_api.call(
-            operation: HttpMethod.Post,
+            method: HttpMethod.Post,
             body: token_parameters,
             body_type: "www");
         return "Bearer " + (string)data["access_token"];
@@ -94,16 +94,16 @@ public class Rest
     /// <summary>
     /// Call REST API.
     /// </summary>
-    /// <param name="operation">GET, ...</param>
-    /// <param name="subpath">endpoint</param>
+    /// <param name="method">GET, ...</param>
+    /// <param name="endpoint">endpoint</param>
     /// <param name="body"></param>
     /// <param name="query"></param>
     /// <param name="headers"></param>
     /// <returns></returns>
     /// <exception cref="System.Exception"></exception>
     public JContainer call(
-        HttpMethod operation,
-        string subpath = null,
+        HttpMethod method,
+        string endpoint = null,
         JObject body = null,
         string body_type = "json",
         JObject query = null,
@@ -111,9 +111,9 @@ public class Rest
         )
     {
         string uri_string = mBaseUrl;
-        if (subpath != null)
+        if (endpoint != null)
         {
-            uri_string = uri_string + "/" + subpath;
+            uri_string = uri_string + "/" + endpoint;
         }
         var builder = new System.UriBuilder(uri_string);
         if (query != null)
@@ -132,10 +132,10 @@ public class Rest
         }
         HttpRequestMessage request = new HttpRequestMessage
         {
-            Method = operation,
+            Method = method,
             RequestUri = builder.Uri
         };
-        // depends on operation
+        // depends on method
         foreach (var header in mHeaders)
         {
             request.Headers.Add(header.Key, header.Value);
@@ -189,21 +189,21 @@ public class Rest
         }
         return result;
     }
-    public JContainer create(string subpath, JObject body)
+    public JContainer create(string endpoint, JObject body)
     {
-        return call(operation: HttpMethod.Post, subpath: subpath, body: body);
+        return call(method: HttpMethod.Post, endpoint: endpoint, body: body);
     }
-    public JContainer read(string subpath, JObject query = null)
+    public JContainer read(string endpoint, JObject query = null)
     {
-        return call(operation: HttpMethod.Get, subpath: subpath, query: query);
+        return call(method: HttpMethod.Get, endpoint: endpoint, query: query);
     }
-    public JContainer update(string subpath, JObject body)
+    public JContainer update(string endpoint, JObject body)
     {
-        return call(operation: HttpMethod.Put, subpath: subpath, body: body);
+        return call(method: HttpMethod.Put, endpoint: endpoint, body: body);
     }
-    public JContainer delete(string subpath)
+    public JContainer delete(string endpoint)
     {
-        return call(operation: HttpMethod.Delete, subpath: subpath);
+        return call(method: HttpMethod.Delete, endpoint: endpoint);
     }
     private string mBaseUrl;
     private StringDict mAuthData;
