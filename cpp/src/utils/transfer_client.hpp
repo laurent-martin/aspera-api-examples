@@ -86,7 +86,7 @@ class TransferClient {
             LOG(error) << "Daemon not started.";
             LOG(error) << "Exited with code: " << _transfer_daemon_process->exit_code();
             LOG(error) << "Check daemon log: " << _daemon_log;
-            LOG(error) << Configuration::last_file_line(_daemon_log);
+            LOG(error) << last_file_line(_daemon_log);
             throw std::runtime_error("daemon startup failed");
         }
         LOG(info) << "Daemon started: " << _transfer_daemon_process->id();
@@ -218,7 +218,7 @@ class TransferClient {
 
     void transfer_check_failed_status(const trsdk::TransferStatus& status, const trsdk::Error& error) {
         if (status == trsdk::TransferStatus::FAILED) {
-            LOG(error) << Configuration::last_file_line(_daemon_log);
+            LOG(error) << last_file_line(_daemon_log);
             throw std::runtime_error("transfer failed: " + error.description());
         }
         if (status == trsdk::TransferStatus::UNKNOWN_STATUS) {

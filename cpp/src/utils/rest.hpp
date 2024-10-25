@@ -7,15 +7,11 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
-#include <boost/beast/core/detail/base64.hpp>
 #include <boost/json.hpp>
 #include <boost/url.hpp>
 #include <boost/url/encode.hpp>
 #include <boost/url/parse.hpp>
 #include <boost/url/rfc/pchars.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>  // Pour la conversion en string
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -33,13 +29,17 @@ inline constexpr const int JWT_VALIDITY_SEC = 600;
 inline constexpr const char* const MIME_JSON = "application/json";
 inline constexpr const char* const MIME_WWW = "application/x-www-form-urlencoded";
 inline constexpr const char* const IETF_GRANT_JWT = "urn:ietf:params:oauth:grant-type:jwt-bearer";
-inline const json::object json_empty;
+inline const json::object empty_value;
 
 enum BodyType {
     NONE,
     JSON,
     WWW
 };
+
+inline std::string attribute_str(json::object& dict, const std::string& key) {
+    return dict.at(key).as_string().c_str();
+}
 
 // simple REST client using boost
 class Rest {
@@ -55,7 +55,8 @@ class Rest {
         : _base_url(base_url),
           _headers(),
           _auth_data(),
-          _verify(true) {}
+          _verify(true) {
+    }
     void set_verify(bool verify) {
         _verify = verify;
     }
@@ -83,11 +84,11 @@ class Rest {
         _auth_data = auth_data;
     }
 
-    void set_default_scope(const char* scope = nullptr) {
+    void set_default_scope(const std::string& scope) {
         _headers.insert({http::field::authorization, get_bearer_token(scope)});
     }
 
-    std::string get_bearer_token(const char* scope = nullptr) {
+    std::string get_bearer_token(const std::string& scope) {
         std::string private_key_pem = read_file(_auth_data.at("key_pem_path"));
 
         auto seconds_since_epoch = std::time(nullptr);
@@ -98,7 +99,7 @@ class Rest {
             {"aud", _auth_data.at("aud")},
             {"iat", seconds_since_epoch - JWT_CLIENT_SERVER_OFFSET_SEC},
             {"exp", seconds_since_epoch + JWT_VALIDITY_SEC},
-            {"jti", boost::uuids::to_string(boost::uuids::random_generator()())}};
+            {"jti", uuid_random()}};
 
         if (_auth_data.find("org") != _auth_data.end()) {
             jwt_payload.insert_or_assign("org", _auth_data.at("org"));
@@ -108,7 +109,7 @@ class Rest {
             {"client_id", _auth_data.at("client_id")},
             {"grant_type", IETF_GRANT_JWT},
             {"assertion", jwt_encode(jwt_payload, private_key_pem, "RS256", json::object{{"typ", "JWT"}})}};
-        if (scope != nullptr) {
+        if (!scope.empty()) {
             token_parameters.insert_or_assign("scope", scope);
         }
         LOG(debug) << "parameters: " << token_parameters;
@@ -116,16 +117,16 @@ class Rest {
         Rest oauth_api(_auth_data.at("token_url"));
         oauth_api.set_verify(_verify);
         oauth_api.set_auth_basic(_auth_data.at("client_id"), _auth_data.at("client_secret"));
-        json::object response = oauth_api.call(http::verb::post, "", token_parameters, BodyType::WWW);
+        json::object response = oauth_api.call(http::verb::post, "", token_parameters, BodyType::WWW).as_object();
         return "Bearer " + static_cast<std::string>(response.at("access_token").as_string());
     }
 
-    json::object call(
+    json::value call(
         const http::verb method,
         const std::string& endpoint = "",
-        const json::object& body = json_empty,
+        const json::value& body = empty_value,
         BodyType body_type = BodyType::NONE,
-        const json::object& query = json_empty  //
+        const json::object& query = empty_value  //
     ) {
         LOG(debug) << "Calling: " << method << " on " << endpoint;
         const auto base_uri = boost::urls::parse_uri(_base_url).value();
@@ -156,14 +157,16 @@ class Rest {
             }
             case BodyType::WWW:
                 request.set(http::field::content_type, MIME_WWW);
-                request.body() = build_query(body);
+                request.body() = build_query(body.as_object());
                 request.prepare_payload();
                 break;
         }
+        bool result_json = false;
         switch (method) {
             case http::verb::post:
             case http::verb::get:
                 request.set(http::field::accept, MIME_JSON);
+                result_json = true;
                 break;
             default:
                 break;
@@ -173,8 +176,14 @@ class Rest {
         }
         LOG(debug) << "Request: " << request;
         boost::asio::io_service io_svc;
-        ssl::context ssl_context(ssl::context::sslv23_client);
+        ssl::context ssl_context(ssl::context::tls_client);
+        ssl_context.set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::tlsv13);
         ssl::stream<boost::asio::ip::tcp::socket> sock_stream = {io_svc, ssl_context};
+        // Set SNI Hostname (many hosts need this to handshake successfully)
+        if (!SSL_set_tlsext_host_name(sock_stream.native_handle(), base_uri.host().c_str())) {
+            boost::system::error_code ec{static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category()};
+            throw boost::system::system_error{ec};
+        }
         boost::asio::ip::tcp::resolver resolver(io_svc);
         auto it = resolver.resolve(base_uri.host(), port);
         connect(sock_stream.lowest_layer(), it);
@@ -198,32 +207,29 @@ class Rest {
             throw std::runtime_error("HTTP error: " + std::to_string(response.result_int()));
         }
         LOG(debug) << "Result: " << response.body();
-        return json::parse(response.body()).as_object();
+        if (result_json) {
+            return json::parse(response.body());
+        }
+        return empty_value;
     }
-    json::object create(std::string endpoint, json::object body, json::object query = json_empty) {
+    json::value create(std::string endpoint, json::value body, json::object query = empty_value) {
         return call(http::verb::post, endpoint, body, BodyType::JSON, query);
     }
-    json::object read(std::string endpoint, json::object query = json_empty) {
-        return call(http::verb::get, endpoint, json_empty, BodyType::NONE, query);
+    json::value read(std::string endpoint, json::object query = empty_value) {
+        return call(http::verb::get, endpoint, empty_value, BodyType::NONE, query);
     }
-    json::object update(std::string endpoint, json::object body) {
+    json::value update(std::string endpoint, json::value body) {
         return call(http::verb::put, endpoint, body, BodyType::JSON);
     }
-    json::object delete_(std::string endpoint) {
-        return call(http::verb::delete_, endpoint);
+    void delete_(std::string endpoint) {
+        call(http::verb::delete_, endpoint);
     }
     // Create a basic auth header
     static inline std::string basic_auth_header(const std::string& username, const std::string& password) {
-        std::string credentials = username + ":" + password;
-        std::string encoded_credentials;
-        encoded_credentials.resize(boost::beast::detail::base64::encoded_size(credentials.size()));
-        boost::beast::detail::base64::encode(encoded_credentials.data(), credentials.data(), credentials.size());
-        return "Basic " + encoded_credentials;
+        return "Basic " + base64_encode(username + ":" + password);
     }
     static std::string base64url_encode(const std::string& input) {
-        std::string encoded;
-        encoded.resize(boost::beast::detail::base64::encoded_size(input.size()));
-        boost::beast::detail::base64::encode(encoded.data(), input.data(), input.size());
+        std::string encoded = base64_encode(input);
         // Replace characters to make it URL-safe and remove padding
         std::replace(encoded.begin(), encoded.end(), '+', '-');
         std::replace(encoded.begin(), encoded.end(), '/', '_');

@@ -30,7 +30,7 @@ int main(const int argc, const char* const argv[]) {
              {"aud", config.param_str({"faspex5", "client_id"})},
              {"sub", "user:" + config.param_str({"faspex5", "username"})}});
 
-        f5_api.set_default_scope();
+        f5_api.set_default_scope("");
 
         // Create a new package with Faspex 5 API
         LOG(info) << "Creating package: " << package_name;
@@ -39,7 +39,7 @@ int main(const int argc, const char* const argv[]) {
             {{"title", package_name},
              {"recipients", json::array{
                                 json::object{
-                                    {"name", config.param_str({"faspex5", "username"})}}}}});
+                                    {"name", config.param_str({"faspex5", "username"})}}}}}).as_object();
         LOG(debug) << package_info;
 
         // Build payload to specify files to send
@@ -50,7 +50,7 @@ int main(const int argc, const char* const argv[]) {
         std::ostringstream endpoint;
         endpoint << "packages/" << package_info.at("id").as_string().c_str() << "/transfer_spec/upload";
         LOG(info) << ">>>>>>" << endpoint.str();
-        json::object t_spec = f5_api.create(endpoint.str(), upload_request, {{"transfer_type", "connect"}});
+        json::object t_spec = f5_api.create(endpoint.str(), upload_request, {{"transfer_type", "connect"}}).as_object();
 
         // Optional: Multi session
         if (transfer_sessions != 1) {

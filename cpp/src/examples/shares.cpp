@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
             LOG(info) << "=============== Shares Upload";
             json::object transfer_setup_request = json::object{
                 {"transfer_requests", json::array{json::object{{"transfer_request", json::object{{"paths", json::array{json::object{{"destination", destination_folder_in_shares}}}}}}}}}};
-            json::object response_data = shares_api.create("files/upload_setup", transfer_setup_request);
+            json::object response_data = shares_api.create("files/upload_setup", transfer_setup_request).as_object();
             json::object transfer_specification = response_data.at("transfer_specs").as_array()[0].as_object().at("transfer_spec").as_object();
             config.add_sources(transfer_specification, "paths");
             transfer_client.transfer_start_and_wait(transfer_specification);
@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
             LOG(info) << "=============== Shares Download: " << source_file_path_in_shares;
             json::object transfer_setup_request = json::object{
                 {"transfer_requests", json::array{json::object{{"transfer_request", json::object{{"paths", json::array{json::object{{"source", source_file_path_in_shares}}}}}}}}}};
-            json::object response_data = shares_api.create("files/download_setup", transfer_setup_request);
+            json::object response_data = shares_api.create("files/download_setup", transfer_setup_request).as_object();
             json::object transfer_specification = response_data.at("transfer_specs").as_array()[0].as_object().at("transfer_spec").as_object();
             transfer_specification.at("destination_root") = std::filesystem::temp_directory_path().string();
             transfer_client.transfer_start_and_wait(transfer_specification);

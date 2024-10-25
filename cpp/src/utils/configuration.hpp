@@ -4,6 +4,7 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/beast/core/detail/base64.hpp>
 #include <boost/json.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
@@ -12,6 +13,9 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/utility/setup/console.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -20,6 +24,7 @@
 #include <vector>
 
 namespace json = boost::json;
+namespace base64 = boost::beast::detail::base64;
 
 namespace utils {
 inline constexpr const char* PATHS_FILE_REL = "config/paths.yaml";
@@ -112,27 +117,6 @@ class Configuration {
         return item_path;
     }
 
-    // Get the last line of a file
-    static std::string last_file_line(const std::string& filename) {
-        // ate: seek to the end of the file
-        std::ifstream file(filename, std::ios::binary | std::ios::ate);
-        if (!file.is_open())
-            throw std::runtime_error("Unable to open file: " + filename);
-        std::string last_line;
-        char char_at_pos = 0;
-        // read until a newline or beginning of the file
-        // we skip the last byte (the newline)
-        while (file.tellg() > 1 && char_at_pos != '\n') {
-            // Move two bytes back and read one char
-            file.seekg(-2, std::ios::cur);
-            file.get(char_at_pos);
-        }
-        file.seekg(-1, std::ios::cur);
-        std::getline(file, last_line);
-        file.close();
-        return last_line;
-    }
-
     // Set source files in the transfer spec at the specified key.
     void add_sources(json::object& transfer_spec, const std::string& path, bool add_destination = false) const {
         std::vector<std::string> keys;
@@ -192,4 +176,35 @@ class Configuration {
         return true;
     }
 };
+// Get the last line of a file
+inline std::string last_file_line(const std::string& filename) {
+    // ate: seek to the end of the file
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+    if (!file.is_open())
+        throw std::runtime_error("Unable to open file: " + filename);
+    std::string last_line;
+    char char_at_pos = 0;
+    // read until a newline or beginning of the file
+    // we skip the last byte (the newline)
+    while (file.tellg() > 1 && char_at_pos != '\n') {
+        // Move two bytes back and read one char
+        file.seekg(-2, std::ios::cur);
+        file.get(char_at_pos);
+    }
+    file.seekg(-1, std::ios::cur);
+    std::getline(file, last_line);
+    file.close();
+    return last_line;
+}
+
+inline std::string base64_encode(const std::string& clear_string) {
+    std::string encoded_string;
+    encoded_string.resize(base64::encoded_size(clear_string.size()));
+    base64::encode(encoded_string.data(), clear_string.data(), clear_string.size());
+    return encoded_string;
+}
+
+inline std::string uuid_random() {
+    return boost::uuids::to_string(boost::uuids::random_generator()());
+}
 }  // namespace utils
