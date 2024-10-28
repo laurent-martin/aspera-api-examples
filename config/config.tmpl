@@ -4,7 +4,7 @@ misc:
   level: debug
   transfer_regular: true
 trsdk:
-  url: grpc://localhost:55002
+  url: grpc://127.0.0.1:12345
   level: trace
   ascp_level: trace
 httpgw:
@@ -49,6 +49,8 @@ faspex5:
   client_id: _client_id_here_
   client_secret: _client_secret_here_
   private_key: "/path/to/your/private_key"
+  shared_folder_name: Server Files
+  shared_folder_file: "/testfiles/aspera-test-dir-small/10MB.1"
 shares:
   url: https://shares.address.here
   verify: true
