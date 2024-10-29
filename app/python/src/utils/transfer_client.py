@@ -35,12 +35,11 @@ class TransferClient:
 
     def __init__(self, config):
         self._config = config
-        self._transfer_daemon_process = None
-        self._transfer_service = None
         sdk_url = urlparse(self._config.param('trsdk', 'url'))
         self._server_address = sdk_url.hostname
         self._server_port = sdk_url.port
-        self._daemon_path = self._config.get_path('sdk_daemon')
+        self._transfer_daemon_process = None
+        self._transfer_service = None
         self._daemon_log = os.path.join(self._config._log_folder, DAEMON_LOG_FILE)
 
     def create_config_file(self, conf_file):
@@ -76,7 +75,7 @@ class TransferClient:
         out_file = f'{file_base}.out'
         err_file = f'{file_base}.err'
         command = ' '.join([
-            self._daemon_path,
+            self._config.get_path('sdk_daemon'),
             '--config',
             conf_file,
         ])

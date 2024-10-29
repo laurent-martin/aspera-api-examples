@@ -35,9 +35,9 @@ pub struct TransferClient {
     config: Arc<Configuration>,
     server_address: String,
     server_port: u16,
-    log_path: PathBuf,
-    transfer_service: Option<Box<TransferServiceClient<Channel>>>,
     daemon_process: Option<Child>,
+    transfer_service: Option<Box<TransferServiceClient<Channel>>>,
+    daemon_log: PathBuf,
 }
 
 impl TransferClient {
@@ -46,12 +46,12 @@ impl TransferClient {
         let sdk_uri = url::Url::parse(&sdk_url).expect("Failed to parse SDK URL");
         let server_address = sdk_uri.host().expect("No host found").to_string();
         let server_port = sdk_uri.port().unwrap_or(33001);
-        let log_path = config.log_folder_path().join(DAEMON_LOG_FILE);
+        let daemon_log = config.log_folder_path().join(DAEMON_LOG_FILE);
         TransferClient {
             config,
             server_address,
             server_port,
-            log_path,
+            daemon_log,
             transfer_service: None,
             daemon_process: None,
         }
@@ -107,7 +107,7 @@ impl TransferClient {
         log::debug!("daemon out: {out_path:?}");
         log::debug!("daemon err: {err_path:?}");
         log::debug!("daemon conf: {conf_path:?}");
-        log::debug!("daemon log: {:?}", self.log_path);
+        log::debug!("daemon log: {:?}", self.daemon_log);
         log::debug!("ascp log: {ascp_log_path:?}");
         log::debug!("starting: {} {}", daemon_path.display(), args.join(" "));
 
@@ -153,7 +153,7 @@ impl TransferClient {
     }
     /// Get last log message of transfer daemon.
     fn last_log_message(&self) -> Result<String, Box<dyn Error>> {
-        let json_str = Configuration::last_file_line(&self.log_path)?;
+        let json_str = Configuration::last_file_line(&self.daemon_log)?;
         //log::debug!("last line: {json_str}");
         let parsed: serde_json::Value = serde_json::from_str(json_str.as_str())?;
         let msg = parsed

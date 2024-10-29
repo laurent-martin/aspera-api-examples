@@ -27,7 +27,7 @@ inline constexpr const char* ASCP_LOG_FILE = "aspera-scp-transfer.log";
 inline constexpr const int MAX_CONNECTION_WAIT_SEC = 10;
 
 // Provide a common environment for tests, including:
-// - conf file generation, startup and shutdown of asperatransferd
+// - daemon conf file generation, startup and shutdown of asperatransferd
 // - transfer of files and monitoring
 class TransferClient {
    private:
@@ -36,8 +36,6 @@ class TransferClient {
     uint16_t _server_port;
     std::unique_ptr<boost::process::child> _transfer_daemon_process;
     std::unique_ptr<trsdk::TransferService::Stub> _transfer_service;
-    // folder with SDK binaries
-    const std::filesystem::path _daemon_path;
     const std::string _daemon_log;
 
    public:
@@ -45,9 +43,7 @@ class TransferClient {
         : _config(config),
           _transfer_daemon_process(nullptr),
           _transfer_service(nullptr),
-          _daemon_path(_config.get_path("sdk_daemon")),
           _daemon_log(_config.log_folder_path() / DAEMON_LOG_FILE) {
-        LOG(debug) << LOG_ITEM("daemon") << _daemon_path.string();
         auto sdk_url = _config.param_str({"trsdk", "url"});
         auto sdk_uri = boost::urls::parse_uri(sdk_url);
         if (!sdk_uri) {
@@ -67,7 +63,7 @@ class TransferClient {
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
-        const std::string command = std::string(_daemon_path) + " --config " + conf_file;
+        const std::string command = std::string(_config.get_path("sdk_daemon")) + " --config " + conf_file;
         LOG(debug) << LOG_ITEM("daemon out") << out_file;
         LOG(debug) << LOG_ITEM("daemon err") << err_file;
         LOG(debug) << LOG_ITEM("daemon log") << _daemon_log;

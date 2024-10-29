@@ -26,12 +26,11 @@ const (
 
 type TransferClient struct {
 	config             *Configuration
-	daemonLog          string
-	transferDaemonProc *exec.Cmd
-	transferService    pb.TransferServiceClient
 	serverAddress      string
 	serverPort         int
-	daemonPath         string
+	transferDaemonProc *exec.Cmd
+	transferService    pb.TransferServiceClient
+	daemonLog          string
 }
 
 func NewTransferClient(config *Configuration) *TransferClient {
@@ -44,7 +43,6 @@ func NewTransferClient(config *Configuration) *TransferClient {
 		daemonLog:     filepath.Join(config.LogFolder, DAEMON_LOG_FILE),
 		serverAddress: sdkURL.Hostname(),
 		serverPort:    GetPortOrDefault(sdkURL, 33001),
-		daemonPath:    config.GetPath("sdk_daemon"),
 	}
 }
 
@@ -59,7 +57,7 @@ func (tc *TransferClient) CreateConfigFile(confFile string) error {
 	case "trace":
 		ascpIntLevel = 2
 	default:
-		return fmt.Errorf("Invalid ascp_level: %s", ascpLevel)
+		return fmt.Errorf("invalid ascp_level: %s", ascpLevel)
 	}
 
 	configInfo := map[string]interface{}{
@@ -90,7 +88,7 @@ func (tc *TransferClient) StartDaemon() error {
 	outFile := filepath.Join(tc.config.LogFolder, TRANSFER_SDK_DAEMON+".out")
 	errFile := filepath.Join(tc.config.LogFolder, TRANSFER_SDK_DAEMON+".err")
 	cmd := exec.Command(
-		tc.daemonPath,
+		tc.config.GetPath("sdk_daemon"),
 		"--config", confFile,
 	)
 

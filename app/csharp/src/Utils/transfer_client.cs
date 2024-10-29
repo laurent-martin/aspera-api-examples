@@ -6,19 +6,17 @@ public class TransferClient
     private const string DAEMON_LOG_FILE = "asperatransferd.log";
     private const string ASCP_LOG_FILE = "aspera-scp-transfer.log";
     private Configuration _config;
-    private System.Diagnostics.Process mTransferDaemonProcess = null;
-    private Transfersdk.TransferService.TransferServiceClient mSdkClient = null;
-    private List<StreamWriter> mStreams = new List<StreamWriter>();
-    private string _daemonPath;
     private string _serverAddress;
     private int _serverPort;
+    private System.Diagnostics.Process _daemonProcess = null;
+    private List<StreamWriter> _daemonStreams = new List<StreamWriter>();
+    private Transfersdk.TransferService.TransferServiceClient _daemonService = null;
     private string _daemonLog;
 
 
     public TransferClient(Configuration config)
     {
         _config = config;
-        _daemonPath = _config.GetPath("sdk_daemon");
         var confUrl = new Uri(_config.GetParam("trsdk", "url"));
         _serverAddress = confUrl.Host;
         _serverPort = confUrl.Port;
@@ -49,15 +47,14 @@ public class TransferClient
     // Start transfer manager daemon if not already running and return gRPC client
     public void StartDaemon()
     {
-
         Log.log.Info("ERROR: Failed to connect\nStarting daemon...");
-
+        var daemonPath = _config.GetPath("sdk_daemon");
         var fileBase = Path.Combine(_config.LogFolder(), TRANSFER_SDK_DAEMON);
         var confFile = fileBase + ".conf";
         var outFile = fileBase + ".out";
         var errFile = fileBase + ".err";
         var exec_args = $"--config {confFile}";
-        var command = $"{_daemonPath} {exec_args}";
+        var command = $"{daemonPath} {exec_args}";
         Log.log.Debug($"daemon out: {outFile}");
         Log.log.Debug($"daemon err: {errFile}");
         Log.log.Debug($"daemon log: {_daemonLog}");
@@ -65,11 +62,11 @@ public class TransferClient
         Log.log.Debug($"command: {command}");
         CreateConfigFile(confFile);
         Log.log.Info("Starting daemon...");
-        mTransferDaemonProcess = new System.Diagnostics.Process
+        _daemonProcess = new System.Diagnostics.Process
         {
             StartInfo = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = _daemonPath,
+                FileName = daemonPath,
                 Arguments = exec_args,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
@@ -78,36 +75,36 @@ public class TransferClient
                 CreateNoWindow = true,
             }
         };
-        mTransferDaemonProcess.OutputDataReceived += captureStream(outFile);
-        mTransferDaemonProcess.ErrorDataReceived += captureStream(errFile);
-        mTransferDaemonProcess.Start();
+        _daemonProcess.OutputDataReceived += captureStream(outFile);
+        _daemonProcess.ErrorDataReceived += captureStream(errFile);
+        _daemonProcess.Start();
         // wait for daemon to be ready
         Thread.Sleep(2000);
-        if (mTransferDaemonProcess.HasExited)
+        if (_daemonProcess.HasExited)
         {
             Log.log.Error($"Daemon not started.");
-            Log.log.Error($"Exited with code: {mTransferDaemonProcess.ExitCode}");
+            Log.log.Error($"Exited with code: {_daemonProcess.ExitCode}");
             Log.log.Error($"Check daemon log: {_daemonLog}");
-            mTransferDaemonProcess.WaitForExit();
-            mTransferDaemonProcess = null;
+            _daemonProcess.WaitForExit();
+            _daemonProcess = null;
             //logging.error(utils.configuration.last_file_line(self._daemon_log));
             throw new Exception("daemon startup failed");
         }
-        mTransferDaemonProcess.BeginOutputReadLine();
-        mTransferDaemonProcess.BeginErrorReadLine();
+        _daemonProcess.BeginOutputReadLine();
+        _daemonProcess.BeginErrorReadLine();
     }
     public void ConnectToDaemon()
     {
         AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
         var grpcUrl = new Uri($"http://{_serverAddress}:{_serverPort}");
         Log.log.Info($"Connecting to {TRANSFER_SDK_DAEMON} on {grpcUrl} ...");
-        mSdkClient = new Transfersdk.TransferService.TransferServiceClient(GrpcChannel.ForAddress(grpcUrl));
-        mSdkClient.GetAPIVersion(new Transfersdk.APIVersionRequest());
+        _daemonService = new Transfersdk.TransferService.TransferServiceClient(GrpcChannel.ForAddress(grpcUrl));
+        _daemonService.GetAPIVersion(new Transfersdk.APIVersionRequest());
         Log.log.Info("Connected !");
     }
     public void Startup()
     {
-        if (mSdkClient == null)
+        if (_daemonService == null)
         {
             StartDaemon();
             ConnectToDaemon();
@@ -116,16 +113,16 @@ public class TransferClient
     // Shutdown transfer manager daemon, if needed
     public void Shutdown()
     {
-        mSdkClient = null;
+        _daemonService = null;
         // Shutdown transfer manager daemon, if needed
-        if (mTransferDaemonProcess != null)
+        if (_daemonProcess != null)
         {
             Log.log.Info("Stopping Transfer daemon...");
-            mTransferDaemonProcess.Kill();
-            mTransferDaemonProcess.WaitForExit();
-            mTransferDaemonProcess = null;
+            _daemonProcess.Kill();
+            _daemonProcess.WaitForExit();
+            _daemonProcess = null;
             Log.log.Info("Transfer daemon has been terminated.");
-            foreach (var stream in mStreams)
+            foreach (var stream in _daemonStreams)
             {
                 stream.Close();
             }
@@ -146,7 +143,7 @@ public class TransferClient
             TransferSpec = Newtonsoft.Json.JsonConvert.SerializeObject(aSpecObj),
         };
 
-        var transferResponse = mSdkClient.StartTransfer(transferRequest);
+        var transferResponse = _daemonService.StartTransfer(transferRequest);
 
         if (transferResponse.Status == Transfersdk.TransferStatus.Failed)
         {
@@ -163,7 +160,7 @@ public class TransferClient
         while (true)
         {
             // check the current state of the transfer
-            var queryTransferResponse = mSdkClient.QueryTransfer(new Transfersdk.TransferInfoRequest() { TransferId = aTransferId });
+            var queryTransferResponse = _daemonService.QueryTransfer(new Transfersdk.TransferInfoRequest() { TransferId = aTransferId });
             Console.Out.WriteLine("transfer info " + queryTransferResponse);
 
             // check transfer status in response, and exit if it's done
@@ -190,7 +187,7 @@ public class TransferClient
     public System.Diagnostics.DataReceivedEventHandler captureStream(string logFile)
     {
         var logStream = new StreamWriter(new FileStream(logFile, FileMode.Append, FileAccess.Write));
-        mStreams.Add(logStream);
+        _daemonStreams.Add(logStream);
         return new System.Diagnostics.DataReceivedEventHandler(
             (sender, e) =>
             {

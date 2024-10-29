@@ -29,16 +29,14 @@ public class TransferClient {
 	private static final String ASCP_LOG_FILE = "aspera-scp-transfer.log";
 	// configuration parameters from the configuration file
 	public final Configuration config;
-	// process for the daemon
-	private Process daemonProcess;
-	private ManagedChannel channel;
 	private final String serverAddress;
 	private final int serverPort;
+	private Process daemonProcess;
+	private ManagedChannel channel;
 	// Aspera client API (synchronous)
 	public TransferServiceGrpc.TransferServiceBlockingStub transferService;
-	// several transfer session may be started but for the example we use only one
-	private final String daemonPath;
 	private final String daemonLog;
+	// several transfer session may be started but for the example we use only one
 	private String transferId;
 
 	public TransferClient(final Configuration aConfig) {
@@ -53,7 +51,6 @@ public class TransferClient {
 		} catch (final Exception e) {
 			throw new Error("invalid grpc url: " + e.getMessage());
 		}
-		daemonPath = config.getPath("sdk_daemon");
 		daemonLog = config.getLogFolder() + File.separator + DAEMON_LOG_FILE;
 		transferId = null;
 	}
@@ -108,7 +105,7 @@ public class TransferClient {
 		String sdk_conf_path = file_base + ".conf";
 		createConfFile(sdk_conf_path);
 		try {
-			String[] command = new String[] {daemonPath, "-c", sdk_conf_path};
+			String[] command = new String[] {config.getPath("sdk_daemon"), "-c", sdk_conf_path};
 			// LOGGER.log(Level.INFO, "{0} {1}","daemon out", out_file);
 			// LOGGER.log(Level.INFO, "{0} {1}","daemon err", err_file);
 			LOGGER.log(Level.INFO, "daemon log: {0}", daemonLog);
