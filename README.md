@@ -5,8 +5,8 @@
 Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 
 - Aspera Transfer SDK: transfer files in an application
-- Aspera Connect SDK and HTTPGW SDK: transfer files in a web browser
 - Aspera Applications APIs: interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
+- Aspera Connect SDK and HTTPGW SDK: transfer files in a web browser
 
 ![Component APIs](doc/api_components.png)
 
@@ -47,9 +47,9 @@ Depending on the use case, one might use one or (often) several of those APIs.
 
 This repository is structured like this:
 
-- `web` : This folder contains an example that shows the use of web SDKd: both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK**
+- `web` : an example that shows the use of web SDKd: both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK**
 
-- Other folders, one per programming language, show samples using the **Aspera Transfer SDK** and **Aspera Applications REST APIs**
+- `app` : examples in various languages using the **Aspera Transfer SDK** and **Aspera Applications REST APIs**
 
 Inside each language folder, you will find:
 
@@ -117,12 +117,14 @@ If you use Linux, macOS, AIX, etc...
 
     > **Note:** If you don't have internet access on the system then download the Transfer SDK on a system with internet and place the file here: `<main folder>/tmp/transfer_sdk.zip`
 
+TODO: update the following:
+
     ```dos
     cd tmp
     7z x transfer_sdk.zip
     move trsdk\osx-arm64 sdk_runtime
     move trsdk\noarch\aspera* sdk_runtime
-    move trsdk\noarch sdk_dev
+    move trsdk\noarch xxx
     ```
 
 4. Run the samples: see [Running sample programs](#running-sample-programs)
@@ -145,6 +147,7 @@ Or run the sample directly (invocation depends on language):
 
 ```bash
 echo hello > datafile
+export DIR_TOP=path/to/main/folder
 python python/src/cos.py datafile
 ```
 

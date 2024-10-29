@@ -7,7 +7,7 @@ EXAMPLES_DIR=src/examples/
 all:: $(TEST_FLAGS)
 export SDK_FILE_PROTO
 # Build and Execute one sample
-$(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) $(EXAMPLES_DIR)%.rs
+$(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(EXAMPLES_DIR)%.rs
 	@echo "== Test: $(notdir $@) ==========================="
 	RUST_BACKTRACE=1 cargo run --bin $(notdir $@) $(GBL_FILE_SAMPLE)
 	@sleep 2

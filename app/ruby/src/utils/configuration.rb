@@ -40,7 +40,7 @@ class Configuration
     raise "Missing config file: #{get_path('main_config')}" unless @config['misc']
 
     # some required files are generated here (keys, certs)
-    Aspera::Ascp::Installation.instance.sdk_folder = File.join(get_path('sdk_dev'), 'connectors/ruby')
+    # Aspera::Ascp::Installation.instance.sdk_folder =
     # get Transfer Agent
     @agent = Aspera::Agent::Direct.new
 

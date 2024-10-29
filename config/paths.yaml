@@ -1,7 +1,9 @@
 # paths of files and folder
 # specified relative to the project main folder
+
+# variable values, server addresses, credentials, etc...
 main_config: private/config.yaml
+sdk_runtime: tmp/transfer_sdk
+sdk_samples: tmp/transfer_sdk/connectors
+proto: tmp/transfer_sdk/connectors/grpc/transfer.proto
 temp: tmp
-sdk_runtime: tmp/sdk_runtime
-sdk_dev: tmp/sdk_dev
-proto: tmp/sdk_dev/connectors/grpc/transfer.proto

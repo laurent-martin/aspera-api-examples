@@ -14,7 +14,7 @@ PY_GRPC_GEN_DIR=$(PYENV_DIR)grpc_aspera/
 # python grpc source code files, generated from proto file, also present in SDK
 PY_GRPC_SDK_SRCS=transfer_pb2.py transfer_pb2_grpc.py
 # location of pre-generated protobuf/grpc sources provided in SDK
-PY_GRPC_SDK_DIR=$(SDK_DIR_DEV)connectors/python/
+PY_GRPC_SDK_DIR=$(SDK_DIR_EXAMPLES)python/
 # comment out this file to use generated grpc source code from SDK
 PY_GRPC_SDK_DIR=
 # python grpc source code files used by sample code with full path
@@ -26,7 +26,7 @@ all:: $(TEST_FLAGS)
 # 3. Generate or copy python grpc files
 # 4. Ensure test file is present
 # 5. Run the sample using the virtual environment
-$(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(PYENV_ACTIVATE) $(PY_FILES_GRPC) $(GBL_FILE_SAMPLE) $(EXAMPLES)%.py
+$(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(PYENV_ACTIVATE) $(PY_FILES_GRPC) $(EXAMPLES)%.py
 	@echo "== Test: $(notdir $@) ==========================="
 	source $(PYENV_ACTIVATE) && \
 		PYTHONPATH=$(PY_GRPC_GEN_DIR):$(SRC) \

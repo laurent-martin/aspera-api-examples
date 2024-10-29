@@ -4,8 +4,8 @@ include $(DIR_TOP)common.mak
 # Executables are generated here:
 CPP_BUILD_DIR=build/
 # location of pre-generated protobuf/grpc sources provided in SDK
-CPP_GRPC_SDK_DIR=$(SDK_DIR_DEV)connectors/cpp/
-# comment this line to use the SDK provided in the SDK_DIR_DEV
+CPP_GRPC_SDK_DIR=$(SDK_DIR_EXAMPLES)cpp/
+# comment this line to use gRPC stubs provided in the SDK
 CPP_GRPC_SDK_DIR=
 # location of sample code
 EXAMPLES_DIR=src/examples/
@@ -23,7 +23,7 @@ CMAKE_USER_VARS=\
 # Execute all samples
 all:: $(TEST_FLAGS)
 # Build and Execute one sample
-$(DIR_TESTED_FLAG)%: $(CPP_BUILD_DIR)/Makefile $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) $(EXAMPLES_DIR)%.cpp $(shell find src/utils -name "*.hpp")
+$(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) $(CPP_BUILD_DIR)/Makefile $(EXAMPLES_DIR)%.cpp $(shell find src/utils -name "*.hpp")
 	@echo "== Test: $(notdir $@) ==========================="
 	cd $(CPP_BUILD_DIR) && cmake --build . --target $(notdir $@) -- VERBOSE=1
 	$(CPP_BUILD_DIR)$(notdir $@) $(GBL_FILE_SAMPLE)

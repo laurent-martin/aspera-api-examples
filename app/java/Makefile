@@ -16,13 +16,13 @@ GRADLE_PROPS=\
 -Pproto_dir=$(dir $(SDK_FILE_PROTO))
 # cspell:enable
 all:: $(TEST_FLAGS)
-$(DIR_TESTED_FLAG)%: $(SAMPLE_JAR) $(GBL_FILE_SAMPLE)
+$(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(SAMPLE_JAR)
 	@echo "== Test: $(notdir $@) ==========================="
 	java -cp $(SAMPLE_JAR) $(JAVA_PROPS) examples.$(notdir $@) $(GBL_FILE_SAMPLE)
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
-$(SAMPLE_JAR): $(FILES_RUNTIME) $(shell find src -name "*.java") build.gradle
+$(SAMPLE_JAR): $(shell find src -name "*.java") build.gradle
 	gradle -version
 	gradle build $(GRADLE_PROPS)
 clean::

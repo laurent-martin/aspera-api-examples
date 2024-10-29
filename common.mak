@@ -10,17 +10,16 @@ SDK_FILE_PROTO=$(DIR_TOP)$(shell sed -n -e 's/^proto: //p' $(GBL_FILE_PATHS))
 # user's config file path
 GBL_FILE_CONFIG=$(DIR_TOP)$(shell sed -n -e 's/^main_config: //p' $(GBL_FILE_PATHS))
 # folder with architecture independent files from the transfer SDK
-SDK_DIR_DEV=$(DIR_TOP)$(shell sed -n -e 's/^sdk_dev: //p' < $(GBL_FILE_PATHS))/
+SDK_DIR_EXAMPLES=$(DIR_TOP)$(shell sed -n -e 's/^sdk_samples: //p' < $(GBL_FILE_PATHS))/
 # location of extracted transfer SDK
 SDK_DIR_RUNTIME=$(DIR_TOP)$(shell sed -n -e 's/^sdk_runtime: //p' $(GBL_FILE_PATHS))/
 # name of the current platform (os-cpu)
 PLATFORM=$(shell sed -n -e 's/^ *platform: //p' $(GBL_FILE_CONFIG) 2> /dev/null)
-# downloaded SDK file
-SDK_FILE_ZIP=$(GBL_DIR_TMP)transfer_sdk.zip
 # SDK executables
-SDK_FILE_EXECS=$(SDK_DIR_RUNTIME)asperatransferd
+SDK_DAEMON=asperatransferd
+SDK_FILES_REQUIRED=$(SDK_DIR_RUNTIME)bin/$(SDK_DAEMON) $(SDK_FILE_PROTO)
 # required files for running the samples
-FILES_RUNTIME=$(GBL_FILE_CONFIG) $(SDK_DIR_RUNTIME)asperatransferd
+FILES_RUNTIME=$(GBL_FILE_CONFIG) $(SDK_FILES_REQUIRED)
 # template configuration file
 GBL_FILE_CONF_TMPL=$(DIR_TOP)config/config.tmpl
 # sample file to transfer
@@ -38,12 +37,12 @@ clean_flags::
 	rm -f $(TEST_FLAGS)
 # simple clean
 clean:: clean_flags clean_daemon
-	rm -f $(TMPDIR)/asperatransferd.* $(TMPDIR)/aspera-scp-transfer*.log
+	rm -f $(TMPDIR)/$(SDK_DAEMON).* $(TMPDIR)/aspera-scp-transfer*.log
 	rm -fr $(DIR_TESTED_FLAG)
 # clean all generated and compiled files
 superclean:: clean
 clean_daemon:
-	killall -q asperatransferd||:
+	killall -q $(SDK_DAEMON)||:
 $(GBL_FILE_SAMPLE):
 	mkdir -p $(GBL_DIR_TMP)
 	@echo "Generating test file: $(GBL_FILE_SAMPLE)"
@@ -52,24 +51,12 @@ $(GBL_FILE_SAMPLE):
 $(DIR_TESTED_FLAG):
 	mkdir -p $(DIR_TESTED_FLAG)
 # config file info https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
-# download transfer SDK
-SDK_URL=https://ibm.biz/aspera_transfer_sdk
-$(SDK_FILE_ZIP):
-	mkdir -p $(GBL_DIR_TMP)
-	curl -L $(SDK_URL) -o $(SDK_FILE_ZIP)
-# Extract transfer SDK
-$(SDK_DIR_RUNTIME)asperatransferd $(SDK_FILE_PROTO): $(SDK_FILE_ZIP)
-	rm -fr $(SDK_DIR_RUNTIME) $(SDK_DIR_DEV)
-	mkdir -p $(SDK_DIR_RUNTIME)
-	unzip -qu $(SDK_FILE_ZIP) '$(PLATFORM)/*' 'noarch/*' -d $(SDK_DIR_RUNTIME)
-	mv $(SDK_DIR_RUNTIME)$(PLATFORM)/* $(SDK_DIR_RUNTIME)
-	test -e $(SDK_DIR_RUNTIME)aspera-license || mv $(SDK_DIR_RUNTIME)noarch/aspera-license $(SDK_DIR_RUNTIME)
-	mv $(SDK_DIR_RUNTIME)noarch $(SDK_DIR_DEV)
-	rmdir $(SDK_DIR_RUNTIME)$(PLATFORM)
-	test -f $(SDK_FILE_PROTO)
-	$(SDK_DIR_RUNTIME)/asperatransferd version | sed -Ee 's|^(.*) version (.*)\..*$$|<product><name>\1</name><version>\2</version></product>|' > $(SDK_DIR_RUNTIME)product-info.mf
-	echo '<CONF/>' > $(SDK_DIR_RUNTIME)aspera.conf
-	touch $(SDK_DIR_RUNTIME)asperatransferd $(SDK_FILE_PROTO)
+# download and extract transfer SDK
+$(SDK_FILES_REQUIRED):
+	rm -fr $(SDK_DIR_RUNTIME)
+	mkdir -p $SDK_DIR_RUNTIME
+    mkdir -p $(GBL_DIR_TMP)
+	$(DIR_TOP)doc/get_sdk.sh $(PLATFORM) $(SDK_DIR_RUNTIME)
 $(GBL_FILE_CONFIG):
 	mkdir -p $$(dirname $@)
 	cp $(GBL_FILE_CONF_TMPL) $@
