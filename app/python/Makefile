@@ -1,4 +1,4 @@
-DIR_TOP=$(realpath ..)/
+DIR_TOP=$(realpath ../..)/
 TEST_CASES=server aoc faspex faspex5 node shares node_v2
 # shares_v2 cos cos_node_api cos_v2
 include $(DIR_TOP)common.mak

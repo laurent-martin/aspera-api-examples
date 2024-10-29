@@ -47,7 +47,7 @@ class Configuration {
         const char* const argv[])
         : _init_log(init_log()),
           _file_list(argv + 1, argv + argc),
-          _top_folder_path(std::filesystem::absolute(argv[0]).parent_path().parent_path().parent_path()),
+          _top_folder_path(init_top_folder_path()),
           _log_folder_path(std::filesystem::temp_directory_path()),
           _paths(load_yaml("paths", _top_folder_path / PATHS_FILE_REL)),
           _config(load_yaml("main_config", get_path("main_config"))) {
@@ -174,6 +174,19 @@ class Configuration {
             << std::setw(7) << std::left << boost::log::expressions::attr<boost::log::trivial::severity_level>("Severity") << " "  //
             << boost::log::expressions::smessage);
         return true;
+    }
+    static inline std::filesystem::path init_top_folder_path() {
+        const char* dir_top = std::getenv("DIR_TOP");
+        if (dir_top == nullptr) {
+            throw std::runtime_error("Environment variable DIR_TOP is not set.");
+        }
+
+        std::filesystem::path top_path = dir_top;
+        if (!std::filesystem::exists(top_path)) {
+            throw std::runtime_error("The folder specified by DIR_TOP does not exist: " + top_path.string());
+        }
+
+        return top_path;
     }
 };
 // Get the last line of a file

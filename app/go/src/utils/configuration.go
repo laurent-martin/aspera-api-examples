@@ -60,9 +60,19 @@ func NewConfiguration() (*Configuration, error) {
 		return nil, errors.New("no files to process")
 	}
 
-	topFolderPath, err := filepath.Abs(filepath.Join(filepath.Dir(os.Args[0]), "../.."))
+	topFolderPath := os.Getenv("DIR_TOP")
+	if topFolderPath == "" {
+		return nil, fmt.Errorf("environment variable DIR_TOP is not set")
+	}
+	topFolderPath, err := filepath.Abs(topFolderPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get absolute path of DIR_TOP: %v", err)
+	}
+	info, err := os.Stat(topFolderPath)
+	if os.IsNotExist(err) || !info.IsDir() {
+		return nil, fmt.Errorf("the folder specified by DIR_TOP does not exist: %s", topFolderPath)
+	} else if err != nil {
+		return nil, fmt.Errorf("error checking DIR_TOP: %v", err)
 	}
 	logger.Debugf("top folder path: %s", topFolderPath)
 

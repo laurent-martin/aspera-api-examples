@@ -1,4 +1,4 @@
-DIR_TOP=$(realpath ..)/
+DIR_TOP=$(realpath ../..)/
 TEST_CASES=server server_v2
 # cos
 include $(DIR_TOP)common.mak

@@ -26,7 +26,14 @@ class Configuration
       Process.exit(1)
     end
     @files = [ARGV[0]]
-    @top_folder = File.join(File.dirname(__FILE__), '..', '..', '..')
+    @top_folder = ENV['DIR_TOP']
+    raise 'Environment variable DIR_TOP is not set.' if @top_folder.nil? || @top_folder.empty?
+
+    @top_folder = File.expand_path(@top_folder)
+    unless File.directory?(@top_folder)
+      raise "The folder specified by DIR_TOP does not exist or is not a directory: #{@top_folder}"
+    end
+
     @paths = YAML.load_file(File.join(@top_folder, PATHS_FILE_REL))
     @config = YAML.load_file(get_path('main_config'))
     log.debug("config: #{@config}")

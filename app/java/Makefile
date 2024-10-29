@@ -1,4 +1,4 @@
-DIR_TOP=$(realpath ..)/
+DIR_TOP=$(realpath ../..)/
 TEST_CASES=ServerFileUploadV1Example ServerFileDownloadV2Example PersistentUploadExample Faspex5Send
 # COSFileUploadExample
 include $(DIR_TOP)common.mak

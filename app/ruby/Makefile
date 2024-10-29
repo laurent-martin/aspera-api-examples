@@ -1,4 +1,4 @@
-DIR_TOP=$(CURDIR)/../
+DIR_TOP=$(realpath ../..)/
 TEST_CASES=aoc node faspex5 server faspex4
 include $(DIR_TOP)common.mak
 SRC=./src/

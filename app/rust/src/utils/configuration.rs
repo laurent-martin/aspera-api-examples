@@ -29,7 +29,15 @@ impl Configuration {
                 writeln!(buf, "{}: {}", record.level(), record.args())
             })
             .init();
-        let top_folder_path = env::current_dir()?.parent().unwrap().to_path_buf();
+        let dir_top = env::var("DIR_TOP")
+            .map_err(|_| "Environment variable DIR_TOP is not set.".to_string())?;
+        let top_folder_path = std::fs::canonicalize(&dir_top)?;
+        if !top_folder_path.is_dir() {
+            return Err(Box::from(format!(
+                "The folder specified by DIR_TOP does not exist or is not a directory: {}",
+                top_folder_path.display()
+            )));
+        }
         let log_folder_path = std::env::temp_dir();
         let paths = Self::load_yaml("paths", top_folder_path.join(PATHS_FILE_REL))?;
         let config = Self::load_yaml(

@@ -7,7 +7,15 @@ const assert = require('assert')
 const os = require('os')
 const { spawn } = require('child_process')
 
-const top_folder = path.resolve(path.dirname(__filename), '..', '..', '..')
+const dirTop = process.env.DIR_TOP;
+if (!dirTop) {
+  throw new Error("Environment variable DIR_TOP is not set.");
+}
+const top_folder = path.resolve(dirTop);
+if (!fs.existsSync(top_folder) || !fs.lstatSync(top_folder).isDirectory()) {
+  throw new Error(`The folder specified by DIR_TOP does not exist or is not a directory: ${top_folder}`);
+}
+
 const paths_file = "config/paths.yaml"
 const paths = yaml.load(fs.readFileSync(path.join(top_folder, paths_file), 'utf8'))
 function get_path(name) {

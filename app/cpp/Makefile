@@ -1,4 +1,4 @@
-DIR_TOP=$(realpath ..)/
+DIR_TOP=$(realpath ../..)/
 TEST_CASES=server shares node_v2 faspex5 aoc
 include $(DIR_TOP)common.mak
 # Executables are generated here:

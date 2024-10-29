@@ -2,12 +2,12 @@
 DIR_TOP=$(CURDIR)/
 # the bulk of rules are in common.mak
 include $(DIR_TOP)common.mak
-SECTIONS=cpp csharp go java js python ruby rust web
+SECTIONS=app/cpp app/csharp app/go app/java app/js app/python app/ruby app/rust web
 .PHONY: cleantmp template
 template:
 	cd doc && make
 all clean superclean clean_flags::
-	set -ex && for sec in $(SECTIONS); do cd $$sec; make $@; cd ..; done
+	set -ex && for sec in $(SECTIONS); do (cd $$sec && make $@); done
 clean::
 	find . -name \*.log -exec rm {} \;
 superclean:: cleantmp

@@ -17,6 +17,15 @@ public class Configuration
         log4net.Config.BasicConfigurator.Configure();
         // get project root folder
         mTopFolder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".."));
+        mTopFolder = Environment.GetEnvironmentVariable("DIR_TOP");
+        if (string.IsNullOrEmpty(mTopFolder))
+        {
+            throw new InvalidOperationException("Environment variable DIR_TOP is not set.");
+        }
+        if (!Directory.Exists(mTopFolder))
+        {
+            throw new DirectoryNotFoundException($"The folder specified by DIR_TOP does not exist: {mTopFolder}");
+        }
 
         // read project's relative paths config file
         using (var reader = new StreamReader(Path.Combine(mTopFolder, PATHS_FILE_REL)))
@@ -36,7 +45,8 @@ public class Configuration
                 .Build().Deserialize<Dictionary<string, Dictionary<string, string>>>(reader);
         }
     }
-    public string LogFolder(){
+    public string LogFolder()
+    {
         return Path.GetTempPath();
     }
 

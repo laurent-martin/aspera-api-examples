@@ -1,4 +1,4 @@
-DIR_TOP=$(realpath ..)/
+DIR_TOP=$(realpath ../..)/
 TEST_CASES=server faspex5 aoc
 include $(DIR_TOP)common.mak
 PROPERTIES=-p:Proto_File=$(SDK_FILE_PROTO)

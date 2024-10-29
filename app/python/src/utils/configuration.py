@@ -24,7 +24,12 @@ class Configuration:
     def __init__(self):
         self._file_list = sys.argv[1:]
         assert self._file_list, f'ERROR: Usage: {sys.argv[0]} <files to send>'
-        self._top_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        self._top_folder = os.getenv("DIR_TOP")
+        if self._top_folder is None:
+            raise EnvironmentError("Environment variable DIR_TOP is not set.")
+        self._top_folder = os.path.abspath(self._top_folder)
+        if not os.path.isdir(self._top_folder):
+            raise NotADirectoryError(f"The folder specified by DIR_TOP does not exist or is not a directory: {self._top_folder}")
         self._log_folder = tempfile.gettempdir()
         # read project's relative paths config file
         self._paths = yaml.load(open(os.path.join(self._top_folder, *PATHS_FILE_REL.split('/'))), Loader=yaml.FullLoader)
