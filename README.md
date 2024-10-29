@@ -68,29 +68,11 @@ Once the configuration file is created, sample programs can be run directly.
 
 ## Quick start (Unix-like systems)
 
-If you use Linux, macOS, AIX, etc...
+See [Running sample programs](#running-sample-programs).
 
-1. Initialize the main folder:
+On the first execution of `make`: the Transfer SDK will be automatically downloaded.
 
-    ```bash
-    make
-    ```
-
-    This will:
-
-    - Create an empty configuration file from the template.
-    - Download the Aspera Transfer SDK.
-    - Extract the SDK.
-
-    > **Note:** If you don't have internet access on the system then download the Transfer SDK on a system with internet from: <https://ibm.biz/aspera_transfer_sdk> and place the file here: `<main folder>/tmp/transfer_sdk.zip`
-
-2. Refer to [Configuration File](#configuration-file): Edit the file `private/config.yaml` and fill values.
-
-    ```bash
-    vi private/config.yaml
-    ```
-
-3. Run the samples: see [Running sample programs](#running-sample-programs)
+To download the SDK, execute: `make sdk`.
 
 ## Quick start (Windows)
 
@@ -113,19 +95,9 @@ If you use Linux, macOS, AIX, etc...
     md tmp
     ```
 
-3. Download [sdk.zip](https://ibm.biz/aspera_transfer_sdk) and extract its contents to `tmp/trsdk`
+3. Download the Aspera Transfer SDK ([here](https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/downloads/downloads.json)) and extract its contents to the folder identified by `sdk_dir` in `config/paths.yaml` : `<main folder>/tmp/transfer_sdk`
 
-    > **Note:** If you don't have internet access on the system then download the Transfer SDK on a system with internet and place the file here: `<main folder>/tmp/transfer_sdk.zip`
-
-TODO: update the following:
-
-    ```dos
-    cd tmp
-    7z x transfer_sdk.zip
-    move trsdk\osx-arm64 sdk_runtime
-    move trsdk\noarch\aspera* sdk_runtime
-    move trsdk\noarch xxx
-    ```
+    > **Note:** Make sure that files identified in `config/paths.yaml` are in the extracted folder as expected. For example, the following file must exist: `<main folder>/tmp/transfer_sdk/bin/asperatransferd`
 
 4. Run the samples: see [Running sample programs](#running-sample-programs)
 
@@ -137,19 +109,15 @@ Not all values are required, only those needed for the examples you want to run.
 For example to execute an individual sample, use `make .tested/<sample name here>`:
 
 ```console
-$ cd python
+$ cd app/python
 $ make list
 server aoc faspex faspex5 node shares node_v2
 $ make .tested/faspex5
 ```
 
-Or run the sample directly (invocation depends on language):
+Running examples requires the Transfer SDK daemon `asperatransferd` to be downloaded, and some tools to compile the proto file of the transfer SDK, see [Transfer SDK](#transfer-sdk).
 
-```bash
-echo hello > datafile
-export DIR_TOP=path/to/main/folder
-python python/src/cos.py datafile
-```
+For details, refer to the recipe in the `Makefile` of each language.
 
 ## Configuration file
 
@@ -243,7 +211,7 @@ The following log levels can be set:
 - `trsdk.level`: asperatransferd log level: `trace` `debug` `info` `warning` `error` `fatal` `panic`
 - `trsdk.ascp_level`: ascp log level: `trace` `debug` `info`
 
-Some examples support setting port to zero in `trsdk.url` to use a random port.
+Some examples support setting port to `0` (zero) in `trsdk.url` to use a random port.
 
 Sample application generate a file `asperatransferd.conf` provided to the transfer sdk daemon, log level there are taken from the general yaml config file.
 
