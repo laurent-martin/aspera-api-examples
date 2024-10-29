@@ -9,7 +9,7 @@ public class TransferClient
     private System.Diagnostics.Process mTransferDaemonProcess = null;
     private Transfersdk.TransferService.TransferServiceClient mSdkClient = null;
     private List<StreamWriter> mStreams = new List<StreamWriter>();
-    private string _sdkRuntimeFolder;
+    private string _daemonPath;
     private string _serverAddress;
     private int _serverPort;
     private string _daemonLog;
@@ -18,7 +18,7 @@ public class TransferClient
     public TransferClient(Configuration config)
     {
         _config = config;
-        _sdkRuntimeFolder = _config.GetPath("sdk_runtime");
+        _daemonPath = _config.GetPath("sdk_daemon");
         var confUrl = new Uri(_config.GetParam("trsdk", "url"));
         _serverAddress = confUrl.Host;
         _serverPort = confUrl.Port;
@@ -35,12 +35,7 @@ public class TransferClient
             log_level = _config.GetParam("trsdk", "level"),
             fasp_runtime = new
             {
-                use_embedded = false,
-                user_defined = new
-                {
-                    bin = _sdkRuntimeFolder,
-                    etc = _sdkRuntimeFolder,
-                },
+                use_embedded = true,
                 log = new
                 {
                     dir = _config.LogFolder(),
@@ -61,9 +56,8 @@ public class TransferClient
         var confFile = fileBase + ".conf";
         var outFile = fileBase + ".out";
         var errFile = fileBase + ".err";
-        var exec_full_path = Path.Combine(_sdkRuntimeFolder, TRANSFER_SDK_DAEMON);
         var exec_args = $"--config {confFile}";
-        var command = $"{exec_full_path} {exec_args}";
+        var command = $"{_daemonPath} {exec_args}";
         Log.log.Debug($"daemon out: {outFile}");
         Log.log.Debug($"daemon err: {errFile}");
         Log.log.Debug($"daemon log: {_daemonLog}");
@@ -75,7 +69,7 @@ public class TransferClient
         {
             StartInfo = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = exec_full_path,
+                FileName = _daemonPath,
                 Arguments = exec_args,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,

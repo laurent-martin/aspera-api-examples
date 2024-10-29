@@ -72,11 +72,7 @@ impl TransferClient {
             "log_directory": self.config.log_folder_path().to_string_lossy(),
             "log_level": self.config.param_str("trsdk","level")?,
             "fasp_runtime": {
-                "use_embedded": false,
-                "user_defined": {
-                    "bin": self.config.get_path("sdk_runtime")?,
-                    "etc": self.config.get_path("sdk_runtime")?,
-                },
+                "use_embedded": true,
                 "log": {
                     "dir": self.config.log_folder_path().to_string_lossy(),
                     "level": ascp_int_level,
@@ -106,19 +102,17 @@ impl TransferClient {
         self.daemon_create_config_file(&conf_path)?;
         let stdout_file = File::create(out_path.clone())?;
         let stderr_file = File::create(err_path.clone())?;
-        let sdk_runtime_path = self.config.get_path("sdk_runtime")?;
-        let sdk_path: PathBuf = sdk_runtime_path.join(TRANSFER_SDK_DAEMON);
-        let command = sdk_path.to_str().ok_or("Invalid path")?;
+        let daemon_path = self.config.get_path("sdk_daemon")?;
         let args = ["--config", conf_path.to_str().ok_or("Invalid path")?];
         log::debug!("daemon out: {out_path:?}");
         log::debug!("daemon err: {err_path:?}");
         log::debug!("daemon conf: {conf_path:?}");
         log::debug!("daemon log: {:?}", self.log_path);
         log::debug!("ascp log: {ascp_log_path:?}");
-        log::debug!("starting: {command} {}", args.join(" "));
+        log::debug!("starting: {} {}", daemon_path.display(), args.join(" "));
 
         // Start the subprocess in the background
-        let mut daemon_process: Child = Command::new(command)
+        let mut daemon_process: Child = Command::new(daemon_path)
             .args(&args)
             .stdout(Stdio::from(stdout_file))
             .stderr(Stdio::from(stderr_file))

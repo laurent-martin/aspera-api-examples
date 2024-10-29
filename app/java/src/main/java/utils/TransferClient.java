@@ -27,36 +27,33 @@ public class TransferClient {
 	private static final String TRANSFER_SDK_DAEMON = "asperatransferd";
 	private static final String DAEMON_LOG_FILE = "asperatransferd.log";
 	private static final String ASCP_LOG_FILE = "aspera-scp-transfer.log";
-
-
 	// configuration parameters from the configuration file
 	public final Configuration config;
 	// process for the daemon
-	private Process daemon_process;
+	private Process daemonProcess;
 	private ManagedChannel channel;
 	private final String serverAddress;
 	private final int serverPort;
 	// Aspera client API (synchronous)
 	public TransferServiceGrpc.TransferServiceBlockingStub transferService;
 	// several transfer session may be started but for the example we use only one
-	private final String sdkRuntimeFolder;
+	private final String daemonPath;
 	private final String daemonLog;
 	private String transferId;
 
-
 	public TransferClient(final Configuration aConfig) {
 		config = aConfig;
-		daemon_process = null;
+		daemonProcess = null;
 		transferService = null;
 		channel = null;
 		try {
-		final URI grpcURL= new URI(config.getParamStr("trsdk", "url"));
-		serverAddress = grpcURL.getHost();
-		serverPort = grpcURL.getPort();
+			final URI grpcURL = new URI(config.getParamStr("trsdk", "url"));
+			serverAddress = grpcURL.getHost();
+			serverPort = grpcURL.getPort();
 		} catch (final Exception e) {
 			throw new Error("invalid grpc url: " + e.getMessage());
 		}
-		sdkRuntimeFolder = config.getPath("sdk_runtime");
+		daemonPath = config.getPath("sdk_daemon");
 		daemonLog = config.getLogFolder() + File.separator + DAEMON_LOG_FILE;
 		transferId = null;
 	}
@@ -77,10 +74,7 @@ public class TransferClient {
 				.put("log_directory", config.getLogFolder()) //
 				.put("log_level", config.getParamStr("trsdk", "level")) //
 				.put("fasp_runtime", new JSONObject() //
-						.put("use_embedded", false) //
-						.put("user_defined", new JSONObject() //
-								.put("bin", sdkRuntimeFolder) //
-								.put("etc", sdkRuntimeFolder)) //
+						.put("use_embedded", true) //
 						.put("log", new JSONObject() //
 								.put("dir", config.getLogFolder()) //
 								.put("level",
@@ -114,8 +108,7 @@ public class TransferClient {
 		String sdk_conf_path = file_base + ".conf";
 		createConfFile(sdk_conf_path);
 		try {
-			 final String daemonExecutable= sdkRuntimeFolder+ File.separator + TRANSFER_SDK_DAEMON;
-			String[] command = new String[] {daemonExecutable, "-c", sdk_conf_path};
+			String[] command = new String[] {daemonPath, "-c", sdk_conf_path};
 			// LOGGER.log(Level.INFO, "{0} {1}","daemon out", out_file);
 			// LOGGER.log(Level.INFO, "{0} {1}","daemon err", err_file);
 			LOGGER.log(Level.INFO, "daemon log: {0}", daemonLog);
@@ -137,7 +130,7 @@ public class TransferClient {
 		} catch (final InterruptedException e) {
 			throw new Error(e.getMessage());
 		}
-		daemon_process = started_process;
+		daemonProcess = started_process;
 	}
 
 	public void daemon_connect() {
@@ -145,8 +138,8 @@ public class TransferClient {
 			throw new Error("already connected to daemon");
 		LOGGER.log(Level.INFO, "L: Connecting to daemon");
 		// comm channel for grpc
-		channel = ManagedChannelBuilder.forAddress(serverAddress, serverPort)
-				.usePlaintext().build();
+		channel =
+				ManagedChannelBuilder.forAddress(serverAddress, serverPort).usePlaintext().build();
 		// create a connection to the Transfer SDK daemon
 		// Note that this is a synchronous client here
 		// async is also possible
@@ -159,17 +152,17 @@ public class TransferClient {
 	}
 
 	public void shutdown() {
-		if (daemon_process != null) {
+		if (daemonProcess != null) {
 			LOGGER.log(Level.INFO, "L: Shutting down daemon");
-			daemon_process.destroy();
+			daemonProcess.destroy();
 			try {
-				final int exitStatus = daemon_process.waitFor();
+				final int exitStatus = daemonProcess.waitFor();
 				LOGGER.log(Level.INFO, "L: daemon exited with status {0}", exitStatus);
 			} catch (final InterruptedException e) {
 				LOGGER.log(Level.SEVERE, "L: error waiting for daemon to shutdown: {0}",
 						e.getMessage());
 			}
-			daemon_process = null;
+			daemonProcess = null;
 		}
 	}
 

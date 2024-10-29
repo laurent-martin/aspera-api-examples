@@ -3,7 +3,8 @@
 
 # variable values, server addresses, credentials, etc...
 main_config: private/config.yaml
-sdk_runtime: tmp/transfer_sdk
+sdk_dir: tmp/transfer_sdk
+sdk_daemon: tmp/transfer_sdk/bin/asperatransferd
 sdk_samples: tmp/transfer_sdk/connectors
-proto: tmp/transfer_sdk/connectors/grpc/transfer.proto
+proto: tmp/transfer_sdk/connectors/transfer.proto
 temp: tmp

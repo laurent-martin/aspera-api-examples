@@ -35,8 +35,6 @@ class Configuration:
         self._paths = yaml.load(open(os.path.join(self._top_folder, *PATHS_FILE_REL.split('/'))), Loader=yaml.FullLoader)
         # Read configuration from configuration file
         self._config = yaml.load(open(self.get_path('main_config')), Loader=yaml.FullLoader)
-        # Error hint to help user to fix the issue
-        self._error_hint = f'\nPlease check: SDK installed in {self._paths["sdk_runtime"]}, configuration file: {self._paths["main_config"]}'
         log_level = getattr(logging, self.param('misc', 'level').upper(), logging.WARN)
         # set logger for debugging
         logging.basicConfig(format='%(levelname)-8s %(message)s', level=log_level)
@@ -59,7 +57,7 @@ class Configuration:
     def get_path(self, name):
         '''Get configuration sub-path in project's root folder'''
         item_path = os.path.join(self._top_folder, *self._paths[name].split('/'))
-        assert os.path.exists(item_path), f'ERROR: {item_path} not found.{self._error_hint}'
+        assert os.path.exists(item_path), f'ERROR: {item_path} not found.'
         return item_path
 
     def file_list(self):

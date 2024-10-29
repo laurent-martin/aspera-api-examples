@@ -31,7 +31,7 @@ type TransferClient struct {
 	transferService    pb.TransferServiceClient
 	serverAddress      string
 	serverPort         int
-	sdkRuntimeFolder   string
+	daemonPath         string
 }
 
 func NewTransferClient(config *Configuration) *TransferClient {
@@ -40,11 +40,11 @@ func NewTransferClient(config *Configuration) *TransferClient {
 		config.Log.Fatalf("Error parsing server URL: %v", err)
 	}
 	return &TransferClient{
-		config:           config,
-		daemonLog:        filepath.Join(config.LogFolder, DAEMON_LOG_FILE),
-		serverAddress:    sdkURL.Hostname(),
-		serverPort:       GetPortOrDefault(sdkURL, 33001),
-		sdkRuntimeFolder: config.GetPath("sdk_runtime"),
+		config:        config,
+		daemonLog:     filepath.Join(config.LogFolder, DAEMON_LOG_FILE),
+		serverAddress: sdkURL.Hostname(),
+		serverPort:    GetPortOrDefault(sdkURL, 33001),
+		daemonPath:    config.GetPath("sdk_daemon"),
 	}
 }
 
@@ -68,11 +68,7 @@ func (tc *TransferClient) CreateConfigFile(confFile string) error {
 		"log_directory": tc.config.LogFolder,
 		"log_level":     tc.config.ParamStr("trsdk", "level"),
 		"fasp_runtime": map[string]interface{}{
-			"use_embedded": false,
-			"user_defined": map[string]string{
-				"bin": tc.sdkRuntimeFolder,
-				"etc": tc.sdkRuntimeFolder,
-			},
+			"use_embedded": true,
 			"log": map[string]interface{}{
 				"dir":   tc.config.LogFolder,
 				"level": ascpIntLevel,
@@ -94,7 +90,7 @@ func (tc *TransferClient) StartDaemon() error {
 	outFile := filepath.Join(tc.config.LogFolder, TRANSFER_SDK_DAEMON+".out")
 	errFile := filepath.Join(tc.config.LogFolder, TRANSFER_SDK_DAEMON+".err")
 	cmd := exec.Command(
-		filepath.Join(tc.sdkRuntimeFolder, TRANSFER_SDK_DAEMON),
+		tc.daemonPath,
 		"--config", confFile,
 	)
 

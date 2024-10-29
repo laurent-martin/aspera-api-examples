@@ -37,7 +37,7 @@ class TransferClient {
     std::unique_ptr<boost::process::child> _transfer_daemon_process;
     std::unique_ptr<trsdk::TransferService::Stub> _transfer_service;
     // folder with SDK binaries
-    const std::filesystem::path _sdk_runtime_path;
+    const std::filesystem::path _daemon_path;
     const std::string _daemon_log;
 
    public:
@@ -45,9 +45,9 @@ class TransferClient {
         : _config(config),
           _transfer_daemon_process(nullptr),
           _transfer_service(nullptr),
-          _sdk_runtime_path(_config.get_path("sdk_runtime")),
+          _daemon_path(_config.get_path("sdk_daemon")),
           _daemon_log(_config.log_folder_path() / DAEMON_LOG_FILE) {
-        LOG(debug) << LOG_ITEM("sdk_folder") << _sdk_runtime_path.string();
+        LOG(debug) << LOG_ITEM("daemon") << _daemon_path.string();
         auto sdk_url = _config.param_str({"trsdk", "url"});
         auto sdk_uri = boost::urls::parse_uri(sdk_url);
         if (!sdk_uri) {
@@ -67,7 +67,7 @@ class TransferClient {
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
-        const std::string command = std::string(_sdk_runtime_path / TRANSFER_SDK_DAEMON) + " --config " + conf_file;
+        const std::string command = std::string(_daemon_path) + " --config " + conf_file;
         LOG(debug) << LOG_ITEM("daemon out") << out_file;
         LOG(debug) << LOG_ITEM("daemon err") << err_file;
         LOG(debug) << LOG_ITEM("daemon log") << _daemon_log;
@@ -200,10 +200,7 @@ class TransferClient {
             {"log_directory", _config.log_folder_path().string()},
             {"log_level", _config.param_str({"trsdk", "level"})},
             {"fasp_runtime",
-             {{"use_embedded", false},
-              {"user_defined",
-               {{"bin", _sdk_runtime_path.string()},
-                {"etc", _sdk_runtime_path.string()}}},
+             {{"use_embedded", true},
               {"log",
                {{"dir", _config.log_folder_path().string()},
                 {"level", ascp_level(_config.param_str({"trsdk", "ascp_level"}))}}}}}};

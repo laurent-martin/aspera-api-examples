@@ -5,18 +5,18 @@ export DIR_TOP
 GBL_FILE_PATHS=$(DIR_TOP)config/paths.yaml
 # main folder for generated/downloaded files/temporary files
 GBL_DIR_TMP=$(DIR_TOP)$(shell sed -n -e 's/^temp: //p' $(GBL_FILE_PATHS))/
-# location of transfer.proto
-SDK_FILE_PROTO=$(DIR_TOP)$(shell sed -n -e 's/^proto: //p' $(GBL_FILE_PATHS))
 # user's config file path
 GBL_FILE_CONFIG=$(DIR_TOP)$(shell sed -n -e 's/^main_config: //p' $(GBL_FILE_PATHS))
+# location of extracted transfer SDK
+SDK_DIR_RUNTIME=$(DIR_TOP)$(shell sed -n -e 's/^sdk_dir: //p' $(GBL_FILE_PATHS))/
 # folder with architecture independent files from the transfer SDK
 SDK_DIR_EXAMPLES=$(DIR_TOP)$(shell sed -n -e 's/^sdk_samples: //p' < $(GBL_FILE_PATHS))/
-# location of extracted transfer SDK
-SDK_DIR_RUNTIME=$(DIR_TOP)$(shell sed -n -e 's/^sdk_runtime: //p' $(GBL_FILE_PATHS))/
 # name of the current platform (os-cpu)
 PLATFORM=$(shell sed -n -e 's/^ *platform: //p' $(GBL_FILE_CONFIG) 2> /dev/null)
 # SDK executables
 SDK_DAEMON=asperatransferd
+# location of transfer.proto
+SDK_FILE_PROTO=$(DIR_TOP)$(shell sed -n -e 's/^proto: //p' $(GBL_FILE_PATHS))
 SDK_FILES_REQUIRED=$(SDK_DIR_RUNTIME)bin/$(SDK_DAEMON) $(SDK_FILE_PROTO)
 # required files for running the samples
 FILES_RUNTIME=$(GBL_FILE_CONFIG) $(SDK_FILES_REQUIRED)
@@ -43,8 +43,10 @@ clean:: clean_flags clean_daemon
 superclean:: clean
 clean_daemon:
 	killall -q $(SDK_DAEMON)||:
-$(GBL_FILE_SAMPLE):
+$(GBL_DIR_TMP).exists:
 	mkdir -p $(GBL_DIR_TMP)
+	touch $@
+$(GBL_FILE_SAMPLE): $(GBL_DIR_TMP).exists
 	@echo "Generating test file: $(GBL_FILE_SAMPLE)"
 	date > $(GBL_FILE_SAMPLE)
 	# dd if=/dev/zero of=$(GBL_FILE_SAMPLE) bs=1k count=3
@@ -52,11 +54,12 @@ $(DIR_TESTED_FLAG):
 	mkdir -p $(DIR_TESTED_FLAG)
 # config file info https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
 # download and extract transfer SDK
-$(SDK_FILES_REQUIRED):
+$(SDK_FILES_REQUIRED): $(GBL_DIR_TMP).exists
+	echo $(SDK_FILES_REQUIRED)
 	rm -fr $(SDK_DIR_RUNTIME)
-	mkdir -p $SDK_DIR_RUNTIME
-    mkdir -p $(GBL_DIR_TMP)
-	$(DIR_TOP)doc/get_sdk.sh $(PLATFORM) $(SDK_DIR_RUNTIME)
+	mkdir -p $(SDK_DIR_RUNTIME)
+	$(DIR_TOP)doc/get_sdk.sh $(PLATFORM) $(GBL_DIR_TMP) $(SDK_DIR_RUNTIME)
+	touch -c $(SDK_FILES_REQUIRED)
 $(GBL_FILE_CONFIG):
 	mkdir -p $$(dirname $@)
 	cp $(GBL_FILE_CONF_TMPL) $@

@@ -34,9 +34,6 @@ public class Configuration
                 .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
                 .Build().Deserialize<Dictionary<string, string>>(reader);
         }
-
-        // Error hint to help user fix the issue
-        mErrorHint = $"\nPlease check: SDK installed in {mPaths["sdk_runtime"]}, configuration file: {mPaths["main_config"]}";
         // Read configuration from configuration file
         using (var reader = new StreamReader(Path.Combine(mTopFolder, mPaths["main_config"])))
         {
@@ -61,9 +58,9 @@ public class Configuration
     {
         // Get configuration sub-path in project's root folder
         var itemPath = Path.Combine(mTopFolder, mPaths[name]);
-        if (!Directory.Exists(itemPath))
+        if (!File.Exists(itemPath))
         {
-            throw new Exception($"ERROR: {itemPath} not found.{mErrorHint}");
+            throw new Exception($"ERROR: {itemPath} not found.");
         }
         return itemPath;
     }
@@ -71,7 +68,7 @@ public class Configuration
     {
         if (!_config.ContainsKey(section) || !_config[section].ContainsKey(key))
         {
-            throw new Exception($"ERROR: {section}.{key} not found in configuration file.{mErrorHint}");
+            throw new Exception($"ERROR: {section}.{key} not found in configuration file.");
         }
         return _config[section][key];
     }
@@ -118,7 +115,6 @@ public class Configuration
     private Dictionary<string, Dictionary<string, string>> _config;
     // general path structure
     private Dictionary<string, string> mPaths;
-    private string mErrorHint;
     private string mTopFolder;
     // config file with sub-paths in project's root folder
     private const string PATHS_FILE_REL = "config/paths.yaml";

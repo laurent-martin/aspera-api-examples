@@ -1,19 +1,22 @@
-	#!/bin/bash
-    set -e
-    SDK_LOCATION_URL=https://ibm.biz/sdk_location
-    PLATFORM=$1
-
-	curl -L $SDK_LOCATION_URL -o $GBL_DIR_TMPsdk_location.yaml
-	grep -B4 'platform: $PLATFORM' $GBL_DIR_TMPsdk_location.yaml|sed -n 's/.*url: *//p' | sort | tail -n1 > $GBL_DIR_TMPsdk_url.txt
-	basename $$< $GBL_DIR_TMPsdk_url.txt > $GBL_DIR_TMPsdk_file.txt
-	curl -L $$< $GBL_DIR_TMPsdk_url.txt -o $$< $GBL_DIR_TMPsdk_file.txt
-	exit 1
-	unzip -qu $SDK_FILE_ZIP '$PLATFORM/*' 'noarch/*' -d $SDK_DIR_RUNTIME
-	mv $SDK_DIR_RUNTIME$PLATFORM/* $SDK_DIR_RUNTIME
-	test -e $SDK_DIR_RUNTIMEaspera-license || mv $SDK_DIR_RUNTIMEnoarch/aspera-license $SDK_DIR_RUNTIME
-	mv $SDK_DIR_RUNTIMEnoarch $SDK_DIR_DEV
-	rmdir $SDK_DIR_RUNTIME$PLATFORM
-	test -f $SDK_FILE_PROTO
-	$SDK_DIR_RUNTIME/asperatransferd version | sed -Ee 's|^(.* version (.*\..*$$|<product><name>\1</name><version>\2</version></product>|' > $SDK_DIR_RUNTIMEproduct-info.mf
-	echo '<CONF/>' > $SDK_DIR_RUNTIMEaspera.conf
-	touch $SDK_DIR_RUNTIMEasperatransferd $SDK_FILE_PROTO
+#!/bin/bash
+# Download Aspera Transfer SDK
+set -ex
+PLATFORM=$1
+TMP_DIR=$2
+SDK_DIR=$3
+SDK_LOCATION_URL=https://ibm.biz/sdk_location
+SDK_URL=$(curl -sL $SDK_LOCATION_URL|grep -B4 "platform: $PLATFORM"|sed -n 's/.*url: *//p' | sort | tail -n1)
+SDK_ARCHIVE=${TMP_DIR}${SDK_URL##*/}
+echo "Downloading SDK from $SDK_URL"
+curl -sLo $SDK_ARCHIVE $SDK_URL
+case $SDK_ARCHIVE in
+	*.zip) unzip -qu $SDK_ARCHIVE -d ${SDK_DIR};;
+	*.tar.gz) tar -xzf $SDK_ARCHIVE -C ${SDK_DIR};;
+	*) echo "Unknown archive format: $SDK_ARCHIVE"; exit 1;;
+esac
+# move files from subfolder to SDK_DIR
+subfolder=$(ls ${SDK_DIR})
+mv ${SDK_DIR}$subfolder/* ${SDK_DIR}
+rm -fr ${SDK_DIR}$subfolder $SDK_ARCHIVE
+# optional: create metadata file
+${SDK_DIR}/bin/asperatransferd version | sed -Ee 's|^(.*) version (.*\..*)|<product><name>\1</name><version>\2</version></product>|' > ${SDK_DIR}product-info.mf

@@ -40,7 +40,7 @@ class Configuration
     raise "Missing config file: #{get_path('main_config')}" unless @config['misc']
 
     # some required files are generated here (keys, certs)
-    # Aspera::Ascp::Installation.instance.sdk_folder =
+    Aspera::Ascp::Installation.instance.sdk_folder = get_path('temp')
     # get Transfer Agent
     @agent = Aspera::Agent::Direct.new
 
@@ -85,6 +85,8 @@ class Configuration
   end
 
   def get_path(name)
+    raise "Missing path: #{name}" unless @paths[name]
+
     File.join(@top_folder, @paths[name])
   end
 end

@@ -40,8 +40,7 @@ class TransferClient:
         sdk_url = urlparse(self._config.param('trsdk', 'url'))
         self._server_address = sdk_url.hostname
         self._server_port = sdk_url.port
-        # folder with SDK binaries
-        self._sdk_runtime_folder = self._config.get_path('sdk_runtime')
+        self._daemon_path = self._config.get_path('sdk_daemon')
         self._daemon_log = os.path.join(self._config._log_folder, DAEMON_LOG_FILE)
 
     def create_config_file(self, conf_file):
@@ -54,11 +53,7 @@ class TransferClient:
             'log_directory': self._config._log_folder,
             'log_level': self._config.param('trsdk', 'level'),
             'fasp_runtime': {
-                'use_embedded': False,
-                'user_defined': {
-                    'bin': self._sdk_runtime_folder,
-                    'etc': self._sdk_runtime_folder,
-                },
+                'use_embedded': True,
                 'log': {
                     'dir': self._config._log_folder,
                     'level': ascp_level(self._config.param('trsdk', 'ascp_level')),
@@ -81,7 +76,7 @@ class TransferClient:
         out_file = f'{file_base}.out'
         err_file = f'{file_base}.err'
         command = ' '.join([
-            os.path.join(self._sdk_runtime_folder, TRANSFER_SDK_DAEMON),
+            self._daemon_path,
             '--config',
             conf_file,
         ])

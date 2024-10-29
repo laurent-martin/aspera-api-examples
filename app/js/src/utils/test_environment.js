@@ -23,9 +23,8 @@ function get_path(name) {
 }
 // read config for examples
 const config = yaml.load(fs.readFileSync(get_path("main_config"), 'utf8'))
-const arch_folder = get_path("sdk_runtime")
 const daemon_name = "asperatransferd"
-const daemon_exe = path.join(arch_folder, daemon_name)
+const daemon_exe = get_path("sdk_daemon")
 
 // load gRPC package definition for aspera transfer sdk
 const packageDefinition = protoLoader.loadSync(
@@ -62,11 +61,7 @@ module.exports = {
 			log_directory: os.tmpdir(),
 			log_level: config["trsdk"]["level"],
 			fasp_runtime: {
-				use_embedded: false,
-				user_defined: {
-					bin: arch_folder,
-					etc: arch_folder,
-				},
+				use_embedded: true,
 				log: {
 					dir: os.tmpdir(),
 					level: ascp_int_level,
