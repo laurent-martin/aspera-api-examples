@@ -4,3 +4,4 @@ private/
 .vscode/
 .idea/
 .tested/
+.checked_env

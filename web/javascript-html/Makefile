@@ -1,4 +1,4 @@
-DIR_TOP=$(CURDIR)/../
+DIR_TOP=$(realpath ../..)/
 TEST_CASES=server
 include $(DIR_TOP)common.mak
 SRC=./src/
@@ -7,6 +7,8 @@ GW_SDK=@ibm-aspera/http-gateway-sdk-js
 DK_SDK=@ibm-aspera/desktop-sdk-js
 CN_SDK=@ibm-aspera/connect-sdk-js
 all:: $(TEST_FLAGS)
+run: node_modules/.package-lock.json $(SRC)http-gateway.js
+	exec node --trace-warnings src/server.js $(SRC)
 $(DIR_TESTED_FLAG)%: node_modules/.package-lock.json $(SRC)http-gateway.js $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
 	node --trace-warnings src/$(notdir $@).js $(SRC)&

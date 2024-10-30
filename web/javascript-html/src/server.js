@@ -11,7 +11,14 @@ const yaml = require('js-yaml')
 const fs = require('fs')
 const path = require('path')
 const assert = require('assert')
-const top_folder = path.resolve(path.dirname(__filename), '..', '..');
+const dirTop = process.env.DIR_TOP;
+if (!dirTop) {
+  throw new Error("Environment variable DIR_TOP is not set.");
+}
+const top_folder = path.resolve(dirTop);
+if (!fs.existsSync(top_folder) || !fs.lstatSync(top_folder).isDirectory()) {
+  throw new Error(`The folder specified by DIR_TOP does not exist or is not a directory: ${top_folder}`);
+}
 const paths = yaml.load(fs.readFileSync(path.join(top_folder, 'config/paths.yaml'), 'utf8'));
 function get_path(name) {
   return path.join(top_folder, paths[name]);
@@ -75,7 +82,7 @@ app.post('/tspec', (req, res) => {
   } else {
     return res.status(500).send(`Wrong operation parameter: ${params.operation}`)
   }
-  const basic_auth = 'Basic ' + btoa(config.node.user + ':' + config.node.pass)
+  const basic_auth = 'Basic ' + btoa(config.node.username + ':' + config.node.password)
   // call HSTS Node API (with a single transfer request)
   fetch(config.node.url + `/files/${params.operation}_setup`, {
     method: 'POST',
@@ -84,17 +91,19 @@ app.post('/tspec', (req, res) => {
   }).then((response) => {
     if (!response.ok) {
       console.log(`ERROR: Node API: ${response.statusText}`)
-      return res.status(500).send(`Node API: ${response.statusText}`)
+      res.status(500).send({error: `Node API: ${response.statusText}`})
+      return
     }
     // if OK, then parse the JSON for next step
     return response.json()
   }).then((result) => {
+    if (!result) { return }
     // we posted a single transfer request, so we shall get a single result
     const result0 = result.transfer_specs[0]
     // error occurred ?
     if (result0.error) {
       console.log(`ERROR: ${result0.error.user_message}`)
-      return res.status(500).send(result0.error.user_message)
+      return res.status(500).send({error: result0.error.user_message})
     }
     // no error, so we have the transfer spec
     const transferSpec = result0.transfer_spec
@@ -107,7 +116,10 @@ app.post('/tspec', (req, res) => {
     // send result
     console.log('result:', transferSpec)
     return res.send(transferSpec)
-  })
+  }).catch((error) => {
+    console.error('Fetch error:', error);
+    res.status(500).send('Internal server error');
+  });
 })
 
 // start web server

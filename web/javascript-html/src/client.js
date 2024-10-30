@@ -174,8 +174,16 @@ function my_getTransferSpecFromServer(params) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(params)
         })
-            .then((response) => { return response.json() })
-            .then((ts) => { return resolve(ts) })
+            .then((response) => {
+                return response.json()
+            })
+            .then((ts) => {
+                if (ts.error) {
+                    my_error(`Problem with server: ${ts.error}`)
+                }
+                return resolve(ts)
+            })
+            .catch((error) => { my_error(`Problem with server: ${error.message}`)})
     })
 }
 
@@ -289,8 +297,8 @@ function client_initialize() {
     // initialize values in UI from config file
     document.getElementById('httpgw_url').value = config.httpgw.url
     document.getElementById('server_url').value = config.server.url
-    document.getElementById('server_user').value = config.server.user
-    document.getElementById('server_pass').value = config.server.pass
+    document.getElementById('server_user').value = config.server.username
+    document.getElementById('server_pass').value = config.server.password
     document.getElementById('file_to_download').value = config.server.file_download
     document.getElementById('folder_for_upload').value = config.server.folder_upload
     // Event listener when user click on UI
