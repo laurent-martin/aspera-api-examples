@@ -9,11 +9,11 @@ const { spawn } = require('child_process')
 
 const dirTop = process.env.DIR_TOP;
 if (!dirTop) {
-  throw new Error("Environment variable DIR_TOP is not set.");
+	throw new Error("Environment variable DIR_TOP is not set.");
 }
 const top_folder = path.resolve(dirTop);
 if (!fs.existsSync(top_folder) || !fs.lstatSync(top_folder).isDirectory()) {
-  throw new Error(`The folder specified by DIR_TOP does not exist or is not a directory: ${top_folder}`);
+	throw new Error(`The folder specified by DIR_TOP does not exist or is not a directory: ${top_folder}`);
 }
 
 const paths_file = "config/paths.yaml"
@@ -35,6 +35,11 @@ const transfersdk = grpc.loadPackageDefinition(packageDefinition).transfersdk
 
 var client = null
 var sdk_process = null
+
+// get file list from command line arguments
+const file_list = process.argv.slice(2)
+
+assert(file_list.length, 'ERROR: Provide at least one file path to transfer')
 
 // set log_level to 'trace' for more info
 module.exports = {
@@ -97,7 +102,7 @@ module.exports = {
 			client.waitForReady((new Date()).getTime() + 5000, (err) => {
 				if (err) {
 					console.log("No server found...")
-					throw err
+					return
 				}
 				console.log("Connected...")
 			})
@@ -131,5 +136,37 @@ module.exports = {
 			if (data.transferEvent === 'SESSION_ERROR' && data.status === 'FAILED')
 				throw "ERROR: An error occurred during transfer session"
 		})
+	},
+	basicAuthorization: (username, password) => {
+		// Create basic auth header
+		return 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
+	},
+	basicAuthHeaderKeyValue: (username, password) => {
+		// Create basic auth header key and value for transfer SDK
+		return {
+			key: 'Authorization',
+			value: module.exports.basicAuthorization(username, password),
+		};
+	},
+	addSources: function (tSpec, path, destination = null) {
+		const keys = path.split('.');
+		let currentNode = tSpec;
+		for (let i = 0; i < keys.length - 1; i++) {
+			const key = keys[i];
+			if (typeof currentNode[key] === 'object' && currentNode[key] !== null) {
+				currentNode = currentNode[key];
+			} else {
+				throw new Error(`Key is not a dictionary: ${key}`);
+			}
+		}
+		const lastKey = keys[keys.length - 1];
+		const paths = currentNode[lastKey] = [];
+		file_list.forEach((file) => {
+			const source = { source: file };
+			if (destination) {
+				source.destination = file.split('/').pop();
+			}
+			paths.push(source);
+		});
 	}
 }

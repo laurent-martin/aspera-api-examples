@@ -3,11 +3,6 @@
 const test_environment = require('../utils/test_environment');
 const assert = require('assert')
 
-// get file list from command line arguments
-const files = process.argv.slice(2)
-
-assert(files.length, 'ERROR: Provide at least one file path to transfer')
-
 // get destination server from example config
 const server_config = test_environment.config.server;
 const server_url = new URL(server_config.url)
@@ -29,9 +24,11 @@ const transferSpecV2 = {
 	},
 	assets: {
 		destination_root: server_config.folder_upload,
-		paths: files.map((file) => { return { source: file } })
+		paths: []
 	}
 }
+
+test_environment.addSources(transferSpecV2, 'assets.paths')
 
 test_environment.connect_to_api(() => {
 	test_environment.start_transfer_and_wait(transferSpecV2, () => {
