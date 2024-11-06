@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // laurent.martin.aspera@fr.ibm.com
-import { config, tmpFolder, startTransferAndWait, connectToAPI, shutdownAPI } from '../utils/test_environment.js';
+import { config, tmpFolder, startTransferAndWait, startConnectDaemon, shutdownDaemon } from '../utils/test_environment.js';
 import path from 'path';
 import assert from 'assert';
 
@@ -68,12 +68,12 @@ var index = -1;
 const test_runner = () => {
 	++index;
 	switch (index) {
-		case 0: connectToAPI(test_runner); break;
+		case 0: startConnectDaemon(test_runner); break;
 		case 1: test1(test_runner); break;
 		case 2: test2(test_runner); break;
 		case 3: test3(test_runner); break;
 		case 4: test4(test_runner); break;
-		case 5: shutdownAPI(test_runner); break;
+		case 5: shutdownDaemon(test_runner); break;
 		case 6: console.log('Finished all tests!'); process.exit(0); break;
 		default: throw 'Error: shall not reach here'
 	}

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // laurent.martin.aspera@fr.ibm.com
-import { config, addSources, startTransferAndWait, connectToAPI, shutdownAPI } from '../utils/test_environment.js';
+import { config, addSources, startTransferAndWait, startConnectDaemon, shutdownDaemon } from '../utils/test_environment.js';
 import assert from 'assert';
 
 // get destination server from example config
@@ -29,9 +29,9 @@ const transferSpecV2 = {
 
 addSources(transferSpecV2, 'assets.paths')
 
-connectToAPI(() => {
+startConnectDaemon(() => {
 	startTransferAndWait(transferSpecV2, () => {
-		shutdownAPI(() => {
+		shutdownDaemon(() => {
 			console.log('Done!')
 			process.exit(0)
 		})

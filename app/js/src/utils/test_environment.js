@@ -68,7 +68,7 @@ const fileList = process.argv.slice(2);
 assert(fileList.length, 'ERROR: Provide at least one file path to transfer');
 
 // Connect to the API
-export const connectToAPI = (readyCallback) => {
+export const startConnectDaemon = (readyCallback) => {
 	const ascpLevel = config["trsdk"]["ascp_level"];
 	let ascpIntLevel;
 	switch (ascpLevel) {
@@ -128,7 +128,7 @@ export const connectToAPI = (readyCallback) => {
 }
 
 // Shutdown the API
-export const shutdownAPI = (okCallback) => {
+export const shutdownDaemon = (okCallback) => {
 	console.log("Stopping transferd...");
 	sdkProcess.on('exit', () => okCallback());
 	sdkProcess.kill(2);

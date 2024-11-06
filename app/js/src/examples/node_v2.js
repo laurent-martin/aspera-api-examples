@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // laurent.martin.aspera@fr.ibm.com
-import { config, basicAuthHeaderKeyValue, addSources, startTransferAndWait, connectToAPI, shutdownAPI } from '../utils/test_environment.js';
+import { config, basicAuthHeaderKeyValue, addSources, startTransferAndWait, startConnectDaemon, shutdownDaemon } from '../utils/test_environment.js';
 
 // create transfer spec version 2
 const transferSpecV2 = {
@@ -22,9 +22,9 @@ const transferSpecV2 = {
 
 addSources(transferSpecV2, 'assets.paths')
 
-connectToAPI(() => {
+startConnectDaemon(() => {
 	startTransferAndWait(transferSpecV2, () => {
-		shutdownAPI(() => {
+		shutdownDaemon(() => {
 			console.log('Done!')
 			process.exit(0)
 		})
