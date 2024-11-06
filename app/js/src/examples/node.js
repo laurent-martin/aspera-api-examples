@@ -3,7 +3,7 @@
 // Upload files using an Aspera Transfer token, generated using Node API (upload_setup)
 
 import { TransferClient } from '../utils/transfer_client.js';
-import { Configuration } from '../utils/configuration.js';
+import { Configuration, logger } from '../utils/configuration.js';
 import ky from 'ky';
 
 const config = new Configuration();
@@ -13,6 +13,7 @@ const node_api = ky.extend({
 	prefixUrl: config.getParam('node','url'),
 	headers: {
 		'Content-Type': 'application/json',
+		'Accept': 'application/json',
 		'Authorization': Configuration.basicAuthorization(config.getParam('node','username'), config.getParam('node','password'))
 	},
 	https: {
@@ -20,9 +21,9 @@ const node_api = ky.extend({
 	}
 });
 
-console.log('Generating transfer spec V1 from node');
+logger.info('Generating transfer spec V1 from node');
 
-// Get upload authorization for given destination
+// Get upload authorization for given destination folder
 const response = await node_api.post('files/upload_setup', {
 	json: {
 		transfer_requests: [
@@ -41,7 +42,7 @@ config.addSources(tSpec, 'paths');
 transferClient.startConnectDaemon(() => {
 	transferClient.startTransferAndWait(tSpec, () => {
 		transferClient.shutdownDaemon(() => {
-			console.log('Done!');
+			logger.info('Done!');
 			process.exit(0);
 		});
 	});

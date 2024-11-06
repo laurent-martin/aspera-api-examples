@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // laurent.martin.aspera@fr.ibm.com
 import { TransferClient } from '../utils/transfer_client.js';
-import { Configuration } from '../utils/configuration.js';
+import { Configuration, logger } from '../utils/configuration.js';
 import path from 'path';
 import assert from 'assert';
 
@@ -15,7 +15,7 @@ assert(server_url.protocol === 'ssh:', 'Expecting SSH protocol');
 // downloaded file is then uploaded
 const local_file = path.join('/', config.tmpFolder, config.getParam('server','file_download').split('/').pop());
 
-// base transfer spec with server information
+// base transfer spec V1 with server information
 var t_spec1_generic = {
 	remote_host: server_url.hostname,
 	ssh_port: parseInt(server_url.port),
@@ -27,7 +27,7 @@ var t_spec1_generic = {
 // Instead of using the soon deprecated FaspManager1 Python lib, let's use the transfer spec
 // direction is relative to us, client, i.e. receive = download
 const test1 = (success_cb) => {
-	console.log('======Test 1: download');
+	logger.info('======Test 1: download');
 	t_spec1_generic.direction = 'receive';
 	// note that the destination root on download is relative to the CWD of transferd, NOT this process
 	// so prefer to use abs. paths
@@ -38,7 +38,7 @@ const test1 = (success_cb) => {
 
 // Example 2: upload: single file upload to existing folder.
 const test2 = (success_cb) => {
-	console.log('======Test 2: upload file');
+	logger.info('======Test 2: upload file');
 	t_spec1_generic.direction = 'send';
 	t_spec1_generic.destination_root = config.getParam('server','folder_upload');
 	t_spec1_generic.paths = [{ source: local_file }];
@@ -52,7 +52,7 @@ const test2 = (success_cb) => {
 // but if destination is a folder, it will send same source filename into folder
 // so enforce folder creation, to be sure of what happens
 const test3 = (success_cb) => {
-	console.log('======Test 3: upload file to new folder');
+	logger.info('======Test 3: upload file to new folder');
 	t_spec1_generic.destination_root = config.getParam('server','folder_upload') + '/new_folder';
 	t_spec1_generic.create_dir = true;
 	transferClient.startTransferAndWait(t_spec1_generic, success_cb);
@@ -60,7 +60,7 @@ const test3 = (success_cb) => {
 
 // Example 4: upload: send to sub folder, but using file pairs
 const test4 = (success_cb) => {
-	console.log('======Test 4: upload file and rename');
+	logger.info('======Test 4: upload file and rename');
 	t_spec1_generic.destination_root = config.getParam('server','folder_upload');
 	delete t_spec1_generic.create_dir;
 	t_spec1_generic.paths = [{ source: local_file, destination: 'xxx/newfilename.ext' }];
@@ -78,11 +78,11 @@ const test_runner = () => {
 		case 3: test3(test_runner); break;
 		case 4: test4(test_runner); break;
 		case 5: transferClient.shutdownDaemon(test_runner); break;
-		case 6: console.log('Finished all tests!'); process.exit(0); break;
+		case 6: logger.info('Finished all tests!'); process.exit(0); break;
 		default: throw 'Error: shall not reach here'
 	}
 }
 
 // wait for server and start test 1
 test_runner()
-console.log('Waiting for test completion...')
+logger.info('Waiting for test completion...')

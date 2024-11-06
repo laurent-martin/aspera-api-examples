@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // laurent.martin.aspera@fr.ibm.com
 import { TransferClient } from '../utils/transfer_client.js';
-import { Configuration } from '../utils/configuration.js';
+import { Configuration, logger } from '../utils/configuration.js';
 
 const config = new Configuration();
 const transferClient = new TransferClient(config);
@@ -29,7 +29,7 @@ config.addSources(transferSpecV2, 'assets.paths')
 transferClient.startConnectDaemon(() => {
 	transferClient.startTransferAndWait(transferSpecV2, () => {
 		transferClient.shutdownDaemon(() => {
-			console.log('Done!')
+			logger.info('Done!')
 			process.exit(0)
 		})
 	})

@@ -6,17 +6,35 @@ import path from 'path';
 import yaml from 'js-yaml';
 import assert from 'assert';
 import os from 'os';
+import winston from 'winston';
 
+export const logger = winston.createLogger({
+	level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
+	format: winston.format.combine(
+		winston.format.colorize(),
+		winston.format.printf(({ _, level, message }) => {
+			return `${level} ${message}`;
+		})
+	),
+	transports: [
+		new winston.transports.Console(),
+	],
+});
+
+/**
+ * Parameters from configuration files.
+ */
 export class Configuration {
 	constructor() {
 		this.pathsFile = 'config/paths.yaml';
 		this.topFolder = Configuration.resolveDirectory('DIR_TOP');
+		this.logFolder = os.tmpdir();
 		this.tmpFolder = os.tmpdir();
 		this.paths = Configuration.loadYAML(path.join(this.topFolder, this.pathsFile));
 		this.config = Configuration.loadYAML(this.getPath('main_config'));
 	}
 
-	// Static helper to resolve directory based on env variable
+	/** Static helper to resolve directory based on env variable */
 	static resolveDirectory(dirEnvVar) {
 		const dir = process.env[dirEnvVar];
 		if (!dir) throw new Error(`Environment variable ${dirEnvVar} is not set.`);
@@ -27,26 +45,26 @@ export class Configuration {
 		return resolvedDir;
 	}
 
-	// Static method to load YAML files
+	/** load YAML files */
 	static loadYAML(filePath) {
 		return yaml.load(fs.readFileSync(filePath, 'utf8'));
 	}
 
-	// Construct path based on topFolder and paths YAML
+	/** Construct path based on topFolder and paths YAML */
 	getPath(name) {
 		return path.join(this.topFolder, this.paths[name]);
 	}
 
-	getParam(section, param){
+	getParam(section, param) {
 		return this.config[section][param];
 	}
 
-	// Static method for Basic Authorization
+	/** Basic Authorization */
 	static basicAuthorization(username, password) {
 		return 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
 	}
 
-	// Static method to create an auth header
+	/** Create an auth header for transfer spec v2 */
 	static basicAuthHeaderKeyValue(username, password) {
 		return {
 			key: 'Authorization',
@@ -54,7 +72,13 @@ export class Configuration {
 		};
 	}
 
-	// Add sources to a transfer spec
+	/**
+	 * Add sources to a transfer spec
+	 * 
+	 * @param {object} tSpec Transfer spec
+	 * @param {string} path Path to the sources in the transfer spec
+	 * @param {string} destination Destination path for the sources
+	 * */
 	addSources(tSpec, path, destination = null) {
 		const keys = path.split('.');
 		let currentNode = tSpec;
