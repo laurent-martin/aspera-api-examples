@@ -1,30 +1,34 @@
 #!/usr/bin/env node
 // laurent.martin.aspera@fr.ibm.com
-import { config, basicAuthHeaderKeyValue, addSources, startTransferAndWait, startConnectDaemon, shutdownDaemon } from '../utils/test_environment.js';
+import { TransferClient } from '../utils/transfer_client.js';
+import { Configuration } from '../utils/configuration.js';
+
+const config = new Configuration();
+const transferClient = new TransferClient(config);
 
 // create transfer spec version 2
 const transferSpecV2 = {
 	title: 'send using Node API and ts v2',
 	session_initiation: {
 		node_api: {
-			url: config.node.url,
+			url: config.getParam('node','url'),
 			headers: [
-				basicAuthHeaderKeyValue(config.node.username, config.node.password)
+				Configuration.basicAuthHeaderKeyValue(config.getParam('node','username'), config.getParam('node','password'))
 			]
 		}
 	},
 	direction: 'send',
 	assets: {
-		destination_root: config.node.folder_upload,
+		destination_root: config.getParam('node','folder_upload'),
 		paths: []
 	}
 }
 
-addSources(transferSpecV2, 'assets.paths')
+config.addSources(transferSpecV2, 'assets.paths')
 
-startConnectDaemon(() => {
-	startTransferAndWait(transferSpecV2, () => {
-		shutdownDaemon(() => {
+transferClient.startConnectDaemon(() => {
+	transferClient.startTransferAndWait(transferSpecV2, () => {
+		transferClient.shutdownDaemon(() => {
 			console.log('Done!')
 			process.exit(0)
 		})

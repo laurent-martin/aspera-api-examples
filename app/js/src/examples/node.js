@@ -2,17 +2,21 @@
 // laurent.martin.aspera@fr.ibm.com
 // Upload files using an Aspera Transfer token, generated using Node API (upload_setup)
 
-import { config, basicAuthorization, addSources, startTransferAndWait, startConnectDaemon, shutdownDaemon } from '../utils/test_environment.js';
+import { TransferClient } from '../utils/transfer_client.js';
+import { Configuration } from '../utils/configuration.js';
 import ky from 'ky';
 
+const config = new Configuration();
+const transferClient = new TransferClient(config);
+
 const node_api = ky.extend({
-	prefixUrl: config.node.url,
+	prefixUrl: config.getParam('node','url'),
 	headers: {
 		'Content-Type': 'application/json',
-		'Authorization': basicAuthorization(config.node.username, config.node.password)
+		'Authorization': Configuration.basicAuthorization(config.getParam('node','username'), config.getParam('node','password'))
 	},
 	https: {
-		rejectUnauthorized: config.node.verify ?? true
+		rejectUnauthorized: config.getParam('node','verify') ?? true
 	}
 });
 
@@ -22,7 +26,7 @@ console.log('Generating transfer spec V1 from node');
 const response = await node_api.post('files/upload_setup', {
 	json: {
 		transfer_requests: [
-			{ transfer_request: { paths: [{ destination: config.node.folder_upload }] } }
+			{ transfer_request: { paths: [{ destination: config.getParam('node','folder_upload') }] } }
 		]
 	}
 }).json();
@@ -31,12 +35,12 @@ const response = await node_api.post('files/upload_setup', {
 const tSpec = response.transfer_specs[0].transfer_spec;
 
 // Add file list to the transfer spec
-addSources(tSpec, 'paths');
+config.addSources(tSpec, 'paths');
 
 // Start the transfer using the transfer client
-startConnectDaemon(() => {
-	startTransferAndWait(tSpec, () => {
-		shutdownDaemon(() => {
+transferClient.startConnectDaemon(() => {
+	transferClient.startTransferAndWait(tSpec, () => {
+		transferClient.shutdownDaemon(() => {
 			console.log('Done!');
 			process.exit(0);
 		});
