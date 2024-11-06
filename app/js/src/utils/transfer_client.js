@@ -147,7 +147,7 @@ export class TransferClient {
 		eventStream.on('data', (data) => {
 			if (data.transferInfo) {
 				const add = data.status === 'RUNNING' ? ` ${data.transferInfo.averageRateKbps / 1000} Mbps` : '';
-				logger.debug(`Transfer: ${data.status}${add}`);
+				logger.info(`Transfer: ${data.status}${add}`);
 			}
 			if (data.transferEvent === 'SESSION_STOP' && data.status === 'COMPLETED') {
 				successCallback();
