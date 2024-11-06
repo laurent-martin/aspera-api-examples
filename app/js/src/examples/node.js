@@ -4,33 +4,23 @@
 
 import { TransferClient } from '../utils/transfer_client.js';
 import { Configuration, logger } from '../utils/configuration.js';
-import ky from 'ky';
+import { Rest } from '../utils/rest.js';
 
 const config = new Configuration();
 const transferClient = new TransferClient(config);
 
-const node_api = ky.extend({
-	prefixUrl: config.getParam('node','url'),
-	headers: {
-		'Content-Type': 'application/json',
-		'Accept': 'application/json',
-		'Authorization': Configuration.basicAuthorization(config.getParam('node','username'), config.getParam('node','password'))
-	},
-	https: {
-		rejectUnauthorized: config.getParam('node','verify') ?? true
-	}
-});
+const node_api = new Rest(config.getParam('node', 'url'));
+node_api.setAuthBasic(config.getParam('node', 'username'), config.getParam('node', 'password'));
+node_api.setVerify(config.getParam('node', 'verify'));
 
 logger.info('Generating transfer spec V1 from node');
 
 // Get upload authorization for given destination folder
-const response = await node_api.post('files/upload_setup', {
-	json: {
-		transfer_requests: [
-			{ transfer_request: { paths: [{ destination: config.getParam('node','folder_upload') }] } }
-		]
-	}
-}).json();
+const response = await node_api.create('files/upload_setup', {
+	transfer_requests: [
+		{ transfer_request: { paths: [{ destination: config.getParam('node', 'folder_upload') }] } }
+	]
+});
 
 // Extract the single transfer spec from the response data
 const tSpec = response.transfer_specs[0].transfer_spec;

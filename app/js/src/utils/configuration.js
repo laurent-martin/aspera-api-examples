@@ -55,7 +55,11 @@ export class Configuration {
 	 * @returns the parameter value
 	 */
 	getParam(section, param) {
-		return this.config[section][param];
+		const sect = this.config[section];
+		if (!sect) {
+			return undefined;
+		}
+		return sect[param];
 	}
 
 	/**
