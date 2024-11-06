@@ -9,6 +9,7 @@ PYENV_ACTIVATE=$(PYENV_DIR)bin/activate
 # python source code folder
 SRC=./src/
 EXAMPLES=$(SRC)examples/
+COMMON_SRC=$(SRC)utils/configuration.py $(SRC)utils/transfer_client.py
 # folder of generated grpc source code
 PY_GRPC_GEN_DIR=$(PYENV_DIR)grpc_aspera/
 # python grpc source code files, generated from proto file, also present in SDK
@@ -26,7 +27,7 @@ all:: $(TEST_FLAGS)
 # 3. Generate or copy python grpc files
 # 4. Ensure test file is present
 # 5. Run the sample using the virtual environment
-$(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(PYENV_ACTIVATE) $(PY_FILES_GRPC) $(EXAMPLES)%.py
+$(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(PYENV_ACTIVATE) $(PY_FILES_GRPC) $(COMMON_SRC) $(EXAMPLES)%.py
 	@echo "== Test: $(notdir $@) ==========================="
 	source $(PYENV_ACTIVATE) && \
 		PYTHONPATH=$(PY_GRPC_GEN_DIR):$(SRC) \
