@@ -8,6 +8,10 @@ import assert from 'assert';
 import os from 'os';
 import winston from 'winston';
 
+const PATHS_FILE_REL = 'config/paths.yaml';
+/** Environment variable for the top directory */
+const DIR_TOP_VAR = 'DIR_TOP';
+
 export const logger = winston.createLogger({
 	level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
 	format: winston.format.combine(
@@ -26,28 +30,17 @@ export const logger = winston.createLogger({
  */
 export class Configuration {
 	constructor() {
-		this.pathsFile = 'config/paths.yaml';
-		this.topFolder = Configuration.resolveDirectory('DIR_TOP');
+		const dir = process.env[DIR_TOP_VAR];
+		if (!dir) throw new Error(`Environment variable ${DIR_TOP_VAR} is not set.`);
+		this.topFolder = path.resolve(dir);
+		if (!fs.existsSync(this.topFolder) || !fs.lstatSync(this.topFolder).isDirectory()) {
+			throw new Error(`The folder specified by ${DIR_TOP_VAR} does not exist or is not a directory: ${this.topFolder}`);
+		}
 		this.logFolder = os.tmpdir();
 		this.tmpFolder = os.tmpdir();
-		this.paths = Configuration.loadYAML(path.join(this.topFolder, this.pathsFile));
+		this.paths = Configuration.loadYAML(path.join(this.topFolder, PATHS_FILE_REL));
 		this.config = Configuration.loadYAML(this.getPath('main_config'));
-	}
-
-	/** Static helper to resolve directory based on env variable */
-	static resolveDirectory(dirEnvVar) {
-		const dir = process.env[dirEnvVar];
-		if (!dir) throw new Error(`Environment variable ${dirEnvVar} is not set.`);
-		const resolvedDir = path.resolve(dir);
-		if (!fs.existsSync(resolvedDir) || !fs.lstatSync(resolvedDir).isDirectory()) {
-			throw new Error(`The folder specified by ${dirEnvVar} does not exist or is not a directory: ${resolvedDir}`);
-		}
-		return resolvedDir;
-	}
-
-	/** load YAML files */
-	static loadYAML(filePath) {
-		return yaml.load(fs.readFileSync(filePath, 'utf8'));
+		logger.level = this.getParam('misc', 'level');
 	}
 
 	/** Construct path based on topFolder and paths YAML */
@@ -55,8 +48,49 @@ export class Configuration {
 		return path.join(this.topFolder, this.paths[name]);
 	}
 
+	/**
+	 * Get a parameter from the main configuration file
+	 * @param {*} section section in the config
+	 * @param {*} param parameter in the section
+	 * @returns the parameter value
+	 */
 	getParam(section, param) {
 		return this.config[section][param];
+	}
+
+	/**
+	 * Add sources to a transfer spec
+	 * 
+	 * @param {object} tSpec Transfer spec
+	 * @param {string} path Path to the sources in the transfer spec
+	 * @param {string} destination Destination path for the sources
+	 * */
+	addSources(tSpec, path, destination = null) {
+		const keys = path.split('.');
+		let currentNode = tSpec;
+		for (let i = 0; i < keys.length - 1; i++) {
+			const key = keys[i];
+			if (typeof currentNode[key] === 'object' && currentNode[key] !== null) {
+				currentNode = currentNode[key];
+			} else {
+				throw new Error(`Key is not a dictionary: ${key}`);
+			}
+		}
+		const lastKey = keys[keys.length - 1];
+		const paths = currentNode[lastKey] = [];
+		const fileList = process.argv.slice(2);
+		assert(fileList.length, 'ERROR: Provide at least one file path to transfer');
+		fileList.forEach((file) => {
+			const source = { source: file };
+			if (destination) {
+				source.destination = path.basename(file);
+			}
+			paths.push(source);
+		});
+	}
+	/** load and parse YAML file */
+	static loadYAML(filePath) {
+		return yaml.load(fs.readFileSync(filePath, 'utf8'));
 	}
 
 	/** Basic Authorization */
@@ -72,37 +106,4 @@ export class Configuration {
 		};
 	}
 
-	/**
-	 * Add sources to a transfer spec
-	 * 
-	 * @param {object} tSpec Transfer spec
-	 * @param {string} path Path to the sources in the transfer spec
-	 * @param {string} destination Destination path for the sources
-	 * */
-	addSources(tSpec, path, destination = null) {
-		const keys = path.split('.');
-		let currentNode = tSpec;
-
-		for (let i = 0; i < keys.length - 1; i++) {
-			const key = keys[i];
-			if (typeof currentNode[key] === 'object' && currentNode[key] !== null) {
-				currentNode = currentNode[key];
-			} else {
-				throw new Error(`Key is not a dictionary: ${key}`);
-			}
-		}
-
-		const lastKey = keys[keys.length - 1];
-		const paths = currentNode[lastKey] = [];
-		const fileList = process.argv.slice(2);
-		assert(fileList.length, 'ERROR: Provide at least one file path to transfer');
-
-		fileList.forEach((file) => {
-			const source = { source: file };
-			if (destination) {
-				source.destination = path.basename(file);
-			}
-			paths.push(source);
-		});
-	}
 }
