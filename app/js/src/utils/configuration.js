@@ -16,9 +16,11 @@ export const logger = winston.createLogger({
 	level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
 	format: winston.format.combine(
 		winston.format.colorize(),
-		winston.format.printf(({ _, level, message }) => {
-			return `${level} ${message}`;
-		})
+		winston.format.prettyPrint(),
+		winston.format.printf(({ level, message, timestamp }) => {
+			const formattedMessage = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+			return `${level} ${formattedMessage}`;
+		}),
 	),
 	transports: [
 		new winston.transports.Console(),
