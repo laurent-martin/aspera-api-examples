@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 // laurent.martin.aspera@fr.ibm.com
-const test_environment = require('../utils/test_environment');
-const assert = require('assert')
+import { config, addSources, startTransferAndWait, connectToAPI, shutdownAPI } from '../utils/test_environment.js';
+import assert from 'assert';
 
 // get destination server from example config
-const server_config = test_environment.config.server;
-const server_url = new URL(server_config.url)
+const server_url = new URL(config.server.url)
 assert(server_url.protocol === 'ssh:', 'ERROR: Expecting SSH protocol')
 
 // create transfer spec version 2
@@ -15,27 +14,26 @@ const transferSpecV2 = {
 	session_initiation: {
 		ssh: {
 			ssh_port: parseInt(server_url.port),
-			remote_user: server_config.username,
-			remote_password: server_config.password
+			remote_user: config.server.username,
+			remote_password: config.server.password
 		}
 	},
 	security: {
 		cipher: 'aes-256'
 	},
 	assets: {
-		destination_root: server_config.folder_upload,
+		destination_root: config.server.folder_upload,
 		paths: []
 	}
 }
 
-test_environment.addSources(transferSpecV2, 'assets.paths')
+addSources(transferSpecV2, 'assets.paths')
 
-test_environment.connect_to_api(() => {
-	test_environment.start_transfer_and_wait(transferSpecV2, () => {
-		test_environment.shutdown_api(() => {
+connectToAPI(() => {
+	startTransferAndWait(transferSpecV2, () => {
+		shutdownAPI(() => {
 			console.log('Done!')
 			process.exit(0)
 		})
 	})
 })
-

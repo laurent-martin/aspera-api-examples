@@ -1,5 +1,5 @@
 DIR_TOP=$(realpath ../..)/
-TEST_CASES=server server_v2 node_v2
+TEST_CASES=server server_v2 node_v2 node
 # cos
 include $(DIR_TOP)common.mak
 SRC=./src/

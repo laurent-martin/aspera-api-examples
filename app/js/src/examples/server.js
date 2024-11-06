@@ -1,23 +1,22 @@
 #!/usr/bin/env node
 // laurent.martin.aspera@fr.ibm.com
-const test_environment = require('../utils/test_environment');
-const path = require('path')
-const assert = require('assert');
+import { config, tmpFolder, startTransferAndWait, connectToAPI, shutdownAPI } from '../utils/test_environment.js';
+import path from 'path';
+import assert from 'assert';
 
 // get destination server from example config
-const server_config = test_environment.config.server;
-const server_url = new URL(server_config.url)
+const server_url = new URL(config.server.url)
 assert(server_url.protocol === 'ssh:', 'Expecting SSH protocol');
 
 // downloaded file is then uploaded
-const local_file = path.join('/', test_environment.tmp_folder, server_config.file_download.split('/').pop());
+const local_file = path.join('/', tmpFolder, config.server.file_download.split('/').pop());
 
 // base transfer spec with server information
 var t_spec1_generic = {
 	remote_host: server_url.hostname,
 	ssh_port: parseInt(server_url.port),
-	remote_user: server_config.username,
-	remote_password: server_config.password,
+	remote_user: config.server.username,
+	remote_password: config.server.password,
 }
 
 // Example 1: download
@@ -28,19 +27,19 @@ const test1 = (success_cb) => {
 	t_spec1_generic.direction = 'receive';
 	// note that the destination root on download is relative to the CWD of transferd, NOT this process
 	// so prefer to use abs. paths
-	t_spec1_generic.destination_root = test_environment.tmp_folder;
-	t_spec1_generic.paths = [{ source: server_config.file_download }];
-	test_environment.start_transfer_and_wait(t_spec1_generic, success_cb);
+	t_spec1_generic.destination_root = tmpFolder;
+	t_spec1_generic.paths = [{ source: config.server.file_download }];
+	startTransferAndWait(t_spec1_generic, success_cb);
 }
 
 // Example 2: upload: single file upload to existing folder.
 const test2 = (success_cb) => {
 	console.log('======Test 2: upload file');
 	t_spec1_generic.direction = 'send';
-	t_spec1_generic.destination_root = server_config.folder_upload;
+	t_spec1_generic.destination_root = config.server.folder_upload;
 	t_spec1_generic.paths = [{ source: local_file }];
 	t_spec1_generic.tags = { my_sample_tag: 'hello' };
-	test_environment.start_transfer_and_wait(t_spec1_generic, success_cb);
+	startTransferAndWait(t_spec1_generic, success_cb);
 }
 // check file is uploaded by connecting to: http://demo.asperasoft.com/aspera/user/ with same creds
 
@@ -50,18 +49,18 @@ const test2 = (success_cb) => {
 // so enforce folder creation, to be sure of what happens
 const test3 = (success_cb) => {
 	console.log('======Test 3: upload file to new folder');
-	t_spec1_generic.destination_root = server_config.folder_upload + '/new_folder';
+	t_spec1_generic.destination_root = config.server.folder_upload + '/new_folder';
 	t_spec1_generic.create_dir = true;
-	test_environment.start_transfer_and_wait(t_spec1_generic, success_cb);
+	startTransferAndWait(t_spec1_generic, success_cb);
 }
 
 // Example 4: upload: send to sub folder, but using file pairs
 const test4 = (success_cb) => {
 	console.log('======Test 4: upload file and rename');
-	t_spec1_generic.destination_root = server_config.folder_upload;
+	t_spec1_generic.destination_root = config.server.folder_upload;
 	delete t_spec1_generic.create_dir;
 	t_spec1_generic.paths = [{ source: local_file, destination: 'xxx/newfilename.ext' }];
-	test_environment.start_transfer_and_wait(t_spec1_generic, success_cb);
+	startTransferAndWait(t_spec1_generic, success_cb);
 }
 
 // test runner is sequentially called after success of each test
@@ -69,12 +68,12 @@ var index = -1;
 const test_runner = () => {
 	++index;
 	switch (index) {
-		case 0: test_environment.connect_to_api(test_runner); break;
+		case 0: connectToAPI(test_runner); break;
 		case 1: test1(test_runner); break;
 		case 2: test2(test_runner); break;
 		case 3: test3(test_runner); break;
 		case 4: test4(test_runner); break;
-		case 5: test_environment.shutdown_api(test_runner); break;
+		case 5: shutdownAPI(test_runner); break;
 		case 6: console.log('Finished all tests!'); process.exit(0); break;
 		default: throw 'Error: shall not reach here'
 	}

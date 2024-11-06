@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 // laurent.martin.aspera@fr.ibm.com
-const test_environment = require('../utils/test_environment');
-
-const config = test_environment.config;
+import { config, basicAuthHeaderKeyValue, addSources, startTransferAndWait, connectToAPI, shutdownAPI } from '../utils/test_environment.js';
 
 // create transfer spec version 2
 const transferSpecV2 = {
@@ -11,7 +9,7 @@ const transferSpecV2 = {
 		node_api: {
 			url: config.node.url,
 			headers: [
-				test_environment.basicAuthHeaderKeyValue(config.node.username, config.node.password)
+				basicAuthHeaderKeyValue(config.node.username, config.node.password)
 			]
 		}
 	},
@@ -22,14 +20,13 @@ const transferSpecV2 = {
 	}
 }
 
-test_environment.addSources(transferSpecV2, 'assets.paths')
+addSources(transferSpecV2, 'assets.paths')
 
-test_environment.connect_to_api(() => {
-	test_environment.start_transfer_and_wait(transferSpecV2, () => {
-		test_environment.shutdown_api(() => {
+connectToAPI(() => {
+	startTransferAndWait(transferSpecV2, () => {
+		shutdownAPI(() => {
 			console.log('Done!')
 			process.exit(0)
 		})
 	})
 })
-
