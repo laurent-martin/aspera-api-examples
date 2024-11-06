@@ -43,4 +43,3 @@ try {
 } catch (error) {
 	console.error('Error during transfer:', error);
 }
-
