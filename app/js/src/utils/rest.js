@@ -35,7 +35,7 @@ export class Rest {
         beforeRequest: [
           (request) => {
             logger.debug(`Request: ${request.method.toUpperCase()} ${request.url}`);
-            logger.debug(`Request headers: ${JSON.stringify(request)}`);
+            logger.debug(`Request headers: ${JSON.stringify(request.headers)}`);
             if (request.body) {
               logger.debug(`Request body: ${JSON.stringify(request.body)}`);
             }
@@ -136,8 +136,11 @@ export class Rest {
     const options = {
       method,
       headers: reqHeaders,
-      json: body,
     };
+
+    if (body) {
+      options.json = body;
+    }
 
     try {
       const response = await this.api(url, options);
