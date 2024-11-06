@@ -5,7 +5,7 @@ include $(DIR_TOP)common.mak
 SRC=./src/
 EXAMPLES=$(SRC)examples/
 all:: $(TEST_FLAGS)
-$(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) node_modules/.package-lock.json
+$(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) node_modules/.package-lock.json $(EXAMPLES)%.js
 	@echo "== Test: $(notdir $@) ==========================="
 	node $(EXAMPLES)$(notdir $@).js $(GBL_FILE_SAMPLE)
 	@sleep 2

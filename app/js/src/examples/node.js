@@ -2,22 +2,17 @@
 // laurent.martin.aspera@fr.ibm.com
 // Upload files using an Aspera Transfer token, generated using Node API (upload_setup)
 
-import { config, basicAuthHeaderKeyValue, addSources, startTransferAndWait, connectToAPI, shutdownAPI } from '../utils/test_environment.js';
+import { config, basicAuthorization, addSources, startTransferAndWait, connectToAPI, shutdownAPI } from '../utils/test_environment.js';
 import ky from 'ky';
 
-// Set up Node API with basic authentication
-const nodeApiUrl = config.node.url;
-const authHeader = basicAuthHeaderKeyValue(config.node.username, config.node.password);
-const verify = config.node.verify ?? true;
-
 try {
-	console.log('Generating transfer spec');
+	console.log('Generating transfer spec V1 from node');
 
 	// Prepare the request for the transfer spec
-	const response = await ky.post(`${nodeApiUrl}/files/upload_setup`, {
+	const response = await ky.post(`${config.node.url}/files/upload_setup`, {
 		headers: {
 			'Content-Type': 'application/json',
-			'Authorization': authHeader.value  // Using the generated authorization header
+			'Authorization': basicAuthorization(config.node.username, config.node.password)
 		},
 		json: {
 			transfer_requests: [
@@ -26,7 +21,7 @@ try {
 		},
 		retry: { limit: 0 },  // Optional: Disable retries if desired
 		https: {
-			rejectUnauthorized: verify  // Used for SSL verification
+			rejectUnauthorized: config.node.verify ?? true
 		}
 	}).json();
 
