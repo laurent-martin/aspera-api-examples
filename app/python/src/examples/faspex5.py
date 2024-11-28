@@ -7,11 +7,16 @@ import utils.transfer_client
 import utils.rest
 import logging as log
 import time
+import re
 
 # base path for v5 api
 F5_API_PATH_V5 = '/api/v5'
 # path for oauth2 token generation
 F5_API_PATH_TOKEN = '/auth/token'
+# recipient types (for user lookup)
+RECIPIENT_TYPES = ['user', 'workgroup', 'external_user', 'distribution_list', 'shared_inbox']
+# validation of email format
+EMAIL_REGEX = r'^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$'
 
 # number of // transfer sessions (typically, 1)
 transfer_sessions = 1
@@ -21,6 +26,64 @@ config = utils.configuration.Configuration()
 
 # start local transfer SDK and get its gRPC API for locally initiated transfers
 transfer_client = utils.transfer_client.TransferClient(config).startup()
+
+
+def lookup_entity(api, path, value, prop='name', query=[]):
+    """
+    Call lookup request on entity and find exact match
+    :param api: The Rest object
+    :param path: the entity type
+    :param prop: the property to search
+    :param value: the value to search
+    :param query: additional query parameters (list of 2-tuple)
+    """
+    query.append(('q', value))
+    matching_items = api.read(path, query)
+    # in Faspex, results are in the same key as request
+    if isinstance(matching_items, dict):
+        matching_items = matching_items.get(path, None)
+    # Assert that matching_items is a list
+    if not isinstance(matching_items, list):
+        raise TypeError(f"Expected a list, got {type(matching_items).__name__}")
+    # Filter for case-insensitive exact matches for property
+    name_matches = [item for item in matching_items if item.get(prop, '').lower() == value.lower()]
+    if len(name_matches) == 0:
+        return None
+    elif len(name_matches) > 1:
+        raise ValueError(
+            f'{path}: "{value}" multiple matches: {len(name_matches)} items: {[item.get(prop) for item in matching_items]}'
+        )
+    return name_matches[0]
+
+
+def build_recipient_list(f5_api, emails):
+    """
+    Transform email list into recipient list (type, name)
+    """
+    result = []
+    for email in emails:
+        if re.match(EMAIL_REGEX, email) is None:
+            raise ValueError(f'Invalid email address: {email}')
+        query = [('context', 'packages')]
+        query.extend([('type[]', item) for item in RECIPIENT_TYPES])
+        found = lookup_entity(
+            api=f5_api,
+            path='contacts',
+            value=email,
+            query=query)
+        if not found:
+            result.append({
+                'recipient_type': 'external_user',
+                'name': email,
+            })
+        else:
+            result.append({
+                'recipient_type': found['type'],
+                'name': found['name'],
+            })
+    log.debug(result)
+    return result
+
 
 try:
     # Get access to the Faspex 5 API
@@ -44,11 +107,14 @@ try:
     # Example: Create a package with local files
     #
 
+    # send to myself (for test, existing user) and external user (the calling user must have right to do so...)
+    recipients = build_recipient_list(f5_api, [config.param('faspex5', 'username'), 'johndoe@example.com'])
+
     # create a new package with Faspex 5 API (this allocates a reception folder on package storage)
-    log.info(f'Creating package for local files')
+    log.info(f'Creating package with local files')
     package_info = f5_api.create('packages', {
         'title': "Python local files ",
-        'recipients': [{'name': config.param('faspex5', 'username')}],  # send to myself (for test)
+        'recipients': recipients
     })
     log.debug(package_info)
 
@@ -70,17 +136,17 @@ try:
     # not used in transfer sdk
     del t_spec['authentication']
 
-    # Finally send files to package folder on server
+    # Send local files to package folder on server and wait for completion
     transfer_client.start_transfer_and_wait(t_spec)
 
     # Example: Create package from a remote source
     #
 
     # create a new package with Faspex 5 API (this allocates a reception folder on package storage)
-    log.info(f'Creating package for remote files')
+    log.info(f'Creating package with remote files')
     package_info = f5_api.create('packages', {
         'title': "Python remote files ",
-        'recipients': [{'name': config.param('faspex5', 'username')}],  # send to myself (for test)
+        'recipients': recipients
     })
     log.debug(package_info)
 
@@ -99,9 +165,11 @@ try:
             config.param('faspex5', 'shared_folder_file')
         ]
     }
+    # this triggers a server-to-server (remote) transfer
     transfer_info = f5_api.create(f'packages/{package_info["id"]}/remote_transfer', upload_request)
     log.info(f'id: {transfer_info}')
 
+    # wait for remote transfer to complete
     while True:
         transfer_info = f5_api.read(f'packages/{package_info["id"]}/upload_details')
         log.info(f'status: {transfer_info["upload_status"]}')
