@@ -14,18 +14,9 @@ F5_API_PATH_V5 = '/api/v5'
 # path for oauth2 token generation
 F5_API_PATH_TOKEN = '/auth/token'
 # recipient types (for user lookup)
-RECIPIENT_TYPES = ['user', 'workgroup', 'external_user', 'distribution_list', 'shared_inbox']
+RECIPIENT_TYPES = ['user', 'external_user', 'shared_inbox', 'workgroup', 'distribution_list']
 # validation of email format
-EMAIL_REGEX = r'^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,4})$'
-
-# number of // transfer sessions (typically, 1)
-transfer_sessions = 1
-
-# get testing environment configuration
-config = utils.configuration.Configuration()
-
-# start local transfer SDK and get its gRPC API for locally initiated transfers
-transfer_client = utils.transfer_client.TransferClient(config).startup()
+EMAIL_REGEX = r"^[A-Za-z0-9\.\-_%+]+@[A-Za-z0-9\.\-]+\.[A-Za-z]{2,}$"
 
 
 def lookup_entity(api, path, value, prop='name', query=[]):
@@ -83,6 +74,16 @@ def build_recipient_list(f5_api, emails):
             })
     log.debug(result)
     return result
+
+
+# number of // transfer sessions (typically, 1)
+transfer_sessions = 1
+
+# get testing environment configuration
+config = utils.configuration.Configuration()
+
+# start local transfer SDK and get its gRPC API for locally initiated transfers
+transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 
 try:
