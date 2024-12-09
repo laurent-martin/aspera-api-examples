@@ -3,13 +3,17 @@ package main
 
 import (
 	"aspera_examples/src/utils"
+	"errors"
 	"fmt"
 	"log"
+	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"go.uber.org/zap"
+	"golang.org/x/crypto/ssh"
 )
 
 var logger *zap.SugaredLogger
@@ -112,6 +116,98 @@ func testLocal() error {
 	return nil
 }
 
+func testRemote(config *utils.Configuration) error {
+	log.Println("== TEST REMOTE =============")
+	serverURL := config.ParamStr("server", "url")
+	parsedURL, err := url.Parse(serverURL)
+	if err != nil {
+		return fmt.Errorf("invalid server URL: %w", err)
+	}
+	log.Printf("Server URL: %s", serverURL)
+	if parsedURL.Scheme != "ssh" {
+		return errors.New("invalid URL scheme, expected 'ssh'")
+	}
+	host := parsedURL.Hostname()
+	port := parsedURL.Port()
+	if port == "" {
+		port = "33001"
+	}
+	username := config.ParamStr("server", "username")
+	password := config.ParamStr("server", "password")
+	protocol := 2
+	// Initialize SSH connection
+	address := net.JoinHostPort(host, port)
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		return fmt.Errorf("failed to connect to server: %w", err)
+	}
+	sshConfig := &ssh.ClientConfig{
+		User: username,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(password),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	clientConn, chans, reqs, err := ssh.NewClientConn(conn, host, sshConfig)
+	if err != nil {
+		return fmt.Errorf("SSH handshake failed: %w", err)
+	}
+	client := ssh.NewClient(clientConn, chans, reqs)
+	defer client.Close()
+
+	session, err := client.NewSession()
+	if err != nil {
+		return fmt.Errorf("failed to create SSH session: %w", err)
+	}
+	defer session.Close()
+
+	ascmdCommand := "ascmd"
+	var command string
+	if protocol == 1 {
+		command = ascmdCommand
+	} else {
+		command = fmt.Sprintf("%s -V%d", ascmdCommand, protocol)
+	}
+
+	// Set up streams
+	stdinPipe, err := session.StdinPipe()
+	if err != nil {
+		return fmt.Errorf("unable to set up stdin pipe: %w", err)
+	}
+
+	stdoutPipe, err := session.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("unable to set up stdout pipe: %w", err)
+	}
+	if err := session.Start(command); err != nil {
+		return fmt.Errorf("failed to start command: %w", err)
+	}
+
+	// Initialize AsCmd agent
+	ascmdAgent, err := utils.NewAsCmd(stdinPipe, stdoutPipe, host, uint32(protocol))
+	if err != nil {
+		return fmt.Errorf("failed to initialize AsCmd agent: %w", err)
+	}
+
+	// Perform tests
+	fileDownloadPath := config.ParamStr("server", "file_download")
+	folderUploadPath := config.ParamStr("server", "folder_upload")
+	if err := performTests(
+		ascmdAgent,
+		filepath.FromSlash(fileDownloadPath),
+		filepath.FromSlash(folderUploadPath),
+	); err != nil {
+		return fmt.Errorf("tests failed: %w", err)
+	}
+
+	// Wait for session to close
+	if err := session.Wait(); err != nil {
+		return fmt.Errorf("command exited with error: %w", err)
+	}
+	log.Println("Command exited successfully")
+	return nil
+}
+
 func main() {
 	config, err := utils.NewConfiguration()
 	if err != nil {
@@ -121,6 +217,10 @@ func main() {
 	utils.SetLogger(config.Log)
 	defer logger.Sync()
 	err = testLocal()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = testRemote(config)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -566,13 +566,20 @@ func readTLV(reader *bufio.Reader) (*TagValue, error) {
 
 // AsCmd is a struct that represents a command execution environment
 type AsCmd struct {
-	stdin   io.WriteCloser
-	stdout  io.ReadCloser
+	stdin   io.Writer
+	stdout  io.Reader
 	version uint32
 }
 
 // NewAsCmd creates a new AsCmd instance
-func NewAsCmd(stdin io.WriteCloser, stdout io.ReadCloser, host string, version uint32) (*AsCmd, error) {
+func NewAsCmd(stdin io.Writer, stdout io.Reader, host string, version uint32) (*AsCmd, error) {
+	if stdin == nil {
+		panic("stdin is nil")
+	}
+	if stdout == nil {
+		panic("stdout is nil")
+	}
+
 	ascmd := &AsCmd{
 		stdin:   stdin,
 		stdout:  stdout,
