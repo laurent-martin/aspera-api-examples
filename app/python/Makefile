@@ -41,11 +41,13 @@ $(PYENV_ACTIVATE):
 	python3 -m venv $(PYENV_DIR)
 	source $(PYENV_ACTIVATE) && pip3 install -r $(SRC)requirements.txt
 ifeq ($(PY_GRPC_SDK_DIR),)
-# generate grpc source code from proto file
+# generate gRPC source code from proto file
+# see https://grpc.io/docs/languages/python/quickstart/
 $(PY_FILES_GRPC): $(SDK_FILE_PROTO) $(PYENV_ACTIVATE)
 	@printf "\e[5mGenerating stub code from $(SDK_FILE_PROTO)\e[0m\n"
 	mkdir -p $(PY_GRPC_GEN_DIR)
-	source $(PYENV_ACTIVATE) && python -m grpc_tools.protoc \
+	source $(PYENV_ACTIVATE) && \
+	  python -m grpc_tools.protoc \
 	  --grpc_python_out=$(PY_GRPC_GEN_DIR) \
 	  --python_out=$(PY_GRPC_GEN_DIR) \
 	  --pyi_out=$(PY_GRPC_GEN_DIR) \
