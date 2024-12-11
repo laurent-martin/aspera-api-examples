@@ -1,22 +1,24 @@
 DIR_TOP=$(realpath ../..)/
+include $(DIR_TOP)common.mak
 TEST_CASES=server aoc faspex faspex5 node shares node_v2
 # shares_v2 cos cos_node_api cos_v2
-include $(DIR_TOP)common.mak
+# this folder
+DIR_PY=$(CURDIR)/
 # python execution environment folder
-PYENV_DIR=$(CURDIR)/.venv/
+PYENV_DIR=$(DIR_PY).venv/
 # python virtual environment activation script
 PYENV_ACTIVATE=$(PYENV_DIR)bin/activate
 # python source code folder
-SRC=./src/
+SRC=$(DIR_PY)src/
 EXAMPLES=$(SRC)examples/
-COMMON_SRC=$(SRC)utils/configuration.py $(SRC)utils/transfer_client.py
-# folder of generated grpc source code
+COMMON_SRC=$(SRC)utils/configuration.py $(SRC)utils/transfer_client.py $(SRC)utils/rest.py
+# folder where generated grpc source code will be
 PY_GRPC_GEN_DIR=$(PYENV_DIR)grpc_aspera/
 # python grpc source code files, generated from proto file, also present in SDK
 PY_GRPC_SDK_SRCS=transfer_pb2.py transfer_pb2_grpc.py
 # location of pre-generated protobuf/grpc sources provided in SDK
 PY_GRPC_SDK_DIR=$(SDK_DIR_EXAMPLES)python/
-# comment out this file to use generated grpc source code from SDK
+# comment out this line to use generated grpc source code from SDK
 PY_GRPC_SDK_DIR=
 # python grpc source code files used by sample code with full path
 PY_FILES_GRPC = $(foreach item,$(PY_GRPC_SDK_SRCS),$(PY_GRPC_GEN_DIR)$(item))

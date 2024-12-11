@@ -18,6 +18,7 @@ import (
 
 var logger *zap.SugaredLogger
 
+// Take local or remote `AsCmd` object to perform ascmd actions on remote HSTS
 func performTests(ascmdAgent *utils.AsCmd, existingFile, writableFolder string) error {
 	copyFile := filepath.Join(writableFolder, "copied_file")
 	deleteFile := filepath.Join(writableFolder, "todelete_file")
@@ -77,38 +78,45 @@ func performTests(ascmdAgent *utils.AsCmd, existingFile, writableFolder string) 
 	} else {
 		logger.Infof("rmdir: %s", "ok")
 	}
+	// send "exit"
 	return ascmdAgent.Terminate()
 }
 
-func testLocal() error {
-	logger.Infof("== TEST LOCAL =============")
-	protocol := 1
-	cmd := exec.Command("ascmd")
+type AsCmdLocal struct {
+	*utils.AsCmd
+	cmd *exec.Cmd
+}
+
+func NewAsCmdLocal(protocol uint32) (*AsCmdLocal, error) {
+	cmd := exec.Command(utils.ASCMDCommand)
 	cmd.Env = append(os.Environ(), "SSH_CLIENT=")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("failed to open stdin: %w", err)
+		return nil, fmt.Errorf("failed to open stdin: %w", err)
 	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to open stdout: %w", err)
+		return nil, fmt.Errorf("failed to open stdout: %w", err)
 	}
 	if protocol != 1 {
 		cmd.Args = append(cmd.Args, fmt.Sprintf("-V%d", protocol))
 	}
 	err = cmd.Start()
 	if err != nil {
-		return fmt.Errorf("failed to start ascmd: %w", err)
+		return nil, fmt.Errorf("failed to start ascmd: %w", err)
 	}
 	ascmdAgent, err := utils.NewAsCmd(stdin, stdout, "", uint32(protocol))
 	if err != nil {
-		return fmt.Errorf("failed to create ascmd agent: %w", err)
+		return nil, fmt.Errorf("failed to create ascmd agent: %w", err)
 	}
-	err = performTests(ascmdAgent, "/workspace/aspera/rust_ascmd/README.md", "/workspace/aspera/rust_ascmd")
-	if err != nil {
-		return err
-	}
-	err = cmd.Wait()
+	return &AsCmdLocal{
+		AsCmd: ascmdAgent,
+		cmd:   cmd,
+	}, nil
+}
+
+func (self *AsCmdLocal) Terminate() error {
+	err := self.cmd.Wait()
 	if err != nil {
 		return fmt.Errorf("ascmd exited with error: %w", err)
 	}
@@ -116,30 +124,32 @@ func testLocal() error {
 	return nil
 }
 
-func testRemote(config *utils.Configuration) error {
-	log.Println("== TEST REMOTE =============")
-	serverURL := config.ParamStr("server", "url")
-	parsedURL, err := url.Parse(serverURL)
+// execute a local ascmd
+func testLocal() error {
+	logger.Infof("== TEST LOCAL =============")
+	ascmdAgent, err := NewAsCmdLocal(1)
 	if err != nil {
-		return fmt.Errorf("invalid server URL: %w", err)
+		return err
 	}
-	log.Printf("Server URL: %s", serverURL)
-	if parsedURL.Scheme != "ssh" {
-		return errors.New("invalid URL scheme, expected 'ssh'")
+	err = performTests(ascmdAgent.AsCmd, "/workspace/aspera/rust_ascmd/README.md", "/workspace/aspera/rust_ascmd")
+	if err != nil {
+		return err
 	}
-	host := parsedURL.Hostname()
-	port := parsedURL.Port()
-	if port == "" {
-		port = "33001"
-	}
-	username := config.ParamStr("server", "username")
-	password := config.ParamStr("server", "password")
-	protocol := 2
+	return ascmdAgent.Terminate()
+}
+
+type AsCmdRemote struct {
+	*utils.AsCmd
+	client  *ssh.Client
+	session *ssh.Session
+}
+
+func NewAsCmdRemote(host string, port string, username string, password string, protocol uint32) (*AsCmdRemote, error) {
 	// Initialize SSH connection
 	address := net.JoinHostPort(host, port)
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
-		return fmt.Errorf("failed to connect to server: %w", err)
+		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}
 	sshConfig := &ssh.ClientConfig{
 		User: username,
@@ -150,77 +160,110 @@ func testRemote(config *utils.Configuration) error {
 	}
 	clientConn, chans, reqs, err := ssh.NewClientConn(conn, host, sshConfig)
 	if err != nil {
-		return fmt.Errorf("SSH handshake failed: %w", err)
+		return nil, fmt.Errorf("SSH handshake failed: %w", err)
 	}
 	client := ssh.NewClient(clientConn, chans, reqs)
-	defer client.Close()
 
 	session, err := client.NewSession()
 	if err != nil {
-		return fmt.Errorf("failed to create SSH session: %w", err)
+		return nil, fmt.Errorf("failed to create SSH session: %w", err)
 	}
-	defer session.Close()
 
-	ascmdCommand := "ascmd"
+	ascmdCommand := utils.ASCMDCommand
 	var command string
 	if protocol == 1 {
 		command = ascmdCommand
 	} else {
 		command = fmt.Sprintf("%s -V%d", ascmdCommand, protocol)
 	}
-
-	// Set up streams
 	stdinPipe, err := session.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("unable to set up stdin pipe: %w", err)
+		return nil, fmt.Errorf("unable to set up stdin pipe: %w", err)
 	}
-
 	stdoutPipe, err := session.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("unable to set up stdout pipe: %w", err)
+		return nil, fmt.Errorf("unable to set up stdout pipe: %w", err)
 	}
 	if err := session.Start(command); err != nil {
-		return fmt.Errorf("failed to start command: %w", err)
+		return nil, fmt.Errorf("failed to start command: %w", err)
 	}
-
 	// Initialize AsCmd agent
 	ascmdAgent, err := utils.NewAsCmd(stdinPipe, stdoutPipe, host, uint32(protocol))
 	if err != nil {
-		return fmt.Errorf("failed to initialize AsCmd agent: %w", err)
+		return nil, fmt.Errorf("failed to initialize AsCmd agent: %w", err)
 	}
-
-	// Perform tests
-	fileDownloadPath := config.ParamStr("server", "file_download")
-	folderUploadPath := config.ParamStr("server", "folder_upload")
-	if err := performTests(
-		ascmdAgent,
-		filepath.FromSlash(fileDownloadPath),
-		filepath.FromSlash(folderUploadPath),
-	); err != nil {
-		return fmt.Errorf("tests failed: %w", err)
-	}
-
+	return &AsCmdRemote{
+		AsCmd:   ascmdAgent,
+		client:  client,
+		session: session,
+	}, nil
+}
+func (self *AsCmdRemote) Terminate() error {
 	// Wait for session to close
-	if err := session.Wait(); err != nil {
+	if err := self.session.Wait(); err != nil {
 		return fmt.Errorf("command exited with error: %w", err)
 	}
-	log.Println("Command exited successfully")
+	self.session.Close()
+	self.client.Close()
+	logger.Infof("Command exited successfully")
 	return nil
 }
 
-func main() {
+// real stuff : execute remote ascmd
+func testRemote(config *utils.Configuration) error {
+	logger.Infof("== TEST REMOTE =============")
+	serverURL := config.ParamStr("server", "url")
+	parsedURL, err := url.Parse(serverURL)
+	if err != nil {
+		return fmt.Errorf("invalid server URL: %w", err)
+	}
+	logger.Infof("Server URL: %s", serverURL)
+	if parsedURL.Scheme != "ssh" {
+		return errors.New("invalid URL scheme, expected 'ssh'")
+	}
+	host := parsedURL.Hostname()
+	port := parsedURL.Port()
+	if port == "" {
+		port = "33001"
+	}
+	username := config.ParamStr("server", "username")
+	password := config.ParamStr("server", "password")
+	ascmdAgent, err := NewAsCmdRemote(host, port, username, password, 2)
+	if err != nil {
+		return err
+	}
+	if err := performTests(
+		ascmdAgent.AsCmd,
+		filepath.FromSlash(config.ParamStr("server", "file_download")),
+		filepath.FromSlash(config.ParamStr("server", "folder_upload")),
+	); err != nil {
+		return fmt.Errorf("tests failed: %w", err)
+	}
+	return ascmdAgent.Terminate()
+}
+
+func all_tests() error {
 	config, err := utils.NewConfiguration()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	logger = config.Log
 	utils.SetLogger(config.Log)
 	defer logger.Sync()
+
 	err = testLocal()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	err = testRemote(config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func main() {
+	err := all_tests()
 	if err != nil {
 		log.Fatal(err)
 	}

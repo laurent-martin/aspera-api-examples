@@ -1,3 +1,5 @@
+// Remote access to `ascmd` on Aspera HSTS
+// decode the TLV binary protocol
 // cspell:ignore ascmd zstr ctype codeset fcount errno errstr zmode zuid zgid zctime zmtime zatime dcount tlvs
 package utils
 
@@ -621,8 +623,8 @@ func NewAsCmd(stdin io.Writer, stdout io.Reader, host string, version uint32) (*
 // Parameters:
 //   - command: the command to send, without leading "as_" and trailing "\n"
 func (a *AsCmd) sendCommand(command string) error {
+	logger.Debugf("sending command: as_%s", command)
 	command = fmt.Sprintf("as_%s\n", command)
-	logger.Debugf("sending command: %s", command)
 	_, err := a.stdin.Write([]byte(command))
 	if err != nil {
 		return err
@@ -681,6 +683,7 @@ func (a *AsCmd) executeCommandNoRes(command string, args ...string) error {
 	}
 }
 
+// Decodes a zero terminated string
 func decodeZstr(name string, buf []byte) (string, error) {
 	// Check if the last byte is zero
 	if len(buf) == 0 || buf[len(buf)-1] != 0 {
@@ -696,7 +699,7 @@ func decodeZstr(name string, buf []byte) (string, error) {
 	return decodedString, nil
 }
 
-// decodeU64 decodes a 64-bit unsigned integer from a byte slice
+// Decodes a 64-bit unsigned integer from a byte slice
 func decodeU64(fieldName string, data []byte) (uint64, error) {
 	if len(data) != U64Size {
 		return 0, fmt.Errorf("invalid length for %s: expected %d, got %d", fieldName, U64Size, len(data))
@@ -706,7 +709,7 @@ func decodeU64(fieldName string, data []byte) (uint64, error) {
 	return result, nil
 }
 
-// decodeU32 decodes a 32-bit unsigned integer from a byte slice
+// Decodes a 32-bit unsigned integer from a byte slice
 func decodeU32(fieldName string, data []byte) (uint32, error) {
 	if len(data) != U32Size {
 		return 0, fmt.Errorf("invalid length for %s: expected %d, got %d", fieldName, U32Size, len(data))

@@ -1,3 +1,4 @@
+// Simplified REST API call class
 package utils
 
 import (

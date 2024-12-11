@@ -1,3 +1,4 @@
+// Simplified access to Aspera Transfer Daemon client
 package utils
 
 import (

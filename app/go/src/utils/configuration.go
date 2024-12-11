@@ -1,3 +1,5 @@
+// Configuration object
+// Allows sample programs to retrieve parameters from config file
 package utils
 
 import (
