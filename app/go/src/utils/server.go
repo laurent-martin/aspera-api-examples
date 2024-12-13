@@ -10,11 +10,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"os"
+	"os/exec"
 	"reflect"
 	"strings"
 	"unicode/utf8"
 
 	"go.uber.org/zap"
+	"golang.org/x/crypto/ssh"
 )
 
 var logger *zap.SugaredLogger
@@ -829,4 +833,119 @@ func (a *AsCmd) Md5sum(path string) (string, error) {
 // Terminate sends the "as_exit" command to terminate the ascmd agent
 func (a *AsCmd) Terminate() error {
 	return a.sendCommand("exit")
+}
+
+//===============================================
+
+type AsCmdLocal struct {
+	*AsCmd
+	cmd *exec.Cmd
+}
+
+func NewAsCmdLocal(protocol uint32) (*AsCmdLocal, error) {
+	cmd := exec.Command(ASCMDCommand)
+	cmd.Env = append(os.Environ(), "SSH_CLIENT=")
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open stdin: %w", err)
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open stdout: %w", err)
+	}
+	if protocol != 1 {
+		cmd.Args = append(cmd.Args, fmt.Sprintf("-V%d", protocol))
+	}
+	err = cmd.Start()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start ascmd: %w", err)
+	}
+	ascmdAgent, err := NewAsCmd(stdin, stdout, "", uint32(protocol))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ascmd agent: %w", err)
+	}
+	return &AsCmdLocal{
+		AsCmd: ascmdAgent,
+		cmd:   cmd,
+	}, nil
+}
+
+func (self *AsCmdLocal) Terminate() error {
+	err := self.cmd.Wait()
+	if err != nil {
+		return fmt.Errorf("ascmd exited with error: %w", err)
+	}
+	logger.Infof("ascmd exited successfully")
+	return nil
+}
+
+type AsCmdRemote struct {
+	*AsCmd
+	client  *ssh.Client
+	session *ssh.Session
+}
+
+func NewAsCmdRemote(host string, port string, username string, password string, protocol uint32) (*AsCmdRemote, error) {
+	// Initialize SSH connection
+	address := net.JoinHostPort(host, port)
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to server: %w", err)
+	}
+	sshConfig := &ssh.ClientConfig{
+		User: username,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(password),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	clientConn, chans, reqs, err := ssh.NewClientConn(conn, host, sshConfig)
+	if err != nil {
+		return nil, fmt.Errorf("SSH handshake failed: %w", err)
+	}
+	client := ssh.NewClient(clientConn, chans, reqs)
+
+	session, err := client.NewSession()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SSH session: %w", err)
+	}
+
+	ascmdCommand := ASCMDCommand
+	var command string
+	if protocol == 1 {
+		command = ascmdCommand
+	} else {
+		command = fmt.Sprintf("%s -V%d", ascmdCommand, protocol)
+	}
+	stdinPipe, err := session.StdinPipe()
+	if err != nil {
+		return nil, fmt.Errorf("unable to set up stdin pipe: %w", err)
+	}
+	stdoutPipe, err := session.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("unable to set up stdout pipe: %w", err)
+	}
+	if err := session.Start(command); err != nil {
+		return nil, fmt.Errorf("failed to start command: %w", err)
+	}
+	// Initialize AsCmd agent
+	ascmdAgent, err := NewAsCmd(stdinPipe, stdoutPipe, host, uint32(protocol))
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize AsCmd agent: %w", err)
+	}
+	return &AsCmdRemote{
+		AsCmd:   ascmdAgent,
+		client:  client,
+		session: session,
+	}, nil
+}
+func (self *AsCmdRemote) Terminate() error {
+	// Wait for session to close
+	if err := self.session.Wait(); err != nil {
+		return fmt.Errorf("command exited with error: %w", err)
+	}
+	self.session.Close()
+	self.client.Close()
+	logger.Infof("Command exited successfully")
+	return nil
 }

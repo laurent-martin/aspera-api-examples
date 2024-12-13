@@ -89,7 +89,7 @@ fn test_remote(config: Arc<Configuration>) -> Result<(), Box<dyn Error>> {
         1 => channel.exec(server::ASCMD_COMMAND)?,
         _ => channel.exec(&format!("{} -V{}", server::ASCMD_COMMAND, protocol))?,
     }
-    // start the protocol
+    // start protocol codec
     let mut ascmd_agent = server::AsCmd::new(channel.stream(0), channel.stream(0), host, protocol)?;
     perform_tests(
         &mut ascmd_agent,
