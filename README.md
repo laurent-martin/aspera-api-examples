@@ -47,22 +47,22 @@ Depending on the use case, one might use one or (often) several of those APIs.
 
 This repository is structured like this:
 
-- `web` : an example that shows the use of web SDKd: both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK**
-
 - `app` : examples in various languages using the **Aspera Transfer SDK** and **Aspera Applications REST APIs**
 
-Inside each language folder, you will find:
+- `web` : an example that shows the use of web SDKs: both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK** (Aspera for Desktop is coming), in javascript.
+
+In `app`, you'll find one folder per programming language and, in each of them :
 
 - `README.md` : a specific README for the language
 - `Makefile` : a makefile to run the samples
 - `src` : source code
-- `src/utils` : helper classes
 - `src/examples` : sample programs
+- `src/utils` : helper classes
 
-Sample programs will use server addresses and credentials from a YAML configuration file.
-Once the configuration file is created, sample programs can be run directly.
+Sample programs use addresses and credentials from a common YAML configuration file.
+Once the configuration file is created, see below on how to run them.
 
-**Unix-like systems**: Linux, macOS... a `Makefile` is provided to run the samples.
+**Unix-like systems** (Linux, macOS...): a `Makefile` is provided to run the samples.
 
 **Windows**: Refer to [Quick start (Windows)](#quick-start-windows) below. `make` might not be available. Use the `Makefile` as a reference to execute the commands manually.
 
@@ -72,7 +72,7 @@ See [Running sample programs](#running-sample-programs).
 
 On the first execution of `make`: the Transfer SDK will be automatically downloaded.
 
-To download the SDK, execute: `make sdk`.
+To download the SDK only, execute: `make sdk`.
 
 ## Quick start (Windows)
 
@@ -115,7 +115,7 @@ server aoc faspex faspex5 node shares node_v2
 $ make .tested/faspex5
 ```
 
-Running examples requires the Transfer SDK daemon `asperatransferd` to be downloaded, and some tools to compile the proto file of the transfer SDK, see [Transfer SDK](#transfer-sdk).
+Running examples requires the Aspera Transfer daemon `asperatransferd` to be downloaded and some tools to compile the proto file. See [Transfer SDK](#transfer-sdk).
 
 For details, refer to the recipe in the `Makefile` of each language.
 
@@ -144,6 +144,7 @@ Set the parameter `misc.platform` to the architecture used:
 - `aix-ppc64`
 
 The parameter `trsdk.url` can be set to `grpc://127.0.0.1:55002` (specify the local port that sdk will use).
+If port zero (0) is used, then a port is dynamically chosen in some examples.
 
 Section `httpgw` is used by the `web` example only.
 
