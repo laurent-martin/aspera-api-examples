@@ -1,14 +1,14 @@
 openapi: 3.0.0
 info:
   description: API for Aspera File Management
-  version: 0.2.6
+  version: 0.2.7
   title: Files API
   x-ibm-name: files-api_latest
   contact:
     name: Carole Baden
     email: cbaden@us.ibm.com
 servers:
-  - url: https://localhost/api/v1
+  - url: https://api.ibmaspera.com/
 tags:
   - description: >-
       Use /clients to register your client application with the Files API. You
