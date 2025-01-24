@@ -44,7 +44,7 @@ try:
     })
     aoc_api.setDefaultScope('user:all')
 
-    # get my information
+    # get my user information (get my name, etc...)
     user_info = aoc_api.read('self')
     log.debug(user_info)
 
@@ -66,13 +66,16 @@ try:
         raise Exception(f'Found {len(response_data)} dropbox for {shared_inbox_name}')
     dropbox_info = response_data[0]
 
-    #  create a new package (this allocates a reception folder on package storage)
+    # Create a new package (this allocates a reception folder on package storage)
+    # `sent` and `transfers_expected` could also be added on a later call with PUT packages/{package_info["id"]}
     log.info('creating package')
     package_info = aoc_api.create('packages', {
         'workspace_id': workspace_info['id'],
         'recipients': [{'id': dropbox_info['id'], 'type': 'dropbox'}],
         'name': package_name,
         'note': 'My package note',
+        'sent': True,
+        'transfers_expected': transfer_sessions,
     })
     log.debug(package_info)
 
@@ -81,18 +84,11 @@ try:
     node_info = aoc_api.read(f'nodes/{package_info["node_id"]}')
     log.debug(node_info)
 
-    # tell Aspera how many transfers to expect in package (can also be done after transfer)
-    log.info('telling expected transfers')
-    aoc_api.update(
-        f'packages/{package_info["id"]}',
-        {'sent': True, 'transfers_expected': transfer_sessions},
-    )
-
     # Note: generate a bearer token for the node on which package was created
-    # (all tags are not mandatory, but some are, like 'node')
+    # (not all tags are mandatory, but some are, like 'node')
     t_spec = {
         'direction': 'send',
-        'token': aoc_api.getBearerToken(f"node.{node_info['access_key']}:user:all"),
+        'token': aoc_api.getBearerTokenAuthorization(f"node.{node_info['access_key']}:user:all"),
         'tags': {
             'aspera': {
                 'app': 'packages',
@@ -110,7 +106,6 @@ try:
                     'file_id': package_info['contents_file_id'],
                 },
                 'usage_id': f"aspera.files.workspace.{workspace_info['id']}",
-                'xfer_id': str(uuid.uuid4()),
                 'xfer_retry': 3600,
             }
         },

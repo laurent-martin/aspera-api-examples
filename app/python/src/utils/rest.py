@@ -62,9 +62,9 @@ class Rest:
 
         But in real code, as the bearer token is valid for some time, it should be re-used, until expired, then refresh it.
         """
-        self.headers['Authorization'] = self.getBearerToken(scope)
+        self.headers['Authorization'] = self.getBearerTokenAuthorization(scope)
 
-    def getBearerToken(self, scope=None):
+    def getBearerTokenAuthorization(self, scope=None):
         '''
         Generate a bearer token.
         '''
