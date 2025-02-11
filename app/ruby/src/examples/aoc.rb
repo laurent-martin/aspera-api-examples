@@ -16,7 +16,7 @@ aoc_api = Aspera::Api::AoC.new(
   auth: :jwt,
   private_key: File.read(test_env.conf('aoc', 'private_key')),
   username: test_env.conf('aoc', 'user_email'),
-  scope: 'user:all',
+  scope: Aspera::Api::AoC::SCOPE_FILES_USER,
   subpath: 'api/v1'
 )
 
@@ -24,6 +24,7 @@ self_user_data = aoc_api.read('self')
 
 log.info("self: #{self_user_data}")
 
+# setting application context retrieves workspace and home information (Files)
 aoc_api.context = :files
 
 log.info("workspace: #{aoc_api.workspace}")
@@ -45,8 +46,6 @@ log.info("spec: #{transfer_spec}")
 
 # add list of files to upload
 transfer_spec['paths'] = test_env.files.map { |p| { 'source' => p } }
-# set authentication type to "token" (will trigger use of bypass SSH key)
-# transfer_spec['authentication'] = 'token'
 # start transfer
 test_env.agent.start_transfer(transfer_spec)
 # optional: wait for transfer completion helper function to get events
