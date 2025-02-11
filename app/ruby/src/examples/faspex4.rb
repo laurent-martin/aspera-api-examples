@@ -25,7 +25,7 @@ api_v3 = Aspera::Rest.new(
 )
 
 # very simple api call
-me = api_v3.read('me')[:data]
+me = api_v3.read('me')
 log.info("me: #{me}")
 
 # 2: send a package
@@ -37,7 +37,7 @@ package_create_params = { 'delivery' => {
   'recipients' => ['aspera.user1@gmail.com'],
   'sources' => [{ 'paths' => test_env.files }]
 } }
-pkg_created = api_v3.create('send', package_create_params)[:data]
+pkg_created = api_v3.create('send', package_create_params)
 # get transfer specification (normally: only one)
 transfer_spec = pkg_created['xfer_sessions'].first
 # set paths of files to send
@@ -71,5 +71,5 @@ api_v4 = Aspera::Rest.new(
 )
 
 # Use it. Note that Faspex 4 API v4 is totally different from Faspex 4 v3 APIs, see ref in header
-users = api_v4.read('users')[:data]
+users = api_v4.read('users')
 log.info("users: #{users}")

@@ -26,7 +26,7 @@ node_api = Aspera::Rest.new(
 send_result = node_api.create(
   'files/upload_setup',
   { transfer_requests: [{ transfer_request: { paths: [{ destination: destination_folder }] } }] }
-)[:data]
+)
 # we normally have only one transfer spec in list, so just get the first transfer_spec
 transfer_spec = send_result['transfer_specs'].first['transfer_spec']
 # add list of files to upload

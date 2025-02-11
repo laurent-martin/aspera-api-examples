@@ -63,7 +63,7 @@ class Configuration
     # register aspera REST call error handlers
     Aspera::RestErrorsAspera.register_handlers
     # ignore self signed cert
-    Aspera::Rest.set_parameters(session_cb: ->(http) { http.verify_mode = OpenSSL::SSL::VERIFY_NONE })
+    Aspera::RestParameters.instance.session_cb = ->(http) { http.verify_mode = OpenSSL::SSL::VERIFY_NONE }
   end
 
   def conf(*keys, optional: false)

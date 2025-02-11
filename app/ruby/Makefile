@@ -1,5 +1,6 @@
 DIR_TOP=$(realpath ../..)/
-TEST_CASES=aoc node faspex5 server faspex4
+TEST_CASES=aoc node faspex5 server
+# faspex4 End of support
 include $(DIR_TOP)common.mak
 SRC=./src/
 EXAMPLES=$(SRC)examples/

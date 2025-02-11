@@ -34,7 +34,7 @@ api_v5 = Aspera::Rest.new(
 )
 
 # very simple api call
-log.debug(api_v5.read('version')[:data])
+log.debug(api_v5.read('version'))
 
 # 2: send a package
 #---------------
@@ -44,7 +44,7 @@ package_create_params = {
   'title': 'test title',
   'recipients': [{ 'name': test_env.conf('faspex5', 'username') }]
 }
-package = api_v5.create('packages', package_create_params)[:data]
+package = api_v5.create('packages', package_create_params)
 ts_paths = { 'paths' => test_env.files.map { |p| { 'source' => p } } }
 transfer_spec = api_v5.call(
   operation: 'POST',
