@@ -59,7 +59,7 @@ $(SDK_FILES_REQUIRED): $(GBL_DIR_TMP).exists
 	echo $(SDK_FILES_REQUIRED)
 	rm -fr $(SDK_DIR_RUNTIME)
 	mkdir -p $(SDK_DIR_RUNTIME)
-	$(DIR_TOP)doc/get_sdk.sh $(PLATFORM) $(GBL_DIR_TMP) $(SDK_DIR_RUNTIME)
+	$(DIR_TOP)doc/get_sdk.sh $(PLATFORM) $(GBL_DIR_TMP) $(SDK_DIR_RUNTIME) $(SDK_FILE_DAEMON)
 	touch -c $(SDK_FILES_REQUIRED)
 $(GBL_FILE_CONFIG):
 	mkdir -p $$(dirname $@)
