@@ -7,7 +7,7 @@ SDK_DIR=$3
 SDK_LOCATION_URL=https://ibm.biz/sdk_location
 SDK_URL=$(curl -sL $SDK_LOCATION_URL|grep -B4 "platform: $PLATFORM"|sed -n 's/.*url: *//p' | sort | tail -n1)
 SDK_ARCHIVE=${TMP_DIR}${SDK_URL##*/}
-echo "Downloading SDK from $SDK_URL"
+echo "Downloading Aspera Transfer Daemon archive from $SDK_URL"
 curl -sLo $SDK_ARCHIVE $SDK_URL
 case $SDK_ARCHIVE in
 	*.zip) unzip -qu $SDK_ARCHIVE -d ${SDK_DIR};;
