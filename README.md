@@ -4,7 +4,7 @@
 
 Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 
-- Aspera Transfer SDK: transfer files in an application
+- Aspera Transfer daemon: transfer files in an application
 - Aspera Applications APIs: interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
 - Aspera Connect SDK and HTTPGW SDK: transfer files in a web browser
 
@@ -12,14 +12,16 @@ Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 
 Various programming languages are proposed.
 
+> **Note:** This repo uses Aspera transferd v1.1.5+
+
 ## Other resources
 
 [IBM Aspera API documentation](https://developer.ibm.com/apis/catalog/?search=aspera) (select 24 items per page on bottom).
 
-[Aspera Transfer SDK documentation](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22)
+[Aspera Transfer Daemon documentation](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22)
  contains code samples.
 
-[Video about Transfer SDK](https://higherlogicstream.s3.amazonaws.com/IMWUC/d5b91301-6aa1-5741-e083-2a9121d9d8a7_file.mp4)
+[Video about Transfer Daemon SDK](https://higherlogicstream.s3.amazonaws.com/IMWUC/d5b91301-6aa1-5741-e083-2a9121d9d8a7_file.mp4)
 
 The [IBM Aspera Connect SDK github site](https://github.com/IBM/aspera-connect-sdk-js) contains examples about using the Aspera Connect SDK.
 
@@ -31,11 +33,11 @@ IBM Aspera provides two types of APIs:
 
   SDKs include **libraries** to be used in applications to transfer files
 
-  - **Aspera Transfer SDK**: (gRPC with multi language) transfer files in an application
+  - **Aspera Transfer Daemon SDK**: (gRPC with multi language) transfer files in an application
   - web SDKs:
     - **Aspera Connect SDK**: (web js) transfer files in a web browser
     - **Aspera HTTP Gateway SDK**: (web js) transfer files in a web browser using HTTPS
-    - **Aspera for Desktop**: (web js) transfer files in a web browser
+    - **Aspera for Desktop SDK**: (web js) transfer files in a web browser
 
 - Server APIs:
 
@@ -47,14 +49,14 @@ Depending on the use case, one might use one or (often) several of those APIs.
 
 This repository is structured like this:
 
-- `app` : examples in various languages using the **Aspera Transfer SDK** and **Aspera Applications REST APIs**
+- `app` : examples in various languages using the **Aspera Transfer Daemon** and **Aspera Applications REST APIs**
 
 - `web` : an example that shows the use of web SDKs: both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK** (Aspera for Desktop is coming), in javascript.
 
 In `app`, you'll find one folder per programming language and, in each of them :
 
 - `README.md` : a specific README for the language
-- `Makefile` : a makefile to run the samples
+- `Makefile` : a makefile to run samples
 - `src` : source code
 - `src/examples` : sample programs
 - `src/utils` : helper classes
@@ -70,7 +72,7 @@ Once the configuration file is created, see below on how to run them.
 
 See [Running sample programs](#running-sample-programs).
 
-On the first execution of `make`: the Transfer SDK will be automatically downloaded.
+On the first execution of `make`: the Transfer Daemon SDK will be automatically downloaded.
 
 To download the SDK only, execute: `make sdk`.
 
@@ -95,9 +97,9 @@ To download the SDK only, execute: `make sdk`.
     md tmp
     ```
 
-3. Download the Aspera Transfer SDK ([here](https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/downloads/downloads.json)) and extract its contents to the folder identified by `sdk_dir` in `config/paths.yaml` : `<main folder>/tmp/transfer_sdk`
+3. Download the Aspera Transfer Daemon SDK ([here](https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/downloads/downloads.json)) and extract its contents to the folder identified by `sdk_dir` in `config/paths.yaml` : `<main folder>/tmp/transfer_sdk`
 
-    > **Note:** Make sure that files identified in `config/paths.yaml` are in the extracted folder as expected. For example, the following file must exist: `<main folder>/tmp/transfer_sdk/bin/asperatransferd`
+    > **Note:** Make sure that files identified in `config/paths.yaml` are in the extracted folder as expected. For example, the following file must exist: `<main folder>/tmp/transfer_sdk/sbin/transferd`
 
 4. Run the samples: see [Running sample programs](#running-sample-programs)
 
@@ -115,7 +117,7 @@ server aoc faspex faspex5 node shares node_v2
 $ make .tested/faspex5
 ```
 
-Running examples requires the Aspera Transfer daemon `asperatransferd` to be downloaded and some tools to compile the proto file. See [Transfer SDK](#transfer-sdk).
+Running examples requires the Aspera Transfer daemon `transferd` to be downloaded and some tools to compile the proto file. See [Transfer Daemon SDK](#transfer-daemon).
 
 For details, refer to the recipe in the `Makefile` of each language.
 
@@ -143,13 +145,13 @@ Set the parameter `misc.platform` to the architecture used:
 - `linux-ppc64le`
 - `aix-ppc64`
 
-The parameter `trsdk.url` can be set to `grpc://127.0.0.1:55002` (specify the local port that sdk will use).
+The parameter `trsdk.url` can be set to `grpc://127.0.0.1:55002` (specify the local port that SDK will use).
 If port zero (0) is used, then a port is dynamically chosen in some examples.
 
 Section `httpgw` is used by the `web` example only.
 
 Other sections are used by the various examples.
-For example, if you want to test only the COS transfer using the Transfer SDK, you can fill the `cos` section only and leave other sections empty.
+For example, if you want to test only the COS transfer using the Transfer Daemon, you can fill the `cos` section only and leave other sections empty.
 
 Example (with random credentials):
 
@@ -209,19 +211,19 @@ Some relative paths are defined in [`config/paths.yaml`](config/paths.yaml) (kee
 The following log levels can be set:
 
 - `misc.level`: sample code log level: `debug` `info` `warning` `error`
-- `trsdk.level`: asperatransferd log level: `trace` `debug` `info` `warning` `error` `fatal` `panic`
-- `trsdk.ascp_level`: ascp log level: `trace` `debug` `info`
+- `trsdk.level`: `transferd` log level: `trace` `debug` `info` `warning` `error` `fatal` `panic`
+- `trsdk.ascp_level`: `ascp` log level: `trace` `debug` `info`
 
 Some examples support setting port to `0` (zero) in `trsdk.url` to use a random port.
 
-Sample application generate a file `asperatransferd.conf` provided to the transfer sdk daemon, log level there are taken from the general yaml config file.
+Sample application generate a file `transferd.conf` provided to the transfer daemon, log level there are taken from the general YAML config file.
 
-## Transfer SDK
+## Transfer Daemon
 
-The Transfer SDK is a gRPC service that allows you to transfer files in an application.
+The Transfer Daemon is a **gRPC** service that allows you to transfer files in an application.
 It is a client API that can be used in various languages.
 
-The file `transfer.proto` describes in the remote procedure call interface provided by the daemon `asperatransferd`.
+The file `transfer.proto` describes in the remote procedure call interface provided by the daemon `transferd`.
 
 ```text
  +----------------+
@@ -239,7 +241,7 @@ The file `transfer.proto` describes in the remote procedure call interface provi
                 |
                 v
           +------------+                      +---------------------+
-          | client app |-----[connect to]---->| Transfer SDK daemon |
+          | client app |-----[connect to]---->|   Transfer daemon   |
           +------------+                      +---------------------+
                 |                                       ^      | [executes]
                 +-------------[executes]----------------+      v
@@ -252,8 +254,8 @@ The file `transfer.proto` describes in the remote procedure call interface provi
 
 Client applications must use the client source files generated from the `transfer.proto` file.
 
-Generated (stub) code is provided for convenience in the Transfer SDK for several languages.
-It can be used directly or the developer may choose to generate them from the `transfer.proto` file.
+Generated (stub) code is provided for convenience in the Transfer Daemon SDK for several languages.
+It can be used directly, or the developer may choose to generate them from the `transfer.proto` file.
 For production and future compatibility it is recommended to generate the stub code from the `transfer.proto` file.
 If you generate stub code yourself, then you can benefit from support to latest platforms and versions.
 
@@ -266,17 +268,17 @@ Refer to [GRPC web site](https://grpc.io/) for instructions on how to generate t
 Sample programs use helper classes located in package `utils`:
 
 - `Configuration` reads configuration parameters from `config.yaml` so that it is easier to run any samples.
-- `TransferClient` creates a configuration file and starting the Transfer SDK daemon: `asperatransferd`
+- `TransferClient` creates a configuration file and starting the Transfer daemon: `transferd`
 - `Rest` for simple API calls on Rest APIs.
 
 ### Runtime files
 
-The Transfer SDK requires the following runtime files:
+The Transfer Daemon requires the following runtime files:
 
-- `asperatransferd` : executable that provides the gRPC service
+- `transferd` : executable that provides the **gRPC** service
 - `ascp` : executable that actually transfers the files
-- `ascp4` : another version of ascp
-- `async` : executable for async operations
+- `ascp4` : another version of `ascp`
+- `async` : executable for `async` operations
 - `libafwsfeed` : a library for `ascp` for web sockets
 - `aspera-license` : the license file for `ascp` (free use)
 
@@ -313,7 +315,7 @@ It is possible to set some client parameters, like:
 
 ### Daemon startup
 
-`asperatransferd` is a daemon that must be started before using the Transfer SDK.
+`transferd` is a daemon that must be started before using its API.
 It drives the transfer of files between two endpoints using embedded `ascp`.
 The client app will connect to it using gRPC on the port specified.
 
@@ -322,7 +324,7 @@ Developers have the choice to start it manually in a separate terminal, or to cr
 
 Examples provided here start the daemon using the `TransferClient` class.
 
-When `asperatransferd` starts, if no configuration file is provided with option `--config`, then it expects to find `ascp`, `ascp4`, `async`, `libafwsfeed`, `aspera-license` in specific folders.
+When `transferd` starts, if no configuration file is provided with option `--config`, then it expects to find `ascp`, `ascp4`, `async`, `libafwsfeed`, `aspera-license` in specific folders.
 In order to place all file in the same folder, then the configuration file must be provided and folders must be set.
 
 The Makefile provided in the samples downloads the SDK and extracts it in a single folder, then the examples generate the configuration file accordingly.

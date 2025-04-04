@@ -14,10 +14,11 @@ SDK_DIR_EXAMPLES=$(DIR_TOP)$(shell sed -n -e 's/^sdk_samples: //p' < $(GBL_FILE_
 # name of the current platform (os-cpu)
 PLATFORM=$(shell sed -n -e 's/^ *platform: //p' $(GBL_FILE_CONFIG) 2> /dev/null)
 # SDK executables
-SDK_DAEMON=asperatransferd
+SDK_NAME_DAEMON=$(shell sed -n -e 's/^sdk_daemon: .*\///p' < $(GBL_FILE_PATHS))
+SDK_FILE_DAEMON=$(DIR_TOP)$(shell sed -n -e 's/^sdk_daemon: //p' < $(GBL_FILE_PATHS))
 # location of transfer.proto
 SDK_FILE_PROTO=$(DIR_TOP)$(shell sed -n -e 's/^proto: //p' $(GBL_FILE_PATHS))
-SDK_FILES_REQUIRED=$(SDK_DIR_RUNTIME)bin/$(SDK_DAEMON) $(SDK_FILE_PROTO)
+SDK_FILES_REQUIRED=$(SDK_FILE_DAEMON) $(SDK_FILE_PROTO)
 # required files for running the samples
 FILES_RUNTIME=$(GBL_FILE_CONFIG) $(SDK_FILES_REQUIRED)
 # template configuration file
@@ -37,12 +38,12 @@ clean_flags::
 	rm -f $(TEST_FLAGS)
 # simple clean
 clean:: clean_flags clean_daemon
-	rm -f $(TMPDIR)/$(SDK_DAEMON).* $(TMPDIR)/aspera-scp-transfer*.log
+	rm -f $(TMPDIR)/$(SDK_NAME_DAEMON).* $(TMPDIR)/aspera-scp-transfer*.log
 	rm -fr $(DIR_TESTED_FLAG)
 # clean all generated and compiled files
 superclean:: clean
 clean_daemon:
-	killall -q $(SDK_DAEMON)||:
+	killall -q $(SDK_NAME_DAEMON)||:
 $(GBL_DIR_TMP).exists:
 	mkdir -p $(GBL_DIR_TMP)
 	touch $@

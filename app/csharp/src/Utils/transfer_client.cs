@@ -1,16 +1,17 @@
 using Grpc.Net.Client;
 using Newtonsoft.Json.Linq;
+using System;
+using System.IO;
 public class TransferClient
 {
-    private const string TRANSFER_SDK_DAEMON = "asperatransferd";
-    private const string DAEMON_LOG_FILE = "asperatransferd.log";
     private const string ASCP_LOG_FILE = "aspera-scp-transfer.log";
     private Configuration _config;
     private string _serverAddress;
     private int _serverPort;
     private System.Diagnostics.Process _daemonProcess = null;
     private List<StreamWriter> _daemonStreams = new List<StreamWriter>();
-    private Transfersdk.TransferService.TransferServiceClient _daemonService = null;
+    private Transferd.Api.TransferService.TransferServiceClient _daemonService = null;
+    private string _daemonName;
     private string _daemonLog;
 
 
@@ -20,7 +21,8 @@ public class TransferClient
         var confUrl = new Uri(_config.GetParam("trsdk", "url"));
         _serverAddress = confUrl.Host;
         _serverPort = confUrl.Port;
-        _daemonLog = Path.Combine(_config.LogFolder(), DAEMON_LOG_FILE);
+        _daemonName = Path.GetFileName(_config.GetPath("sdk_daemon"));
+        _daemonLog = Path.Combine(_config.LogFolder(), _daemonName + ".log");
     }
 
     public void CreateConfigFile(string confFile)
@@ -49,7 +51,7 @@ public class TransferClient
     {
         Log.log.Info("ERROR: Failed to connect\nStarting daemon...");
         var daemonPath = _config.GetPath("sdk_daemon");
-        var fileBase = Path.Combine(_config.LogFolder(), TRANSFER_SDK_DAEMON);
+        var fileBase = Path.Combine(_config.LogFolder(), _daemonName);
         var confFile = fileBase + ".conf";
         var outFile = fileBase + ".out";
         var errFile = fileBase + ".err";
@@ -97,9 +99,9 @@ public class TransferClient
     {
         AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
         var grpcUrl = new Uri($"http://{_serverAddress}:{_serverPort}");
-        Log.log.Info($"Connecting to {TRANSFER_SDK_DAEMON} on {grpcUrl} ...");
-        _daemonService = new Transfersdk.TransferService.TransferServiceClient(GrpcChannel.ForAddress(grpcUrl));
-        _daemonService.GetAPIVersion(new Transfersdk.APIVersionRequest());
+        Log.log.Info($"Connecting to {_daemonName} on {grpcUrl} ...");
+        _daemonService = new Transferd.Api.TransferService.TransferServiceClient(GrpcChannel.ForAddress(grpcUrl));
+        _daemonService.GetAPIVersion(new Transferd.Api.APIVersionRequest());
         Log.log.Info("Connected !");
     }
     public void Startup()
@@ -136,16 +138,16 @@ public class TransferClient
     {
         Log.log.Info(aSpecObj);
         // Start a transfer and return transfer id
-        var transferRequest = new Transfersdk.TransferRequest
+        var transferRequest = new Transferd.Api.TransferRequest
         {
-            TransferType = Transfersdk.TransferType.FileRegular,
-            Config = new Transfersdk.TransferConfig { LogLevel = 2 },
+            TransferType = Transferd.Api.TransferType.FileRegular,
+            Config = new Transferd.Api.TransferConfig { LogLevel = 2 },
             TransferSpec = Newtonsoft.Json.JsonConvert.SerializeObject(aSpecObj),
         };
 
         var transferResponse = _daemonService.StartTransfer(transferRequest);
 
-        if (transferResponse.Status == Transfersdk.TransferStatus.Failed)
+        if (transferResponse.Status == Transferd.Api.TransferStatus.Failed)
         {
             Log.log.Info($"ERROR: {transferResponse.Error.Description}");
             Environment.Exit(1);
@@ -160,12 +162,12 @@ public class TransferClient
         while (true)
         {
             // check the current state of the transfer
-            var queryTransferResponse = _daemonService.QueryTransfer(new Transfersdk.TransferInfoRequest() { TransferId = aTransferId });
+            var queryTransferResponse = _daemonService.QueryTransfer(new Transferd.Api.TransferInfoRequest() { TransferId = aTransferId });
             Console.Out.WriteLine("transfer info " + queryTransferResponse);
 
             // check transfer status in response, and exit if it's done
-            Transfersdk.TransferStatus status = queryTransferResponse.Status;
-            if (status == Transfersdk.TransferStatus.Failed || status == Transfersdk.TransferStatus.Completed)
+            Transferd.Api.TransferStatus status = queryTransferResponse.Status;
+            if (status == Transferd.Api.TransferStatus.Failed || status == Transferd.Api.TransferStatus.Completed)
             {
                 Console.Out.WriteLine("finished " + status);
                 break;

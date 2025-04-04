@@ -21,11 +21,9 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 os.environ['GRPC_ENABLE_FORK_SUPPORT'] = 'false'
 
 # import gRPC stubs (Transfer SDK API), make sure it is in PYTHONPATH
-import transfer_pb2_grpc as transfer_manager_grpc  # noqa: E4
-import transfer_pb2 as transfer_manager  # noqa: E4
+import transferd_pb2_grpc as transfer_manager_grpc  # noqa: E4
+import transferd_pb2 as transfer_manager  # noqa: E4
 
-TRANSFER_SDK_DAEMON = 'asperatransferd'
-DAEMON_LOG_FILE = "asperatransferd.log"
 ASCP_LOG_FILE = "aspera-scp-transfer.log"
 DEBUG_HTTP = False
 
@@ -40,7 +38,8 @@ class TransferClient:
         self._server_port = sdk_url.port
         self._transfer_daemon_process = None
         self._transfer_service = None
-        self._daemon_log = os.path.join(self._config._log_folder, DAEMON_LOG_FILE)
+        self._daemon_name = os.path.basename(self._config.get_path('sdk_daemon'))
+        self._daemon_log = os.path.join(self._config._log_folder, f"{self._daemon_name}.log")
 
     def create_config_file(self, conf_file):
         '''
@@ -70,7 +69,7 @@ class TransferClient:
 
         @return gRPC client
         '''
-        file_base = os.path.join(self._config._log_folder, TRANSFER_SDK_DAEMON)
+        file_base = os.path.join(self._config._log_folder, self._daemon_name)
         conf_file = f'{file_base}.conf'
         out_file = f'{file_base}.out'
         err_file = f'{file_base}.err'
@@ -116,7 +115,7 @@ class TransferClient:
     def connect_to_daemon(self):
         '''Connect to transfer manager daemon'''
         channel_address = f'{self._server_address}:{self._server_port}'
-        logging.info('Connecting to %s on: %s ...', TRANSFER_SDK_DAEMON, channel_address)
+        logging.info('Connecting to %s on: %s ...', self._daemon_name, channel_address)
         # create a connection to the transfer manager daemon
         channel = grpc.insecure_channel(channel_address)
         try:

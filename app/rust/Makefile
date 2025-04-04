@@ -5,6 +5,7 @@ include $(DIR_TOP)common.mak
 EXAMPLES_DIR=src/examples/
 # Execute all samples
 all:: $(TEST_FLAGS)
+# used in build.rs:
 export SDK_FILE_PROTO
 # Build and Execute one sample
 $(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(EXAMPLES_DIR)%.rs

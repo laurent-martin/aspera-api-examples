@@ -8,8 +8,6 @@ import protoLoader from '@grpc/proto-loader';
 import { spawn } from 'child_process';
 import { logger } from './configuration.js';
 
-const TRANSFER_SDK_DAEMON = 'asperatransferd';
-const DAEMON_LOG_FILE = "asperatransferd.log";
 const ASCP_LOG_FILE = "aspera-scp-transfer.log";
 
 /**
@@ -23,7 +21,8 @@ export class TransferClient {
 		this.serverPort = parseInt(SDK_URL.port);
 		this.transferDaemonProcess = null;
 		this.transferService = null;
-		this.daemonLog = path.resolve(this.config.logFolder, DAEMON_LOG_FILE);
+		this.daemonName = path.basename(config.getPath("sdk_daemon"));
+		this.daemonLog = path.resolve(this.config.logFolder, this.daemonName + ".log");
 	}
 
 	/**
@@ -33,7 +32,7 @@ export class TransferClient {
 	async startConnectDaemon(readyCallback) {
 		try {
 			const ASCP_LOG = path.resolve(this.config.logFolder, ASCP_LOG_FILE);
-			const FILE_BASE = path.resolve(this.config.logFolder, TRANSFER_SDK_DAEMON);
+			const FILE_BASE = path.resolve(this.config.logFolder, this.daemonName);
 			const DAEMON_CONF_FILE = `${FILE_BASE}.conf`;
 			const outFile = `${FILE_BASE}.out`;
 			const errFile = `${FILE_BASE}.err`;
@@ -55,7 +54,7 @@ export class TransferClient {
 				logger.debug(`daemon exited (${code})`);
 				if (!this.transferService) throw new Error('daemon exited before being ready');
 			});
-			logger.debug(`Started ${TRANSFER_SDK_DAEMON} with pid ${this.transferDaemonProcess.pid}`);
+			logger.debug(`Started ${this.daemonName} with pid ${this.transferDaemonProcess.pid}`);
 			await this.initializeGrpcClient(readyCallback);
 		} catch (error) {
 			logger.error('Error in startConnectDaemon:', error);
@@ -105,8 +104,8 @@ export class TransferClient {
 				defaults: true,
 				oneofs: true,
 			});
-			const transfersdk = grpc.loadPackageDefinition(packageDefinition).transfersdk;
-			this.transferService = new transfersdk.TransferService(
+			const trapi = grpc.loadPackageDefinition(packageDefinition).transferd.api;
+			this.transferService = new trapi.TransferService(
 				`${this.serverAddress}:${this.serverPort}`,
 				grpc.credentials.createInsecure()
 			);

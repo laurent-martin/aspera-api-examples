@@ -7,7 +7,7 @@ BUILD_DIR=./build/
 # folder of generated grpc source code
 GO_GRPC_GEN_DIR=$(BUILD_DIR)grpc_aspera/
 # python grpc source code files, generated from proto file, also present in SDK
-GO_GRPC_SDK_SRCS=transfer.pb.go transfer_grpc.pb.go
+GO_GRPC_SDK_SRCS=transferd.pb.go transferd_grpc.pb.go
 # location of pre-generated protobuf/grpc sources provided in SDK
 GO_GRPC_SDK_DIR=$(SDK_DIR_EXAMPLES)go/
 # comment out this file to use generated grpc source code from SDK
@@ -44,11 +44,6 @@ $(GO_FILES_GRPC): $(BUILD_DIR).exists $(SDK_FILE_PROTO)
 	  --go-grpc_opt=paths=source_relative \
 	  --proto_path=$(dir $(SDK_FILE_PROTO)) \
 	  $(SDK_FILE_PROTO)
-#	source $(PYENV_ACTIVATE) && python -m grpc_tools.protoc \
-#	  --grpc_python_out= \
-#	  --python_out=$(GO_GRPC_GEN_DIR) \
-#	  --pyi_out=$(GO_GRPC_GEN_DIR) \
-#	  $(SDK_FILE_PROTO)
 else
 # copy grpc source code from SDK
 $(GO_FILES_GRPC): $(BUILD_DIR).exists $(FILES_RUNTIME)

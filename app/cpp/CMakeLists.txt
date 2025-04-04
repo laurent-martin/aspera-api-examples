@@ -10,7 +10,7 @@ project(LaurentSamples LANGUAGES C CXX)
 
 set(CXX_STANDARD 17)
 
-find_package(Boost CONFIG REQUIRED)
+find_package(Boost CONFIG REQUIRED json beast asio uuid)
 message(STATUS "Using Boost ${Boost_VERSION}")
 find_package(magic_enum CONFIG REQUIRED)
 message(STATUS "Using magic_enum ${magic_enum_VERSION}")
@@ -61,5 +61,7 @@ foreach(_target ${test_cases})
     ${yaml-cpp_LIBRARIES}
     ${magic_enum_LIBRARIES}
     ${openssl_LIBRARIES}
-    ${Boost_LIBRARIES})
+    ${Boost_LIBRARIES}
+    )
 endforeach()
+# 

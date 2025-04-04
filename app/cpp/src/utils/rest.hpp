@@ -175,7 +175,7 @@ class Rest {
             request.set(key, value);
         }
         LOG(debug) << "Request: " << request;
-        boost::asio::io_service io_svc;
+        boost::asio::io_context io_svc;
         ssl::context ssl_context(ssl::context::tls_client);
         ssl_context.set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::tlsv13);
         ssl::stream<boost::asio::ip::tcp::socket> sock_stream = {io_svc, ssl_context};

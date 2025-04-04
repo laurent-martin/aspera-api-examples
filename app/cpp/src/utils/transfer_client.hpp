@@ -12,17 +12,15 @@
 #include <thread>
 
 #include "configuration.hpp"
-#include "transfer.grpc.pb.h"
+#include "transferd.grpc.pb.h"
 namespace json = boost::json;
-namespace trsdk = transfersdk;
+namespace trapi = transferd::api;
 
-// define TransferStatus_to_string(value) transfersdk::TransferStatus_Name<transfersdk::TransferStatus>(value)
+// define TransferStatus_to_string(value) trapi::TransferStatus_Name<trapi::TransferStatus>(value)
 #define TransferStatus_to_string(value) magic_enum::enum_name(value)
 #define grpc_connectivity_state_to_string(value) (magic_enum::enum_name(value).data() + strlen("GRPC_CHANNEL_"))
 
 namespace utils {
-inline constexpr const char* TRANSFER_SDK_DAEMON = "asperatransferd";
-inline constexpr const char* DAEMON_LOG_FILE = "asperatransferd.log";
 inline constexpr const char* ASCP_LOG_FILE = "aspera-scp-transfer.log";
 inline constexpr const int MAX_CONNECTION_WAIT_SEC = 10;
 
@@ -35,7 +33,8 @@ class TransferClient {
     std::string _server_address;
     uint16_t _server_port;
     std::unique_ptr<boost::process::child> _transfer_daemon_process;
-    std::unique_ptr<trsdk::TransferService::Stub> _transfer_service;
+    std::unique_ptr<trapi::TransferService::Stub> _transfer_service;
+    const std::string _daemon_name;
     const std::string _daemon_log;
 
    public:
@@ -43,11 +42,12 @@ class TransferClient {
         : _config(config),
           _transfer_daemon_process(nullptr),
           _transfer_service(nullptr),
-          _daemon_log(_config.log_folder_path() / DAEMON_LOG_FILE) {
+          _daemon_name(_config.get_path("sdk_daemon")),
+          _daemon_log(_config.log_folder_path() / (_daemon_name + ".log")) {
         auto sdk_url = _config.param_str({"trsdk", "url"});
         auto sdk_uri = boost::urls::parse_uri(sdk_url);
         if (!sdk_uri) {
-            throw std::runtime_error("Invalid trsdk url");
+            throw std::runtime_error("Invalid trapi url");
         }
         LOG(debug) << LOG_ITEM("grpc url") << sdk_uri.value();
         _server_address = sdk_uri.value().host();
@@ -59,7 +59,7 @@ class TransferClient {
     }
     // Start the transfer SDK daemon process
     void daemon_start() {
-        const std::string file_base = _config.log_folder_path() / TRANSFER_SDK_DAEMON;
+        const std::string file_base = _config.log_folder_path() / _daemon_name;
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
@@ -90,9 +90,9 @@ class TransferClient {
     // Connect to the transfer SDK daemon
     void daemon_connect() {
         const std::string _channel_address = _server_address + ":" + std::to_string(_server_port);
-        LOG(info) << "Connecting to " << TRANSFER_SDK_DAEMON << " on: " << _channel_address << " ...";
+        LOG(info) << "Connecting to " << _daemon_name << " on: " << _channel_address << " ...";
         const auto channel = grpc::CreateChannel(_channel_address, grpc::InsecureChannelCredentials());
-        _transfer_service = trsdk::TransferService::NewStub(channel);
+        _transfer_service = trapi::TransferService::NewStub(channel);
         grpc_connectivity_state state;
         for (int i = 0; i < MAX_CONNECTION_WAIT_SEC; i++) {
             state = channel->GetState(true);
@@ -136,15 +136,15 @@ class TransferClient {
         const std::string ts_json = json::serialize(transfer_spec);
         LOG(debug) << LOG_ITEM("ts") << ts_json;
         // create a transfer request
-        auto* transfer_config = new trsdk::TransferConfig;
+        auto* transfer_config = new trapi::TransferConfig;
         transfer_config->set_loglevel(2);  // ascp levels: 0 1 2
-        trsdk::TransferRequest transfer_request;
-        transfer_request.set_transfertype(trsdk::TransferType::FILE_REGULAR);
+        trapi::TransferRequest transfer_request;
+        transfer_request.set_transfertype(trapi::TransferType::FILE_REGULAR);
         transfer_request.set_allocated_config(transfer_config);
         transfer_request.set_transferspec(ts_json);
         // send start transfer request to the transfer daemon
         grpc::ClientContext start_transfer_context;
-        transfersdk::StartTransferResponse start_transfer_response;
+        trapi::StartTransferResponse start_transfer_response;
         _transfer_service->StartTransfer(&start_transfer_context, transfer_request, &start_transfer_response);
         transfer_check_failed_status(start_transfer_response.status(), start_transfer_response.error());
         const std::string transfer_id = start_transfer_response.transferid();
@@ -156,15 +156,15 @@ class TransferClient {
         // wait until finished, check every second
         while (true) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
-            trsdk::TransferInfoRequest transfer_info_request;
+            trapi::TransferInfoRequest transfer_info_request;
             transfer_info_request.set_transferid(transfer_id);
             grpc::ClientContext query_transfer_context;
-            trsdk::QueryTransferResponse query_transfer_response;
+            trapi::QueryTransferResponse query_transfer_response;
             _transfer_service->QueryTransfer(&query_transfer_context, transfer_info_request, &query_transfer_response);
-            const trsdk::TransferStatus status = query_transfer_response.status();
+            const trapi::TransferStatus status = query_transfer_response.status();
             LOG(info) << "transfer: " << TransferStatus_to_string(status);
             transfer_check_failed_status(status, query_transfer_response.error());
-            if (status == trsdk::TransferStatus::COMPLETED)
+            if (status == trapi::TransferStatus::COMPLETED)
                 break;
         }
     }
@@ -209,12 +209,12 @@ class TransferClient {
         }
     }
 
-    void transfer_check_failed_status(const trsdk::TransferStatus& status, const trsdk::Error& error) {
-        if (status == trsdk::TransferStatus::FAILED) {
+    void transfer_check_failed_status(const trapi::TransferStatus& status, const trapi::Error& error) {
+        if (status == trapi::TransferStatus::FAILED) {
             LOG(error) << last_file_line(_daemon_log);
             throw std::runtime_error("transfer failed: " + error.description());
         }
-        if (status == trsdk::TransferStatus::UNKNOWN_STATUS) {
+        if (status == trapi::TransferStatus::UNKNOWN_STATUS) {
             throw std::runtime_error("unknown transfer id: " + error.description());
         }
     }

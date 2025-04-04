@@ -1,7 +1,7 @@
 package utils;
 
-import ibm.aspera.transferservice.Transfer;
-import ibm.aspera.transferservice.TransferServiceGrpc;
+import com.ibm.software.aspera.transferd.api.Transferd;
+import com.ibm.software.aspera.transferd.api.TransferServiceGrpc;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.ManagedChannel;
@@ -13,8 +13,8 @@ import java.io.InputStream;
 import java.io.FileWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.file.Paths;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -24,8 +24,6 @@ import java.util.logging.Level;
 /** Read configuration file and provide interface for transfer */
 public class TransferClient {
 	private static final Logger LOGGER = Logger.getLogger(TransferClient.class.getName());
-	private static final String TRANSFER_SDK_DAEMON = "asperatransferd";
-	private static final String DAEMON_LOG_FILE = "asperatransferd.log";
 	private static final String ASCP_LOG_FILE = "aspera-scp-transfer.log";
 	// configuration parameters from the configuration file
 	public final Configuration config;
@@ -35,6 +33,7 @@ public class TransferClient {
 	private ManagedChannel channel;
 	// Aspera client API (synchronous)
 	public TransferServiceGrpc.TransferServiceBlockingStub transferService;
+	private final String daemonName;
 	private final String daemonLog;
 	// several transfer session may be started but for the example we use only one
 	private String transferId;
@@ -51,7 +50,8 @@ public class TransferClient {
 		} catch (final Exception e) {
 			throw new Error("invalid grpc url: " + e.getMessage());
 		}
-		daemonLog = config.getLogFolder() + File.separator + DAEMON_LOG_FILE;
+		daemonName = Paths.get(config.getPath("sdk_daemon")).getFileName().toString();
+		daemonLog = config.getLogFolder() + File.separator + daemonName + ".log";
 		transferId = null;
 	}
 
@@ -101,7 +101,7 @@ public class TransferClient {
 	public void daemon_startup() {
 		Process started_process = null;
 		// Define the paths
-		final String file_base = config.getLogFolder() + File.separator + TRANSFER_SDK_DAEMON;
+		final String file_base = config.getLogFolder() + File.separator + daemonName;
 		String sdk_conf_path = file_base + ".conf";
 		createConfFile(sdk_conf_path);
 		try {
@@ -143,8 +143,8 @@ public class TransferClient {
 		transferService = TransferServiceGrpc.newBlockingStub(channel);
 		LOGGER.log(Level.INFO, "Checking gRPC connection");
 		// make a simple api call to check communication is ok
-		Transfer.InstanceInfoResponse infoResponse =
-				transferService.getInfo(Transfer.InstanceInfoRequest.newBuilder().build());
+		Transferd.InstanceInfoResponse infoResponse =
+				transferService.getInfo(Transferd.InstanceInfoRequest.newBuilder().build());
 		LOGGER.log(Level.INFO, "OK: Daemon is here, API v = {0}", infoResponse.getApiVersion());
 	}
 
@@ -168,7 +168,7 @@ public class TransferClient {
 		daemon_startup();
 		daemon_connect();
 		if (config.getParamBool("misc", "transfer_regular")) {
-			session_start(transferSpec, Transfer.TransferType.FILE_REGULAR);
+			session_start(transferSpec, Transferd.TransferType.FILE_REGULAR);
 		} else {
 			session_start_streaming(transferSpec);
 		}
@@ -177,13 +177,13 @@ public class TransferClient {
 
 	/** Start one transfer session */
 	public void session_start(final JSONObject transferSpec,
-			final Transfer.TransferType aTransferType) {
+			final Transferd.TransferType aTransferType) {
 		LOGGER.log(Level.INFO, "L: ts: {0}", transferSpec.toString());
 		// send start transfer request to transfer sdk daemon
-		final Transfer.StartTransferResponse transferResponse = transferService.startTransfer(//
-				Transfer.TransferRequest.newBuilder() //
+		final Transferd.StartTransferResponse transferResponse = transferService.startTransfer(//
+				Transferd.TransferRequest.newBuilder() //
 						.setTransferType(aTransferType)
-						.setConfig(Transfer.TransferConfig.newBuilder().build())
+						.setConfig(Transferd.TransferConfig.newBuilder().build())
 						.setTransferSpec(transferSpec.toString()).build());
 		transferId = transferResponse.getTransferId();
 		LOGGER.log(Level.FINE, "transfer session started with id {0} / {1}",
@@ -204,9 +204,9 @@ public class TransferClient {
 		final TransferServiceGrpc.TransferServiceStub client = TransferServiceGrpc.newStub(channel);
 		JSONArray paths = (JSONArray) transferSpec.remove("paths");
 		final CountDownLatch transferLatch = new CountDownLatch(1);
-		var responseObserver = new StreamObserver<Transfer.StartTransferResponse>() {
+		var responseObserver = new StreamObserver<Transferd.StartTransferResponse>() {
 			@Override
-			public void onNext(Transfer.StartTransferResponse response) {
+			public void onNext(Transferd.StartTransferResponse response) {
 				transferId = response.getTransferId();
 				LOGGER.log(Level.FINE, "transfer started with id {0}", transferId);
 				// once the transfer starts, write data
@@ -229,9 +229,9 @@ public class TransferClient {
 				transferLatch.countDown();
 			}
 		};
-		client.startTransfer(Transfer.TransferRequest.newBuilder()
-				.setTransferType(Transfer.TransferType.STREAM_TO_FILE_UPLOAD)
-				.setConfig(Transfer.TransferConfig.newBuilder().build())
+		client.startTransfer(Transferd.TransferRequest.newBuilder()
+				.setTransferType(Transferd.TransferType.STREAM_TO_FILE_UPLOAD)
+				.setConfig(Transferd.TransferConfig.newBuilder().build())
 				.setTransferSpec(transferSpec.toString()).build(), responseObserver);
 		try {
 			transferLatch.await(60, TimeUnit.SECONDS);
@@ -245,10 +245,10 @@ public class TransferClient {
 	public void writeStreamData(TransferServiceGrpc.TransferServiceStub pClient, JSONArray paths)
 			throws InterruptedException {
 		final CountDownLatch chunkLatch = new CountDownLatch(1);
-		StreamObserver<Transfer.WriteStreamRequest> writeStreamObserver =
-				pClient.writeStream(new StreamObserver<Transfer.WriteStreamResponse>() {
+		StreamObserver<Transferd.WriteStreamRequest> writeStreamObserver =
+				pClient.writeStream(new StreamObserver<Transferd.WriteStreamResponse>() {
 					@Override
-					public void onNext(final Transfer.WriteStreamResponse value) {
+					public void onNext(final Transferd.WriteStreamResponse value) {
 						LOGGER.log(Level.FINE, "write stream response: {0}", value.toString());
 						chunkLatch.countDown();
 					}
@@ -274,11 +274,11 @@ public class TransferClient {
 					LOGGER.log(Level.FINE, "L: read {0} bytes", bytesRead);
 					ByteString chunk = ByteString.copyFrom(buffer, 0, bytesRead);
 					// Send the chunk to the daemon
-					Transfer.WriteStreamRequest writeStreamRequest =
-							Transfer.WriteStreamRequest.newBuilder().setTransferId(transferId)
+					Transferd.WriteStreamRequest writeStreamRequest =
+							Transferd.WriteStreamRequest.newBuilder().setTransferId(transferId)
 									.setPath(file.getName()).setSize(file.length())
 									.setChunk(
-											Transfer.Chunk.newBuilder().setContents(chunk).build())
+											Transferd.Chunk.newBuilder().setContents(chunk).build())
 									.build();
 					writeStreamObserver.onNext(writeStreamRequest);
 				}
@@ -296,16 +296,16 @@ public class TransferClient {
 
 	public void session_wait_for_completion() {
 		LOGGER.log(Level.FINE, "L: Wait for session completion");
-		final Iterator<Transfer.TransferResponse> monitorTransferResponse =
-				transferService.monitorTransfers(Transfer.RegistrationRequest.newBuilder()
-						.addFilters(Transfer.RegistrationFilter.newBuilder()
-								.setOperator(Transfer.RegistrationFilterOperator.OR)
+		final Iterator<Transferd.TransferResponse> monitorTransferResponse =
+				transferService.monitorTransfers(Transferd.RegistrationRequest.newBuilder()
+						.addFilters(Transferd.RegistrationFilter.newBuilder()
+								.setOperator(Transferd.RegistrationFilterOperator.OR)
 								.addTransferId(transferId).build())
 						.build());
 		// monitor transfer until it finishes
 		while (monitorTransferResponse.hasNext()) {
-			final Transfer.TransferResponse response = monitorTransferResponse.next();
-			final Transfer.TransferStatus status = response.getStatus();
+			final Transferd.TransferResponse response = monitorTransferResponse.next();
+			final Transferd.TransferStatus status = response.getStatus();
 			LOGGER.log(Level.FINE, "L: transfer event: {0}", response.getTransferEvent());
 			if (response.hasFileInfo())
 				LOGGER.log(Level.FINE, "L: file info: {0}",
@@ -314,9 +314,9 @@ public class TransferClient {
 			LOGGER.log(Level.FINE, "L: message: {0}", response.getMessage());
 			if (response.hasError())
 				LOGGER.log(Level.FINE, "L: err: {0}", response.getError());
-			if (status == Transfer.TransferStatus.FAILED
-					|| status == Transfer.TransferStatus.COMPLETED) {
-				// || response.getTransferEvent() == Transfer.TransferEvent.FILE_STOP) {
+			if (status == Transferd.TransferStatus.FAILED
+					|| status == Transferd.TransferStatus.COMPLETED) {
+				// || response.getTransferEvent() == Transferd.TransferEvent.FILE_STOP) {
 				LOGGER.log(Level.INFO, "L: upload finished, received: {0}", status);
 				break;
 			}

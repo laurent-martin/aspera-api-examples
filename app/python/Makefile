@@ -16,7 +16,7 @@ COMMON_SRC=$(SRC)utils/configuration.py $(SRC)utils/transfer_client.py $(SRC)uti
 # folder where generated grpc source code will be
 PY_GRPC_GEN_DIR=$(PYENV_DIR)grpc_aspera/
 # python grpc source code files, generated from proto file, also present in SDK
-PY_GRPC_SDK_SRCS=transfer_pb2.py transfer_pb2_grpc.py
+PY_GRPC_SDK_SRCS=transferd_pb2.py transferd_pb2_grpc.py
 # location of pre-generated protobuf/grpc sources provided in SDK
 PY_GRPC_SDK_DIR=$(SDK_DIR_EXAMPLES)python/
 # comment out this line to use generated grpc source code from SDK

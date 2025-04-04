@@ -13,7 +13,7 @@ use tonic::transport::Channel;
 
 pub mod transfer {
     // Import your gRPC definitions with default package name in proto file
-    tonic::include_proto!("transfersdk");
+    tonic::include_proto!("transferd.api");
 }
 
 use transfer::transfer_service_client::TransferServiceClient;
@@ -24,8 +24,6 @@ use transfer::TransferRequest;
 use transfer::TransferStatus;
 use transfer::TransferType;
 
-const TRANSFER_SDK_DAEMON: &str = "asperatransferd";
-const DAEMON_LOG_FILE: &str = "asperatransferd.log";
 const ASCP_LOG_FILE: &str = "aspera-scp-transfer.log";
 //const MAX_CONNECTION_WAIT_SEC: u64 = 10;
 const PORT_REGEX: &str = r":([0-9]+) ";
@@ -37,6 +35,7 @@ pub struct TransferClient {
     server_port: u16,
     daemon_process: Option<Child>,
     transfer_service: Option<Box<TransferServiceClient<Channel>>>,
+    daemon_name: String,
     daemon_log: PathBuf,
 }
 
@@ -46,11 +45,13 @@ impl TransferClient {
         let sdk_uri = url::Url::parse(&sdk_url).expect("Failed to parse SDK URL");
         let server_address = sdk_uri.host().expect("No host found").to_string();
         let server_port = sdk_uri.port().unwrap_or(33001);
-        let daemon_log = config.log_folder_path().join(DAEMON_LOG_FILE);
+        let daemon_name = config.get_path("sdk_daemon").unwrap_or_default().file_name().unwrap_or_default().to_string_lossy().to_string();
+        let daemon_log = config.log_folder_path().join(format!("{}.log",daemon_name));
         TransferClient {
             config,
             server_address,
             server_port,
+            daemon_name,
             daemon_log,
             transfer_service: None,
             daemon_process: None,
@@ -91,7 +92,7 @@ impl TransferClient {
     fn daemon_file_path(&self, file_ext: &str) -> PathBuf {
         self.config
             .log_folder_path()
-            .join(format!("{}.{}", TRANSFER_SDK_DAEMON, file_ext))
+            .join(format!("{}.{}", self.daemon_name, file_ext))
     }
 
     pub fn daemon_start(&mut self) -> Result<(), Box<dyn Error>> {

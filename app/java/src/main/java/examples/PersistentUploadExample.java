@@ -1,6 +1,6 @@
 package examples;
 
-import ibm.aspera.transferservice.Transfer;
+import com.ibm.software.aspera.transferd.api.Transferd;
 import org.json.JSONObject;
 import java.net.URI;
 import java.io.File;
@@ -58,9 +58,9 @@ public class PersistentUploadExample {
 					filePath = String.format("faux:///file%03d?1k", sequenceIndex);
 				}
 				// add paths of files to transfer to persistent session
-				final Transfer.TransferPathRequest transferPathRequest =
-						Transfer.TransferPathRequest.newBuilder().setTransferId(transferId)
-								.addTransferPath(Transfer.TransferPath.newBuilder()
+				final Transferd.TransferPathRequest transferPathRequest =
+						Transferd.TransferPathRequest.newBuilder().setTransferId(transferId)
+								.addTransferPath(Transferd.TransferPath.newBuilder()
 										.setSource(filePath).setDestination(fileName).build())
 								.build();
 				LOGGER.log(Level.FINE, "T: adding transfer path");
@@ -71,7 +71,7 @@ public class PersistentUploadExample {
 					// end the persistent session
 					LOGGER.log(Level.FINE, "T: Limit reached, locking session. !!!");
 					transferClient.transferService
-							.lockPersistentTransfer(Transfer.LockPersistentTransferRequest
+							.lockPersistentTransfer(Transferd.LockPersistentTransferRequest
 									.newBuilder().setTransferId(transferId).build());
 				}
 			} catch (final IOException e) {
@@ -97,7 +97,7 @@ public class PersistentUploadExample {
 			transferClient.daemon_startup();
 			transferClient.daemon_connect();
 			// start persistent transfer session
-			transferClient.session_start(transferSpec, Transfer.TransferType.FILE_PERSISTENT);
+			transferClient.session_start(transferSpec, Transferd.TransferType.FILE_PERSISTENT);
 			final TimerTask timerTask =
 					new FileUploadTask(transferClient, config.getParamInt("server", "persist_max"));
 			final Timer timer = new Timer(true);
