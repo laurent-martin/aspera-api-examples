@@ -24,8 +24,8 @@ namespace utils {
 inline constexpr const char* ASCP_LOG_FILE = "aspera-scp-transfer.log";
 inline constexpr const int MAX_CONNECTION_WAIT_SEC = 10;
 
-// Provide a common environment for tests, including:
-// - daemon conf file generation, startup and shutdown of asperatransferd
+// Provides the following services:
+// - daemon conf file generation, startup and shutdown of transferd
 // - transfer of files and monitoring
 class TransferClient {
    private:
@@ -42,7 +42,7 @@ class TransferClient {
         : _config(config),
           _transfer_daemon_process(nullptr),
           _transfer_service(nullptr),
-          _daemon_name(_config.get_path("sdk_daemon")),
+          _daemon_name(std::filesystem::path(_config.get_path("sdk_daemon")).filename().string()),
           _daemon_log(_config.log_folder_path() / (_daemon_name + ".log")) {
         auto sdk_url = _config.param_str({"trsdk", "url"});
         auto sdk_uri = boost::urls::parse_uri(sdk_url);

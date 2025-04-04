@@ -20,9 +20,7 @@ import (
 )
 
 const (
-	TRANSFER_SDK_DAEMON = "asperatransferd"
-	DAEMON_LOG_FILE     = "asperatransferd.log"
-	ASCP_LOG_FILE       = "aspera-scp-transfer.log"
+	ASCP_LOG_FILE = "aspera-scp-transfer.log"
 )
 
 type TransferClient struct {
@@ -31,6 +29,7 @@ type TransferClient struct {
 	serverPort         int
 	transferDaemonProc *exec.Cmd
 	transferService    pb.TransferServiceClient
+	daemonName         string
 	daemonLog          string
 }
 
@@ -41,7 +40,8 @@ func NewTransferClient(config *Configuration) *TransferClient {
 	}
 	return &TransferClient{
 		config:        config,
-		daemonLog:     filepath.Join(config.LogFolder, DAEMON_LOG_FILE),
+		daemonName:    filepath.Base(config.GetPath("sdk_daemon")),
+		daemonLog:     filepath.Join(config.LogFolder, tc.daemonName+".log"),
 		serverAddress: sdkURL.Hostname(),
 		serverPort:    GetPortOrDefault(sdkURL, 33001),
 	}
@@ -85,9 +85,9 @@ func (tc *TransferClient) CreateConfigFile(confFile string) error {
 }
 
 func (tc *TransferClient) StartDaemon() error {
-	confFile := filepath.Join(tc.config.LogFolder, TRANSFER_SDK_DAEMON+".conf")
-	outFile := filepath.Join(tc.config.LogFolder, TRANSFER_SDK_DAEMON+".out")
-	errFile := filepath.Join(tc.config.LogFolder, TRANSFER_SDK_DAEMON+".err")
+	confFile := filepath.Join(tc.config.LogFolder, tc.daemonName+".conf")
+	outFile := filepath.Join(tc.config.LogFolder, tc.daemonName+".out")
+	errFile := filepath.Join(tc.config.LogFolder, tc.daemonName+".err")
 	cmd := exec.Command(
 		tc.config.GetPath("sdk_daemon"),
 		"--config", confFile,

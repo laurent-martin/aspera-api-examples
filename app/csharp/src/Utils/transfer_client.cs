@@ -2,6 +2,17 @@ using Grpc.Net.Client;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
+/// <summary>
+/// Provides the following services:
+/// <list type="bullet">
+/// <item>
+/// <description>daemon conf file generation, startup and shutdown of transferd</description>
+/// </item>
+/// <item>
+/// <description>transfer of files and monitoring</description>
+/// </item>
+/// </list>
+/// </summary>
 public class TransferClient
 {
     private const string ASCP_LOG_FILE = "aspera-scp-transfer.log";
@@ -46,7 +57,10 @@ public class TransferClient
         File.WriteAllText(confFile, Newtonsoft.Json.JsonConvert.SerializeObject(configInfo));
     }
 
-    // Start transfer manager daemon if not already running and return gRPC client
+    /// <summary>
+    /// Start transfer manager daemon if not already running and return gRPC client
+    /// </summary>
+    /// <exception cref="Exception"></exception>
     public void StartDaemon()
     {
         Log.log.Info("ERROR: Failed to connect\nStarting daemon...");
@@ -112,7 +126,9 @@ public class TransferClient
             ConnectToDaemon();
         }
     }
-    // Shutdown transfer manager daemon, if needed
+    /// <summary>
+    /// Shutdown transfer manager daemon, if needed
+    /// </summary>
     public void Shutdown()
     {
         _daemonService = null;
@@ -131,9 +147,11 @@ public class TransferClient
         }
     }
 
-    // Start the specified transfer
-    // @return transfer id
-    // @param aSpecObj transfer specification (JSON Object)
+    /// <summary>
+    /// Start the specified transfer
+    /// </summary>
+    /// <param name="aSpecObj">transfer specification (JSON Object)</param>
+    /// <returns>transfer id</returns>
     public string StartTransfer(JObject aSpecObj)
     {
         Log.log.Info(aSpecObj);
@@ -156,7 +174,10 @@ public class TransferClient
         return transferResponse.TransferId;
     }
 
-    // wait until the specified transfer is finished (completed or failed)
+    /// <summary>
+    /// wait until the specified transfer is finished (completed or failed)
+    /// </summary>
+    /// <param name="aTransferId"></param>
     void WaitTransfer(string aTransferId)
     {
         while (true)
@@ -178,14 +199,20 @@ public class TransferClient
     }
 
 
-    // One-call simplified procedure to start daemon, transfer, and wait for it to finish
-    // @param aSpecObj transfer specification (JSON Object)
+    /// <summary>
+    /// One-call simplified procedure to start daemon, transfer, and wait for it to finish
+    /// </summary>
+    /// <param name="aSpecObj">transfer specification (JSON Object)</param>
     public void StartTransferAndWait(JObject aSpecObj)
     {
         Startup();
         WaitTransfer(StartTransfer(aSpecObj));
     }
-    // capture stdout or stderr for the started process (asperatransferd)
+    /// <summary>
+    /// Capture stdout or stderr for the started process (transferd)
+    /// </summary>
+    /// <param name="logFile"></param>
+    /// <returns></returns>
     public System.Diagnostics.DataReceivedEventHandler captureStream(string logFile)
     {
         var logStream = new StreamWriter(new FileStream(logFile, FileMode.Append, FileAccess.Write));
@@ -199,6 +226,12 @@ public class TransferClient
                 }
             });
     }
+    /// <summary>
+    /// translates string log level to numerical
+    /// </summary>
+    /// <param name="level">text level</param>
+    /// <returns>numerical value</returns>
+    /// <exception cref="ArgumentException"></exception>
     private static int AscpLevel(string level)
     {
         if (level == "info")
