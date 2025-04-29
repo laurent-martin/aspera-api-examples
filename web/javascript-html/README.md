@@ -6,6 +6,8 @@ This sample application shows how to build an Aspera-transfer-enabled web applic
 - the Aspera HTTP Gateway SDK
 - the Aspera Desktop Client SDK ([not implemented yet](https://ibm.github.io/aspera-browser-sdk-js/))
 
+- sample code here: <https://ibm.github.io/aspera-sdk-js/>
+
 ![screenshot](doc/screenshot.png)
 
 In all cases, starting a transfer consists in building a **transfer spec** and then calling the browser-side javascript `startTransfer` SDK's API.
@@ -38,7 +40,6 @@ In this example, the transfer spec is build either:
 - Using SSH credentials (do not do that: for testing purpose only) : in that case, HSTS node api is not used, but SSH user's credentials must be known, and that transfer user must be authorized on the HSTS server without token. For example this is not possible on AoC/ATS SaaS Aspera transfer servers.
 
 ![Architecture](doc/web_arch.png)
-
 
 The web application is split in two parts:
 
