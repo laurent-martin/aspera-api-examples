@@ -10,15 +10,6 @@ require 'time'
 
 require 'net/http'
 
-# Enable global Net::HTTP debug output
-Net::HTTP.class_eval do
-  alias_method :orig_initialize, :initialize
-  def initialize(*args, &block)
-    orig_initialize(*args, &block)
-    @debug_output = $stderr
-  end
-end
-
 module Utils
   class Rest
     attr_accessor :base_url, :auth_data, :verify, :headers
@@ -33,7 +24,17 @@ module Utils
     class << self
       def logger(logger, http: false)
         @logger = logger
-        RestClient.log = logger if http
+        return unless http
+
+        RestClient.log = logger
+        # Enable global Net::HTTP debug output
+        Net::HTTP.class_eval do
+          alias_method :orig_initialize, :initialize
+          def initialize(*args, &block)
+            orig_initialize(*args, &block)
+            @debug_output = $stderr
+          end
+        end
       end
 
       def log

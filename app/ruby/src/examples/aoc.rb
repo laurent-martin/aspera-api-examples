@@ -29,7 +29,7 @@ def aoc_xfer_cookie(app, user_name, user_id)
   "aspera.aoc:#{encoded_app}:#{encoded_user_name}:#{encoded_user_id}"
 end
 
-# Generate transfer spec for gen4 API, in a simplistic way
+# Generate transfer spec for gen4 API, in simplified way
 def gen4_base_spec(
   aoc_api,
   app,
@@ -70,12 +70,14 @@ def gen4_base_spec(
   astags = s['tags']['aspera']
   case app
   when 'packages'
+    # app_info is the package information
     astags['files']['package_id'] = app_info['id']
     astags['files']['package_name'] = app_info['name']
     astags['files']['package_operation'] = op
     astags['node']['file_id'] = app_info['contents_file_id']
   when 'files'
-    # app_info is tags.node.file_id (target folder)
+    # app_info is the id of the folder
+    astags['node']['file_id'] = app_info
     astags['files']['parentCwd'] = "#{node_info['id']}:#{app_info}"
   end
   s
@@ -173,27 +175,23 @@ begin
   # Files
   #===============
 
-  aoc_api.node_api_from(
-    node_id: aoc_api.home[:node_id],
-    workspace_id: aoc_api.workspace[:id],
-    workspace_name: aoc_api.workspace[:name],
-    scope: Aspera::Api::Node::SCOPE_USER
-  )
+  home_node_info = aoc_api.read("nodes/#{workspace_info['home_node_id']}")
+  logger.debug(home_node_info)
 
   # upload to home in workspace (Files app)
-  gen4_base_spec(
+  transfer_spec = gen4_base_spec(
     aoc_api,
     'files',
     'send',
     home_node_info,
     user_info,
     workspace_info,
-    aoc_api.home[:file_id]
+    workspace_info['home_file_id'] # upload directly into home
   )
 
   # add list of files to upload
   config.add_sources(transfer_spec, 'paths')
-  log.info("spec: #{transfer_spec}")
+  logger.info("spec: #{transfer_spec}")
   # start transfer
   transfer_client.start_transfer_and_wait(transfer_spec)
 ensure
