@@ -21,15 +21,13 @@ begin
   # create REST API object
   api_v5 = Utils::Rest.new("#{config.param('faspex5', 'url')}/api/v5")
   api_v5.auth_bearer(
-    {
-      token_url: "#{config.param('faspex5', 'url')}/auth/token",
-      key_pem_path: File.expand_path(config.param('faspex5', 'private_key')),
-      client_id: config.param('faspex5', 'client_id'),
-      client_secret: config.param('faspex5', 'client_secret'),
-      iss: config.param('faspex5', 'client_id'), # issuer
-      aud: config.param('faspex5', 'client_id'), # audience
-      sub: "user:#{config.param('faspex5', 'username')}" # subject
-    }
+    token_url: "#{config.param('faspex5', 'url')}/auth/token",
+    key_pem_path: File.expand_path(config.param('faspex5', 'private_key')),
+    client_id: config.param('faspex5', 'client_id'),
+    client_secret: config.param('faspex5', 'client_secret'),
+    iss: config.param('faspex5', 'client_id'), # issuer
+    aud: config.param('faspex5', 'client_id'), # audience
+    sub: "user:#{config.param('faspex5', 'username')}" # subject
   )
   api_v5.default_scope
 

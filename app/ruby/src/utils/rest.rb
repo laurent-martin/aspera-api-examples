@@ -61,12 +61,17 @@ module Utils
     end
 
     # Provide OAuth2 bearer parameters for JWT
-    def auth_bearer(auth_data)
-      mandatory_keys = %i[token_url aud client_id client_secret key_pem_path iss sub]
-      missing = mandatory_keys - auth_data.keys
-      raise ArgumentError, "Missing mandatory keys: #{missing.join(', ')}" unless missing.empty?
-
-      @auth_data = auth_data
+    def auth_bearer(token_url:, key_pem_path:, aud:, iss:, sub:, client_id:, client_secret: nil, org: nil)
+      @auth_data = {
+        token_url: token_url,
+        client_id: client_id,
+        key_pem_path: key_pem_path,
+        aud: aud,
+        iss: iss,
+        sub: sub
+      }
+      @auth_data[:client_secret] = client_secret if client_secret
+      @auth_data[:org] = org if org
     end
 
     # Set default scope (generates bearer token)
@@ -93,7 +98,7 @@ module Utils
         exp: seconds_since_epoch + JWT_VALIDITY_SEC,
         jti: SecureRandom.uuid
       }
-      jwt_payload[:org] = @auth_data[:org] if @auth_data.key?(:org)
+      jwt_payload[:org] = @auth_data[:org] if @auth_data[:org]
 
       self.class.log.debug(jwt_payload)
 
