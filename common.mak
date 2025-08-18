@@ -38,7 +38,7 @@ clean_flags::
 	rm -f $(TEST_FLAGS)
 # simple clean
 clean:: clean_flags clean_daemon
-	rm -f $(TMPDIR)/$(SDK_NAME_DAEMON).* $(TMPDIR)/aspera-scp-transfer*.log
+	rm -f $(TMPDIR)$(SDK_NAME_DAEMON).* $(TMPDIR)aspera-scp-transfer*.log
 	rm -fr $(DIR_TESTED_FLAG)
 # clean all generated and compiled files
 superclean:: clean
