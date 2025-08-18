@@ -143,12 +143,11 @@ module Utils
       registration_request = ::Transferd::Api::RegistrationRequest.new(
         filters: [::Transferd::Api::RegistrationFilter.new(transferId: [transfer_id])]
       )
-      @transfer_service.monitor_transfers(registration_request).each do |transfer_info|
-        status = transfer_info.status
+      @transfer_service.monitor_transfers(registration_request).each do |transfer_response|
+        status = transfer_response.status
         # @logger.info("transfer: #{::Transferd::Api::TransferStatus.constants[status]}")
         @logger.info("transfer: #{status}")
-        throw_on_error(status, transfer_info.error)
-        # break if status == ::Transferd::Api::TransferStatus::COMPLETED
+        throw_on_error(status, transfer_response.transferInfo)
         break if status == :COMPLETED
       end
       @logger.info("Transfer #{transfer_id} completed successfully.")
@@ -159,11 +158,11 @@ module Utils
       wait_transfer(start_transfer(t_spec))
     end
 
-    def throw_on_error(status, error)
-      if status == ::Transferd::Api::TransferStatus::FAILED
-        raise "transfer failed: #{error.description}"
-      elsif status == ::Transferd::Api::TransferStatus::UNKNOWN_STATUS
-        raise "unknown transfer id: #{error.description}"
+    def throw_on_error(status, info)
+      if status == :FAILED
+        raise "transfer failed: #{info.errorDescription}"
+      elsif status == :UNKNOWN_STATUS
+        raise "unknown transfer id: #{info.errorDescription}"
       end
     end
 
