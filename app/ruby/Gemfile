@@ -2,8 +2,8 @@
 
 source 'https://rubygems.org/'
 
-gem 'aspera-cli', '~> 4.21.1'
-gem "grpc-tools"                # For gRPC code generation
-gem "grpc"                      # For gRPC support
-gem "google-protobuf"           # For Protobuf support
-gem "rake"                      # Commonly used for build tasks
+gem 'google-protobuf'           # For Protobuf support
+gem 'grpc'                      # For gRPC support
+gem 'grpc-tools'                # For gRPC code generation
+gem 'rake'                      # Commonly used for build tasks
+gem 'rest-client'
