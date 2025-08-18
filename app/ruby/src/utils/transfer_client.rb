@@ -22,7 +22,7 @@ module Utils
       @transfer_service = nil
       @daemon_name = File.basename(@config.get_path('sdk_daemon'))
       @daemon_log = File.join(@config.log_folder, "#{@daemon_name}.log")
-      @logger = Logger.new($stdout)
+      @logger = config.logger
     end
 
     def create_config_file(conf_file)

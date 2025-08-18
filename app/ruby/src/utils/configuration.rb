@@ -15,7 +15,7 @@ module Utils
     # config file with sub-paths in project's root folder
     PATHS_FILE_REL = 'config/paths.yaml'
     DIR_TOP_VAR    = 'DIR_TOP'
-    DEBUG_HTTP     = true
+    DEBUG_HTTP     = false
     class << self
       def basic_authorization(username, password)
         "Basic #{Base64.strict_encode64("#{username}:#{password}")}"
@@ -84,6 +84,9 @@ module Utils
       end
       @logger = Logger.new($stdout)
       @logger.tap { |l| l.level = level_const } # initialize root logger formatting if needed
+      @logger.formatter = proc do |severity, _datetime, _progname, msg|
+        format("%-8s %s\n", severity, msg)
+      end
       Rest.logger(@logger, http: DEBUG_HTTP) if defined?(Rest)
     end
 

@@ -38,7 +38,7 @@ module Utils
       end
 
       def log
-        @logger ||= Logger.new($stdout)
+        @logger
       end
     end
 
