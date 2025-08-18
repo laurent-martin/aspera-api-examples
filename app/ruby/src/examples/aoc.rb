@@ -178,7 +178,7 @@ begin
   home_node_info = aoc_api.read("nodes/#{workspace_info['home_node_id']}")
   logger.debug(home_node_info)
 
-  # upload to home in workspace (Files app)
+  # Upload to home in workspace (Files app)
   transfer_spec = gen4_base_spec(
     aoc_api,
     'files',
@@ -189,10 +189,11 @@ begin
     workspace_info['home_file_id'] # upload directly into home
   )
 
-  # add list of files to upload
+  # Add list of files to upload
   config.add_sources(transfer_spec, 'paths')
   logger.info("spec: #{transfer_spec}")
-  # start transfer
+
+  # Start transfer
   transfer_client.start_transfer_and_wait(transfer_spec)
 ensure
   transfer_client.shutdown

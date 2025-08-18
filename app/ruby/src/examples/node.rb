@@ -26,16 +26,16 @@ begin
     config.param('node', 'username'),
     config.param('node', 'password')
   )
-  # request transfer authorization to node for a single transfer (This is a node api v3 call)
+  # Request transfer authorization to node for a single transfer (This is a node api v3 call)
   send_result = node_api.create(
     'files/upload_setup',
     { transfer_requests: [{ transfer_request: { paths: [{ destination: destination_folder }] } }] }
   )
   # we normally have only one transfer spec in list, so just get the first transfer_spec
   transfer_spec = send_result['transfer_specs'].first['transfer_spec']
-  # add list of files to upload
+  # Add list of files to upload
   config.add_sources(transfer_spec, 'paths')
-  # start transfer
+  # Start transfer
   transfer_client.start_transfer_and_wait(transfer_spec)
 ensure
   transfer_client.shutdown

@@ -14,7 +14,7 @@ config = Utils::Configuration.instance
 transfer_client = Utils::TransferClient.new(config).startup
 
 begin
-  # prepare transfer spec v2 for COS
+  # Prepare transfer spec v2 for COS
   t_spec = {
     'title' => 'send using Node API and ts v2',
     'session_initiation' => {
@@ -35,10 +35,10 @@ begin
     }
   }
 
-  # add file list in transfer spec
+  # Add file list in transfer spec
   config.add_sources(t_spec, 'assets.paths')
 
-  # start transfer, using Transfer SDK
+  # Start transfer
   transfer_client.start_transfer_and_wait(t_spec)
 ensure
   transfer_client.shutdown

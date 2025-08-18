@@ -43,7 +43,7 @@ begin
   transfer_spec = pkg_created['xfer_sessions'].first
   # set paths of files to send
   transfer_spec['paths'] = config.files.map { |p| { 'source' => p } }
-  # start transfer (asynchronous)
+  # Start transfer
   transfer_client.start_transfer_and_wait(transfer_spec)
 ensure
   transfer_client.shutdown

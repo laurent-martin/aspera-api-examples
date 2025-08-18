@@ -55,7 +55,7 @@ begin
   transfer_spec.merge!(ts_paths)
 
   log.debug("transfer_spec #{transfer_spec}")
-  # start transfer (asynchronous)
+  # Start transfer
   transfer_client.start_transfer_and_wait(transfer_spec)
 ensure
   transfer_client.shutdown

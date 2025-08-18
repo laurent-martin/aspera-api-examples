@@ -14,9 +14,9 @@ transfer_client = Utils::TransferClient.new(config).startup
 
 begin
   ##############################################################
-  # download using SSH credentials
+  # Download using SSH credentials
   server_uri = URI.parse(config.param('server', 'url'))
-  # manually build transfer spec
+  # Manually build transfer spec (v1)
   transfer_spec = {
     'remote_host' => server_uri.host,
     'ssh_port' => server_uri.port,
@@ -26,9 +26,7 @@ begin
     'destination_root' => Dir.tmpdir,
     'paths' => [{ 'source' => config.param('server', 'file_download') }]
   }
-  # start transfer in separate thread
-  # method returns as soon as transfer thread is created
-  # it des not wait for completion, or even for session startup
+  # Start transfer
   transfer_client.start_transfer_and_wait(transfer_spec)
 ensure
   transfer_client.shutdown
