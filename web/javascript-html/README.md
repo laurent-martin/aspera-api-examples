@@ -1,12 +1,21 @@
 # Aspera transfers in Browser-based Web Applications
 
+The newer SDK for web app development is located at:
+
+<https://ibm.github.io/aspera-sdk-js>
+
+This page uses legacy APIs : Connect and HTTPGW
+
+The newer SDK uses newer APIs and apps: Aspera for Desktop and HTTPGW
+
+## This repo
+
+Prefer to use the newer SDK, see above.
+
 This sample application shows how to build an Aspera-transfer-enabled web application using:
 
 - the Aspera Connect SDK
 - the Aspera HTTP Gateway SDK
-- the Aspera Desktop Client SDK ([not implemented yet](https://ibm.github.io/aspera-browser-sdk-js/))
-
-- sample code here: <https://ibm.github.io/aspera-sdk-js/>
 
 ![screenshot](doc/screenshot.png)
 
