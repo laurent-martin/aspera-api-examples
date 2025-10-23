@@ -33,7 +33,8 @@ An Aspera transfer is authorized either:
 - using a token (use this in web apps)
 - using SSH credentials (mostly legacy or server-server transfers)
 
-> **Note:** The SSH-based transfer authorization is not recommended for web applications, as users shall be authorized through the web app. The legacy Aspera "Connect Server" web app was using SSH auth, but is deprecated.
+> [!NOTE]
+> The SSH-based transfer authorization is not recommended for web applications, as users shall be authorized through the web app. The legacy Aspera "Connect Server" web app was using SSH auth, but is deprecated.
 
 Web applications shall use the "token" authorization scheme, using either of those types:
 
@@ -78,7 +79,8 @@ httpgw:
   url: https://mygw.example.com/aspera/http-gwy
 ```
 
-> **Note:** Node credentials can be either a node user, or an access key. As use of SSH credentials is not recommended, you may ignore the `server` section. The `httpgw`can also be ignored if you do not want to use HTTP GW.
+> [!NOTE]
+> Node credentials can be either a node user, or an access key. As use of SSH credentials is not recommended, you may ignore the `server` section. The `httpgw`can also be ignored if you do not want to use HTTP GW.
 
 ## Environment Setup
 
@@ -121,7 +123,8 @@ If you do not have `make`, you may refer to the `Makefile` for the procedure:
   node --trace-warnings src/server.js ../config.yaml 3000 src/
   ```
 
-> **Note:** In addition to this the `Makefile` installs the HTTP GW SDK library.
+> [!NOTE]
+> In addition to this the `Makefile` installs the HTTP GW SDK library.
 
 ## Using the client
 

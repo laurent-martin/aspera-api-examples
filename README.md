@@ -12,7 +12,8 @@ Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 
 Various programming languages are proposed.
 
-> **Note:** This repo uses Aspera transferd v1.1.5+
+> [!NOTE]
+> This repo uses Aspera transferd v1.1.5+
 
 ## Other resources
 
@@ -89,7 +90,8 @@ To download the SDK only, execute: `make sdk`.
 
    Edit required parameters in `private/config.yaml`, for example Faspex connection information.
 
-   > **Note:** Yes, you can also drag and drop, and click, and copy/paste, and edit the file with Notepad, etc...
+> [!NOTE]
+> Yes, you can also drag and drop, and click, and copy/paste, and edit the file with Notepad, etc...
 
 2. Prepare the SDK folder
 
@@ -99,7 +101,8 @@ To download the SDK only, execute: `make sdk`.
 
 3. Download the Aspera Transfer Daemon SDK ([here](https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/downloads/downloads.json)) and extract its contents to the folder identified by `sdk_dir` in `config/paths.yaml` : `<main folder>/tmp/transfer_sdk`
 
-    > **Note:** Make sure that files identified in `config/paths.yaml` are in the extracted folder as expected. For example, the following file must exist: `<main folder>/tmp/transfer_sdk/sbin/transferd`
+> [!NOTE]
+> Make sure that files identified in `config/paths.yaml` are in the extracted folder as expected. For example, the following file must exist: `<main folder>/tmp/transfer_sdk/sbin/transferd`
 
 4. Run the samples: see [Running sample programs](#running-sample-programs)
 
@@ -132,7 +135,8 @@ cp config/config.tmpl private/config.yaml
 vi private/config.yaml
 ```
 
-> **Note:** Although the format may look like the configuration file for `ascli`, a configuration file for `ascli` is not compatible with this one. You must create a new one.
+> [!NOTE]
+> Although the format may look like the configuration file for `ascli`, a configuration file for `ascli` is not compatible with this one. You must create a new one.
 
 Set the parameter `misc.platform` to the architecture used:
 
@@ -204,7 +208,9 @@ aoc:
   shared_inbox: TheSharedInbox
 ```
 
-> **Note:** Sections with HTTPS URLs have a parameter `verify`. Set it to `false` to disable server certificate validation for development environments.
+> [!NOTE]
+> Sections with HTTPS URLs have a parameter `verify`.
+> Set it to `false` to disable server certificate validation for development environments.
 
 Some relative paths are defined in [`config/paths.yaml`](config/paths.yaml) (keep those values intact).
 
@@ -333,13 +339,14 @@ The Makefile provided in the samples downloads the SDK and extracts it in a sing
 
 Refer to the [HSTS documentation](https://www.ibm.com/docs/en/ahts/4.4?topic=linux-set-up-hsts-node-api) to create a user and get the credentials.
 
-Typically, a node api user is created like this:
+Typically, a Node API user is created like this:
 
 ```bash
 /opt/aspera/bin/asnodeadmin -a -u my_node_username -p my_node_password -x my_transfer_user
 ```
 
-> **Note:** Access key credentials (id and secret) can also be used for the node api user.
+> [!NOTE]
+> Access key credentials (id and secret) can also be used for the Node API user.
 
 ## Shares
 
