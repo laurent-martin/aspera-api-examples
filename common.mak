@@ -32,7 +32,8 @@ TEST_FLAGS=$(foreach var,$(TEST_CASES),$(DIR_TESTED_FLAG)$(var))
 all::
 # list of test cases
 list:
-	@echo "$(TEST_CASES)"
+	@echo "Test individual case with:"
+	@for t in $(TEST_CASES);do echo "make $(DIR_TESTED_FLAG)$$t";done
 # clean flags indicating test was run: force re-run of tests only
 clean_flags::
 	rm -f $(TEST_FLAGS)
