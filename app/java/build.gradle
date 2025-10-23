@@ -3,9 +3,10 @@ plugins {
     id 'java'
     id 'application'
     // https://github.com/johnrengelman/shadow
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     // https://plugins.gradle.org/plugin/com.google.protobuf
-    id 'com.google.protobuf' version '0.8.19'
+    id 'com.google.protobuf' version '0.9.5'
     //id 'idea' // use the idea plugin if using Jetbrains IntelliJ
 }
 
@@ -22,16 +23,26 @@ def protocVersion = '3.25.3'
 def proto_dir = project.hasProperty('proto_dir') ? project.getProperty('proto_dir') : "$projectDir/build/resources/main"
 def proto_file = project.hasProperty('proto_file') ? project.getProperty('proto_file') : 'transfer.proto'
 
-def javaVersion = 23
+def javaMajorVersion = 21
+def gradleMajorVersion = 8
+
+def gv = GradleVersion.current()
+if (gv.baseVersion.version.split('\\.')[0].toInteger() != gradleMajorVersion) {
+    throw new GradleException("Gradle ${gradleMajorVersion}.x is required (found ${gv.version})")
+}
+
+if (!JavaVersion.current().isCompatibleWith(JavaVersion.valueOf("VERSION_${javaMajorVersion}"))) {
+    throw new GradleException("This project requires Java ${javaMajorVersion} (or compatible). Current: ${JavaVersion.current()}")
+}
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(javaVersion)
+        languageVersion = JavaLanguageVersion.of(javaMajorVersion)
     }
 }
 
 tasks.withType(JavaCompile) {
-    options.release = javaVersion
+    options.release = javaMajorVersion
 }
 
 application {
@@ -58,8 +69,10 @@ protobuf {
         }
     }
     generateProtoTasks {
-        all()*.plugins {
-            grpc {}
+        all().configureEach {
+            plugins {
+                grpc {}
+            }
         }
     }
 }
