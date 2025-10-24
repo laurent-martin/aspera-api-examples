@@ -2,7 +2,7 @@ package utils;
 
 import com.ibm.software.aspera.transferd.api.Transferd;
 import com.ibm.software.aspera.transferd.api.TransferServiceGrpc;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.okhttp.OkHttpChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.ManagedChannel;
 import com.google.protobuf.ByteString;
@@ -71,7 +71,7 @@ public class TransferClient {
     }
 
     /**
-     * Create configuration file for the Aspera Transfer SDK
+     * Create configuration file for the Aspera Transfer Daemon
      */
     private void createConfFile(final String confFile) {
         // Define the configuration JSON object
@@ -160,9 +160,8 @@ public class TransferClient {
         }
         LOGGER.log(Level.INFO, "L: Connecting to daemon");
         // comm channel for grpc
-        channel =
-                ManagedChannelBuilder.forAddress(serverAddress, serverPort).usePlaintext().build();
-        // create a connection to the Transfer SDK daemon
+        channel = OkHttpChannelBuilder.forAddress(serverAddress, serverPort).usePlaintext().build();
+        // Create a connection to the Transfer Daemon
         // Note that this is a synchronous client here
         // async is also possible
         transferService = TransferServiceGrpc.newBlockingStub(channel);
