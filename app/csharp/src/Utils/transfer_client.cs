@@ -2,6 +2,7 @@ using Grpc.Net.Client;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 /// <summary>
 /// Provides the following services:
 /// <list type="bullet">
@@ -108,6 +109,21 @@ public class TransferClient
         }
         _daemonProcess.BeginOutputReadLine();
         _daemonProcess.BeginErrorReadLine();
+
+        if (_serverPort == 0)
+        {
+            string lastLine = File.ReadLines(_daemonLog).Last();
+            JObject logInfo = JObject.Parse(lastLine);
+            Match portMatch = Regex.Match(logInfo["msg"]?.ToString() ?? "", @":(\d+)");
+
+            if (!portMatch.Success)
+            {
+                throw new Exception("Could not read listening port from log file");
+            }
+
+            _serverPort = int.Parse(portMatch.Groups[1].Value);
+            Log.log.Debug($"Allocated server port: {_serverPort}");
+        }
     }
     public void ConnectToDaemon()
     {
