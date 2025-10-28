@@ -1,5 +1,5 @@
 DIR_TOP=$(realpath ../..)/
-TEST_CASES=ServerFileUploadV1Example ServerFileDownloadV2Example PersistentUploadExample Faspex5Send
+TEST_CASES=Aoc Node ServerFileUploadV1Example ServerFileDownloadV2Example PersistentUploadExample Faspex5Send
 # COSFileUploadExample
 include $(DIR_TOP)common.mak
 # same as in settings.gradle

@@ -57,7 +57,7 @@ public class Rest {
     }
 
     // call Faspex 5 authData api and generate bearer token
-    String getBearerToken(Optional<String> scope) {
+    public String getBearerToken(Optional<String> scope) {
         final long epochDate = Instant.now().getEpochSecond();
         try {
             final Map<String, Object> jwt_payload = new HashMap<>();
