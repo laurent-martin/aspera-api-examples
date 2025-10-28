@@ -16,7 +16,7 @@ import java.util.Base64;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.json.JSONObject;
-import org.json.JSONArray;
+import org.json.JSONTokener;
 
 public class Rest {
     static private final Logger logger = Logger.getLogger(Rest.class.getName());
@@ -138,7 +138,7 @@ public class Rest {
             throw new Exception("Request failed: " + response.getStatus());
         }
         logger.log(Level.FINE, "res>> {0}", response.getBody());
-        return new JSONObject(response.getBody().toString());
+        return new JSONTokener(response.getBody().toString()).nextValue();
     }
 
     public Object create(String endpoint, JSONObject data) throws Exception {
@@ -154,6 +154,10 @@ public class Rest {
         return call("GET", endpoint, Optional.empty(), Optional.of(params));
     }
 
+    public Object read(String endpoint) throws Exception {
+        return call("GET", endpoint, Optional.empty(), Optional.empty());
+    }
+
     public void update(String endpoint, JSONObject data) throws Exception {
         call("PUT", endpoint, Optional.of(data), Optional.empty());
     }
@@ -161,5 +165,4 @@ public class Rest {
     public void delete(String endpoint) throws Exception {
         call("DELETE", endpoint, Optional.empty(), Optional.empty());
     }
-
 }

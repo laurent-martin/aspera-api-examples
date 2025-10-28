@@ -9,7 +9,7 @@ import utils.TransferClient;
 // Receive one file from demo server using ssh credentials and transferspec v2
 public class ServerFileUploadV1Example {
 
-    public static void main(String... args) {
+    public static void main(String... args) throws Exception {
         final Configuration config = new Configuration(args);
         final TransferClient transferClient = new TransferClient(config);
         try {
@@ -28,8 +28,6 @@ public class ServerFileUploadV1Example {
                                     .put("source", "faux:///10m?10m")));
             // execute transfer
             transferClient.start_transfer_and_wait(transferSpecV1);
-        } catch (Exception e) {
-            throw new Error(e);
         } finally {
             transferClient.shutdown();
         }
