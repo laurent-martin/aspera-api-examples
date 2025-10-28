@@ -7,6 +7,7 @@ import grpc from '@grpc/grpc-js';
 import protoLoader from '@grpc/proto-loader';
 import { spawn } from 'child_process';
 import { logger } from './configuration.js';
+import readline from 'readline';
 
 const ASCP_LOG_FILE = "aspera-scp-transfer.log";
 
@@ -55,6 +56,21 @@ export class TransferClient {
 				if (!this.transferService) throw new Error('daemon exited before being ready');
 			});
 			logger.debug(`Started ${this.daemonName} with pid ${this.transferDaemonProcess.pid}`);
+			if (!this.serverPort) {
+				await new Promise(resolve => setTimeout(resolve, 2000));
+				const fileStream = fs.createReadStream(this.daemonLog);
+				const rl = readline.createInterface({ input: fileStream });
+				let lastLine = '';
+				for await (const line of rl) {
+					if (line.trim()) lastLine = line;
+				}
+				logger.info(`LAST LINE: ${lastLine}`);
+				const logInfo = JSON.parse(lastLine);
+				const match = /:(\d+)/.exec(logInfo.msg);
+				if (!match) throw new Error('Could not read listening port from log file');
+				this.serverPort = parseInt(match[1], 10);
+				logger.info(`Allocated server port: ${this.serverPort}`);
+			}
 			await this.initializeGrpcClient(readyCallback);
 		} catch (error) {
 			logger.error('Error in startConnectDaemon:', error);
