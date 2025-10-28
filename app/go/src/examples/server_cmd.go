@@ -112,13 +112,13 @@ func testRemote(config *utils.Configuration) error {
 }
 
 // execute a local ascmd
-func testLocal() error {
+func testLocal(config *utils.Configuration) error {
 	logger.Infof("== TEST LOCAL =============")
 	ascmdAgent, err := utils.NewAsCmdLocal(1)
 	if err != nil {
 		return err
 	}
-	err = performTests(ascmdAgent.AsCmd, "/workspace/aspera/rust_ascmd/README.md", "/workspace/aspera/rust_ascmd")
+	err = performTests(ascmdAgent.AsCmd, config.ParamStr("local", "file"), config.ParamStr("local", "folder"))
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func all_tests() error {
 	utils.SetLogger(config.Log)
 	defer logger.Sync()
 
-	err = testLocal()
+	err = testLocal(config)
 	if err != nil {
 		return err
 	}
