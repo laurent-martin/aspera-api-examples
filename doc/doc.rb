@@ -4,6 +4,7 @@
 require 'yaml'
 require 'uri'
 SAMPLE_EMAIL = 'john@example.com'
+# Generate a sample configuration file from existing working file.
 def generate_config_template
   local_config = ARGV.shift
   template_config = ARGV.shift
