@@ -64,7 +64,6 @@ export class TransferClient {
 				for await (const line of rl) {
 					if (line.trim()) lastLine = line;
 				}
-				logger.info(`LAST LINE: ${lastLine}`);
 				const logInfo = JSON.parse(lastLine);
 				const match = /:(\d+)/.exec(logInfo.msg);
 				if (!match) throw new Error('Could not read listening port from log file');
