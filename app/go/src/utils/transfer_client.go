@@ -41,7 +41,7 @@ func NewTransferClient(config *Configuration) *TransferClient {
 	return &TransferClient{
 		config:        config,
 		daemonName:    filepath.Base(config.GetPath("sdk_daemon")),
-		daemonLog:     filepath.Join(config.LogFolder, tc.daemonName+".log"),
+		daemonLog:     filepath.Join(config.LogFolder, filepath.Base(config.GetPath("sdk_daemon"))+".log"),
 		serverAddress: sdkURL.Hostname(),
 		serverPort:    GetPortOrDefault(sdkURL, 33001),
 	}
