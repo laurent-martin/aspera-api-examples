@@ -4,6 +4,7 @@
 
 #include <boost/json.hpp>
 #include <boost/process.hpp>
+#include <boost/regex.hpp>
 #include <boost/url/parse.hpp>
 #include <chrono>
 #include <fstream>
@@ -84,6 +85,25 @@ class TransferClient {
             LOG(error) << "Check daemon log: " << _daemon_log;
             LOG(error) << last_file_line(_daemon_log);
             throw std::runtime_error("daemon startup failed");
+        }
+        if (_server_port == 0) {
+            const std::string last_line = last_file_line(_daemon_log);
+            try {
+                boost::json::value parsed = boost::json::parse(last_line);
+                boost::json::object obj = parsed.as_object();
+                std::string msg = boost::json::value_to<std::string>(obj["msg"]);
+
+                boost::regex port_regex(":([0-9]+)");
+                boost::smatch match;
+                if (!boost::regex_search(msg, match, port_regex)) {
+                    throw std::runtime_error("Could not read listening port from log file");
+                }
+                _server_port = std::stoi(match[1]);
+                LOG(info) << "Allocated server port: " << _server_port;
+            } catch (const std::exception& e) {
+                LOG(error) << "Error parsing daemon log: " << e.what();
+                throw;
+            }
         }
         LOG(info) << "Daemon started: " << _transfer_daemon_process->id();
     }

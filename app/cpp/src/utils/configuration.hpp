@@ -193,6 +193,7 @@ class Configuration {
 inline std::string last_file_line(const std::string& filename) {
     // ate: seek to the end of the file
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
+    file.seekg(-2, std::ios::cur);
     if (!file.is_open())
         throw std::runtime_error("Unable to open file: " + filename);
     std::string last_line;
@@ -204,7 +205,6 @@ inline std::string last_file_line(const std::string& filename) {
         file.seekg(-2, std::ios::cur);
         file.get(char_at_pos);
     }
-    file.seekg(-1, std::ios::cur);
     std::getline(file, last_line);
     file.close();
     return last_line;
