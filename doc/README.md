@@ -1,7 +1,7 @@
 # Using Aspera API for Integration and Automation
 <!--
 PANDOC_META_BEGIN
-subtitle: "Confidential"
+subtitle: "Unofficial document"
 author: "Laurent MARTIN"
 PANDOC_META_END
 -->
