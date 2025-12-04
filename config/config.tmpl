@@ -4,7 +4,7 @@ misc:
   level: debug
   transfer_regular: true
 trsdk:
-  url: grpc://127.0.0.1:12345
+  url: grpc://127.0.0.1:0
   level: trace
   ascp_level: trace
 httpgw:
@@ -56,7 +56,7 @@ shares:
   verify: true
   username: _username_here_
   password: _password_here_
-  folder_upload: london-sh1
+  folder_upload: vodmanager/upload
 aoc:
   org: sedemo
   user_email: john@example.com
@@ -65,3 +65,6 @@ aoc:
   client_secret: _client_secret_here_
   workspace: _workspace_here_
   shared_inbox: _shared_inbox_here_
+local:
+  file: "/Users/laurent/Documents/Samples/10MB.1"
+  folder: "/tmp"

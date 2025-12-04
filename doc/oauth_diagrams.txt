@@ -39,7 +39,7 @@ Local Port-->Client: read code
 Client->Local Port: close
 destroy Local Port
 note right of Client: close listening port after use
-Client->+AoC API: GET oauth/token(grant_type=code)
+Client->+AoC API: POST oauth/token(grant_type=code)
 AoC API-->-Client: Bearer token
 Client-->AoC API: use APIs with Authorization=Bearer
 
@@ -60,3 +60,40 @@ NodeExpressServer-->-Browser: return transfer spec
 Browser->ConnectClient: call startTransfer with transfer spec
 ConnectClient<->HSTS: file transfer
 
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+title AoC: OAuth with grant_type=jwt
+Actor API Client
+participant AoC API
+participant HSTS Node
+note right of API Client
+API Client can be any application interacting with AoC
+needing browser-less authentication.
+This includes `ascli` or any application using APIs.
+Preparation:
+API Client is declared in Aspera on Cloud, for JWT
+AoC generates client_id and client_secret
+User generates a Private key
+User provisions corresponding public key in his profile on AoC
+end note
+note right of API Client
+Use of AoC API:
+API Client generates a JWT assertion with:
+  client_id
+  client_secret
+  "subject" is user email
+  "scope" is "user:all"
+  signed with private key
+end note
+API Client->+AoC API: POST oauth/token(grant_type=jwt)
+note left of AoC API
+AoC App generates a bearer token signed with the organization private key.
+end note
+AoC API-->-API Client: Bearer token for AoC API
+API Client-->AoC API: use AoC API with Authorization=Bearer token
+note right of API Client
+Transfer files:
+Same as above, except "scope" is "node.<access key>:user:all"
+end note
+API Client->+AoC API: POST oauth/token(grant_type=jwt)
+AoC API-->-API Client: Bearer token for Node
+API Client-->HSTS Node: use Node API or transfer with Authorization=Bearer token
