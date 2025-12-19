@@ -5,6 +5,7 @@ subtitle: "Unofficial document"
 author: "Laurent MARTIN"
 PANDOC_META_END
 -->
+<!-- markdownlint-disable MD033 MD060 -->
 
 ## Introduction
 
@@ -30,6 +31,110 @@ The server component is always the IBM Aspera High-Speed Transfer Server (HSTS).
 - Some sort of authorization is required (either just SSH credentials, or a transfer token)
 - If client sends the files, then it is an upload. If client receives the files, it is a download.
 - In all the cases a transfer session is initialized using a "transfer specification", a JSON structure (except direct execution of `ascp` which uses command line options).
+
+### The basics
+
+When using Aspera to transfer data between two storage systems, a few fundamental concepts always apply.
+These concepts are independent of the specific API, SDK, or product being used (`ascp`, `ascli`, `transferd`, **Node API**, server REST API, etc.).
+
+#### Client and server roles
+
+An Aspera transfer always involves two distinct roles:
+
+- Client: the side that initiates the transfer.
+
+- Server: the side that accepts the transfer.
+
+The client may either send data to the server (upload) or retrieve data from it (download), but the direction of the data flow does not change the roles: the initiator is always the client.
+
+#### Server-side storage access (docroot / storage root)
+
+The server side is always configured with access to a storage backend.
+
+This is done through:
+
+- a docroot, or
+
+- an access key + storage root (conceptually equivalent).
+
+The server is responsible for accessing the underlying storage, which can be:
+
+- local filesystem storage, or
+
+- supported object storage (via **PVCL**, such as S3-compatible storage, cloud object stores, etc.).
+
+To do this, the server must be provided with appropriate credentials, which depend on the storage type:
+
+- filesystem permissions for local storage,
+
+- cloud/object-storage credentials for object storage.
+
+Without this configuration, a server cannot read or write data, regardless of the client.
+
+#### Client types and storage capabilities
+
+The client side can take different forms:
+
+- Simple transfer clients
+
+  Examples: ascp, ascli, transferd, AfD, custom SDK-based clients.
+
+  These clients only support local filesystem storage.
+
+  They do not define a docroot or storage root.
+
+  Files are always read from or written to the local machine where the client runs.
+
+- Servers acting as clients
+
+  An Aspera server can also act as a client.
+
+  In that case:
+
+  - The server-as-client is configured exactly like a server:
+
+    - it defines a docroot (or storage root),
+
+    - it may access object storage,
+
+    - it requires storage credentials.
+
+  - Credentials for object storage are provided either:
+
+    - directly in the docroot URL, or
+
+    - via the access key configuration.
+
+  This allows transfers between two non-local storage systems, such as object storage to object storage.
+
+#### Remote control of clients
+
+A client does not need to be manually started by a user.
+Clients can be remotely controlled:
+
+- A simple client (e.g. `ascli`) can be started remotely via SSH.
+
+- `transferd` exposes a gRPC API that allows remote control of transfers.
+
+- An Aspera server acting as a client can be remotely controlled using its REST API:
+
+  - for example, `POST /ops/transfers` to initiate a transfer.
+
+  - access to this API itself requires proper authentication.
+
+In all cases, the entity triggering the transfer is still the client, even if it is controlled remotely.
+
+#### Transfer authorization
+
+To initiate a transfer, the client must be authorized to access the server.
+
+This authorization can take different forms, depending on the environment and API:
+
+- SSH-based credentials (user/password or key),
+
+- transfer tokens (JWT or similar mechanisms).
+
+Without valid authorization, a transfer cannot be started, even if both client and server are correctly configured.
 
 ### APIs: Components: Server, Client, Application
 
@@ -296,9 +401,9 @@ Scenarios:
 - I need to transfer files at high speed from my home-grown application to a central place using basic OS credentials
 - I am provided with bare Aspera Transfer credentials, and I need to transfer to that server using my application written in java, C++, .NET, python, etc...
 
-| Client | API          | Authorization|
-|--------|--------------|--------------|
-| Custom Client Application | Transfer Daemon gRPC | SSH |
+| Client                    | API                  | Authorization|
+|---------------------------|----------------------|--------------|
+| Custom Client Application | Transfer Daemon gRPC | SSH          |
 
 If the integration to start a simple transfer job is made in an application written in one of the languages: C, C++, C#, Java, Python, Go, Rust, etc...
 Then the best option is to use the newer **Transfer Daemon**.
@@ -363,9 +468,9 @@ Scenarios:
 
 Typically, authentication/authorization is performed in the web app, and a transfer token is used to authorize transfers.
 
-| Client | API          | Authorization|
-|--------|--------------|--------------|
-| Web Browser | web SDK | Token |
+| Client.     | API          | Authorization|
+|-------------|--------------|--------------|
+| Web Browser | web SDK      | Token        |
 
 If the transfer must be started by a user in the context of a web browser, then the **IBM Aspera JavaScript SDK** can be used (for Aspera for Desktop and HTTP GW).
 It consists in a JavaScript library used similarly to the "Transfer SDK" (build session parameters, start transfer, monitor progress).
@@ -393,9 +498,9 @@ Scenarios:
 - I own the system used as client side (an HSTS), but not the remote system for which I have only SSH credentials.
 Machine-to-machine transfer
 
-| Client | API          | Authorization|
-|--------|--------------|--------------|
-| Aspera Transfer Server | Node API | SSH |
+| Client                    | API                  | Authorization |
+|---------------------------|----------------------|---------------|
+| Aspera Transfer Server    | Node API             | SSH           |
 
 This is the method used for automated server to server transfers.
 A transfer can be started remotely (using its REST API) on a server to another remote server.
@@ -422,9 +527,9 @@ Scenarios:
 
 - I need to transfer files between my custom client app, and my custom server app, using my own authentication/authorization.
 
-| Client | API          | Authorization|
-|--------|--------------|--------------|
-| Custom Client Application | Transfer SDK(client app) and Node API (server app) | Token |
+| Client                    | API                  | Authorization |
+|---------------------------|----------------------|---------------|
+| Custom Client Application | Transfer SDK(client app)<br/>Node API (server app) | Token |
 
 In previous examples, transfers were started using SSH credentials and no token, using various client application types: command line, Transfer SDK, browser, server (node) or even mobile.
 Using SSH credentials, the authentication and transfer authorization is provided by the bare Aspera Server and its host operating system.
@@ -458,9 +563,9 @@ Scenarios:
 I own both systems used for the transfer (both are HSTS) and I use node API to get transfer authorization on destination, and node API to initiate the transfer on the source system.
 Machine-to-machine transfer
 
-| Client | API          | Authorization|
-|--------|--------------|--------------|
-| Custom Client Application | Transfer SDK(client app) and Node API (server app) | Token |
+| Client                    | API                  | Authorization |
+|---------------------------|----------------------|---------------|
+| Custom Client Application | Transfer SDK(client app)<br/>Node API (server app) | Token |
 
 This is the method used for automated server to server transfers if one owns both servers and token-based transfer is preferred.
 First the managing application must retrieve a transfer authorization (as well as transfer details, such as server address) using the Node API on the **server side of the transfer**:
