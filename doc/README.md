@@ -597,9 +597,14 @@ Retention and activation is controlled by `aspera.conf` parameters:
 
 | Parameter            | Description |
 |----------------------|-------------|
+| `activity_retention` | Controls how long data is kept in database.<br/>Default: 1d12h            |
 | `activity_logging`   |             |
-| `activity_retention` |             |
 | `activity_*`         |             |
+
+> [!NOTE]
+> Typically, `activity_retention` can be given a shorter value to keep DB smaller.
+>
+> `asconfigurator -x "set_server_data;activity_retention,2h"`
 
 By default (no query parameter), it returns a number of transfer information.
 Such call returns a response with the `Link` header set:
@@ -608,10 +613,11 @@ Such call returns a response with the `Link` header set:
 Link: <https://hsts.example.com:9092/ops/transfers?iteration_token=1440571>; rel="next"
 ```
 
-Calling the specified URL will return subsequent results.
-To get all information, repeat until response is an empty array.
-When new information is available, subsequent calls will return data and a new `iteration_token`.
-A number of query parameters allow filtering only necessary information, for example: `active_only`.
+Calling the URL specified in `Link` will return subsequent results, and so on...
+To get all information, repeat with the response' Link URL until response is an empty array and the `iteration_token` does not change.
+When new information is available, a new call will return data and a new `iteration_token`.
+A number of query parameters allow filtering only necessary information, for example: `active_only=true`.
+Using query `view=id` will return only transfer ids, and specific information can be retrieved using `GET /ops/transfers/<id>`.
 
 For example, using `ascli`:
 
