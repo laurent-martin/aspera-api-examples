@@ -141,8 +141,8 @@ Without valid authorization, a transfer cannot be started, even if both client a
 Those 3 types of software components provide APIs:
 
 - **Transfer Server (HSTS)**: Node API (REST)
-  - Monitor and manage transfers (GET /ops/transfers)
-  - Start server-to-server transfer (as "transfer client" to remote server) (POST /ops/transfers)
+  - Monitor and manage transfers (`GET /ops/transfers`)
+  - Start server-to-server transfer (as "transfer client" to remote server) (`POST /ops/transfers`)
   - Get authorization for transfer (typically for web) (POST /files/*_setup)
   - Basic file system operations (list files, create folder, etc...) (GET/POST /files/...)
   - Supports "watch folder" (includes growing file transfer) (`/watchfolders/`...), `async`, stream, etc...
@@ -506,7 +506,7 @@ This is the method used for automated server to server transfers.
 A transfer can be started remotely (using its REST API) on a server to another remote server.
 2 servers here, but one starts the transfer as client, and connects to a remote server
 The managing application uses the "Node API" to control the client side of the transfer.
-Basically: POST /ops/transfers with a JSON payload containing session parameters: transfer spec with ssh credentials of the remote server.
+Basically: `POST /ops/transfers` with a JSON payload containing session parameters: transfer spec with SSH credentials of the remote server.
 
 Example of use with `ascli`: (for demonstration of use of API)
 
@@ -587,6 +587,57 @@ ascli --url=https://hsts1.example.com:9092 --username=my_hsts1_node_user --passw
 > [!NOTE]
 > Option `--transfer=node` tells use starts the transfer remotely on the node specified in -transfer-info as client.
 > In this example, the remote server: `hsts2.example.com` is used (as client) to upload to `server hsts1.example.com`
+
+### S7- Polling on transfer status on Node API
+
+The Node API endpoint: [`GET /ops/transfers`](https://developer.ibm.com/apis/catalog/aspera--aspera-node-api/api/API--aspera--ibm-aspera-node-api-4-4#get511225093) allows getting information on past and current transfers.
+Such information is stored on HSTS in the Redis database.
+
+Retention and activation is controlled by `aspera.conf` parameters:
+
+| Parameter            | Description |
+|----------------------|-------------|
+| `activity_logging`   |             |
+| `activity_retention` |             |
+| `activity_*`         |             |
+
+By default (no query parameter), it returns a number of transfer information.
+Such call returns a response with the `Link` header set:
+
+```text
+Link: <https://hsts.example.com:9092/ops/transfers?iteration_token=1440571>; rel="next"
+```
+
+Calling the specified URL will return subsequent results.
+To get all information, repeat until response is an empty array.
+When new information is available, subsequent calls will return data and a new `iteration_token`.
+A number of query parameters allow filtering only necessary information, for example: `active_only`.
+
+For example, using `ascli`:
+
+```bash
+ascli node transfer list --query.active_only=true
+```
+
+Example of algorithm to get notification of progress of transfers:
+
+```ruby
+iteration_token = 1
+transfers = []
+loop do
+    response=GET /ops/transfers?iteration_token=$iteration_token
+    if response.iteration_token == $iteration_token
+      # all current responses received, process and temporize
+      call process(transfers)
+      transfers = []
+      sleep 5
+    else
+      # additional transfers received, store and try to get more, before processing all
+      transfers.concat(response.transfers)
+      iteration_token = response.iteration_token
+    end
+end
+```
 
 ## Transfer authentication and authorization
 

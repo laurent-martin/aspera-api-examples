@@ -9,7 +9,7 @@ include $(DIR_TOP)common.mak
 DOC_TOOL=ruby -I $(DIR_TOP)/doc -r doc -e
 $(GBL_FILE_CONF_TMPL): $(GBL_FILE_CONFIG)
 	$(DOC_TOOL) generate_config_template $(GBL_FILE_CONFIG) $@
-all:: $(GBL_FILE_CONF_TMPL)
+all:: $(GBL_FILE_CONF_TMPL) README.pdf
 clean::
 	rm -f $(GBL_FILE_CONF_TMPL)
 pdf: README.pdf
