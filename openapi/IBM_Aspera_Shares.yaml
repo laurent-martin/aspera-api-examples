@@ -1,0 +1,2520 @@
+openapi: 3.0.3
+info:
+  title: Aspera Shares API
+  description: |
+    Complete API documentation for Aspera Shares, a secure file sharing and collaboration platform.
+    
+    This API provides comprehensive access to:
+    - User management and authentication
+    - Share and file operations
+    - Administrative functions
+    - Transfer management
+    - Node operations
+    
+    ## Authentication
+    
+    The API uses HTTP Basic Authentication. Include your credentials in the Authorization header:
+    ```
+    Authorization: Basic base64(username:password)
+    ```
+    
+    ## Base URLs
+    
+    - `/api/v1` - Main REST API (v1)
+    - `/api/v2` - REST API (v2) 
+    - `/node_api` - Node file operations API
+    
+  version: 3.0.0
+  contact:
+    name: Aspera Support
+    email: aspera-systems@asperasoft.net
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://{hostname}
+    description: Aspera Shares Server
+    variables:
+      hostname:
+        default: shares.example.com
+        description: Your Aspera Shares hostname
+
+security:
+  - basicAuth: []
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Users
+    description: User account management
+  - name: Groups
+    description: Group management
+  - name: Shares
+    description: Share management and operations
+  - name: Files
+    description: File and folder operations
+  - name: Transfers
+    description: Transfer management and monitoring
+  - name: Nodes
+    description: Node management
+  - name: Admin
+    description: Administrative operations
+  - name: Configuration
+    description: System configuration
+  - name: Notifications
+    description: Notification templates and settings
+  - name: SMTP
+    description: SMTP server configuration
+  - name: Self Registration
+    description: User self-registration
+  - name: Node API
+    description: Node file operations API
+  - name: Search
+    description: Search operations
+
+paths:
+  # Node API Endpoints
+  /node_api:
+    get:
+      tags:
+        - Node API
+      summary: Get Node API information
+      description: Returns general information about the Node API
+      operationId: getNodeApiInfo
+      responses:
+        '200':
+          description: Node API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  endpoints:
+                    type: array
+                    items:
+                      type: string
+                      
+  /node_api/ping:
+    get:
+      tags:
+        - Node API
+      summary: Ping the Node API
+      description: Health check endpoint to verify Node API availability
+      operationId: pingNodeApi
+      responses:
+        '200':
+          description: Successful ping
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                    
+  /node_api/info:
+    get:
+      tags:
+        - Node API
+      summary: Get Node information
+      description: Returns detailed information about the Node
+      operationId: getNodeInfo
+      responses:
+        '200':
+          description: Node information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeInfo'
+                
+  /node_api/space:
+    post:
+      tags:
+        - Node API
+      summary: Get space information
+      description: Returns storage space information for the specified path
+      operationId: getSpaceInfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: Path to check space for
+                  example: /
+      responses:
+        '200':
+          description: Space information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpaceInfo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /node_api/files/browse:
+    post:
+      tags:
+        - Node API
+      summary: Browse files and folders
+      description: List files and folders in the specified path
+      operationId: browseFiles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - path
+              properties:
+                path:
+                  type: string
+                  description: Path to browse
+                  example: /folder
+                sort:
+                  type: string
+                  enum: [name, size, mtime, type]
+                  description: Sort field
+                direction:
+                  type: string
+                  enum: [asc, desc]
+                  description: Sort direction
+      responses:
+        '200':
+          description: File listing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FileItem'
+                  total:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          
+  /node_api/files/info:
+    post:
+      tags:
+        - Node API
+      summary: Get file information
+      description: Returns detailed information about specific files
+      operationId: getFileInfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paths
+              properties:
+                paths:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of file paths
+                  example: ["/file1.txt", "/folder/file2.pdf"]
+      responses:
+        '200':
+          description: File information
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileInfo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /node_api/files/create:
+    post:
+      tags:
+        - Node API
+      summary: Create file or folder
+      description: Creates a new file or folder at the specified path
+      operationId: createFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - path
+                - type
+              properties:
+                path:
+                  type: string
+                  description: Path where to create the item
+                  example: /newfolder
+                type:
+                  type: string
+                  enum: [file, directory]
+                  description: Type of item to create
+      responses:
+        '201':
+          description: Item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileInfo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Item already exists
+          
+  /node_api/files/rename:
+    post:
+      tags:
+        - Node API
+      summary: Rename file or folder
+      description: Renames a file or folder
+      operationId: renameFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - path
+                - new_path
+              properties:
+                path:
+                  type: string
+                  description: Current path
+                  example: /oldname.txt
+                new_path:
+                  type: string
+                  description: New path
+                  example: /newname.txt
+      responses:
+        '200':
+          description: Item renamed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileInfo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Target already exists
+          
+  /node_api/files/delete:
+    post:
+      tags:
+        - Node API
+      summary: Delete files or folders
+      description: Deletes one or more files or folders
+      operationId: deleteFiles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paths
+              properties:
+                paths:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of paths to delete
+                  example: ["/file1.txt", "/folder2"]
+      responses:
+        '200':
+          description: Items deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          
+  /node_api/files/upload_setup:
+    post:
+      tags:
+        - Node API
+      summary: Setup file upload
+      description: Prepares and returns transfer specification for uploading files
+      operationId: setupUpload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transfer_requests
+              properties:
+                transfer_requests:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Upload setup successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferSpec'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /node_api/files/download_setup:
+    post:
+      tags:
+        - Node API
+      summary: Setup file download
+      description: Prepares and returns transfer specification for downloading files
+      operationId: setupDownload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transfer_requests
+              properties:
+                transfer_requests:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Download setup successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferSpec'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /node_api/files/sync_setup:
+    post:
+      tags:
+        - Node API
+      summary: Setup file sync
+      description: Prepares and returns transfer specification for syncing files
+      operationId: setupSync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transfer_requests
+              properties:
+                transfer_requests:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Sync setup successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferSpec'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /node_api/transfers:
+    post:
+      tags:
+        - Node API
+      summary: Create transfer
+      description: Initiates a new transfer
+      operationId: createNodeTransfer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferCreate'
+      responses:
+        '201':
+          description: Transfer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /node_api/transfers/{id}:
+    get:
+      tags:
+        - Node API
+      summary: Get transfer status
+      description: Returns the status and details of a specific transfer
+      operationId: getNodeTransfer
+      parameters:
+        - $ref: '#/components/parameters/TransferId'
+      responses:
+        '200':
+          description: Transfer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Node API
+      summary: Update transfer
+      description: Updates transfer properties (e.g., pause, resume)
+      operationId: updateNodeTransfer
+      parameters:
+        - $ref: '#/components/parameters/TransferId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [pause, resume, cancel]
+      responses:
+        '200':
+          description: Transfer updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Node API
+      summary: Delete/cancel transfer
+      description: Cancels and removes a transfer
+      operationId: deleteNodeTransfer
+      parameters:
+        - $ref: '#/components/parameters/TransferId'
+      responses:
+        '204':
+          description: Transfer deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          
+  /node_api/{share}/watchds/{daemon}/subscriptions:
+    post:
+      tags:
+        - Node API
+      summary: Create watchd subscription
+      description: Creates a new watchd subscription for monitoring file changes
+      operationId: createWatchdSubscription
+      parameters:
+        - name: share
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Share identifier
+        - name: daemon
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Watchd daemon identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchdSubscription'
+      responses:
+        '201':
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchdSubscription'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /node_api/{share}/watchds/{daemon}/subscriptions/{subscription}:
+    put:
+      tags:
+        - Node API
+      summary: Update watchd subscription
+      description: Updates an existing watchd subscription
+      operationId: updateWatchdSubscription
+      parameters:
+        - name: share
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Share identifier
+        - name: daemon
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Watchd daemon identifier
+        - name: subscription
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Subscription identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchdSubscription'
+      responses:
+        '200':
+          description: Subscription updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchdSubscription'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          
+  /node_api/{share}/watchds/{daemon}/subscriptions/{subscription}/snapshots:
+    post:
+      tags:
+        - Node API
+      summary: Create watchd snapshot
+      description: Creates a snapshot for a watchd subscription
+      operationId: createWatchdSnapshot
+      parameters:
+        - name: share
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Share identifier
+        - name: daemon
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Watchd daemon identifier
+        - name: subscription
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Subscription identifier
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Snapshot created
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /node_api/{share}/watchds/{daemon}/subscriptions/{subscription}/results:
+    post:
+      tags:
+        - Node API
+      summary: Create watchd result
+      description: Creates a result entry for a watchd subscription
+      operationId: createWatchdResult
+      parameters:
+        - name: share
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Share identifier
+        - name: daemon
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Watchd daemon identifier
+        - name: subscription
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Subscription identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Result created
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /node_api/{share}/watchds/{daemon}/subscriptions/{subscription}/results/{result}:
+    get:
+      tags:
+        - Node API
+      summary: Get watchd result
+      description: Retrieves a specific watchd result
+      operationId: getWatchdResult
+      parameters:
+        - name: share
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Share identifier
+        - name: daemon
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Watchd daemon identifier
+        - name: subscription
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Subscription identifier
+        - name: result
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Result identifier
+      responses:
+        '200':
+          description: Result details
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Node API
+      summary: Delete watchd result
+      description: Deletes a watchd result
+      operationId: deleteWatchdResult
+      parameters:
+        - name: share
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Share identifier
+        - name: daemon
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Watchd daemon identifier
+        - name: subscription
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Subscription identifier
+        - name: result
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Result identifier
+      responses:
+        '204':
+          description: Result deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # API v1 Endpoints
+  /api/v1:
+    get:
+      tags:
+        - API Information
+      summary: Get API v1 information
+      description: Returns general information about API v1
+      operationId: getApiV1Info
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  endpoints:
+                    type: array
+                    items:
+                      type: string
+
+  # User Endpoints
+  /api/v1/data/users:
+    get:
+      tags:
+        - Users
+      summary: List users
+      description: Returns a paginated list of users
+      operationId: listUsers
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Sort'
+        - name: filter
+          in: query
+          description: Filter users by various criteria
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Users
+      summary: Create user
+      description: Creates a new user account
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+          
+  /api/v1/data/users/{user_id}:
+    get:
+      tags:
+        - Users
+      summary: Get user
+      description: Returns details of a specific user
+      operationId: getUser
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Users
+      summary: Update user
+      description: Updates an existing user
+      operationId: updateUser
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      description: Deletes a user account
+      operationId: deleteUser
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: User deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Group Endpoints
+  /api/v1/data/groups:
+    get:
+      tags:
+        - Groups
+      summary: List groups
+      description: Returns a paginated list of groups
+      operationId: listGroups
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Group'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Groups
+      summary: Create group
+      description: Creates a new group
+      operationId: createGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupCreate'
+      responses:
+        '201':
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /api/v1/data/groups/{group_id}:
+    get:
+      tags:
+        - Groups
+      summary: Get group
+      description: Returns details of a specific group
+      operationId: getGroup
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: Group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Groups
+      summary: Update group
+      description: Updates an existing group
+      operationId: updateGroup
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupUpdate'
+      responses:
+        '200':
+          description: Group updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Groups
+      summary: Delete group
+      description: Deletes a group
+      operationId: deleteGroup
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '204':
+          description: Group deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Share Endpoints
+  /api/v1/data/shares:
+    get:
+      tags:
+        - Shares
+      summary: List shares
+      description: Returns a paginated list of shares
+      operationId: listShares
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: List of shares
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Share'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Shares
+      summary: Create share
+      description: Creates a new share
+      operationId: createShare
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareCreate'
+      responses:
+        '201':
+          description: Share created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Share'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /api/v1/data/shares/{share_id}:
+    get:
+      tags:
+        - Shares
+      summary: Get share
+      description: Returns details of a specific share
+      operationId: getShare
+      parameters:
+        - $ref: '#/components/parameters/ShareId'
+      responses:
+        '200':
+          description: Share details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Share'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Shares
+      summary: Update share
+      description: Updates an existing share
+      operationId: updateShare
+      parameters:
+        - $ref: '#/components/parameters/ShareId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareUpdate'
+      responses:
+        '200':
+          description: Share updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Share'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Shares
+      summary: Delete share
+      description: Deletes a share
+      operationId: deleteShare
+      parameters:
+        - $ref: '#/components/parameters/ShareId'
+      responses:
+        '204':
+          description: Share deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Node Endpoints
+  /api/v1/data/nodes:
+    get:
+      tags:
+        - Nodes
+      summary: List nodes
+      description: Returns a paginated list of nodes
+      operationId: listNodes
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: List of nodes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Node'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Nodes
+      summary: Create node
+      description: Creates a new node
+      operationId: createNode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeCreate'
+      responses:
+        '201':
+          description: Node created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /api/v1/data/nodes/{node_id}:
+    get:
+      tags:
+        - Nodes
+      summary: Get node
+      description: Returns details of a specific node
+      operationId: getNode
+      parameters:
+        - $ref: '#/components/parameters/NodeId'
+      responses:
+        '200':
+          description: Node details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Nodes
+      summary: Update node
+      description: Updates an existing node
+      operationId: updateNode
+      parameters:
+        - $ref: '#/components/parameters/NodeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeUpdate'
+      responses:
+        '200':
+          description: Node updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Nodes
+      summary: Delete node
+      description: Deletes a node
+      operationId: deleteNode
+      parameters:
+        - $ref: '#/components/parameters/NodeId'
+      responses:
+        '204':
+          description: Node deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # SMTP Server Endpoints
+  /api/v1/data/smtp_servers:
+    get:
+      tags:
+        - SMTP
+      summary: List SMTP servers
+      description: Returns a list of configured SMTP servers
+      operationId: listSmtpServers
+      responses:
+        '200':
+          description: List of SMTP servers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SmtpServer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - SMTP
+      summary: Create SMTP server
+      description: Configures a new SMTP server
+      operationId: createSmtpServer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmtpServerCreate'
+      responses:
+        '201':
+          description: SMTP server created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmtpServer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /api/v1/data/smtp_servers/{smtp_server_id}:
+    get:
+      tags:
+        - SMTP
+      summary: Get SMTP server
+      description: Returns details of a specific SMTP server
+      operationId: getSmtpServer
+      parameters:
+        - name: smtp_server_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: SMTP server ID
+      responses:
+        '200':
+          description: SMTP server details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmtpServer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - SMTP
+      summary: Update SMTP server
+      description: Updates an existing SMTP server configuration
+      operationId: updateSmtpServer
+      parameters:
+        - name: smtp_server_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: SMTP server ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmtpServerUpdate'
+      responses:
+        '200':
+          description: SMTP server updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmtpServer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - SMTP
+      summary: Delete SMTP server
+      description: Removes an SMTP server configuration
+      operationId: deleteSmtpServer
+      parameters:
+        - name: smtp_server_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: SMTP server ID
+      responses:
+        '204':
+          description: SMTP server deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Transfer Settings Endpoints
+  /api/v1/data/transfer_settings:
+    get:
+      tags:
+        - Transfers
+      summary: Get global transfer settings
+      description: Returns global transfer settings that apply to all users and groups unless overridden
+      operationId: getGlobalTransferSettings
+      responses:
+        '200':
+          description: Global transfer settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferSettings'
+              example:
+                min_connect_version: "3.6.1"
+                upload_target_rate: "10.0 Kbps"
+                upload_target_rate_cap: null
+                download_target_rate: null
+                download_target_rate_cap: null
+                starting_policy: null
+                allowed_policy: null
+                encryption: null
+                encryption_at_rest: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags:
+        - Transfers
+      summary: Update global transfer settings
+      description: |
+        Updates global transfer settings. Use blank strings to indicate inherited settings.
+        
+        Valid values:
+        - starting_policy: "", "fixed", "high", "fair", "low"
+        - allowed_policy: "", "fixed, high, fair, and low", "high, fair, and low", "fair and low", "low"
+        - encryption: "", "Optional", "AES-128"
+        - encryption_at_rest: "", "Optional", "Required"
+      operationId: updateGlobalTransferSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferSettingsUpdate'
+      responses:
+        '200':
+          description: Transfer settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferSettingsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /api/v1/data/users/{user_id}/transfer_settings:
+    get:
+      tags:
+        - Transfers
+      summary: Get user transfer settings
+      description: |
+        Returns transfer settings specific to a user. 
+        Returns 404 if the user doesn't have specific settings (inherits global settings).
+      operationId: getUserTransferSettings
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User transfer settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserTransferSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: User has no specific transfer settings (inherits global settings)
+    put:
+      tags:
+        - Transfers
+      summary: Update user transfer settings
+      description: Updates transfer settings for a specific user
+      operationId: updateUserTransferSettings
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferSettingsUpdate'
+      responses:
+        '200':
+          description: User transfer settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserTransferSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags:
+        - Transfers
+      summary: Delete user transfer settings
+      description: |
+        Removes user-specific transfer settings, causing the user to inherit global settings.
+        Returns 204 even if no specific settings exist.
+      operationId: deleteUserTransferSettings
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: User transfer settings deleted (user now inherits global settings)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          
+  /api/v1/data/groups/{group_id}/transfer_settings:
+    get:
+      tags:
+        - Transfers
+      summary: Get group transfer settings
+      description: |
+        Returns transfer settings specific to a group.
+        Returns 404 if the group doesn't have specific settings (inherits global settings).
+      operationId: getGroupTransferSettings
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: Group transfer settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupTransferSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Group has no specific transfer settings (inherits global settings)
+    put:
+      tags:
+        - Transfers
+      summary: Update group transfer settings
+      description: Updates transfer settings for a specific group
+      operationId: updateGroupTransferSettings
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferSettingsUpdate'
+      responses:
+        '200':
+          description: Group transfer settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupTransferSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags:
+        - Transfers
+      summary: Delete group transfer settings
+      description: |
+        Removes group-specific transfer settings, causing the group to inherit global settings.
+        Returns 204 even if no specific settings exist.
+      operationId: deleteGroupTransferSettings
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '204':
+          description: Group transfer settings deleted (group now inherits global settings)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic Authentication with username and password
+      
+  parameters:
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: User ID
+      
+    GroupId:
+      name: group_id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Group ID
+      
+    ShareId:
+      name: share_id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Share ID
+      
+    NodeId:
+      name: node_id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Node ID
+      
+    TransferId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Transfer ID
+      
+    Page:
+      name: page
+      in: query
+      description: Page number for pagination
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+        
+    PerPage:
+      name: per_page
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+        
+    Sort:
+      name: sort
+      in: query
+      description: Sort field and direction (e.g., "name", "-created_at")
+      schema:
+        type: string
+
+  schemas:
+    # User Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique user identifier
+          example: 123
+        username:
+          type: string
+          description: Username for login
+          example: john.doe
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: john.doe@example.com
+        first_name:
+          type: string
+          description: User's first name
+          example: John
+        last_name:
+          type: string
+          description: User's last name
+          example: Doe
+        role:
+          type: string
+          enum: [admin, user, manager, guest]
+          description: User role
+        active:
+          type: boolean
+          description: Whether the user account is active
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          
+    UserCreate:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: john.doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: User password (minimum 8 characters)
+        first_name:
+          type: string
+          example: John
+        last_name:
+          type: string
+          example: Doe
+        role:
+          type: string
+          enum: [admin, user, manager, guest]
+          default: user
+        active:
+          type: boolean
+          default: true
+          
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role:
+          type: string
+          enum: [admin, user, manager, guest]
+        active:
+          type: boolean
+        password:
+          type: string
+          format: password
+          minLength: 8
+          
+    # Group Schemas
+    Group:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 456
+        name:
+          type: string
+          example: Engineering
+        description:
+          type: string
+          example: Engineering department group
+        member_count:
+          type: integer
+          description: Number of members in the group
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          
+    GroupCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          
+    GroupUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          
+    # Share Schemas
+    Share:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 789
+        name:
+          type: string
+          example: Project Files
+        description:
+          type: string
+        node_id:
+          type: integer
+          description: Associated node ID
+        path:
+          type: string
+          description: Share root path
+          example: /shares/project
+        created_by:
+          type: integer
+          description: User ID of creator
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          
+    ShareCreate:
+      type: object
+      required:
+        - name
+        - node_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        node_id:
+          type: integer
+        path:
+          type: string
+          
+    ShareUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        path:
+          type: string
+          
+    # Node Schemas
+    Node:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        name:
+          type: string
+          example: Primary Storage
+        host:
+          type: string
+          example: node1.example.com
+        access_key:
+          type: string
+          description: Access key for node authentication
+        storage_type:
+          type: string
+          enum: [local, cloud, hybrid]
+        status:
+          type: string
+          enum: [active, inactive, maintenance]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          
+    NodeCreate:
+      type: object
+      required:
+        - name
+        - host
+      properties:
+        name:
+          type: string
+        host:
+          type: string
+        access_key:
+          type: string
+        storage_type:
+          type: string
+          enum: [local, cloud, hybrid]
+          
+    NodeUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        host:
+          type: string
+        access_key:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, maintenance]
+          
+    # Node API Schemas
+    NodeInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          example: node1
+        version:
+          type: string
+          example: 4.0.0
+        platform:
+          type: string
+          example: linux
+        host:
+          type: string
+          example: node1.example.com
+          
+    SpaceInfo:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+          description: Total space in bytes
+          example: 1099511627776
+        available:
+          type: integer
+          format: int64
+          description: Available space in bytes
+          example: 549755813888
+        used:
+          type: integer
+          format: int64
+          description: Used space in bytes
+          example: 549755813888
+        percentage:
+          type: number
+          format: float
+          description: Percentage of space used
+          example: 50.0
+          
+    FileItem:
+      type: object
+      properties:
+        name:
+          type: string
+          example: document.pdf
+        path:
+          type: string
+          example: /folder/document.pdf
+        type:
+          type: string
+          enum: [file, directory]
+        size:
+          type: integer
+          format: int64
+          description: File size in bytes
+        modified_time:
+          type: string
+          format: date-time
+        permissions:
+          type: string
+          example: rwxr-xr-x
+          
+    FileInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          example: document.pdf
+        path:
+          type: string
+          example: /folder/document.pdf
+        type:
+          type: string
+          enum: [file, directory]
+        size:
+          type: integer
+          format: int64
+        created_time:
+          type: string
+          format: date-time
+        modified_time:
+          type: string
+          format: date-time
+        accessed_time:
+          type: string
+          format: date-time
+        permissions:
+          type: string
+        owner:
+          type: string
+        checksum:
+          type: string
+          description: File checksum (MD5/SHA)
+          
+    TransferRequest:
+      type: object
+      required:
+        - paths
+      properties:
+        paths:
+          type: array
+          items:
+            type: string
+          description: Array of file/folder paths to transfer
+        destination:
+          type: string
+          description: Destination path for upload
+        aspera_connect_settings:
+          type: object
+          description: Aspera Connect configuration options
+          
+    TransferSpec:
+      type: object
+      properties:
+        transfer_spec:
+          type: object
+          description: Aspera transfer specification
+          properties:
+            paths:
+              type: array
+              items:
+                type: object
+            remote_host:
+              type: string
+            remote_user:
+              type: string
+            token:
+              type: string
+            direction:
+              type: string
+              enum: [send, receive]
+            target_rate_kbps:
+              type: integer
+        aspera_connect_settings:
+          type: object
+          
+    TransferCreate:
+      type: object
+      required:
+        - transfer_spec
+      properties:
+        transfer_spec:
+          type: object
+          description: Aspera transfer specification
+          
+    Transfer:
+      type: object
+      properties:
+        id:
+          type: string
+          example: xfer-123abc
+        status:
+          type: string
+          enum: [pending, running, completed, failed, cancelled, paused]
+        direction:
+          type: string
+          enum: [upload, download, sync]
+        bytes_transferred:
+          type: integer
+          format: int64
+        total_bytes:
+          type: integer
+          format: int64
+        percentage:
+          type: number
+          format: float
+        rate_kbps:
+          type: integer
+          description: Current transfer rate in Kbps
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          
+    WatchdSubscription:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        path:
+          type: string
+          description: Path to monitor
+        events:
+          type: array
+          items:
+            type: string
+            enum: [create, modify, delete, move]
+        active:
+          type: boolean
+          
+    # SMTP Server Schemas
+    SmtpServer:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 13
+        server:
+          type: string
+          description: SMTP server hostname
+          example: smtp.gmail.com
+        port:
+          type: integer
+          description: SMTP server port
+          example: 587
+        username:
+          type: string
+          description: SMTP authentication username
+          example: demo@asperasoft.net
+        from:
+          type: string
+          description: From email address
+          example: aspera-systems@asperasoft.net
+        from_address:
+          type: string
+          nullable: true
+          description: Optional custom from address
+        from_name:
+          type: string
+          nullable: true
+          description: Optional custom from name
+        tls:
+          type: boolean
+          description: Use TLS encryption
+          example: true
+        timeout:
+          type: integer
+          description: Connection timeout in seconds
+          example: 3
+        status:
+          type: string
+          nullable: true
+          description: Server status
+        status_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last status check timestamp
+        status_message:
+          type: string
+          nullable: true
+          description: Status message or error
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        salt:
+          type: string
+          description: Salt for password encryption
+          example: 429979e40788ba6e9df1
+          
+    SmtpServerCreate:
+      type: object
+      required:
+        - server
+        - port
+        - username
+        - password
+      properties:
+        server:
+          type: string
+          example: smtp.gmail.com
+        port:
+          type: integer
+          example: 587
+        username:
+          type: string
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: SMTP authentication password
+        from:
+          type: string
+          format: email
+        from_address:
+          type: string
+          format: email
+        from_name:
+          type: string
+        tls:
+          type: boolean
+          default: true
+        timeout:
+          type: integer
+          default: 3
+          minimum: 1
+          maximum: 60
+          
+    SmtpServerUpdate:
+      type: object
+      properties:
+        server:
+          type: string
+        port:
+          type: integer
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+        from:
+          type: string
+          format: email
+        from_address:
+          type: string
+          format: email
+        from_name:
+          type: string
+        tls:
+          type: boolean
+        timeout:
+          type: integer
+          minimum: 1
+          maximum: 60
+          
+    # Transfer Settings Schemas
+    TransferSettings:
+      type: object
+      properties:
+        min_connect_version:
+          type: string
+          description: Minimum Aspera Connect version required (format X.Y or X.Y.Z or X.Y.Z.W)
+          example: "3.6.1"
+          nullable: true
+        upload_target_rate:
+          type: string
+          description: Target upload rate (e.g., "1.5 Gbps", "500Mbps", "10 K", "3000")
+          example: "10.0 Kbps"
+          nullable: true
+        upload_target_rate_cap:
+          type: string
+          description: Maximum upload rate cap
+          example: "500.0 Mbps"
+          nullable: true
+        download_target_rate:
+          type: string
+          description: Target download rate
+          nullable: true
+        download_target_rate_cap:
+          type: string
+          description: Maximum download rate cap
+          nullable: true
+        starting_policy:
+          type: string
+          enum: ["", "fixed", "high", "fair", "low"]
+          description: Starting bandwidth policy (empty string indicates inherit)
+          nullable: true
+        allowed_policy:
+          type: string
+          enum: ["", "fixed, high, fair, and low", "high, fair, and low", "fair and low", "low"]
+          description: Allowed bandwidth policies (empty string indicates inherit)
+          nullable: true
+        encryption:
+          type: string
+          enum: ["", "Optional", "AES-128"]
+          description: Encryption setting (empty string indicates inherit)
+          nullable: true
+        encryption_at_rest:
+          type: string
+          enum: ["", "Optional", "Required"]
+          description: Encryption at rest setting (empty string indicates inherit)
+          nullable: true
+          
+    TransferSettingsUpdate:
+      type: object
+      properties:
+        min_connect_version:
+          type: string
+          description: Minimum Aspera Connect version (format X.Y or X.Y.Z or X.Y.Z.W)
+          example: "3.7.1"
+        upload_target_rate:
+          type: string
+          description: Target upload rate (e.g., "1.5 Gbps", "500Mbps", "10 K", "3000")
+          example: "10.0 Kbps"
+        upload_target_rate_cap:
+          type: string
+          description: Maximum upload rate cap
+          example: "22.0 Mbps"
+        download_target_rate:
+          type: string
+          description: Target download rate
+        download_target_rate_cap:
+          type: string
+          description: Maximum download rate cap
+        starting_policy:
+          type: string
+          enum: ["", "fixed", "high", "fair", "low"]
+          description: Starting bandwidth policy (blank = inherit)
+        allowed_policy:
+          type: string
+          enum: ["", "fixed, high, fair, and low", "high, fair, and low", "fair and low", "low"]
+          description: Allowed bandwidth policies (blank = inherit)
+        encryption:
+          type: string
+          enum: ["", "Optional", "AES-128"]
+          description: Encryption setting (blank = inherit)
+        encryption_at_rest:
+          type: string
+          enum: ["", "Optional", "Required"]
+          description: Encryption at rest (blank = inherit)
+        reset_all_defaults:
+          type: boolean
+          description: Reset all settings to system defaults
+          
+    TransferSettingsResponse:
+      allOf:
+        - $ref: '#/components/schemas/TransferSettings'
+        - type: object
+          properties:
+            errors:
+              type: object
+              description: Validation errors for each field
+              properties:
+                upload_target_rate_cap:
+                  type: array
+                  items:
+                    type: string
+                upload_target_rate:
+                  type: array
+                  items:
+                    type: string
+                download_target_rate_cap:
+                  type: array
+                  items:
+                    type: string
+                download_target_rate:
+                  type: array
+                  items:
+                    type: string
+                allowed_policy:
+                  type: array
+                  items:
+                    type: string
+                starting_policy:
+                  type: array
+                  items:
+                    type: string
+            validation_context:
+              type: string
+              nullable: true
+              
+    UserTransferSettings:
+      allOf:
+        - $ref: '#/components/schemas/TransferSettings'
+        - type: object
+          required:
+            - id
+            - authorizable_type
+            - authorizable_id
+          properties:
+            id:
+              type: integer
+              example: 3
+            authorizable_type:
+              type: string
+              enum: [Authorizable::User]
+              example: Authorizable::User
+            authorizable_id:
+              type: integer
+              description: User ID
+              example: 5
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+              
+    GroupTransferSettings:
+      allOf:
+        - $ref: '#/components/schemas/TransferSettings'
+        - type: object
+          required:
+            - id
+            - authorizable_type
+            - authorizable_id
+          properties:
+            id:
+              type: integer
+              example: 13
+            authorizable_type:
+              type: string
+              enum: [Authorizable::Group]
+              example: Authorizable::Group
+            authorizable_id:
+              type: integer
+              description: Group ID
+              example: 1
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+          
+    # Pagination Schema
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        per_page:
+          type: integer
+          description: Items per page
+          example: 25
+        total:
+          type: integer
+          description: Total number of items
+          example: 100
+        total_pages:
+          type: integer
+          description: Total number of pages
+          example: 4
+          
+    # Error Schema
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: BadRequest
+        message:
+          type: string
+          description: Human-readable error message
+          example: Invalid request parameters
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+          
+  responses:
+    BadRequest:
+      description: Bad request - invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: BadRequest
+            message: Invalid request parameters
+            
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorized
+            message: Authentication credentials were not provided or are invalid
+            
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Forbidden
+            message: You do not have permission to perform this action
+            
+    NotFound:
+      description: Not found - resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: NotFound
+            message: The requested resource was not found

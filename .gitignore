@@ -5,3 +5,4 @@ private/
 .idea/
 .tested/
 .checked_env
+build/
