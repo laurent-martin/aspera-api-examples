@@ -77,12 +77,23 @@ paths:
               schema:
                 type: object
                 properties:
-                  version:
-                    type: string
-                  endpoints:
+                  apis:
                     type: array
                     items:
-                      type: string
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        version:
+                          type: number
+                        url:
+                          type: string
+                      required:
+                        - name
+                        - version
+                        - url
+                required:
+                  - apis
 
   /node_api/ping:
     get:
@@ -95,16 +106,7 @@ paths:
         "200":
           description: Successful ping
           content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: ok
-                  timestamp:
-                    type: string
-                    format: date-time
+            text/html:
 
   /node_api/info:
     get:
@@ -837,8 +839,8 @@ paths:
     get:
       tags:
         - Users
-      summary: List users
-      description: Returns a paginated list of users
+      summary: List Authorizable Users
+      description: Get All Authorizable Users
       operationId: listUsers
       parameters:
         - $ref: "#/components/parameters/Page"
@@ -860,7 +862,7 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: "#/components/schemas/User"
+                      $ref: "#/components/schemas/AuthorizableUser"
                   pagination:
                     $ref: "#/components/schemas/Pagination"
         "401":
@@ -883,7 +885,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/AuthorizableUser"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -899,14 +901,14 @@ paths:
       description: Returns details of a specific user
       operationId: getUser
       parameters:
-        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/UserIdInPath"
       responses:
         "200":
           description: User details
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/AuthorizableUser"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -918,7 +920,7 @@ paths:
       description: Updates an existing user
       operationId: updateUser
       parameters:
-        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/UserIdInPath"
       requestBody:
         required: true
         content:
@@ -931,7 +933,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/AuthorizableUser"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -945,7 +947,7 @@ paths:
       description: Deletes a user account
       operationId: deleteUser
       parameters:
-        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/UserIdInPath"
       responses:
         "204":
           description: User deleted
@@ -1014,7 +1016,7 @@ paths:
       description: Returns details of a specific group
       operationId: getGroup
       parameters:
-        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/GroupIdInPath"
       responses:
         "200":
           description: Group details
@@ -1033,7 +1035,7 @@ paths:
       description: Updates an existing group
       operationId: updateGroup
       parameters:
-        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/GroupIdInPath"
       requestBody:
         required: true
         content:
@@ -1060,7 +1062,7 @@ paths:
       description: Deletes a group
       operationId: deleteGroup
       parameters:
-        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/GroupIdInPath"
       responses:
         "204":
           description: Group deleted
@@ -1487,7 +1489,7 @@ paths:
         Returns 404 if the user doesn't have specific settings (inherits global settings).
       operationId: getUserTransferSettings
       parameters:
-        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/UserIdInPath"
       responses:
         "200":
           description: User transfer settings
@@ -1506,7 +1508,7 @@ paths:
       description: Updates transfer settings for a specific user
       operationId: updateUserTransferSettings
       parameters:
-        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/UserIdInPath"
       requestBody:
         required: true
         content:
@@ -1533,7 +1535,7 @@ paths:
         Returns 204 even if no specific settings exist.
       operationId: deleteUserTransferSettings
       parameters:
-        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/UserIdInPath"
       responses:
         "204":
           description: User transfer settings deleted (user now inherits global settings)
@@ -1550,7 +1552,7 @@ paths:
         Returns 404 if the group doesn't have specific settings (inherits global settings).
       operationId: getGroupTransferSettings
       parameters:
-        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/GroupIdInPath"
       responses:
         "200":
           description: Group transfer settings
@@ -1569,7 +1571,7 @@ paths:
       description: Updates transfer settings for a specific group
       operationId: updateGroupTransferSettings
       parameters:
-        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/GroupIdInPath"
       requestBody:
         required: true
         content:
@@ -1596,7 +1598,7 @@ paths:
         Returns 204 even if no specific settings exist.
       operationId: deleteGroupTransferSettings
       parameters:
-        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/GroupIdInPath"
       responses:
         "204":
           description: Group transfer settings deleted (group now inherits global settings)
@@ -1611,7 +1613,7 @@ components:
       description: HTTP Basic Authentication with username and password
 
   parameters:
-    UserId:
+    UserIdInPath:
       name: user_id
       in: path
       required: true
@@ -1619,7 +1621,7 @@ components:
         type: integer
       description: User ID
 
-    GroupId:
+    GroupIdInPath:
       name: group_id
       in: path
       required: true
@@ -1679,7 +1681,7 @@ components:
 
   schemas:
     # User Schemas
-    User:
+    AuthorizableUser:
       type: object
       properties:
         id:
