@@ -16,8 +16,8 @@ info:
     - Transfer authorizations
     - User and Group management
     - Shares and access control
-    - Administrative functions
     - Node operations
+    - Administrative functions
 
     ## Authentication
 
@@ -814,12 +814,23 @@ paths:
               schema:
                 type: object
                 properties:
-                  version:
+                  resource_type:
                     type: string
-                  endpoints:
+                  links:
                     type: array
                     items:
-                      type: string
+                      type: object
+                      properties:
+                        rel:
+                          type: string
+                        href:
+                          type: string
+                      required:
+                        - rel
+                        - href
+                required:
+                  - resource_type
+                  - links
 
   # User Endpoints
   /api/v1/data/users:
@@ -1925,18 +1936,29 @@ components:
     NodeInfo:
       type: object
       properties:
-        name:
+        current_time:
           type: string
-          example: node1
+        application:
+          type: string
         version:
           type: string
-          example: 4.0.0
-        platform:
-          type: string
-          example: linux
-        host:
-          type: string
-          example: node1.example.com
+        capabilities:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              value:
+                type: boolean
+            required:
+              - name
+              - value
+      required:
+        - current_time
+        - application
+        - version
+        - capabilities
 
     SpaceInfo:
       type: object
