@@ -44,8 +44,10 @@ security:
   - basicAuth: []
 
 tags:
-  - name: Authentication
-    description: User authentication and session management
+  - name: API Information
+    description: List of base endpoints
+  - name: Files
+    description: File operations (Node API)
   - name: Users
     description: User account management
   - name: Groups
@@ -58,8 +60,6 @@ tags:
     description: Transfer management and monitoring
   - name: SMTP Servers
     description: SMTP server configuration
-  - name: Files
-    description: File operations (Node API)
 paths:
   # Node API Endpoints
   /node_api:
