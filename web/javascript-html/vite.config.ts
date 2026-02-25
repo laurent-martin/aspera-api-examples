@@ -21,7 +21,7 @@ export default defineConfig({
   resolve: {
     alias: {
       // Create an alias so Vite knows exactly where your source code is
-      '@src': path.resolve(__dirname, 'src')
+      '@src': path.resolve(__dirname, './src')
     }
   }
 });
