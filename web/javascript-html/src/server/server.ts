@@ -43,16 +43,17 @@ interface NodeApiResponse {
 // Environment validation
 // --------------------------------------------------
 
-const dirTop = process.env.DIR_TOP;
-if (!dirTop) {
-  throw new Error("Environment variable DIR_TOP is not set.");
-}
 
-const topFolder = path.resolve(dirTop);
-
-if (!fs.existsSync(topFolder) || !fs.statSync(topFolder).isDirectory()) {
-  throw new Error(`DIR_TOP is invalid: ${topFolder}`);
+const topFolder = process.argv[2];
+if (!topFolder || !fs.statSync(topFolder).isDirectory()) {
+  throw new Error(`Parameter is not a folder: ${topFolder}`);
 }
+const publicFolder = process.argv[3];
+if (!publicFolder || !fs.statSync(publicFolder).isDirectory()) {
+  throw new Error(`Parameter is not a folder: ${publicFolder}`);
+}
+console.log(`Using top folder: ${topFolder}`);
+console.log(`Using public folder: ${publicFolder}`);
 
 function getAbsPath(relative: string): string {
   return path.join(topFolder, relative);
@@ -76,10 +77,7 @@ const config = yaml.load(
 
 const httpPort = config.web.port;
 
-const publicFolder = process.argv[2];
-if (!publicFolder || !fs.statSync(publicFolder).isDirectory()) {
-  throw new Error(`Parameter is not a folder: ${publicFolder}`);
-}
+
 
 
 // --------------------------------------------------
@@ -104,10 +102,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 // Serve a static "virtual" file at /client.js
-app.get("/api/config", (req, res) => {
-  res.type("application/json");
-  res.send(JSON.stringify(config));
-});
+app.get(
+  "/api/config",
+  (req, res) => {
+    res.type("application/json");
+    res.send(JSON.stringify(config));
+  }
+);
 
 // --------------------------------------------------
 // API: /tspec

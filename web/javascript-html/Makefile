@@ -6,8 +6,10 @@ PUBLIC=./public/
 DIST=./dist/
 TMP_NPM=tmp_node/
 all:: $(TEST_FLAGS)
-run: $(DIST)server/server.js $(DIST)client/client.js
-	node --trace-warnings $(DIST)server/server.js $$(realpath $(PUBLIC))
+run:
+	npm run all
+server: $(DIST)server/server.js $(DIST)client/client.js
+	node --trace-warnings $(DIST)server/server.js $(DIR_TOP) $(PUBLIC)
 $(DIR_TESTED_FLAG)%: node_modules/.package-lock.json $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
 	make run&
