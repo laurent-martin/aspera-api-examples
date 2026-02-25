@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Laurent's Aspera Web Sample</title>
+  <link rel="tab icon" href="favicon.ico" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@ibm-aspera/sdk@0.2.30/dist/js/aspera-sdk.js"></script>
+  <script src="https://cdn.privex.io/lib/simple-jsonrpc/master/simple-jsonrpc-js.min.js"></script>
+  <script type="module" src="conf.js"></script>
+  <script type="module" src="client.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="content">
+      <nav>
+        <a href="/">
+          <h1>Laurent's Aspera Web Sample App</h1>
+        </a>
+        This sample web application allows testing various combination of transfers using Connect or HTTP GW, or Node
+        API based authentication versus SSH based auth.
+      </nav>
+    </div>
+  </header>
+  <fieldset>
+    <legend>Select transfer agent</legend>
+    <div>
+      <input type="radio" name="client_select" id="use_connect" checked />
+      <label for="use_connect">Connect</label>
+      <input type="radio" name="client_select" id="use_httpgw" />
+      <label for="use_httpgw">HTTPGW</label>
+      <input type="radio" name="client_select" id="use_desktop" />
+      <label for="use_desktop">Desktop</label>
+    </div>
+    <div id="httpgw_info">URL:
+      <input type="text" id="httpgw_url">
+      <div id="httpgw_version"></div>
+    </div>
+    <div id="connect_info"></div>
+    <div id="desktop_info">Not Implemented</div>
+  </fieldset>
+  <fieldset>
+    <legend>Select transfer operation</legend>
+    <div>
+      <input type="radio" name="op_select" id="action_download" checked />
+      <label for="action_download">Download</label>
+      <input type="radio" name="op_select" id="action_upload" />
+      <label for="action_upload">Upload</label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Select transfer authentication</legend>
+    <div>
+      <input type="radio" id="aspera_token_radio" name="transfer_auth" value="aspera_token" checked>
+      <label for="aspera_token">Token: Aspera Transfer (ATM/ATB)</label>
+    </div>
+    <div>
+      <input type="radio" id="basic_token_radio" name="transfer_auth" value="basic_token">
+      <label for="basic_token">Token: Basic (Access Key only)</label>
+    </div>
+    <div id="div_ssh_creds_selector">
+      <input type="radio" id="ssh_creds_radio" name="transfer_auth" value="ssh_creds">
+      <label for="ssh_creds">SSH Credentials</label>
+    </div>
+  </fieldset>
+  <fieldset id="hsts_ssh_info">
+    <legend>HSTS SSH credentials</legend>
+    <p>URL: <input type="text" id="server_url" /></p>
+    <p>User: <input type="text" id="server_user" /></p>
+    <p>Pass: <input type="password" id="server_pass" /></p>
+  </fieldset>
+  <fieldset>
+    <legend>Source and destination</legend>
+    <div id="upload_selection">
+      <button id="btn_select_files">Select Files to Upload</button>
+      <p>Locally selected files:
+      <div id="upload_files"></div>
+      </p>
+      <p>Destination folder on server: <input type="text" id="folder_for_upload"></p>
+      <div id="drop_area">Drop Files and Folders here</div>
+    </div>
+    <div id="download_selection">
+      <p>File to download: <input type="text" id="file_to_download"></p>
+    </div>
+  </fieldset>
+  <button id="btn_start_transfer">Start transfer</button><br />
+  <fieldset>
+    <legend>Transfer status</legend>
+    <pre id="status"></p>
+      </fieldset>
+  </body>
+</html>

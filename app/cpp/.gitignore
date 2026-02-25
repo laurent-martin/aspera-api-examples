@@ -1,0 +1,5 @@
+build
+*.to.delete
+CMakeUserPresets.json
+file
+.conan2

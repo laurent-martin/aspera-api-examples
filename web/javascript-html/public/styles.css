@@ -1,0 +1,79 @@
+body {
+  margin: 0;
+}
+
+body,
+button {
+  font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+.content {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1500px;
+}
+
+header {
+  background-color: #0f62fe;
+  height: 100px;
+}
+
+header a {
+  color: white;
+  display: block;
+  padding: 0;
+}
+
+header h1 {
+  margin: 0;
+  width: auto;
+  padding-top: 20px;
+}
+
+a {
+  color: #0f62fe;
+  text-decoration: none;
+}
+
+section {
+  margin-top: 50px;
+}
+
+section li {
+  margin-bottom: 5px;
+}
+
+button {
+  color: white;
+  background-color: #0f62fe;
+  border: 20px solid #0000;
+  cursor: pointer;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  #padding-left: 15px;
+  #padding-right: 3px;
+  width: 200px;
+}
+
+.transfer-btn {
+  background-color: #393939;
+  margin: 10px;
+  padding-bottom: 3px;
+  padding-left: 12px;
+  padding-right: 60px;
+  padding-top: 3px;
+}
+
+#results {
+  margin-top: 25px;
+}
+
+td {
+  vertical-align: top;
+}
+
+#drop_area {
+  width: 500px;
+  height: 100px;
+  background-color: #3498db;
+}

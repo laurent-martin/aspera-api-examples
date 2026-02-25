@@ -1,0 +1,132 @@
+
+The following section contains the diagrams posted on support KB.
+mde with:  https://www.websequencediagrams.com/
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+title general Aspera AoC APIs use
+Client->+AoC API: GET authorization(parameters)
+AoC API-->-Client: Result=Bearer token
+Client-->AoC API: use APIs with Authorization=Bearer
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+title basic OAuth with grant_type=password (username/password, only local users, not google, SAML)
+Client->+AoC API: GET authorization(username/password)
+AoC API-->-Client: Result=Bearer token
+Client-->AoC API: use APIs with Authorization=Bearer
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+title OAuth with grant_type=code (any user: local users, google, SAML)
+note right of Client
+    * Client is registered in Aspera on Cloud, with redirect_uri
+    * AoC generates client_id and client_secret
+    * Client listens on "redirect_uri" end point (TCP port)
+    * Build "login address" for user:
+    api.ibmaspera.com/oauth2/<org>/authorize
+    * and open a browser for user with this URL
+end note
+Client->*Local Port: listen
+Client->Browser: open login url in browser (give redirect_uri and scope)
+Browser->AoC API: load login page (portal)
+note right of Browser: user clicks on "google auth"
+Browser->+SSO(IBMid): display google login page
+note right of Browser: user authenticates
+SSO(IBMid)-->-Browser: browser is redirected to the "redirect URI" providing a "code"
+Browser->Local Port: browser provides code to client
+Local Port-->Client: read code
+Client->Local Port: close
+destroy Local Port
+note right of Client: close listening port after use
+Client->+AoC API: POST oauth/token(grant_type=code)
+AoC API-->-Client: Bearer token
+Client-->AoC API: use APIs with Authorization=Bearer
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+title Aspera Connect + Node example
+Actor User
+User->Browser: open on server address
+participant ConnectClient
+participant <-Client/Server->
+Browser->NodeExpressServer: load index.html and client.js
+Browser->Browser: javascript client app initializes
+Browser->*ConnectClient: start
+User->Browser: click on "start transfer"
+Browser->+NodeExpressServer: call /tspec
+NodeExpressServer->+HSTS: call /files/*setup
+HSTS-->-NodeExpressServer: return transfer spec
+NodeExpressServer-->-Browser: return transfer spec
+Browser->ConnectClient: call startTransfer with transfer spec
+ConnectClient<->HSTS: file transfer
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+title AoC: OAuth with grant_type=jwt
+Actor API Client
+participant AoC API
+participant HSTS Node
+note right of API Client
+API Client can be any application interacting with AoC
+needing browser-less authentication.
+This includes `ascli` or any application using APIs.
+Preparation:
+API Client is declared in Aspera on Cloud, for JWT
+AoC generates client_id and client_secret
+User generates a Private key
+User provisions corresponding public key in his profile on AoC
+end note
+note right of API Client
+Use of AoC API:
+API Client generates a JWT assertion with:
+  client_id
+  client_secret
+  "subject" is user email
+  "scope" is "user:all"
+  signed with private key
+end note
+API Client->+AoC API: POST oauth/token(grant_type=jwt)
+note left of AoC API
+AoC App generates a bearer token signed with the organization private key.
+end note
+AoC API-->-API Client: Bearer token for AoC API
+API Client-->AoC API: use AoC API with Authorization=Bearer token
+note right of API Client
+Transfer files:
+Same as above, except "scope" is "node.<access key>:user:all"
+end note
+API Client->+AoC API: POST oauth/token(grant_type=jwt)
+AoC API-->-API Client: Bearer token for Node
+API Client-->HSTS Node: use Node API or transfer with Authorization=Bearer token
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+title HTTPGW-based transfer
+Actor Client Application\nbrowser/ascli
+participant HTTP\nGateway
+participant HSTS
+participant Application\n(AoC/Faspex/...)
+Client Application\nbrowser/ascli->+Application\n(AoC/Faspex/...): Get authorization for transfer (app-specific)
+Application\n(AoC/Faspex/...)-->-Client Application\nbrowser/ascli: Transfer spec with transfer token (app-specific)
+alt download
+Client Application\nbrowser/ascli->+HTTP\nGateway: POST /download (transfer spec with token) : Start session
+HTTP\nGateway->+HSTS : Start session  (ascp)
+HSTS->HSTS : Validate token
+HSTS->HTTP\nGateway : Token accepted
+HTTP\nGateway->-Client Application\nbrowser/ascli : Session identifier
+Client Application\nbrowser/ascli->+HTTP\nGateway: GET /download/:id : Download file
+HSTS->HTTP\nGateway : receive file(s) (UDP stream)
+HTTP\nGateway->HTTP\nGateway : zip\n(if more than 1 file)
+HTTP\nGateway->-Client Application\nbrowser/ascli : Receive file
+HSTS<->-HTTP\nGateway : Finish session
+else upload
+Client Application\nbrowser/ascli->+HTTP\nGateway: Open websocket (wss)
+Client Application\nbrowser/ascli->HTTP\nGateway: Send transfer spec (with token)
+HTTP\nGateway->+HSTS : Start session  (ascp)
+HSTS->HSTS : Validate token
+HSTS->HTTP\nGateway : Token accepted
+Client Application\nbrowser/ascli->HTTP\nGateway: Send files over websocket (wss)
+HTTP\nGateway->HSTS : Send files over encrypted UDP
+Client Application\nbrowser/ascli->HTTP\nGateway: End session
+HTTP\nGateway->HSTS : End session (ascp)
+HSTS->-HTTP\nGateway: Start session  (ascp)
+HTTP\nGateway<->-Client Application\nbrowser/ascli : End websocket
+end

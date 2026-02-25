@@ -1,0 +1,222 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "log_directory": {
+      "type": "string",
+      "description": "Local log directory path of the TransferD daemon.",
+      "example": "/var/log/aspera"
+    },
+    "log_level": {
+      "type": "string",
+      "description": "Log level of detail of the TransferD daemon. Allowable values: trace, debug, info, warning, error, fatal, panic0-4.  value (trace) contains the basic data, such as files transferred and transfer rate.",
+      "example": "trace",
+      "default": "trace"
+    },
+    "address": {
+      "type": "string",
+      "description": "Address of the local server that serves the TransferD daemon.",
+      "example": "127.0.0.1",
+      "default": "127.0.0.1"
+    },
+    "port": {
+      "type": "integer",
+      "description": "Local TCP port to which the TransferD daemon is bound.",
+      "example": 23456,
+      "default": 55002
+    },
+    "reflection": {
+      "type": "boolean",
+      "description": "Unused.",
+      "example": true,
+      "default": true
+    },
+    "workers": {
+      "type": "object",
+      "properties": {
+        "max_concurrent": {
+          "type": "integer",
+          "description": "Maximum number of concurrent transfers.",
+          "example": 10,
+          "default": 100
+        },
+        "transfer_cleaning_period": {
+          "type": "integer",
+          "description": "Period for cleaning up old transfers (in seconds).",
+          "example": 3600,
+          "default": 3600
+        },
+        "transfer_max_age": {
+          "type": "integer",
+          "description": "Maximum age of transfers (in seconds).",
+          "example": 86400,
+          "default": 7200
+        }
+      },
+      "required": []
+    },
+    "fasp_management": {
+      "type": "object",
+      "description": "Settings for FASP management.",
+      "properties": {
+        "promiscuous_mode_enabled": {
+          "type": "boolean",
+          "description": "If you enable this setting, the TransferD daemon can monitor transfers that it does not start itself. These external transfers must use the same <code>fasp_runtime</code> paths as the TransferD daemon.",
+          "example": false,
+          "default": false
+        },
+        "port": {
+          "type": "integer",
+          "description": "Port used for FASP management communications. TransferD selects a random port if none is provided.",
+          "example": 23456,
+          "default": 0
+        },
+        "address": {
+          "type": "string",
+          "description": "TransferD uses the local host address (127.0.0.1) for FASP management communications unless you provide a different address. Use this configuration setting only when the host has multiple interfaces and you expect to use an address other than 127.0.0.1 for FASP management communications.",
+          "example": "127.0.0.1",
+          "default": "127.0.0.1"
+        }
+      },
+      "required": []
+    },
+    "fasp_runtime": {
+      "type": "object",
+      "description": "FASP runtime settings.",
+      "properties": {
+        "use_embedded": {
+          "type": "boolean",
+          "description": "Use the FASP binary files embedded in the TransferD daemon. These binary files are part of the redistributable package (see \"Overview\").",
+          "example": false,
+          "default": true
+        },
+        "force_version": {
+          "type": "string",
+          "description": "Force the use of a specific FASP version.",
+          "example": "3.7.3.143062",
+          "default": "3.9.6"
+        },
+        "user_defined": {
+          "type": "object",
+          "description": "If you choose not to set use_embedded to true, these parameters define your custom FASP binary files, configuration, and license paths.",
+          "properties": {
+            "bin": {
+              "type": "string",
+              "description": "Path to the FASP binary files. All the FASP binary files must be located in the same directory.",
+              "example": "/usr/local/bin"
+            },
+            "etc": {
+              "type": "string",
+              "description": "Path to FASP config and license files.",
+              "example": "/usr/local/etc"
+            }
+          },
+          "required": []
+        },
+        "log": {
+          "type": "object",
+          "description": "FASP log settings",
+          "properties": {
+            "dir": {
+              "type": "string",
+              "description": "Directory for FASP logs.",
+              "example": "/var/log"
+            },
+            "level": {
+              "type": "integer",
+              "description": "Level of detail to return in the log. Allowable values: 0 (basic data, such as files transferred and transfer rate), 1-2 (increasingly detailed levels of debug messages).",
+              "example": 3,
+              "default": 0
+            }
+          },
+          "required": []
+        }
+      },
+      "required": []
+    },
+    "tls": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "TLS is enabled.",
+          "example": false,
+          "default": true
+        },
+        "certificate": {
+          "type": "string",
+          "description": "Certificate file for TLS.",
+          "example": "cert.cert"
+        },
+        "key": {
+          "type": "string",
+          "description": "Key for TLS.",
+          "example": "key.key"
+        },
+        "min_tlsversion": {
+          "type": "string",
+          "description": "Minimum TLS version.",
+          "example": "TLSv12",
+          "default": "TLSv12"
+        }
+      },
+      "required": []
+    },
+    "authentication": {
+      "type": "object",
+      "description": "specifies if the client calls should be authenticated. If authentication is required, this setting defines the string value that client requests should provide in order to get access to the service.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Specifies if authentication is enabled.",
+          "example": true,
+          "default": false
+        },
+        "apikey": {
+          "type": "string",
+          "description": "API key for authentication.",
+          "example": "your_api_key"
+        }
+      },
+      "required": []
+    },
+    "api_time_settings": {
+      "type": "object",
+      "description": "the time-related settings for the local server connection.",
+      "properties": {
+        "max_conn_idle": {
+          "type": "integer",
+          "description": "The maximum time the server connection can be idle (in seconds).",
+          "example": 120,
+          "default": 86400
+        },
+        "max_conn_age": {
+          "type": "integer",
+          "description": "The time until the server connection's lifetime reaches its maximum age (in seconds).",
+          "example": "infinity",
+          "default": "infinity"
+        },
+        "max_conn_age_grace": {
+          "type": "integer",
+          "description": "After the server connection's lifetime reaches its maximum age, the length of the grace period before the connection is closed (in seconds).",
+          "example": 10,
+          "default": 10
+        },
+        "time": {
+          "type": "integer",
+          "description": "After a duration of this time (in seconds), if the server doesn't see any activity from the client, it pings the client to see whether the transport is still alive.",
+          "example": 1,
+          "default": 7200
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "After pinging the server for a keepalive check, the TransferD daemon waits for the specified timeout duration (in seconds). If the client shows no activity after this duration, the TransferD daemon closes the connection.",
+          "example": 3,
+          "default": 20
+        }
+      },
+      "required": []
+    }
+  }
+}

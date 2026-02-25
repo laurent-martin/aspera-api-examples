@@ -1,0 +1,11 @@
+# paths of files and folder
+# specified relative to the project main folder
+
+# variable values, server addresses, credentials, etc...
+main_config: private/config.yaml
+temp: tmp
+sdk_dir: tmp/transfer_sdk
+# those values require SDK 1.1.5+
+sdk_daemon: tmp/transfer_sdk/sbin/transferd
+sdk_samples: tmp/transfer_sdk/api
+proto: tmp/transfer_sdk/api/transferd.proto

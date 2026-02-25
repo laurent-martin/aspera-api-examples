@@ -1,0 +1,9 @@
+requests
+PyYAML
+pyjwt
+cryptography
+# refer to: <trsdk>/connectors/python/requirements.txt
+grpcio
+grpcio-tools
+protobuf
+google

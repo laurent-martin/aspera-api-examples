@@ -1,0 +1,18 @@
+{
+  "name": "sample",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "ssh2": "^1.16.0"
+  },
+  "devDependencies": {
+    "@grpc/grpc-js": "^1.5.0",
+    "@grpc/proto-loader": "^0.5.4",
+    "js-yaml": "4.1.0",
+    "jsonwebtoken": "^9.0.0",
+    "ky": "^1.7.2",
+    "uuid": "^9.0.0",
+    "winston": "^3.8.2",
+    "ssh2": "^1.16.0"
+  }
+}

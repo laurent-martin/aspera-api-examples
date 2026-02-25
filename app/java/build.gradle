@@ -1,0 +1,125 @@
+// groovy
+plugins {
+    id 'java'
+    id 'application'
+    // Creation of fat Jar file:
+    // https://plugins.gradle.org/plugin/com.gradleup.shadow
+    // https://gradleup.com/shadow/
+    //id 'com.gradleup.shadow' version '9.2.2'
+    // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    // https://plugins.gradle.org/plugin/com.google.protobuf
+    id 'com.google.protobuf' version '0.9.5'
+    //id 'idea' // use the idea plugin if using Jetbrains IntelliJ
+}
+
+group = 'com.ibm.aspera'
+version = "0.1"
+
+// If compilation lead to missing symbol:
+// check that gRPC and protoc versions are compatible
+// check on https://github.com/grpc/grpc-java/tree/v1.65.x
+// https://mvnrepository.com/artifact/io.grpc/grpc-protobuf
+def grpcVersion = '1.76.0'
+// https://mvnrepository.com/artifact/com.google.protobuf/protoc
+def protocVersion = '3.25.8'
+
+// Variables that can be set with -Pproto_dir=... -Pproto_file=...
+def proto_dir = project.hasProperty('proto_dir') ? project.getProperty('proto_dir') : "$projectDir/build/resources/main"
+def proto_file = project.hasProperty('proto_file') ? project.getProperty('proto_file') : 'transfer.proto'
+
+def gradleMajorVersion = 8
+def javaMajorVersion = 21
+
+def gv = GradleVersion.current()
+if (gv.baseVersion.version.split('\\.')[0].toInteger() != gradleMajorVersion) {
+    throw new GradleException("Gradle ${gradleMajorVersion}.x is required (found ${gv.version})")
+}
+
+if (!JavaVersion.current().isCompatibleWith(JavaVersion.valueOf("VERSION_${javaMajorVersion}"))) {
+    throw new GradleException("This project requires Java ${javaMajorVersion} (or compatible). Current: ${JavaVersion.current()}")
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaMajorVersion)
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.release = javaMajorVersion
+    options.compilerArgs << "-Xlint:deprecation"
+}
+
+application {
+  mainClass = 'COSFileUploadExample'
+}
+
+jar {
+  manifest {
+    attributes 'Main-Class': application.mainClass
+  }
+}
+
+repositories {
+    mavenCentral()
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${protocVersion}"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+        }
+    }
+    generateProtoTasks {
+        all().configureEach {
+            plugins {
+                grpc {}
+            }
+        }
+    }
+}
+
+clean {
+    delete protobuf.generatedFilesBaseDir
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDir proto_dir
+            include proto_file
+            exclude '*/**/*.proto'
+        }
+    }
+}
+
+// build jar with -all ext with all dependencies in it
+shadowJar {
+    project.configurations.implementation.canBeResolved = true
+    configurations = [project.configurations.implementation]
+    // For grpc exception: NameResolver 'unix' for '...' not supported by transport
+    // https://github.com/grpc/grpc-java/issues/10853
+    mergeServiceFiles() 
+    append('META-INF/services/io.grpc.LoadBalancerProvider')
+}
+
+dependencies {
+    compileOnly    'org.apache.tomcat:annotations-api:6.0.53'
+    implementation "io.grpc:grpc-okhttp:${grpcVersion}"
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation 'org.json:json:20211205'
+    implementation 'org.yaml:snakeyaml:1.30'
+    // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-gson:0.11.5'
+    // http://kong.github.io/unirest-java/
+    // https://mvnrepository.com/artifact/com.konghq/unirest-java-core
+    implementation 'com.konghq:unirest-java-core:4.4.4'
+    implementation 'com.konghq:unirest-object-mappers-gson:4.2.9'
+}

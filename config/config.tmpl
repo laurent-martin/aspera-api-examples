@@ -1,0 +1,70 @@
+---
+misc:
+  platform: osx-arm64
+  level: debug
+  transfer_regular: true
+trsdk:
+  url: grpc://127.0.0.1:0
+  level: trace
+  ascp_level: trace
+httpgw:
+  url: https://httpgw.address.here/aspera/http-gwy
+web:
+  port: 9080
+server:
+  url: ssh://server.address.here:33001
+  username: _username_here_
+  password: _password_here_
+  file_download: "/aspera-test-dir-small/10MB.1"
+  folder_upload: "/Upload"
+  persist_max: 10
+  persist_ms: 100
+node:
+  url: https://node.address.here
+  verify: false
+  username: _username_here_
+  password: _password_here_
+  folder_upload: "/Upload"
+cos:
+  endpoint: https://s3.us-south.cloud-object-storage.appdomain.cloud
+  bucket: _bucket_here_
+  key: _key_here_
+  crn: _crn_here_
+  auth: https://iam.cloud.ibm.com/identity/token
+coscreds:
+  service_credential_file: "/path/to/your/service_credential_file"
+  bucket: _bucket_here_
+  region: us-south
+faspex:
+  url: https://faspex.address.here/aspera/faspex
+  verify: true
+  username: _username_here_
+  password: _password_here_
+  adminuser: _adminuser_here_
+  adminpass: _adminpass_here_
+faspex5:
+  url: https://faspex5.address.here/aspera/faspex
+  verify: true
+  username: john@example.com
+  client_id: _client_id_here_
+  client_secret: _client_secret_here_
+  private_key: "/path/to/your/private_key"
+  shared_folder_name: Server Files
+  shared_folder_file: "/testfiles/aspera-test-dir-small/10MB.1"
+shares:
+  url: https://shares.address.here
+  verify: true
+  username: _username_here_
+  password: _password_here_
+  folder_upload: vodmanager/upload
+aoc:
+  org: sedemo
+  user_email: john@example.com
+  private_key: "/path/to/your/private_key"
+  client_id: _client_id_here_
+  client_secret: _client_secret_here_
+  workspace: _workspace_here_
+  shared_inbox: _shared_inbox_here_
+local:
+  file: "/Users/laurent/Documents/Samples/10MB.1"
+  folder: "/tmp"
