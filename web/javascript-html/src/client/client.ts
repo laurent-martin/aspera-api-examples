@@ -279,12 +279,12 @@ class ClientApp {
         if (document.location.protocol === 'file:') {
             this.error(`This page requires use of the nodejs server.`);
         }
-        (document.getElementById('httpgw_url') as HTMLInputElement).value = windows.config.httpgw.url;
-        (document.getElementById('server_url') as HTMLInputElement).value = windows.config.server.url;
-        (document.getElementById('server_user') as HTMLInputElement).value = windows.config.server.username;
-        (document.getElementById('server_pass') as HTMLInputElement).value = windows.config.server.password;
-        (document.getElementById('file_to_download') as HTMLInputElement).value = windows.config.server.file_download;
-        (document.getElementById('folder_for_upload') as HTMLInputElement).value = windows.config.server.folder_upload;
+        (document.getElementById('httpgw_url') as HTMLInputElement).value = window.config.httpgw.url;
+        (document.getElementById('server_url') as HTMLInputElement).value = window.config.server.url;
+        (document.getElementById('server_user') as HTMLInputElement).value = window.config.server.username;
+        (document.getElementById('server_pass') as HTMLInputElement).value = window.config.server.password;
+        (document.getElementById('file_to_download') as HTMLInputElement).value = window.config.server.file_download;
+        (document.getElementById('folder_for_upload') as HTMLInputElement).value = window.config.server.folder_upload;
 
         document.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach(item => item.addEventListener('change', () => this.updateUi()));
         this.updateUi();
