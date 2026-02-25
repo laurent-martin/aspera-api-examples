@@ -2,22 +2,17 @@
 
 The newer SDK for web app development is located at:
 
-<https://ibm.github.io/aspera-sdk-js>
+[SDK repo](https://github.com/IBM/aspera-sdk-js)
 
-This page uses legacy APIs : Connect and HTTPGW
+[SDK example](https://ibm.github.io/aspera-sdk-js)
 
-The newer SDK uses newer APIs and apps: Aspera for Desktop and HTTPGW
+[SDK TypeDoc documentation](https://ibm.github.io/aspera-sdk-js/docs/)
 
 ## This repo
 
-Prefer to use the newer SDK, see above.
+This sample application shows how to build an Aspera-transfer-enabled web application using the unified Aspera web SDK.
 
-This sample application shows how to build an Aspera-transfer-enabled web application using:
-
-- the Aspera Connect SDK
-- the Aspera HTTP Gateway SDK
-
-![screenshot](doc/screenshot.png)
+![Screenshot](doc/screenshot.png)
 
 In all cases, starting a transfer consists in building a **transfer spec** and then calling the browser-side javascript `startTransfer` SDK's API.
 
@@ -26,7 +21,7 @@ The transfer spec is Aspera's structure that contains all information to start a
 - the HSTS server address, TCP method (SSH or HTTPS), TCP and UDP ports
 - authorization (token, ssh key or password, etc...)
 - transfer direction, source files and destination folder
-- optional parameters such as resume policy or target rate ,etc...
+- optional parameters such as resume policy or target rate, etc...
 
 An Aspera transfer is authorized either:
 
@@ -45,18 +40,18 @@ Web applications shall use the "token" authorization scheme, using either of tho
 In this example, the transfer spec is build either:
 
 - Using a broker app (server) which in turn calls the HSTS node API
-  - it generates an Aspera Transfer token : this is the recommended way
-  - or it uses a Basic token (for testing purpose only, do not use this in web apps)
-- Using SSH credentials (do not do that: for testing purpose only) : in that case, HSTS node api is not used, but SSH user's credentials must be known, and that transfer user must be authorized on the HSTS server without token. For example this is not possible on AoC/ATS SaaS Aspera transfer servers.
+  - it generates an Aspera Transfer token : this is the recommended way, or
+  - it uses a Basic token (for testing purpose only, do not use this in web apps)
+- Using SSH credentials (do not do that: for testing purpose only) : in that case, HSTS node API is not used, but SSH user's credentials must be known, and that transfer user must be authorized on the HSTS server without token. For example this is not possible on AoC/ATS SaaS Aspera transfer servers.
 
 ![Architecture](doc/web_arch.png)
 
 The web application is split in two parts:
 
 - <src/client.js> runs in the browser, loaded by the main application page <src/index.html>
-- <src/server.js> runs in nodejs and is called by the client. It calls the Node API of HSTS.
+- <src/server.js> runs in NodeJS and is called by the client. It calls the Node API of HSTS.
 
-![diagram](doc/diagram.png)
+![Diagram](doc/diagram.png)
 
 ## Configuration
 
@@ -84,7 +79,7 @@ httpgw:
 
 ## Environment Setup
 
-The server uses [nodeJS](https://nodejs.org/) (v>=17, with `fetch`).
+The server uses [NodeJS](https://nodejs.org/) (v>=17, with `fetch`).
 Install it.
 Check version with:
 
@@ -97,21 +92,19 @@ node --version
 For an automated run, using `make` and the `Makefile` (refer to it), do:
 
 ```bash
-make
+make run
 ```
 
 This will:
 
-- install nodejs packages for the server
-- download the http gateway client SDK
-- generate the client config file `src/conf.js` from YAML
+- Install NodeJS packages for the server
 - run the express web server.
 
 ## Execution of server, manual
 
 If you do not have `make`, you may refer to the `Makefile` for the procedure:
 
-- install nodejs packages for server
+- install NodeJS packages for server
 
   ```bash
   npm install
@@ -146,13 +139,5 @@ Then start the transfer.
 The status of transfer can be followed on the web page.
 
 ## References
-
-[Aspera Connect Sample code](https://github.com/IBM/aspera-connect-sdk-js)
-
-[Aspera Connect API Reference](https://ibm.github.io/aspera-connect-sdk-js/)
-
-[Aspera HTTP GW SDK documentation](https://developer.ibm.com/apis/catalog?search=%22aspera%20http%22)
-
-[Aspera Connect SDK documentation](https://developer.ibm.com/apis/catalog?search=%22aspera%20connect%22)
 
 [All Aspera APIs here](https://developer.ibm.com/apis/catalog?search=aspera)

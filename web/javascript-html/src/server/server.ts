@@ -19,7 +19,7 @@ interface TSpecRequestBody {
   basic_token?: boolean;
 }
 
-interface AppConfig {
+interface ServerConfig {
   web: {
     port: number;
   };
@@ -72,7 +72,7 @@ function getPath(name: string): string {
 
 const config = yaml.load(
   fs.readFileSync(getPath("main_config"), "utf8")
-) as AppConfig;
+) as ServerConfig;
 
 const httpPort = config.web.port;
 
@@ -80,10 +80,7 @@ const publicFolder = process.argv[2];
 if (!publicFolder || !fs.statSync(publicFolder).isDirectory()) {
   throw new Error(`Parameter is not a folder: ${publicFolder}`);
 }
-const distFolder = process.argv[3];
-if (!distFolder || !fs.statSync(distFolder).isDirectory()) {
-  throw new Error(`Parameter is not a folder: ${distFolder}`);
-}
+
 
 // --------------------------------------------------
 // TLS override (test only)
@@ -107,16 +104,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 // Serve a static "virtual" file at /client.js
-app.get("/conf.js", (req, res) => {
-  res.type("application/javascript");
-  res.send(`window.config=${JSON.stringify(config)}`);
-});
-
-
-// Serve your client JS with correct MIME type
-app.get("/client.js", (req, res) => {
-  res.type("application/javascript");
-  res.sendFile(path.join(distFolder, "client/client.js"));
+app.get("/api/config", (req, res) => {
+  res.type("application/json");
+  res.send(JSON.stringify(config));
 });
 
 // --------------------------------------------------
@@ -124,7 +114,7 @@ app.get("/client.js", (req, res) => {
 // --------------------------------------------------
 
 app.post(
-  "/tspec",
+  "/api/tspec",
   async (req: Request<{}, {}, TSpecRequestBody>, res: Response) => {
     try {
       const { operation, sources, destination, basic_token } = req.body;

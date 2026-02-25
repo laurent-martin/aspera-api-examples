@@ -1,50 +1,28 @@
 // Sample client web application
-// See reference: https://ibm.github.io/aspera-sdk-js
 
-// functions starting with "my_" are used locally only
-// functions starting with "client_" are called by the UI
+import {
+    init,
+    startTransfer,
+    showSelectFileDialog,
+    showSelectFolderDialog,
+    initDragDrop,
+    createDropzone,
+    registerActivityCallback,
+    type DataTransferResponse,
+    type TransferResponse,
+    type TransferSpec
+} from '@ibm-aspera/sdk';
 
-// Global values:
-// this.connectClient: object to interact with Aspera Connect
-// this.connectInstaller: object to propose installation of Connect, in case it is not detected
-// this.selectedUploadFiles: files selected by user for upload
-// this.httpGwMonitorId: identifier of activity monitor for HTTP Gateway transfers
-// client.ts
-// sample client web application
-// Typescript version for browser
 
-import { init } from '@ibm-aspera/sdk';
-import { startTransfer } from '@ibm-aspera/sdk';
-
-interface Window {
-    config: {
-        httpgw: { url: string };
-        server: {
-            url: string;
-            username: string;
-            password: string;
-            file_download: string;
-            folder_upload: string;
-        };
+interface ClientConfig {
+    httpgw: { url: string };
+    server: {
+        url: string;
+        username: string;
+        password: string;
+        file_download: string;
+        folder_upload: string;
     };
-}
-const HTTPGW_FORM_ID = 'send-panel';
-
-interface TransferSpecPath {
-    source?: string;
-    destination?: string;
-}
-
-interface TransferSpec {
-    remote_host?: string;
-    ssh_port?: string | number;
-    remote_user?: string;
-    remote_password?: string;
-    paths: TransferSpecPath[];
-    direction?: 'send' | 'receive';
-    destination_root?: string;
-    authentication?: 'token';
-    token?: string;
 }
 
 // =====================
@@ -54,6 +32,11 @@ class ClientApp {
     connectInstaller: any;
     selectedUploadFiles: string[] = [];
     httpGwMonitorId?: number;
+    private config: ClientConfig;
+
+    constructor(config: ClientConfig) {
+        this.config = config;
+    }
 
     // =====================
     // Private functions
@@ -70,45 +53,10 @@ class ClientApp {
         return `${(bytes / Math.pow(1024, magnitude)).toFixed(2)} ${sizes[magnitude]}`;
     }
 
-    private handleStatusEvents(eventInfo: any) {
-        console.log(`Connect Event: STATUS: ${eventInfo}`);
-        if (!this.connectInstaller) {
-            this.connectInstaller = new AW4.ConnectInstaller({
-                style: 'carbon',
-                correlationId: 'testapp'
-            });
-        }
-        switch (eventInfo) {
-            case AW4.Connect.STATUS.INITIALIZING:
-                this.connectInstaller.showLaunching();
-                break;
-            case AW4.Connect.STATUS.EXTENSION_INSTALL:
-                this.connectInstaller.showExtensionInstall();
-                break;
-            case AW4.Connect.STATUS.FAILED:
-                this.connectInstaller.showDownload();
-                break;
-            case AW4.Connect.STATUS.OUTDATED:
-                this.connectInstaller.showUpdate();
-                break;
-            case AW4.Connect.STATUS.RUNNING:
-                this.connectInstaller.connected();
-                this.connectClient.version({
-                    success: (info: any) => {
-                        const el = document.getElementById('connect_info');
-                        if (el) el.innerHTML = `Connect Version ${info.version}`;
-                    },
-                    error: () => {
-                        const el = document.getElementById('connect_info');
-                        if (el) el.innerHTML = 'Cannot get connect version';
-                    }
-                });
-                break;
-        }
-    }
 
-    private handleTransferEvents(transfers: any[]) {
-        transfers.forEach(transfer => {
+
+    private handleTransferEvents(response: TransferResponse) {
+        response.transfers.forEach(transfer => {
             const status = `Event:
 - Id:         ${transfer.uuid},
 - Status:     ${transfer.status},
@@ -122,7 +70,8 @@ class ClientApp {
         this.updateUi();
     }
 
-    private handleDragEvent = (event: DragEvent) => {
+    private handleDragEvent(data: { event: DragEvent; files: DataTransferResponse }) {
+        const event = data.event;
         event.preventDefault();
         const dropArea = document.getElementById('drop_area');
         if (!dropArea) return;
@@ -132,7 +81,7 @@ class ClientApp {
                 dropArea.style.backgroundColor = '#3498db';
                 // extract files and call storeFileNames
                 if (event.dataTransfer?.files) {
-                    this.storeFileNames({ files: event.dataTransfer.files });
+                    this.storeFileNames(data.files);
                 }
                 break;
             case 'dragenter':
@@ -147,47 +96,15 @@ class ClientApp {
     // =====================
     // Initialization functions
 
-    initializeConnect() {
-        this.connectClient = new AW4.Connect({
-            minVersion: '4.2.0',
-            connectMethod: 'extension',
-            dragDropEnabled: true
-        });
-
-        this.connectClient.addEventListener(AW4.Connect.EVENT.STATUS, (eventType: any, eventInfo: any) => {
-            this.handleStatusEvents(eventInfo);
-        });
-
-        this.connectClient.addEventListener(AW4.Connect.EVENT.TRANSFER, (eventType: any, eventInfo: any) => {
-            this.handleTransferEvents(eventInfo.transfers);
-        });
-
-        this.connectClient.setDragDropTargets('#drop_area', { dragEnter: true, dragLeave: true, drop: true }, this.handleDragEvent);
-
-        const info = this.connectClient.initSession();
-        console.log('app info=', info);
-    }
-
-    async initializeHttpGw() {
-        try {
-            const response = await asperaHttpGateway.initHttpGateway((document.getElementById('httpgw_url') as HTMLInputElement).value + '/v1');
-            console.log('HTTP Gateway SDK started', response);
-            const el = document.getElementById('httpgw_version');
-            if (el) el.innerHTML = `HTTP GW v${response.version}`;
-            this.httpGwMonitorId = asperaHttpGateway.registerActivityCallback((result: any) => {
-                this.handleTransferEvents(result.transfers);
-            });
-        } catch (error: any) {
-            const el = document.getElementById('httpgw_version');
-            if (el) el.innerHTML = `HTTP GW ${error.message}`;
-            this.error(`Problem with HTTPGW: ${error.message}`);
-        }
-    }
-
     getTransferSpecSSH(params: { operation: 'upload' | 'download'; sources: string[]; destination?: string }): TransferSpec {
         const serverUrl = new URL((document.getElementById('server_url') as HTMLInputElement).value.replace(/^ssh:/, 'http://'));
-        const transferSpec: TransferSpec = { remote_host: serverUrl.hostname, ssh_port: serverUrl.port, remote_user: (document.getElementById('server_user') as HTMLInputElement).value, remote_password: (document.getElementById('server_pass') as HTMLInputElement).value, paths: [] };
-        params.sources.forEach(file => transferSpec.paths.push({ source: file }));
+        const transferSpec: TransferSpec = {
+            remote_host: serverUrl.hostname,
+            ssh_port: parseInt(serverUrl.port, 10),
+            remote_user: (document.getElementById('server_user') as HTMLInputElement).value,
+            remote_password: (document.getElementById('server_pass') as HTMLInputElement).value,
+            paths: params.sources.map(file => ({ source: file }))
+        };
         if (params.operation === 'upload') {
             transferSpec.direction = 'send';
             transferSpec.destination_root = params.destination;
@@ -200,7 +117,7 @@ class ClientApp {
     async getTransferSpecFromServer(params: { operation: 'upload' | 'download'; sources: string[]; destination?: string; basic_token?: boolean }): Promise<TransferSpec> {
         console.log(`Transfer requested: ${params.operation}`);
         const server_url = window.location.href;
-        const response = await fetch(`${server_url}tspec`, {
+        const response = await fetch(`${server_url}api/tspec`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(params)
@@ -212,32 +129,13 @@ class ClientApp {
         return ts;
     }
 
-    startTransfer(transferSpec: TransferSpec) {
-        console.log('startTransfer ts=', transferSpec);
-        if ((document.getElementById('use_connect') as HTMLInputElement).checked) {
-            this.connectClient.startTransfer(transferSpec, { allow_dialogs: false });
-        } else if ((document.getElementById('use_httpgw') as HTMLInputElement).checked) {
-            if (transferSpec.direction === 'receive') {
-                asperaHttpGateway.download(transferSpec).catch((error: any) => this.error(`Problem with HTTPGW: ${error.message}`));
-            } else {
-                asperaHttpGateway.upload(transferSpec, HTTPGW_FORM_ID)
-                    .then(async (response: Response) => {
-                        const data = await response.json();
-                        console.log('Upload started', data);
-                    })
-                    .catch((error: any) => this.error(`Problem with HTTPGW: ${error.message}`));
-            }
-        } else if ((document.getElementById('use_desktop') as HTMLInputElement).checked) {
-            this.error('Desktop not yet implemented');
-        }
-    }
-
     resetSelection() {
         this.selectedUploadFiles = [];
         this.updateUi();
     }
 
-    storeFileNames(selection: { dataTransfer: { files: FileList } }) {
+    /// Add selected files to selection
+    storeFileNames(selection: DataTransferResponse) {
         const files = selection.dataTransfer?.files;
         if (files) {
             for (let i = 0; i < files.length; i++) {
@@ -254,11 +152,10 @@ class ClientApp {
     updateUi() {
         const uploadEl = document.getElementById('upload_files');
         if (uploadEl) uploadEl.innerHTML = this.selectedUploadFiles.join(', ');
-
+        // which client ?
         const useConnect = (document.getElementById('use_connect') as HTMLInputElement).checked;
         const useHttpGw = (document.getElementById('use_httpgw') as HTMLInputElement).checked;
         const useDesktop = (document.getElementById('use_desktop') as HTMLInputElement).checked;
-
         // show/hide sections
         const connectInfo = document.getElementById('connect_info');
         const httpgwInfo = document.getElementById('httpgw_info');
@@ -274,33 +171,75 @@ class ClientApp {
 
     // =====================
     // Public functions called from UI
-    initialize() {
-        this.selectedUploadFiles = [];
+    async initialize() {
         if (document.location.protocol === 'file:') {
             this.error(`This page requires use of the nodejs server.`);
         }
-        (document.getElementById('httpgw_url') as HTMLInputElement).value = window.config.httpgw.url;
-        (document.getElementById('server_url') as HTMLInputElement).value = window.config.server.url;
-        (document.getElementById('server_user') as HTMLInputElement).value = window.config.server.username;
-        (document.getElementById('server_pass') as HTMLInputElement).value = window.config.server.password;
-        (document.getElementById('file_to_download') as HTMLInputElement).value = window.config.server.file_download;
-        (document.getElementById('folder_for_upload') as HTMLInputElement).value = window.config.server.folder_upload;
-
+        // For safety prevent at highest level drop default actions
+        // This is useful to avoid browser opening file if not dropped in the Dropzone
+        window.addEventListener('drop', event => {
+            event.preventDefault();
+        });
+        window.addEventListener('dragover', event => {
+            event.preventDefault();
+        });
+        init({
+            appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
+            supportMultipleUsers: false,
+            httpGatewaySettings: {
+                url: this.config.httpgw.url,
+                forceGateway: false
+            },
+            connectSettings: {
+                useConnect: false,
+                dragDropEnabled: true
+            }
+        }).then((response) => {
+            alert(`SDK started ${JSON.stringify(response, void 0, 2)}`);
+        }).catch((error2) => {
+            console.error("SDK could not start", error2);
+            alert(`Init failed ${JSON.stringify(error2, void 0, 2)}`);
+        });
+        initDragDrop().then(() => {
+            // Drag and drop can now be safely registered
+            // Register the dropZone
+            createDropzone(this.handleDragEvent.bind(this), 'drop_area', { drop: true, allowPropagation: true });
+        }).catch(error => {
+            // Drag and drop init failed. This is rare.
+            console.error('Drag and drop could not start', error);
+            alert(`Drag and drop failed\n\n${JSON.stringify(error, undefined, 2)}`);
+        });
+        registerActivityCallback(this.handleTransferEvents.bind(this));
+        this.selectedUploadFiles = [];
+        // static values
+        (document.getElementById('httpgw_url') as HTMLInputElement).value = this.config.httpgw.url;
+        (document.getElementById('server_url') as HTMLInputElement).value = this.config.server.url;
+        (document.getElementById('server_user') as HTMLInputElement).value = this.config.server.username;
+        (document.getElementById('server_pass') as HTMLInputElement).value = this.config.server.password;
+        (document.getElementById('file_to_download') as HTMLInputElement).value = this.config.server.file_download;
+        (document.getElementById('folder_for_upload') as HTMLInputElement).value = this.config.server.folder_upload;
         document.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach(item => item.addEventListener('change', () => this.updateUi()));
+        document.getElementById('btn_select_files')?.addEventListener('click', () => {
+            this.pickFiles();
+        });
+        document.getElementById('btn_start_transfer')?.addEventListener('click', () => {
+            this.startClientTransfer();
+        });
         this.updateUi();
     }
 
     pickFiles() {
         this.resetSelection();
-        if ((document.getElementById('use_connect') as HTMLInputElement).checked) {
-            this.connectClient.showSelectFileDialogPromise({ allowMultipleSelection: false })
-                .then((selection: any) => this.storeFileNames(selection))
-                .catch(() => console.error('Unable to select files'));
-        } else if ((document.getElementById('use_httpgw') as HTMLInputElement).checked) {
-            asperaHttpGateway.getFilesForUpload((selection: any) => this.storeFileNames(selection), HTTPGW_FORM_ID);
-        } else if ((document.getElementById('use_desktop') as HTMLInputElement).checked) {
-            this.error('Desktop not yet implemented');
-        }
+        var selectFolders = false;
+        (selectFolders ? showSelectFolderDialog({ multiple: true }) : showSelectFileDialog({ multiple: true })).then((response) => {
+            this.storeFileNames(response);
+        }).catch((error2) => {
+            if (error2.debugData?.code === -32002) {
+                console.error("User canceled selecting items");
+            } else {
+                console.error("Selecting items failed", error2);
+            }
+        });
     }
 
     startClientTransfer() {
@@ -318,32 +257,26 @@ class ClientApp {
 
         const download_type = document.querySelector<HTMLInputElement>("input[name=transfer_auth]:checked")?.value;
         if (download_type === "ssh_creds") {
-            this.startTransfer(this.getTransferSpecSSH(params));
+            startTransfer(this.getTransferSpecSSH(params), {});
         } else {
             params.basic_token = download_type === "basic_token";
             this.getTransferSpecFromServer(params).then(ts => {
                 ts.authentication = 'token';
-                this.startTransfer(ts);
+                startTransfer(ts, {});
             }).catch((message: any) => this.error(message));
         }
     }
 }
 
-// Create the client instance
-const clientApp = new ClientApp();
+async function bootstrap(): Promise<void> {
+    const response = await fetch("/api/config");
+    if (!response.ok) {
+        throw new Error("Failed to load config");
+    }
+    const app = new ClientApp(await response.json());
+    app.initialize();
+}
 
-// Initialize on page load
-window.addEventListener('DOMContentLoaded', () => {
-    clientApp.initialize();
-    document.querySelectorAll<HTMLInputElement>("input[name='client_select']").forEach(radio => {
-        radio.addEventListener('change', () => {
-            clientApp.updateUi(); // refresh UI based on selected radio
-        });
-    });
-    document.getElementById('btn_select_files')?.addEventListener('click', () => {
-        clientApp.pickFiles();
-    });
-    document.getElementById('btn_start_transfer')?.addEventListener('click', () => {
-        clientApp.startClientTransfer();
-    });
+bootstrap().catch(err => {
+    console.error("Startup failed:", err);
 });
