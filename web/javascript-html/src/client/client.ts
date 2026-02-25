@@ -171,7 +171,7 @@ class ClientApp {
 
     // =====================
     // Public functions called from UI
-    async initialize() {
+    async initialize(): Promise<void> {
         if (document.location.protocol === 'file:') {
             this.error(`This page requires use of the nodejs server.`);
         }
@@ -211,7 +211,7 @@ class ClientApp {
                 }
             });
             await initDragDrop();
-            await createDropzone(this.handleDragEvent.bind(this), 'drop_area', { drop: true, allowPropagation: true });
+            await createDropzone(this.handleDragEvent.bind(this), '#drop_area', { drop: true, allowPropagation: true });
 
             registerActivityCallback(this.handleTransferEvents.bind(this));
         } catch (error) {
@@ -261,15 +261,13 @@ class ClientApp {
     }
 }
 
-async function bootstrap(): Promise<void> {
-    const response = await fetch("/api/config");
-    if (!response.ok) {
-        throw new Error("Failed to load config");
+(async () => {
+    try {
+        const response = await fetch("/api/config");
+        if (!response.ok) throw new Error("Failed to load config");
+        await new ClientApp(await response.json()).initialize();
+        console.log("Application started successfully.");
+    } catch (err) {
+        console.error("Startup failed:", err);
     }
-    const app = new ClientApp(await response.json());
-    app.initialize();
-}
-
-bootstrap().catch(err => {
-    console.error("Startup failed:", err);
-});
+})();
