@@ -40,10 +40,8 @@ interface NodeApiResponse {
   transfer_specs: NodeApiTransferSpec[];
 }
 // --------------------------------------------------
-// Environment validation
+// Argument validation
 // --------------------------------------------------
-
-
 const topFolder = process.argv[2];
 if (!topFolder || !fs.statSync(topFolder).isDirectory()) {
   throw new Error(`Parameter is not a folder: ${topFolder}`);
@@ -77,9 +75,6 @@ const config = yaml.load(
 
 const httpPort = config.web.port;
 
-
-
-
 // --------------------------------------------------
 // TLS override (test only)
 // --------------------------------------------------
@@ -101,7 +96,6 @@ const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-// Serve a static "virtual" file at /client.js
 app.get(
   "/api/config",
   (req, res) => {
@@ -109,10 +103,6 @@ app.get(
     res.send(JSON.stringify(config));
   }
 );
-
-// --------------------------------------------------
-// API: /tspec
-// --------------------------------------------------
 
 app.post(
   "/api/tspec",
