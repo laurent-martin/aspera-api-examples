@@ -183,34 +183,6 @@ class ClientApp {
         window.addEventListener('dragover', event => {
             event.preventDefault();
         });
-        init({
-            appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
-            supportMultipleUsers: false,
-            httpGatewaySettings: {
-                url: this.config.httpgw.url,
-                forceGateway: false
-            },
-            connectSettings: {
-                useConnect: false,
-                dragDropEnabled: true
-            }
-        }).then((response) => {
-            alert(`SDK started ${JSON.stringify(response, void 0, 2)}`);
-        }).catch((error2) => {
-            console.error("SDK could not start", error2);
-            alert(`Init failed ${JSON.stringify(error2, void 0, 2)}`);
-        });
-        initDragDrop().then(() => {
-            // Drag and drop can now be safely registered
-            // Register the dropZone
-            createDropzone(this.handleDragEvent.bind(this), 'drop_area', { drop: true, allowPropagation: true });
-        }).catch(error => {
-            // Drag and drop init failed. This is rare.
-            console.error('Drag and drop could not start', error);
-            alert(`Drag and drop failed\n\n${JSON.stringify(error, undefined, 2)}`);
-        });
-        registerActivityCallback(this.handleTransferEvents.bind(this));
-        this.selectedUploadFiles = [];
         // static values
         (document.getElementById('httpgw_url') as HTMLInputElement).value = this.config.httpgw.url;
         (document.getElementById('server_url') as HTMLInputElement).value = this.config.server.url;
@@ -225,6 +197,27 @@ class ClientApp {
         document.getElementById('btn_start_transfer')?.addEventListener('click', () => {
             this.startClientTransfer();
         });
+        try {
+            await init({
+                appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
+                supportMultipleUsers: false,
+                httpGatewaySettings: {
+                    url: this.config.httpgw.url,
+                    forceGateway: false
+                },
+                connectSettings: {
+                    useConnect: false,
+                    dragDropEnabled: true
+                }
+            });
+            await initDragDrop();
+            await createDropzone(this.handleDragEvent.bind(this), 'drop_area', { drop: true, allowPropagation: true });
+
+            registerActivityCallback(this.handleTransferEvents.bind(this));
+        } catch (error) {
+            console.error("Initialization sequence failed:", error);
+            this.error(`Failed to start: ${JSON.stringify(error)}`);
+        }
         this.updateUi();
     }
 
