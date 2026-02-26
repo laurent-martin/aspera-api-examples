@@ -25,6 +25,8 @@ interface ClientConfig {
     };
 }
 
+const DROP_AREA_ID = 'drop_area';
+
 // =====================
 // Global client state
 class ClientApp {
@@ -39,7 +41,7 @@ class ClientApp {
     }
 
     // =====================
-    // Private functions
+    // Helper functions
 
     private error(message: string) {
         console.error(`ERROR: ${message}`);
@@ -53,7 +55,8 @@ class ClientApp {
         return `${(bytes / Math.pow(1024, magnitude)).toFixed(2)} ${sizes[magnitude]}`;
     }
 
-
+    // =====================
+    // Event handlers
 
     private handleTransferEvents(response: TransferResponse) {
         response.transfers.forEach(transfer => {
@@ -70,10 +73,11 @@ class ClientApp {
         this.updateUi();
     }
 
-    private handleDragEvent(data: { event: DragEvent; files: DataTransferResponse }) {
+    private handleDropEvent(data: { event: DragEvent; files: DataTransferResponse }) {
         const event = data.event;
+        console.log(`Drag event: ${event.type}`);
         event.preventDefault();
-        const dropArea = document.getElementById('drop_area');
+        const dropArea = document.getElementById(DROP_AREA_ID);
         if (!dropArea) return;
 
         switch (event.type) {
@@ -197,6 +201,14 @@ class ClientApp {
         document.getElementById('btn_start_transfer')?.addEventListener('click', () => {
             this.startClientTransfer();
         });
+        // TODO: change from previous version ?
+        document.getElementById(DROP_AREA_ID)?.addEventListener('dragenter', (event) => {
+            this.handleDropEvent({ event: event as DragEvent, files: {} as DataTransferResponse });
+        });
+        document.getElementById(DROP_AREA_ID)?.addEventListener('dragleave', (event) => {
+            this.handleDropEvent({ event: event as DragEvent, files: {} as DataTransferResponse });
+        });
+
         try {
             await init({
                 appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
@@ -206,12 +218,12 @@ class ClientApp {
                     forceGateway: false
                 },
                 connectSettings: {
-                    useConnect: false,
+                    useConnect: true,
                     dragDropEnabled: true
                 }
             });
             await initDragDrop();
-            await createDropzone(this.handleDragEvent.bind(this), '#drop_area', { drop: true, allowPropagation: true });
+            await createDropzone(this.handleDropEvent.bind(this), `#${DROP_AREA_ID}`, { drop: true, allowPropagation: true });
 
             registerActivityCallback(this.handleTransferEvents.bind(this));
         } catch (error) {
