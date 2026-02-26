@@ -4,7 +4,7 @@ The newer SDK for web app development is located at:
 
 [SDK repo](https://github.com/IBM/aspera-sdk-js)
 
-[SDK example](https://ibm.github.io/aspera-sdk-js)
+[SDK running example](https://ibm.github.io/aspera-sdk-js)
 
 [SDK TypeDoc documentation](https://ibm.github.io/aspera-sdk-js/docs/)
 

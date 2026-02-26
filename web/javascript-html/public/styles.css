@@ -77,3 +77,8 @@ td {
   height: 100px;
   background-color: #3498db;
 }
+
+/* Ensure the attribute always wins over display: flex/block */
+[hidden] {
+  display: none !important;
+}

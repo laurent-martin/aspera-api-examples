@@ -1,5 +1,3 @@
-// Sample client web application
-
 import {
     init,
     getInfo,
@@ -16,292 +14,279 @@ import {
     type FolderDialogOptions
 } from '@ibm-aspera/sdk';
 
+/**
+ * Unified options type for both file and folder selection dialogs.
+ */
+type SelectDialogOptions =
+    | ({ select: 'folder' } & FolderDialogOptions)
+    | ({ select?: 'file' } & FileDialogOptions);
 
-interface ClientConfig {
-    httpgw: { url: string };
-    server: {
-        url: string;
-        username: string;
-        password: string;
-        file_download: string;
-        folder_upload: string;
-    };
-}
-
-const DROP_AREA_ID = 'drop_area';
-
-interface SelectDialogOptions extends FileDialogOptions {
-    /** Whether to select a folder instead of files. Defaults to false. */
-    folder?: boolean;
+/**
+ * Unified function to show either file or folder selection dialog based on options.
+ */
+async function showSelectDialog(options: SelectDialogOptions = {}): Promise<DataTransferResponse> {
+    return options.select === 'folder' ? showSelectFolderDialog(options) : showSelectFileDialog(options);
 }
 
 /**
- * Proxy function to handle both file and folder selection.
- * @param options - Configuration for the dialog (filters, title, etc.)
- * @param folder - Boolean flag to toggle folder selection mode (default: false)
+ * Formatter for human-readable file sizes using Intl.NumberFormat with unit style.
  */
-async function showSelectDialog(
-    options: SelectDialogOptions = {},
-): Promise<DataTransferResponse> {
-    if (options.folder) {
-        // We cast to FolderDialogOptions as it is a subset of FileDialogOptions
-        return showSelectFolderDialog(options as FolderDialogOptions);
-    }
-    return showSelectFileDialog(options as FileDialogOptions);
+const bytesFormatter = new Intl.NumberFormat('en', {
+    style: 'unit',
+    unit: 'byte',
+    notation: 'compact',
+    unitDisplay: 'short',
+    maximumFractionDigits: 2
+});
+
+const getVal = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value;
+const getChecked = (name: string) => document.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value;
+
+function handleError(title: string, err: any) {
+    const msg = err?.message || JSON.stringify(err);
+    console.error(`${title}:`, err);
+    alert(`${title}\n${msg}`);
 }
-// =====================
-// Global client state
+
 class ClientApp {
+    /**
+     * STATE: Centralized state for selected files and current client type.
+     */
     private selectedUploadFiles: string[] = [];
-    private config: ClientConfig;
-    private currentClient: 'connect' | 'httpgw' | 'desktop' | null = null;
+    private currentClient: 'desktop' | 'connect' | 'httpgw' = 'httpgw';
 
-    constructor(config: ClientConfig) {
-        this.config = config;
+    constructor(private config: any) { }
+
+    async initialize(): Promise<void> {
+        // Prevent default browser behavior for dropped files globally
+        ['drop', 'dragover'].forEach(name =>
+            window.addEventListener(name, e => e.preventDefault())
+        );
+        // Pre-fill fields from config
+        const fields: Record<string, string> = {
+            'httpgw_url': this.config.httpgw.url,
+            'server_url': this.config.server.url,
+            'server_user': this.config.server.username,
+            'server_pass': this.config.server.password,
+            'file_to_download': this.config.server.file_download,
+            'folder_for_upload': this.config.server.folder_upload
+        };
+        Object.entries(fields).forEach(([id, val]) => {
+            (document.getElementById(id) as HTMLInputElement)?.setAttribute('value', val);
+        });
+        // Event Bindings
+        document.querySelectorAll('input[type=radio]').forEach(el => el.addEventListener('change', () => this.updateUi()));
+        document.getElementById('btn_select_files')?.addEventListener('click', () => this.pickFiles());
+        document.getElementById('btn_start_transfer')?.addEventListener('click', () => this.startClientTransfer());
+        await this.updateUi();
     }
 
     // =====================
-    // Helper functions
-
-    private error(message: string) {
-        console.error(`ERROR: ${message}`);
-        alert(`ERROR: ${message}`);
-    }
-
-    private readableBytes(bytes: number): string {
-        if (bytes === 0) return '0 B';
-        const magnitude = Math.floor(Math.log(bytes) / Math.log(1024));
-        const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-        return `${(bytes / Math.pow(1024, magnitude)).toFixed(2)} ${sizes[magnitude]}`;
-    }
-
+    // Logic Handlers
     // =====================
-    // Event handlers
+
+    async pickFiles() {
+        this.selectedUploadFiles = [];
+        try {
+            const response = await showSelectDialog({ multiple: true, });
+            const files = response.dataTransfer?.files || [];
+            // Use Set to ensure unique filenames
+            this.selectedUploadFiles = [...new Set(files.map(f => f.name))];
+            this.updateUi();
+        } catch (err) {
+            handleError("User cancelled or selection failed", err);
+        }
+    }
+
+    async startClientTransfer() {
+        const state = this.uiState;
+        const isDownload = state.direction === 'download';
+
+        const params = {
+            operation: state.direction,
+            sources: isDownload ? [state.downloadPath] : this.selectedUploadFiles,
+            destination: isDownload ? undefined : state.uploadDest,
+            basic_token: state.authType === 'basic_token'
+        };
+
+        try {
+            let spec: TransferSpec;
+            if (state.authType === "ssh_creds") {
+                spec = this.getTransferSpecSSH(params);
+            } else {
+                spec = await this.getTransferSpecFromServer(params);
+                spec.authentication = 'token';
+            }
+
+            await startTransfer(spec, {});
+            if (!isDownload) this.selectedUploadFiles = [];
+            this.updateUi();
+        } catch (err) {
+            handleError("Transfer Failed", err);
+        }
+    }
+
+    /**
+     * STATE SNAPSHOT: Centralizes all DOM reads.
+     * This is the "Single Source of Truth" for the application logic.
+     */
+    private get uiState() {
+        return {
+            client: (getChecked('client_select') || 'desktop') as 'connect' | 'httpgw' | 'desktop',
+            direction: getChecked('op_select') as 'upload' | 'download',
+            authType: getChecked('transfer_auth'),
+            serverUrl: getVal('server_url'),
+            downloadPath: getVal('file_to_download'),
+            uploadDest: getVal('folder_for_upload'),
+        };
+    }
+
+    /**
+     * UPDATER: Declaratively updates visibility and SDK state.
+     */
+    private async updateUi() {
+        const state = this.uiState;
+        // SDK Transition Logic
+        if (state.client !== this.currentClient) {
+            console.log(`Switching client from ${this.currentClient} to ${state.client}`);
+            await this.reinitSdk(state.client);
+            this.currentClient = state.client;
+        }
+
+        // Update file list display
+        const uploadEl = document.getElementById('upload_files');
+        if (uploadEl) uploadEl.textContent = this.selectedUploadFiles.join(', ') || 'No files selected';
+
+        // VISIBILITY MATRIX
+        const visibilityMatrix: Record<string, boolean> = {
+            'httpgw_url': state.client === 'httpgw',
+            'div_ssh_creds_selector': ['connect', 'desktop'].includes(state.client),
+            'hsts_ssh_info': state.authType === 'ssh_creds',
+            'download_selection': state.direction === 'download',
+            'upload_selection': state.direction === 'upload'
+        };
+        Object.entries(visibilityMatrix).forEach(([id, visible]) => {
+            document.getElementById(id)?.toggleAttribute('hidden', !visible);
+        });
+        await this.refreshStatusDisplay(state.client);
+    }
+
+    private async reinitSdk(clientType: string) {
+        try {
+            await init({
+                appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
+                supportMultipleUsers: false,
+                httpGatewaySettings: {
+                    url: clientType === 'httpgw' ? this.config.httpgw.url : undefined,
+                    forceGateway: clientType === 'httpgw'
+                },
+                connectSettings: {
+                    useConnect: clientType === 'connect',
+                    dragDropEnabled: true
+                }
+            });
+            await initDragDrop();
+            await createDropzone(this.handleDropEvent.bind(this), '#drop_area', { drop: true, allowPropagation: true });
+            registerActivityCallback(this.handleTransferEvents.bind(this));
+        } catch (err) {
+            handleError("Initialization Failed", err);
+        }
+    }
+
 
     private handleTransferEvents(response: TransferResponse) {
-        response.transfers.forEach(transfer => {
-            const status = `Event:
-- Id:         ${transfer.uuid},
-- Status:     ${transfer.status},
-- Percent:    ${(transfer.percentage * 100).toFixed(2)}%,
-- Data Sent:  ${this.readableBytes(transfer.bytes_written)},
-- Data Total: ${this.readableBytes(transfer.bytes_expected)}`;
+        // Modernized logging using formatted strings
+        response.transfers.forEach(t => {
+            const status = `ID: ${t.uuid} | ${t.status} | ${(t.percentage * 100).toFixed(1)}% | ${bytesFormatter.format(t.bytes_written)} / ${bytesFormatter.format(t.bytes_expected)}`;
             console.log(status);
             const el = document.getElementById('status');
-            if (el) el.innerHTML = status;
+            if (el) el.textContent = status;
         });
         this.updateUi();
     }
 
     private handleDropEvent(data: { event: DragEvent; files: DataTransferResponse }) {
-        const event = data.event;
-        console.log(`Drag event: ${event.type}`);
+        const { event, files } = data;
         event.preventDefault();
-        const dropArea = document.getElementById(DROP_AREA_ID);
-        if (!dropArea) return;
-        switch (event.type) {
-            case 'drop':
-                dropArea.style.backgroundColor = '#3498db';
-                // extract files and call storeFileNames
-                if (event.dataTransfer?.files) {
-                    this.storeFileNames(data.files);
-                }
-                break;
-            case 'dragenter':
-                dropArea.style.backgroundColor = 'red';
-                break;
-            case 'dragleave':
-                dropArea.style.backgroundColor = 'green';
-                break;
-        }
-    };
 
-    // =====================
-    // Initialization functions
-    getTransferSpecSSH(params: { operation: 'upload' | 'download'; sources: string[]; destination?: string }): TransferSpec {
-        const serverUrl = new URL((document.getElementById('server_url') as HTMLInputElement).value.replace(/^ssh:/, 'http://'));
-        const transferSpec: TransferSpec = {
-            remote_host: serverUrl.hostname,
-            ssh_port: parseInt(serverUrl.port, 10),
-            remote_user: (document.getElementById('server_user') as HTMLInputElement).value,
-            remote_password: (document.getElementById('server_pass') as HTMLInputElement).value,
-            paths: params.sources.map(file => ({ source: file }))
+        const dropArea = document.getElementById('drop_area');
+        if (!dropArea) return;
+
+        const colors: Record<string, string> = {
+            'drop': '#3498db',
+            'dragenter': 'red',
+            'dragleave': 'green'
         };
-        if (params.operation === 'upload') {
-            transferSpec.direction = 'send';
-            transferSpec.destination_root = params.destination;
-        } else {
-            transferSpec.direction = 'receive';
+
+        dropArea.style.backgroundColor = colors[event.type] || '';
+
+        if (event.type === 'drop' && files.dataTransfer?.files) {
+            this.storeFileNames(files);
         }
-        return transferSpec;
     }
 
-    async getTransferSpecFromServer(params: { operation: 'upload' | 'download'; sources: string[]; destination?: string; basic_token?: boolean }): Promise<TransferSpec> {
-        console.log(`Transfer requested: ${params.operation}`);
-        const server_url = window.location.href;
-        const response = await fetch(`${server_url}api/tspec`, {
+    private async refreshStatusDisplay(clientType: string) {
+        const info = await getInfo();
+        const el = document.getElementById('client_status');
+        if (!el) return;
+        const statusMap: Record<string, string> = {
+            'connect': info.connect.status,
+            'httpgw': info.httpGateway.info?.version || 'Connected',
+            'desktop': 'Ready'
+        };
+        //el.textContent = statusMap[clientType] || 'Unknown';
+        el.textContent = JSON.stringify(info, null, 2);
+    }
+
+    private storeFileNames(selection: DataTransferResponse) {
+        const files = selection.dataTransfer?.files || [];
+        const names = files.map(f => f.name);
+        // merge, no dupes
+        this.selectedUploadFiles = [...new Set([...this.selectedUploadFiles, ...names])];
+        this.updateUi();
+    }
+
+    private getTransferSpecSSH(params: any): TransferSpec {
+        const url = new URL(this.uiState.serverUrl.replace(/^ssh:/, 'http://'));
+        const spec: TransferSpec = {
+            remote_host: url.hostname,
+            ssh_port: parseInt(url.port, 10) || 22,
+            remote_user: (document.getElementById('server_user') as HTMLInputElement).value,
+            remote_password: (document.getElementById('server_pass') as HTMLInputElement).value,
+            paths: params.sources.map((s: string) => ({ source: s }))
+        };
+
+        if (params.operation === 'upload') {
+            spec.direction = 'send';
+            spec.destination_root = params.destination;
+        } else {
+            spec.direction = 'receive';
+        }
+        return spec;
+    }
+
+    private async getTransferSpecFromServer(params: any): Promise<TransferSpec> {
+        const response = await fetch(`${window.location.origin}/api/tspec`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(params)
         });
+
         const ts = await response.json();
-        if (ts.error) {
-            this.error(`Problem with server: ${ts.error}`);
-        }
+        if (ts.error) throw new Error(ts.error);
         return ts;
-    }
-
-    resetSelection() {
-        this.selectedUploadFiles = [];
-        this.updateUi();
-    }
-
-    /// Add selected files to selection
-    storeFileNames(selection: DataTransferResponse) {
-        const files = selection.dataTransfer?.files;
-        if (files) {
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                if (!this.selectedUploadFiles.includes(file.name)) {
-                    this.selectedUploadFiles.push(file.name);
-                }
-            }
-        }
-        console.log('Files picked', this.selectedUploadFiles);
-        this.updateUi();
-    }
-
-    async updateUi() {
-        const uploadEl = document.getElementById('upload_files');
-        if (uploadEl) uploadEl.innerHTML = this.selectedUploadFiles.join(', ');
-        const selected = document.querySelector<HTMLInputElement>('input[name="client_select"]:checked')?.value || 'desktop';
-        const direction = document.querySelector<HTMLInputElement>('input[name="op_select"]:checked')?.value;
-        const is_ssh_auth = document.querySelector<HTMLInputElement>("input[name=transfer_auth]:checked")?.value === 'ssh_creds';
-        console.log(`Client selected: ${selected}, Direction: ${direction}`);
-        const visibilityMatrix = {
-            'httpgw_url': selected === 'httpgw',
-            'div_ssh_creds_selector': ['connect', 'desktop'].includes(selected),
-            'hsts_ssh_info': is_ssh_auth,
-            'download_selection': direction === 'download',
-            'upload_selection': direction === 'upload'
-        };
-        Object.entries(visibilityMatrix).forEach(([id, shouldShow]) => {
-            document.getElementById(id)?.toggleAttribute('hidden', !shouldShow);
-        });
-        if (selected && selected !== this.currentClient) {
-            try {
-                await init({
-                    appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
-                    supportMultipleUsers: false,
-                    httpGatewaySettings: {
-                        url: this.config.httpgw.url,
-                        forceGateway: selected == 'httpgw'
-                    },
-                    connectSettings: {
-                        useConnect: selected == 'connect',
-                        dragDropEnabled: true
-                    }
-                });
-                await initDragDrop();
-                await createDropzone(this.handleDropEvent.bind(this), `#${DROP_AREA_ID}`, { drop: true, allowPropagation: true });
-
-                registerActivityCallback(this.handleTransferEvents.bind(this));
-            } catch (error) {
-                console.error("Initialization sequence failed:", error);
-                this.error(`Failed to start: ${JSON.stringify(error)}`);
-            }
-            this.currentClient = selected as any;
-        }
-        const info = await getInfo();
-        const el = document.getElementById('client_status');
-        if (el)
-            switch (selected) {
-                case 'connect':
-                    el.innerHTML = info.connect.status;
-                    break;
-                case 'httpgw':
-                    el.innerHTML = info.httpGateway.info?.version || 'No info';
-                    break;
-                case 'desktop':
-                    el.innerHTML = '???';
-                    break;
-            }
-    }
-
-    // =====================
-    // Public functions called from UI
-    async initialize(): Promise<void> {
-        if (document.location.protocol === 'file:') {
-            this.error(`This page requires use of the nodejs server.`);
-        }
-        // For safety prevent at highest level drop default actions
-        // This is useful to avoid browser opening file if not dropped in the Dropzone
-        window.addEventListener('drop', event => {
-            event.preventDefault();
-        });
-        window.addEventListener('dragover', event => {
-            event.preventDefault();
-        });
-        // static values
-        (document.getElementById('httpgw_url') as HTMLInputElement).value = this.config.httpgw.url;
-        (document.getElementById('server_url') as HTMLInputElement).value = this.config.server.url;
-        (document.getElementById('server_user') as HTMLInputElement).value = this.config.server.username;
-        (document.getElementById('server_pass') as HTMLInputElement).value = this.config.server.password;
-        (document.getElementById('file_to_download') as HTMLInputElement).value = this.config.server.file_download;
-        (document.getElementById('folder_for_upload') as HTMLInputElement).value = this.config.server.folder_upload;
-        document.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach(item => item.addEventListener('change', this.updateUi.bind(this)));
-        document.getElementById('btn_select_files')?.addEventListener('click', this.pickFiles.bind(this));
-        document.getElementById('btn_start_transfer')?.addEventListener('click', this.startClientTransfer.bind(this));
-        // TODO: change from previous version ?
-        for (const eventName of ['dragenter', 'dragleave']) {
-            document.getElementById(DROP_AREA_ID)?.addEventListener(eventName, (event) => {
-                this.handleDropEvent({ event: event as DragEvent, files: {} as DataTransferResponse });
-            });
-        }
-        await this.updateUi();
-    }
-
-    pickFiles() {
-        this.resetSelection();
-        var selectFolders = false;
-        showSelectFolderDialog({ multiple: true }).then((response) => {
-            this.storeFileNames(response);
-        }).catch((error) => { console.error("Selecting items failed", error); });
-    }
-
-    startClientTransfer() {
-        let params: any = null;
-        if ((document.getElementById('action_download') as HTMLInputElement).checked) {
-            params = { operation: 'download', sources: [(document.getElementById('file_to_download') as HTMLInputElement).value] };
-        } else {
-            params = {
-                operation: 'upload',
-                sources: this.selectedUploadFiles,
-                destination: (document.getElementById('folder_for_upload') as HTMLInputElement).value
-            };
-            this.resetSelection();
-        }
-
-        const auth_type = document.querySelector<HTMLInputElement>("input[name=transfer_auth]:checked")?.value;
-        if (auth_type === "ssh_creds") {
-            startTransfer(this.getTransferSpecSSH(params), {});
-        } else {
-            params.basic_token = auth_type === "basic_token";
-            this.getTransferSpecFromServer(params).then(ts => {
-                ts.authentication = 'token';
-                startTransfer(ts, {});
-            }).catch((message: any) => this.error(message));
-        }
     }
 }
 
+// Global Entry Point
 (async () => {
     try {
         const response = await fetch("/api/config");
-        if (!response.ok) throw new Error("Failed to load config");
-        await new ClientApp(await response.json()).initialize();
-        console.log("Application started successfully.");
+        if (!response.ok) throw new Error("Config not found");
+        const config = await response.json();
+        const app = new ClientApp(config);
+        await app.initialize();
     } catch (err) {
-        console.error("Startup failed:", err);
+        handleError("Startup failed", err);
     }
 })();
