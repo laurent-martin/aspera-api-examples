@@ -244,13 +244,7 @@ class ClientApp {
         var selectFolders = false;
         (selectFolders ? showSelectFolderDialog({ multiple: true }) : showSelectFileDialog({ multiple: true })).then((response) => {
             this.storeFileNames(response);
-        }).catch((error2) => {
-            if (error2.debugData?.code === -32002) {
-                console.error("User canceled selecting items");
-            } else {
-                console.error("Selecting items failed", error2);
-            }
-        });
+        }).catch((error) => { console.error("Selecting items failed", error); });
     }
 
     startClientTransfer() {
@@ -266,11 +260,11 @@ class ClientApp {
             this.resetSelection();
         }
 
-        const download_type = document.querySelector<HTMLInputElement>("input[name=transfer_auth]:checked")?.value;
-        if (download_type === "ssh_creds") {
+        const auth_type = document.querySelector<HTMLInputElement>("input[name=transfer_auth]:checked")?.value;
+        if (auth_type === "ssh_creds") {
             startTransfer(this.getTransferSpecSSH(params), {});
         } else {
-            params.basic_token = download_type === "basic_token";
+            params.basic_token = auth_type === "basic_token";
             this.getTransferSpecFromServer(params).then(ts => {
                 ts.authentication = 'token';
                 startTransfer(ts, {});
