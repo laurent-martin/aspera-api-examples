@@ -56,6 +56,12 @@
       <label for="ssh_creds">SSH Credentials</label>
     </div>
   </fieldset>
+  <fieldset id="hsts_ssh_info">
+    <legend>HSTS SSH credentials</legend>
+    <p>URL: <input type="text" id="server_url" /></p>
+    <p>User: <input type="text" id="server_user" /></p>
+    <p>Pass: <input type="password" id="server_pass" /></p>
+  </fieldset>
   <fieldset>
     <legend>Select transfer operation</legend>
     <div>
@@ -64,12 +70,6 @@
       <input type="radio" name="op_select" id="action_upload" value="upload" />
       <label for="action_upload">Upload</label>
     </div>
-  </fieldset>
-  <fieldset id="hsts_ssh_info">
-    <legend>HSTS SSH credentials</legend>
-    <p>URL: <input type="text" id="server_url" /></p>
-    <p>User: <input type="text" id="server_user" /></p>
-    <p>Pass: <input type="password" id="server_pass" /></p>
   </fieldset>
   <fieldset>
     <legend>Source and destination</legend>

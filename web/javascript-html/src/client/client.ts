@@ -193,7 +193,7 @@ class ClientApp {
                 const info = await getInfo();
                 const el = document.getElementById(`${selected}_info`);
                 if (el)
-                    el.innerHTML = `Version ${info.version}`;
+                    el.innerHTML = `Version ${JSON.stringify(info)}`;
                 await initDragDrop();
                 await createDropzone(this.handleDropEvent.bind(this), `#${DROP_AREA_ID}`, { drop: true, allowPropagation: true });
 
