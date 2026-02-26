@@ -42,15 +42,6 @@
     </div>
   </fieldset>
   <fieldset>
-    <legend>Select transfer operation</legend>
-    <div>
-      <input type="radio" name="op_select" id="action_download" checked />
-      <label for="action_download">Download</label>
-      <input type="radio" name="op_select" id="action_upload" />
-      <label for="action_upload">Upload</label>
-    </div>
-  </fieldset>
-  <fieldset>
     <legend>Select transfer authentication</legend>
     <div>
       <input type="radio" id="aspera_token_radio" name="transfer_auth" value="aspera_token" checked>
@@ -63,6 +54,15 @@
     <div id="div_ssh_creds_selector">
       <input type="radio" id="ssh_creds_radio" name="transfer_auth" value="ssh_creds">
       <label for="ssh_creds">SSH Credentials</label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Select transfer operation</legend>
+    <div>
+      <input type="radio" name="op_select" id="action_download" value="download" checked />
+      <label for="action_download">Download</label>
+      <input type="radio" name="op_select" id="action_upload" value="upload" />
+      <label for="action_upload">Upload</label>
     </div>
   </fieldset>
   <fieldset id="hsts_ssh_info">

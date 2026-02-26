@@ -31,11 +31,9 @@ const DROP_AREA_ID = 'drop_area';
 // =====================
 // Global client state
 class ClientApp {
-    connectClient: any;
-    connectInstaller: any;
-    selectedUploadFiles: string[] = [];
-    httpGwMonitorId?: number;
+    private selectedUploadFiles: string[] = [];
     private config: ClientConfig;
+    private currentClient: 'connect' | 'httpgw' | 'desktop' | null = null;
 
     constructor(config: ClientConfig) {
         this.config = config;
@@ -157,9 +155,9 @@ class ClientApp {
     async updateUi() {
         const uploadEl = document.getElementById('upload_files');
         if (uploadEl) uploadEl.innerHTML = this.selectedUploadFiles.join(', ');
-        // which client ?
         const selected = document.querySelector<HTMLInputElement>('input[name="client_select"]:checked')?.value;
-        console.log(`Client selected: ${selected}`);
+        const direction = document.querySelector<HTMLInputElement>('input[name="op_select"]:checked')?.value;
+        console.log(`Client selected: ${selected}, Direction: ${direction}`);
         // show/hide sections
         const connectInfo = document.getElementById('connect_info');
         const httpgwInfo = document.getElementById('httpgw_info');
@@ -171,30 +169,40 @@ class ClientApp {
         if (desktopInfo) desktopInfo.style.display = selected == 'desktop' ? 'block' : 'none';
         if (sshSelector) sshSelector.style.display = selected == 'connect' || selected == 'desktop' ? 'block' : 'none';
         if (sshInfo) sshInfo.style.display = document.querySelector<HTMLInputElement>("input[name=transfer_auth]:checked")?.value === 'ssh_creds' ? 'block' : 'none';
-        try {
-            await init({
-                appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
-                supportMultipleUsers: false,
-                httpGatewaySettings: {
-                    url: this.config.httpgw.url,
-                    forceGateway: selected == 'httpgw'
-                },
-                connectSettings: {
-                    useConnect: selected == 'connect',
-                    dragDropEnabled: true
-                }
-            });
-            const info = await getInfo();
-            const el = document.getElementById(`${selected}_info`);
-            if (el)
-                el.innerHTML = `Version ${JSON.stringify(info, void 0, 2)}`;
-            await initDragDrop();
-            await createDropzone(this.handleDropEvent.bind(this), `#${DROP_AREA_ID}`, { drop: true, allowPropagation: true });
+        if (direction === 'upload') {
+            document.getElementById('download_selection')?.setAttribute('hidden', 'true');
+            document.getElementById('upload_selection')?.removeAttribute('hidden');
+        } else {
+            document.getElementById('download_selection')?.removeAttribute('hidden');
+            document.getElementById('upload_selection')?.setAttribute('hidden', 'true');
+        }
+        if (selected && selected !== this.currentClient) {
+            try {
+                await init({
+                    appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
+                    supportMultipleUsers: false,
+                    httpGatewaySettings: {
+                        url: this.config.httpgw.url,
+                        forceGateway: selected == 'httpgw'
+                    },
+                    connectSettings: {
+                        useConnect: selected == 'connect',
+                        dragDropEnabled: true
+                    }
+                });
+                const info = await getInfo();
+                const el = document.getElementById(`${selected}_info`);
+                if (el)
+                    el.innerHTML = `Version ${info.version}`;
+                await initDragDrop();
+                await createDropzone(this.handleDropEvent.bind(this), `#${DROP_AREA_ID}`, { drop: true, allowPropagation: true });
 
-            registerActivityCallback(this.handleTransferEvents.bind(this));
-        } catch (error) {
-            console.error("Initialization sequence failed:", error);
-            this.error(`Failed to start: ${JSON.stringify(error)}`);
+                registerActivityCallback(this.handleTransferEvents.bind(this));
+            } catch (error) {
+                console.error("Initialization sequence failed:", error);
+                this.error(`Failed to start: ${JSON.stringify(error)}`);
+            }
+            this.currentClient = selected as any;
         }
     }
 
@@ -228,7 +236,7 @@ class ClientApp {
                 this.handleDropEvent({ event: event as DragEvent, files: {} as DataTransferResponse });
             });
         }
-        this.updateUi();
+        await this.updateUi();
     }
 
     pickFiles() {
