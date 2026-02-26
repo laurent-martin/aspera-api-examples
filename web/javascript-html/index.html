@@ -23,19 +23,23 @@
   <fieldset>
     <legend>Select transfer agent</legend>
     <div>
-      <input type="radio" name="client_select" id="use_connect" checked />
+      <input type="radio" name="client_select" id="use_connect" value="connect" checked />
       <label for="use_connect">Connect</label>
-      <input type="radio" name="client_select" id="use_httpgw" />
+      <input type="radio" name="client_select" id="use_httpgw" value="httpgw" />
       <label for="use_httpgw">HTTPGW</label>
-      <input type="radio" name="client_select" id="use_desktop" />
+      <input type="radio" name="client_select" id="use_desktop" value="desktop" />
       <label for="use_desktop">Desktop</label>
     </div>
     <div id="httpgw_info">URL:
       <input type="text" id="httpgw_url">
       <div id="httpgw_version"></div>
     </div>
-    <div id="connect_info"></div>
-    <div id="desktop_info">Not Implemented</div>
+    <div id="connect_info">
+      <div id="connect_version"></div>
+    </div>
+    <div id="desktop_info">
+      <div id="desktop_version"></div>
+    </div>
   </fieldset>
   <fieldset>
     <legend>Select transfer operation</legend>

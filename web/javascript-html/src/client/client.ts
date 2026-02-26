@@ -2,6 +2,7 @@
 
 import {
     init,
+    getInfo,
     startTransfer,
     showSelectFileDialog,
     showSelectFolderDialog,
@@ -153,24 +154,48 @@ class ClientApp {
         this.updateUi();
     }
 
-    updateUi() {
+    async updateUi() {
         const uploadEl = document.getElementById('upload_files');
         if (uploadEl) uploadEl.innerHTML = this.selectedUploadFiles.join(', ');
         // which client ?
-        const useConnect = (document.getElementById('use_connect') as HTMLInputElement).checked;
-        const useHttpGw = (document.getElementById('use_httpgw') as HTMLInputElement).checked;
-        const useDesktop = (document.getElementById('use_desktop') as HTMLInputElement).checked;
+        const selected = document.querySelector<HTMLInputElement>('input[name="client_select"]:checked')?.value;
+        console.log(`Client selected: ${selected}`);
         // show/hide sections
         const connectInfo = document.getElementById('connect_info');
         const httpgwInfo = document.getElementById('httpgw_info');
         const desktopInfo = document.getElementById('desktop_info');
         const sshSelector = document.getElementById('div_ssh_creds_selector');
         const sshInfo = document.getElementById('hsts_ssh_info');
-        if (connectInfo) connectInfo.style.display = useConnect ? 'block' : 'none';
-        if (httpgwInfo) httpgwInfo.style.display = useHttpGw ? 'block' : 'none';
-        if (desktopInfo) desktopInfo.style.display = useDesktop ? 'block' : 'none';
-        if (sshSelector) sshSelector.style.display = useConnect || useDesktop ? 'block' : 'none';
+        if (connectInfo) connectInfo.style.display = selected == 'connect' ? 'block' : 'none';
+        if (httpgwInfo) httpgwInfo.style.display = selected == 'httpgw' ? 'block' : 'none';
+        if (desktopInfo) desktopInfo.style.display = selected == 'desktop' ? 'block' : 'none';
+        if (sshSelector) sshSelector.style.display = selected == 'connect' || selected == 'desktop' ? 'block' : 'none';
         if (sshInfo) sshInfo.style.display = document.querySelector<HTMLInputElement>("input[name=transfer_auth]:checked")?.value === 'ssh_creds' ? 'block' : 'none';
+        try {
+            await init({
+                appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
+                supportMultipleUsers: false,
+                httpGatewaySettings: {
+                    url: this.config.httpgw.url,
+                    forceGateway: selected == 'httpgw'
+                },
+                connectSettings: {
+                    useConnect: selected == 'connect',
+                    dragDropEnabled: true
+                }
+            });
+            const info = await getInfo();
+            const el = document.getElementById(`${selected}_info`);
+            if (el)
+                el.innerHTML = `Version ${JSON.stringify(info, void 0, 2)}`;
+            await initDragDrop();
+            await createDropzone(this.handleDropEvent.bind(this), `#${DROP_AREA_ID}`, { drop: true, allowPropagation: true });
+
+            registerActivityCallback(this.handleTransferEvents.bind(this));
+        } catch (error) {
+            console.error("Initialization sequence failed:", error);
+            this.error(`Failed to start: ${JSON.stringify(error)}`);
+        }
     }
 
     // =====================
@@ -194,41 +219,14 @@ class ClientApp {
         (document.getElementById('server_pass') as HTMLInputElement).value = this.config.server.password;
         (document.getElementById('file_to_download') as HTMLInputElement).value = this.config.server.file_download;
         (document.getElementById('folder_for_upload') as HTMLInputElement).value = this.config.server.folder_upload;
-        document.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach(item => item.addEventListener('change', () => this.updateUi()));
-        document.getElementById('btn_select_files')?.addEventListener('click', () => {
-            this.pickFiles();
-        });
-        document.getElementById('btn_start_transfer')?.addEventListener('click', () => {
-            this.startClientTransfer();
-        });
+        document.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach(item => item.addEventListener('change', this.updateUi.bind(this)));
+        document.getElementById('btn_select_files')?.addEventListener('click', this.pickFiles.bind(this));
+        document.getElementById('btn_start_transfer')?.addEventListener('click', this.startClientTransfer.bind(this));
         // TODO: change from previous version ?
-        document.getElementById(DROP_AREA_ID)?.addEventListener('dragenter', (event) => {
-            this.handleDropEvent({ event: event as DragEvent, files: {} as DataTransferResponse });
-        });
-        document.getElementById(DROP_AREA_ID)?.addEventListener('dragleave', (event) => {
-            this.handleDropEvent({ event: event as DragEvent, files: {} as DataTransferResponse });
-        });
-
-        try {
-            await init({
-                appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
-                supportMultipleUsers: false,
-                httpGatewaySettings: {
-                    url: this.config.httpgw.url,
-                    forceGateway: false
-                },
-                connectSettings: {
-                    useConnect: true,
-                    dragDropEnabled: true
-                }
+        for (const eventName of ['dragenter', 'dragleave']) {
+            document.getElementById(DROP_AREA_ID)?.addEventListener(eventName, (event) => {
+                this.handleDropEvent({ event: event as DragEvent, files: {} as DataTransferResponse });
             });
-            await initDragDrop();
-            await createDropzone(this.handleDropEvent.bind(this), `#${DROP_AREA_ID}`, { drop: true, allowPropagation: true });
-
-            registerActivityCallback(this.handleTransferEvents.bind(this));
-        } catch (error) {
-            console.error("Initialization sequence failed:", error);
-            this.error(`Failed to start: ${JSON.stringify(error)}`);
         }
         this.updateUi();
     }
