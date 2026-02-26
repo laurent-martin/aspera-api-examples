@@ -11,7 +11,9 @@ import {
     registerActivityCallback,
     type DataTransferResponse,
     type TransferResponse,
-    type TransferSpec
+    type TransferSpec,
+    type FileDialogOptions,
+    type FolderDialogOptions
 } from '@ibm-aspera/sdk';
 
 
@@ -28,6 +30,25 @@ interface ClientConfig {
 
 const DROP_AREA_ID = 'drop_area';
 
+interface SelectDialogOptions extends FileDialogOptions {
+    /** Whether to select a folder instead of files. Defaults to false. */
+    folder?: boolean;
+}
+
+/**
+ * Proxy function to handle both file and folder selection.
+ * @param options - Configuration for the dialog (filters, title, etc.)
+ * @param folder - Boolean flag to toggle folder selection mode (default: false)
+ */
+async function showSelectDialog(
+    options: SelectDialogOptions = {},
+): Promise<DataTransferResponse> {
+    if (options.folder) {
+        // We cast to FolderDialogOptions as it is a subset of FileDialogOptions
+        return showSelectFolderDialog(options as FolderDialogOptions);
+    }
+    return showSelectFileDialog(options as FileDialogOptions);
+}
 // =====================
 // Global client state
 class ClientApp {
@@ -78,7 +99,6 @@ class ClientApp {
         event.preventDefault();
         const dropArea = document.getElementById(DROP_AREA_ID);
         if (!dropArea) return;
-
         switch (event.type) {
             case 'drop':
                 dropArea.style.backgroundColor = '#3498db';
@@ -98,7 +118,6 @@ class ClientApp {
 
     // =====================
     // Initialization functions
-
     getTransferSpecSSH(params: { operation: 'upload' | 'download'; sources: string[]; destination?: string }): TransferSpec {
         const serverUrl = new URL((document.getElementById('server_url') as HTMLInputElement).value.replace(/^ssh:/, 'http://'));
         const transferSpec: TransferSpec = {
@@ -155,27 +174,20 @@ class ClientApp {
     async updateUi() {
         const uploadEl = document.getElementById('upload_files');
         if (uploadEl) uploadEl.innerHTML = this.selectedUploadFiles.join(', ');
-        const selected = document.querySelector<HTMLInputElement>('input[name="client_select"]:checked')?.value;
+        const selected = document.querySelector<HTMLInputElement>('input[name="client_select"]:checked')?.value || 'desktop';
         const direction = document.querySelector<HTMLInputElement>('input[name="op_select"]:checked')?.value;
+        const is_ssh_auth = document.querySelector<HTMLInputElement>("input[name=transfer_auth]:checked")?.value === 'ssh_creds';
         console.log(`Client selected: ${selected}, Direction: ${direction}`);
-        // show/hide sections
-        const connectInfo = document.getElementById('connect_info');
-        const httpgwInfo = document.getElementById('httpgw_info');
-        const desktopInfo = document.getElementById('desktop_info');
-        const sshSelector = document.getElementById('div_ssh_creds_selector');
-        const sshInfo = document.getElementById('hsts_ssh_info');
-        if (connectInfo) connectInfo.style.display = selected == 'connect' ? 'block' : 'none';
-        if (httpgwInfo) httpgwInfo.style.display = selected == 'httpgw' ? 'block' : 'none';
-        if (desktopInfo) desktopInfo.style.display = selected == 'desktop' ? 'block' : 'none';
-        if (sshSelector) sshSelector.style.display = selected == 'connect' || selected == 'desktop' ? 'block' : 'none';
-        if (sshInfo) sshInfo.style.display = document.querySelector<HTMLInputElement>("input[name=transfer_auth]:checked")?.value === 'ssh_creds' ? 'block' : 'none';
-        if (direction === 'upload') {
-            document.getElementById('download_selection')?.setAttribute('hidden', 'true');
-            document.getElementById('upload_selection')?.removeAttribute('hidden');
-        } else {
-            document.getElementById('download_selection')?.removeAttribute('hidden');
-            document.getElementById('upload_selection')?.setAttribute('hidden', 'true');
-        }
+        const visibilityMatrix = {
+            'httpgw_url': selected === 'httpgw',
+            'div_ssh_creds_selector': ['connect', 'desktop'].includes(selected),
+            'hsts_ssh_info': is_ssh_auth,
+            'download_selection': direction === 'download',
+            'upload_selection': direction === 'upload'
+        };
+        Object.entries(visibilityMatrix).forEach(([id, shouldShow]) => {
+            document.getElementById(id)?.toggleAttribute('hidden', !shouldShow);
+        });
         if (selected && selected !== this.currentClient) {
             try {
                 await init({
@@ -201,9 +213,19 @@ class ClientApp {
             this.currentClient = selected as any;
         }
         const info = await getInfo();
-        const el = document.getElementById(`${selected}_info`);
+        const el = document.getElementById('client_status');
         if (el)
-            el.innerHTML = `Version ${JSON.stringify(info)}`;
+            switch (selected) {
+                case 'connect':
+                    el.innerHTML = info.connect.status;
+                    break;
+                case 'httpgw':
+                    el.innerHTML = info.httpGateway.info?.version || 'No info';
+                    break;
+                case 'desktop':
+                    el.innerHTML = '???';
+                    break;
+            }
     }
 
     // =====================
@@ -242,7 +264,7 @@ class ClientApp {
     pickFiles() {
         this.resetSelection();
         var selectFolders = false;
-        (selectFolders ? showSelectFolderDialog({ multiple: true }) : showSelectFileDialog({ multiple: true })).then((response) => {
+        showSelectFolderDialog({ multiple: true }).then((response) => {
             this.storeFileNames(response);
         }).catch((error) => { console.error("Selecting items failed", error); });
     }
