@@ -173,7 +173,7 @@ class ClientApp {
 
     private async reinitSdk(clientType: string) {
         try {
-            await init({
+            const initParams = {
                 appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
                 supportMultipleUsers: false,
                 httpGatewaySettings: {
@@ -184,7 +184,9 @@ class ClientApp {
                     useConnect: clientType === 'connect',
                     dragDropEnabled: true
                 }
-            });
+            }
+            console.log("Initializing SDK with params:", initParams);
+            await init(initParams);
             await initDragDrop();
             await createDropzone(this.handleDropEvent.bind(this), '#drop_area', { drop: true, allowPropagation: true });
             registerActivityCallback(this.handleTransferEvents.bind(this));
