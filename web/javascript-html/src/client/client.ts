@@ -29,7 +29,7 @@ async function showSelectDialog(options: SelectDialogOptions = {}): Promise<Data
 }
 
 /**
- * Formatter for human-readable file sizes using Intl.NumberFormat with unit style.
+ * Formatter for human-readable file sizes.
  */
 const bytesFormatter = new Intl.NumberFormat('en', {
     style: 'unit',
@@ -39,9 +39,11 @@ const bytesFormatter = new Intl.NumberFormat('en', {
     maximumFractionDigits: 2
 });
 
+/// Helpers
 const getVal = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value;
 const getChecked = (name: string) => document.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value;
 
+/// Display error on UI
 function handleError(title: string, err: any) {
     const msg = err?.message || JSON.stringify(err);
     console.error(`${title}:`, err);
@@ -82,7 +84,7 @@ class ClientApp {
     }
 
     // =====================
-    // Logic Handlers
+    // UI event Handlers
     // =====================
 
     async pickFiles() {
@@ -231,15 +233,21 @@ class ClientApp {
         const info = await getInfo();
         const el = document.getElementById('client_status');
         if (!el) return;
-        const statusMap: Record<string, string> = {
-            'connect': info.connect.status,
-            'httpgw': info.httpGateway.info?.version || 'Connected',
-            'desktop': 'Ready'
-        };
-        //el.textContent = statusMap[clientType] || 'Unknown';
         el.textContent = JSON.stringify(info, null, 2);
+        var version: string = 'N/A';
+        switch (clientType) {
+            case 'desktop':
+                version = info.version;
+                break;
+            case 'httpgw':
+                version = info.httpGateway?.info?.version || 'N/A';
+                break;
+            case 'connect':
+                version = info.connect?.status || 'N/A';
+                break;
+        }
+        el.textContent = `Version: ${version}`;
     }
-
     private storeFileNames(selection: DataTransferResponse) {
         const files = selection.dataTransfer?.files || [];
         const names = files.map(f => f.name);
