@@ -8,6 +8,7 @@ info:
   version: 1.0.0
   license:
     name: Proprietary
+    url: "https://ibm.com/products/aspera"
   description: |
     Complete API documentation for Aspera Shares, a secure file sharing and collaboration platform.
 
@@ -121,6 +122,8 @@ paths:
                 required:
                   - resource_type
                   - links
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   # User Endpoints
   /api/v1/data/users:
     get:
@@ -1015,6 +1018,8 @@ paths:
                         - url
                 required:
                   - apis
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /node_api/ping:
     get:
       tags:
@@ -1031,6 +1036,8 @@ paths:
               schema:
                 type: string
                 example: ""
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /node_api/info:
     get:
       tags:
@@ -1045,6 +1052,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NodeInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /node_api/transfers:
     post:
       tags:
@@ -1989,7 +1998,6 @@ components:
             while it alone triggers 'Login information' email with 'Change password' link.
     LocalUserUpdate:
       type: object
-      required: []
       properties:
         username:
           type: string

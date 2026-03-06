@@ -6,14 +6,14 @@ Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 
 - Aspera Transfer daemon: transfer files in an application
 - Aspera Applications APIs: interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
-- Aspera Connect SDK and HTTPGW SDK: transfer files in a web browser
+- Aspera Web SDK: transfer files in a web browser
 
 ![Component APIs](doc/api_components.png)
 
 Various programming languages are proposed.
 
 > [!NOTE]
-> This repo uses Aspera transferd v1.1.5+
+> This repo uses Aspera `transferd` v1.1.5+
 
 ## Other resources
 
@@ -24,7 +24,7 @@ Various programming languages are proposed.
 
 [Video about Transfer Daemon SDK](https://higherlogicstream.s3.amazonaws.com/IMWUC/d5b91301-6aa1-5741-e083-2a9121d9d8a7_file.mp4)
 
-The [IBM Aspera Connect SDK github site](https://github.com/IBM/aspera-connect-sdk-js) contains examples about using the Aspera Connect SDK.
+The [IBM Aspera Web SDK GitHub site](https://github.com/IBM/aspera-sdk-js) contains examples about using the Aspera Connect SDK.
 
 ## Introduction
 
@@ -34,8 +34,8 @@ IBM Aspera provides two types of APIs:
 
   SDKs include **libraries** to be used in applications to transfer files
 
-  - **Aspera Transfer Daemon SDK**: (gRPC with multi language) transfer files in an application
-  - web SDKs:
+  - **Aspera Transfer Daemon SDK**: (gRPC with multi-language) transfer files in an application
+  - The 3 existing web SDKs are replaced with a single one: **Aspera web SDK**
     - **Aspera Connect SDK**: (web js) transfer files in a web browser
     - **Aspera HTTP Gateway SDK**: (web js) transfer files in a web browser using HTTPS
     - **Aspera for Desktop SDK**: (web js) transfer files in a web browser
@@ -44,7 +44,7 @@ IBM Aspera provides two types of APIs:
 
   **REST** APIs (with OpenAPI spec) interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
 
-Depending on the use case, one might use one or (often) several of those APIs.
+Depending on the use case, one might use one or (often) several of those APIs (front-end, back-end).
 
 ## Repository structure
 
@@ -52,15 +52,15 @@ This repository is structured like this:
 
 - `app` : examples in various languages using the **Aspera Transfer Daemon** and **Aspera Applications REST APIs**
 
-- `web` : an example that shows the use of web SDKs: both the **Aspera Connect SDK** and **Aspera HTTP Gateway SDK** (Aspera for Desktop is coming), in javascript.
+- `web` : an example that shows the use of web SDK using typescript.
 
 In `app`, you'll find one folder per programming language and, in each of them :
 
-- `README.md` : a specific README for the language
-- `Makefile` : a makefile to run samples
+- `README.md` : specific for the language
+- `Makefile` : a `Makefile` to run samples
 - `src` : source code
 - `src/examples` : sample programs
-- `src/utils` : helper classes
+- `src/utils` : helper classes, especially using `transferd`
 
 Sample programs use addresses and credentials from a common YAML configuration file.
 Once the configuration file is created, see below on how to run them.
@@ -93,18 +93,18 @@ To download the SDK only, execute: `make sdk`.
 > [!NOTE]
 > Yes, you can also drag and drop, and click, and copy/paste, and edit the file with Notepad, etc...
 
-2. Prepare the SDK folder
+1. Prepare the SDK folder
 
     ```dos
     md tmp
     ```
 
-3. Download the Aspera Transfer Daemon SDK ([here](https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/downloads/downloads.json)) and extract its contents to the folder identified by `sdk_dir` in `config/paths.yaml` : `<main folder>/tmp/transfer_sdk`
+2. Download the [Aspera Transfer Daemon SDK](https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/downloads/downloads.json) and extract its contents to the folder identified by `sdk_dir` in `config/paths.yaml` : `<main folder>/tmp/transfer_sdk`
 
 > [!NOTE]
 > Make sure that files identified in `config/paths.yaml` are in the extracted folder as expected. For example, the following file must exist: `<main folder>/tmp/transfer_sdk/sbin/transferd`
 
-4. Run the samples: see [Running sample programs](#running-sample-programs)
+1. Run the samples: see [Running sample programs](#running-sample-programs)
 
 ## Running sample programs
 
