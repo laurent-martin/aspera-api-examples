@@ -2,6 +2,8 @@
 
 #include <grpcpp/create_channel.h>
 
+#include <boost/asio/io_context.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/json.hpp>
 #include <boost/process.hpp>
 #include <boost/regex.hpp>
@@ -16,6 +18,7 @@
 #include "transferd.grpc.pb.h"
 namespace json = boost::json;
 namespace trapi = transferd::api;
+namespace bp2 = boost::process;
 
 // define TransferStatus_to_string(value) trapi::TransferStatus_Name<trapi::TransferStatus>(value)
 #define TransferStatus_to_string(value) magic_enum::enum_name(value)
@@ -33,7 +36,8 @@ class TransferClient {
     Configuration& _config;
     std::string _server_address;
     uint16_t _server_port;
-    std::unique_ptr<boost::process::child> _transfer_daemon_process;
+    boost::asio::io_context _daemon_ioc;
+    std::unique_ptr<bp2::process> _transfer_daemon_process;
     std::unique_ptr<trapi::TransferService::Stub> _transfer_service;
     const std::string _daemon_name;
     const std::string _daemon_log;
@@ -58,34 +62,52 @@ class TransferClient {
     ~TransferClient() {
         daemon_shutdown();
     }
+
     // Start the transfer SDK daemon process
     void daemon_start() {
         const std::string file_base = _config.log_folder_path() / _daemon_name;
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
-        const std::string command = std::string(_config.get_path("sdk_daemon")) + " --config " + conf_file;
         LOG(debug) << LOG_ITEM("daemon out") << out_file;
         LOG(debug) << LOG_ITEM("daemon err") << err_file;
         LOG(debug) << LOG_ITEM("daemon log") << _daemon_log;
         LOG(debug) << LOG_ITEM("ascp log") << (_config.log_folder_path() / ASCP_LOG_FILE).string();
-        LOG(debug) << LOG_ITEM("command") << command;
+        LOG(debug) << LOG_ITEM("exe") << _config.get_path("sdk_daemon");
         daemon_create_config_file(conf_file);
         LOG(info) << "Starting daemon...";
-        // Start daemon
-        _transfer_daemon_process = std::make_unique<boost::process::child>(boost::process::child(
-            command,
-            boost::process::std_out > out_file,
-            boost::process::std_err > err_file));
+
+        // Open stdout/stderr redirect files (FILE* is accepted cross-platform by process_stdio)
+        FILE* out_fp = std::fopen(out_file.c_str(), "w");
+        FILE* err_fp = std::fopen(err_file.c_str(), "w");
+        if (!out_fp || !err_fp) {
+            throw std::runtime_error("Failed to open daemon output files");
+        }
+        _transfer_daemon_process.reset(new bp2::process(
+            _daemon_ioc,
+            boost::filesystem::path(_config.get_path("sdk_daemon")),
+            std::vector<std::string>{"--config", conf_file},
+            bp2::process_stdio{{}, out_fp, err_fp}));
+        std::fclose(out_fp);
+        std::fclose(err_fp);
+
         std::this_thread::sleep_for(std::chrono::seconds(2));
-        if (!_transfer_daemon_process->running()) {
-            _transfer_daemon_process->wait();
+
+        // v2 has no running() — use kill(pid, 0) to probe liveness
+        const bool is_running =
+            (_transfer_daemon_process->id() > 0) &&
+            (::kill(_transfer_daemon_process->id(), 0) == 0 || errno != ESRCH);
+
+        if (!is_running) {
+            boost::system::error_code ec;
+            _transfer_daemon_process->wait(ec);
             LOG(error) << "Daemon not started.";
             LOG(error) << "Exited with code: " << _transfer_daemon_process->exit_code();
             LOG(error) << "Check daemon log: " << _daemon_log;
             LOG(error) << last_file_line(_daemon_log);
             throw std::runtime_error("daemon startup failed");
         }
+
         if (_server_port == 0) {
             const std::string last_line = last_file_line(_daemon_log);
             try {
@@ -107,6 +129,7 @@ class TransferClient {
         }
         LOG(info) << "Daemon started: " << _transfer_daemon_process->id();
     }
+
     // Connect to the transfer SDK daemon
     void daemon_connect() {
         const std::string _channel_address = _server_address + ":" + std::to_string(_server_port);
@@ -129,6 +152,7 @@ class TransferClient {
         }
         LOG(info) << "Connected !";
     }
+
     // Start daemon and connect to it
     void daemon_startup() {
         if (_transfer_service == nullptr) {
@@ -144,11 +168,13 @@ class TransferClient {
         }
         if (_transfer_daemon_process != nullptr) {
             LOG(info) << "Shutting down daemon...";
-            _transfer_daemon_process->terminate();
-            _transfer_daemon_process->wait();
+            boost::system::error_code ec;
+            _transfer_daemon_process->terminate(ec);
+            _transfer_daemon_process->wait(ec);
             _transfer_daemon_process = nullptr;
         }
     }
+
     // Start a transfer given a transfer spec
     // @param transfer_spec: a json object with the transfer specification
     // @return transfer_id: the id of the started transfer
@@ -171,7 +197,7 @@ class TransferClient {
         LOG(info) << "transfer id: " << transfer_id << ", status: " << TransferStatus_to_string(start_transfer_response.status());
         return transfer_id;
     }
-    //
+
     void wait_transfer(const std::string& transfer_id) {
         // wait until finished, check every second
         while (true) {
@@ -208,6 +234,7 @@ class TransferClient {
             throw std::invalid_argument("Invalid ascp_level: " + level);
         }
     }
+
     void daemon_create_config_file(const std::string& conf_file) {
         // Prepare daemon configuration file
         const json::object config_info = {
