@@ -61,7 +61,8 @@ tags:
       However, delete occurs under Authorizable Users although you can also delete local users from Local User Management.
       It is important to note that only when the user type is database will the `local_user_id` be returned.
 
-      > NOTE: Manager authorization to these resources depends on the configuration option selected in the UI.
+      > [!NOTE]
+      > Manager authorization to these resources depends on the configuration option selected in the UI.
   - name: Groups
     description: Group management
   - name: Shares
@@ -2813,20 +2814,15 @@ components:
       type: object
       required:
         - error
-        - message
       properties:
         error:
-          type: string
-          description: Error type
-          example: BadRequest
-        message:
-          type: string
-          description: Human-readable error message
-          example: Invalid request parameters
-        details:
           type: object
-          description: Additional error details
-          additionalProperties: true
+          description: Error object
+          properties:
+            user_message:
+              type: string
+              description: Human-readable error message
+              example: API user authentication failed
     filesBrowseRequest:
       required:
         - path
@@ -3712,8 +3708,8 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
           example:
-            error: BadRequest
-            message: Invalid request parameters
+            error:
+              user_message: Invalid request parameters
     Unauthorized:
       description: Unauthorized - authentication required
       content:
@@ -3721,8 +3717,8 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
           example:
-            error: Unauthorized
-            message: Authentication credentials were not provided or are invalid
+            error:
+              user_message: Authentication credentials were not provided or are invalid
     Forbidden:
       description: Forbidden - insufficient permissions
       content:
@@ -3730,8 +3726,8 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
           example:
-            error: Forbidden
-            message: You do not have permission to perform this action
+            error:
+              user_message: You do not have permission to perform this action
     NotFound:
       description: Not found - resource does not exist
       content:
@@ -3739,5 +3735,5 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
           example:
-            error: NotFound
-            message: The requested resource was not found
+            error:
+              user_message: The requested resource was not found
