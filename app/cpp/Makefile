@@ -57,6 +57,6 @@ $(CONAN_HOME)/profiles/default:
 	conan profile detect --force
 clean::
 	rm -fr $(CPP_BUILD_DIR)
-superclean::
+clobber::
 	rm -f CMakeUserPresets.json
 	rm -fr $(CONAN_HOME)

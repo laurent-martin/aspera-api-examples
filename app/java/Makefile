@@ -29,5 +29,5 @@ clean::
 	rm -fr .gradle bin
 clean_lang:
 	if test -d .gradle;then gradle clean $(GRADLE_PROPS); fi
-superclean::
+clobber::
 	rm -fr build

@@ -28,7 +28,7 @@ GBL_FILE_SAMPLE=$(GBL_DIR_TMP)This_is_a_test.txt
 # folder for test flags
 DIR_TESTED_FLAG=./.tested/
 TEST_FLAGS=$(foreach var,$(TEST_CASES),$(DIR_TESTED_FLAG)$(var))
-.PHONY: all clean superclean clean_flags clean_daemon list
+.PHONY: all clean clobber clean_flags clean_daemon list
 all::
 # list of test cases
 list:
@@ -42,7 +42,7 @@ clean:: clean_flags clean_daemon
 	rm -f $(TMPDIR)$(SDK_NAME_DAEMON).* $(TMPDIR)aspera-scp-transfer*.log
 	rm -fr $(DIR_TESTED_FLAG)
 # clean all generated and compiled files
-superclean:: clean
+clobber:: clean
 clean_daemon:
 	killall -q $(SDK_NAME_DAEMON)||:
 $(GBL_DIR_TMP).exists:

@@ -15,6 +15,6 @@ $(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(EXAMPLES_DIR)%.rs
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
 clean::
-superclean::
+clobber::
 	rm -fr target
 	rm -f Cargo.lock

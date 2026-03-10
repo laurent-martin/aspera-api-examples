@@ -15,5 +15,5 @@ clean::
 	rm -fr bin obj
 clean_lang:
 	dotnet clean
-superclean::
+clobber::
 	rm -fr dist obj bin

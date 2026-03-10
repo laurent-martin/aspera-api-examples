@@ -63,5 +63,5 @@ $(PY_FILES_GRPC): $(FILES_RUNTIME)
 endif
 clean::
 	find . -name __pycache__ -o -name '*.pyc'|xargs rm -fr
-superclean:: clean
+clobber:: clean
 	rm -fr $(PYENV_DIR) $(PY_GRPC_GEN_DIR)

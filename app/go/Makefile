@@ -30,7 +30,7 @@ $(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) $(GO_FILES_GRPC) $(BUIL
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
 clean::
-superclean::
+clobber::
 	rm -fr $(BUILD_DIR)
 ifeq ($(GO_GRPC_SDK_DIR),)
 # generate grpc source code from proto file
