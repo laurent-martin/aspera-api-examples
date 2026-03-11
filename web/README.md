@@ -55,8 +55,8 @@ In this example, the transfer spec is build either:
 
 The web application is split in two parts:
 
-- <src/client/client.js> runs in the browser, loaded by the main application page <index.html>
-- <src/server/server.js> runs in NodeJS and is called by the client. It calls the Node API of HSTS.
+- <src/client/client.ts> runs in the browser, loaded by the main application page <index.html>
+- <src/server/server.ts> runs in NodeJS and is called by the client. It calls the Node API of HSTS.
 
 ![Diagram](doc/diagram.png)
 
@@ -125,9 +125,14 @@ If you do not have `make`, refer to the `Makefile` for the startup procedure:
   npm run all
   ```
 
-## Using the client
+## Using the application
 
-Once the server is started, it shall display the URL of the server, which shall be: <http://localhost:5173>
+Once the runtime is started:
+
+- `express` is running, and serves the API: runs on port `9080` (`web.port` in `config.yml`)
+- `vite` is running and works as a reverse proxy for the server API: runs on port 5173 (`server.port` in `vite.config.ts`)
+
+Use `vite`'s URL in the browser: <http://localhost:5173>
 
 The client app proposes various cases, using connect versus HTTP GW.
 For those two it will try to connect and retrieve the version.

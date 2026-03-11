@@ -1,5 +1,5 @@
 /**
- * A very simple API to autorize transfers for the demo web app.
+ * A very simple API to authorize transfers for the demo web app.
  */
 
 import express, { Request, Response } from "express";
@@ -198,16 +198,7 @@ app.post(
   }
 );
 
-
-app.use(express.static(publicFolder));
-
-// --------------------------------------------------
-// Start server
-// --------------------------------------------------
-
-const server = app.listen(config.web.port, () => {
-  console.log(`Server running at http://localhost:${config.web.port}`);
-});
+let server: ReturnType<typeof app.listen>;
 
 app.post("/api/shutdown", (req, res) => {
   res.json({ message: "Server shutting down" });
@@ -216,4 +207,14 @@ app.post("/api/shutdown", (req, res) => {
       process.exit(0);
     });
   }, 200);
+});
+
+app.use(express.static(publicFolder));
+
+// --------------------------------------------------
+// Start server
+// --------------------------------------------------
+
+server = app.listen(config.web.port, () => {
+  console.log(`Server running at http://localhost:${config.web.port}`);
 });
