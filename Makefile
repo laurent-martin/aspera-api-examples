@@ -2,7 +2,7 @@
 DIR_TOP=$(CURDIR)/
 # the bulk of rules are in common.mak
 include $(DIR_TOP)common.mak
-SECTIONS=app/csharp app/go app/java app/js app/python app/ruby app/rust app/cpp web/javascript-html
+SECTIONS=app/csharp app/go app/java app/js app/python app/ruby app/rust app/cpp web
 .PHONY: cleantmp template sdk
 template:
 	cd doc && make
