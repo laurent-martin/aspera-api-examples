@@ -1,4 +1,4 @@
-DIR_TOP=$(realpath ../..)/
+DIR_TOP=$(realpath ..)/
 TEST_CASES=server
 include $(DIR_TOP)common.mak
 SRC=./src/
@@ -7,7 +7,7 @@ DIST=./dist/
 TMP_NPM=tmp_node/
 all:: $(TEST_FLAGS)
 # run server and vite proxy
-run:
+run: node_modules/.package-lock.json
 	npm run all
 # run only the server
 server: $(DIST)server/server.js $(DIST)client/client.js

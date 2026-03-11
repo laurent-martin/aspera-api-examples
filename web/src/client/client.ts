@@ -39,11 +39,18 @@ const bytesFormatter = new Intl.NumberFormat('en', {
     maximumFractionDigits: 2
 });
 
-/// Helpers
+/**
+ * Get value of input text.
+ */
 const getVal = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value;
+/**
+ * Get status of radio button
+ */
 const getChecked = (name: string) => document.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value;
 
-/// Display error on UI
+/**
+ * Display error on UI
+ */
 function handleError(title: string, err: any) {
     const msg = err?.message || JSON.stringify(err);
     console.error(`${title}:`, err);
@@ -51,10 +58,16 @@ function handleError(title: string, err: any) {
 }
 
 class ClientApp {
+    // =====================
+    // STATE: Centralized state.
+    // =====================
     /**
-     * STATE: Centralized state for selected files and current client type.
+     * Currently selected files.
      */
     private selectedUploadFiles: string[] = [];
+    /**
+     * Currently selected transfer client.
+     */
     private currentClient: 'desktop' | 'connect' | 'httpgw' = 'httpgw';
 
     constructor(private config: any) { }

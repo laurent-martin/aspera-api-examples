@@ -1,9 +1,11 @@
+/**
+ * A very simple API to autorize transfers for the demo web app.
+ */
+
 import express, { Request, Response } from "express";
-import https from "https";
 import yaml from "js-yaml";
 import fs from "fs";
 import path from "path";
-import assert from "assert";
 import { Agent, setGlobalDispatcher } from "undici";
 
 // --------------------------------------------------
@@ -19,6 +21,9 @@ interface TSpecRequestBody {
   basic_token?: boolean;
 }
 
+/**
+ * Configuration file.
+ */
 interface ServerConfig {
   web: {
     port: number;
@@ -32,7 +37,7 @@ interface ServerConfig {
 }
 
 interface NodeApiTransferSpec {
-  transfer_spec: any; // or a more specific type if you know it
+  transfer_spec: any;
   error?: { user_message: string };
 }
 
@@ -42,10 +47,12 @@ interface NodeApiResponse {
 // --------------------------------------------------
 // Argument validation
 // --------------------------------------------------
+/** Main repository folder */
 const topFolder = process.argv[2];
 if (!topFolder || !fs.statSync(topFolder).isDirectory()) {
   throw new Error(`Parameter is not a folder: ${topFolder}`);
 }
+/** Location of static files */
 const publicFolder = process.argv[3];
 if (!publicFolder || !fs.statSync(publicFolder).isDirectory()) {
   throw new Error(`Parameter is not a folder: ${publicFolder}`);
@@ -53,6 +60,7 @@ if (!publicFolder || !fs.statSync(publicFolder).isDirectory()) {
 console.log(`Using top folder: ${topFolder}`);
 console.log(`Using public folder: ${publicFolder}`);
 
+/** Build absolute path by adding topfolder to relative path */
 function getAbsPath(relative: string): string {
   return path.join(topFolder, relative);
 }
@@ -61,10 +69,16 @@ function getAbsPath(relative: string): string {
 // Load configuration
 // --------------------------------------------------
 
+/** Config file mapping names to relative paths in repository */
 const paths = yaml.load(
   fs.readFileSync(getAbsPath("config/paths.yaml"), "utf8")
 ) as Record<string, string>;
 
+/**
+ * Get absolute path to file based on name
+ * @param name path name in path reference file
+ * @returns absolute path
+ */
 function getPath(name: string): string {
   return getAbsPath(paths[name]);
 }
@@ -72,8 +86,6 @@ function getPath(name: string): string {
 const config = yaml.load(
   fs.readFileSync(getPath("main_config"), "utf8")
 ) as ServerConfig;
-
-const httpPort = config.web.port;
 
 // --------------------------------------------------
 // TLS override (test only)
@@ -116,6 +128,7 @@ app.post(
 
       const tsSourcePaths = sources.map((file) => ({ source: file }));
 
+      /** payload for transfer spec request */
       let requestTs: { paths: any[] };
 
       if (operation === "upload") {
@@ -135,6 +148,7 @@ app.post(
           `${config.node.username}:${config.node.password}`
         ).toString("base64");
 
+      // Call Aspera HSTS Node API for transfer authorization.
       const response = await fetch(
         `${config.node.url}/files/${operation}_setup`,
         {
@@ -168,6 +182,7 @@ app.post(
           .json({ error: result0.error.user_message });
       }
 
+      /** Single transfer spec received */
       const transferSpec = result0.transfer_spec;
       transferSpec.paths = tsSourcePaths;
 
@@ -189,6 +204,6 @@ app.use(express.static(publicFolder));
 // Start server
 // --------------------------------------------------
 
-app.listen(httpPort, () => {
-  console.log(`Server running at http://localhost:${httpPort}`);
+app.listen(config.web.port, () => {
+  console.log(`Server running at http://localhost:${config.web.port}`);
 });

@@ -1,12 +1,18 @@
-# Aspera transfers in Browser-based Web Applications
+# Aspera transfers in Web Applications
 
-The newer SDK for web app development is located at:
+## References
 
-[SDK repo](https://github.com/IBM/aspera-sdk-js)
+The current SDK for web app development is located at:
 
-[SDK running example](https://ibm.github.io/aspera-sdk-js)
+[web SDK repo](https://github.com/IBM/aspera-sdk-js)
 
-[SDK TypeDoc documentation](https://ibm.github.io/aspera-sdk-js/docs/)
+[web SDK running example](https://ibm.github.io/aspera-sdk-js)
+
+[web SDK TypeDoc documentation](https://ibm.github.io/aspera-sdk-js/docs/)
+
+[Migration guide from former SDK](https://github.com/IBM/aspera-sdk-js/blob/main/MIGRATION.md)
+
+[All Aspera APIs here](https://developer.ibm.com/apis/catalog?search=aspera)
 
 ## This repo
 
@@ -14,14 +20,14 @@ This sample application shows how to build an Aspera-transfer-enabled web applic
 
 ![Screenshot](doc/screenshot.png)
 
-In all cases, starting a transfer consists in building a **transfer spec** and then calling the browser-side javascript `startTransfer` SDK's API.
+Starting a transfer consists in building a **transfer spec** and then calling the browser-side JavaScript `startTransfer` API.
 
 The transfer spec is Aspera's structure that contains all information to start a transfer:
 
-- the HSTS server address, TCP method (SSH or HTTPS), TCP and UDP ports
-- authorization (token, ssh key or password, etc...)
-- transfer direction, source files and destination folder
-- optional parameters such as resume policy or target rate, etc...
+- The HSTS server address, TCP method (SSH or HTTPS), TCP and UDP ports.
+- Authorization (token, ssh key or password, etc...)
+- Transfer direction, source files and destination folder
+- Optional parameters such as resume policy or target rate, etc...
 
 An Aspera transfer is authorized either:
 
@@ -29,9 +35,10 @@ An Aspera transfer is authorized either:
 - using SSH credentials (mostly legacy or server-server transfers)
 
 > [!NOTE]
-> The SSH-based transfer authorization is not recommended for web applications, as users shall be authorized through the web app. The legacy Aspera "Connect Server" web app was using SSH auth, but is deprecated.
+> The SSH-based transfer authorization is not recommended for web applications, as users shall be authorized through the web app.
+> The legacy Aspera "Connect Server" web app was using SSH auth, but is deprecated.
 
-Web applications shall use the "token" authorization scheme, using either of those types:
+Web applications shall use the "token" authorization scheme, using one of those types:
 
 - Aspera Transfer token (a string that starts with either `ATM` or `ATB` and ends with the same letters reverse)
 - an OAuth 2.0 bearer token (a string that begins with `Bearer`)
@@ -55,9 +62,9 @@ The web application is split in two parts:
 
 ## Configuration
 
-Refer to [the configuration section of the upper README.md](../README.md#configuration-file) to create `../config.yaml`.
+Refer to [the configuration section of the upper README.md](../README.md#configuration-file) to create `config.yaml`.
 
-This sample app uses these values from the config file (`../config.yaml`):
+This sample app uses these values from the config file (`config.yaml`):
 
 ```yaml
 node:
@@ -75,7 +82,9 @@ httpgw:
 ```
 
 > [!NOTE]
-> Node credentials can be either a node user, or an access key. As use of SSH credentials is not recommended, you may ignore the `server` section. The `httpgw`can also be ignored if you do not want to use HTTP GW.
+> Node credentials can be either a node user, or an access key.
+> As use of SSH credentials is not recommended, you may ignore the `server` section.
+> The `httpgw` can also be ignored if you do not want to use HTTP Gateway.
 
 ## Environment Setup
 
@@ -95,33 +104,26 @@ For an automated run, using `make` and the `Makefile` (refer to it), do:
 make run
 ```
 
-This will:
+> [!NOTE]
+> The `Makefile` installs the HTTP GW SDK library.
 
-- Install NodeJS packages for the server
-- run the express web server.
+If you do not have `make`, refer to the `Makefile` for the startup procedure:
 
-## Execution of server, manual
-
-If you do not have `make`, you may refer to the `Makefile` for the procedure:
-
-- install NodeJS packages for server
+- Install NodeJS packages for the server:
 
   ```bash
   npm install
   ```
 
-- start the server
+- Run the express web server and `vite`:
 
   ```bash
-  node --trace-warnings src/server.js ../config.yaml 3000 src/
+  npm run all
   ```
-
-> [!NOTE]
-> In addition to this the `Makefile` installs the HTTP GW SDK library.
 
 ## Using the client
 
-Once the server is started, it shall display the URL of the server, which shall be: <http://localhost:3000>
+Once the server is started, it shall display the URL of the server, which shall be: <http://localhost:5173>
 
 The client app proposes various cases, using connect versus HTTP GW.
 For those two it will try to connect and retrieve the version.
@@ -137,7 +139,3 @@ For download, provide the path on server, for upload select local files and dest
 Then start the transfer.
 
 The status of transfer can be followed on the web page.
-
-## References
-
-[All Aspera APIs here](https://developer.ibm.com/apis/catalog?search=aspera)
