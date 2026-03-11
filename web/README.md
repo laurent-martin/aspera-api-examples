@@ -55,8 +55,8 @@ In this example, the transfer spec is build either:
 
 The web application is split in two parts:
 
-- <src/client.js> runs in the browser, loaded by the main application page <src/index.html>
-- <src/server.js> runs in NodeJS and is called by the client. It calls the Node API of HSTS.
+- <src/client/client.js> runs in the browser, loaded by the main application page <index.html>
+- <src/server/server.js> runs in NodeJS and is called by the client. It calls the Node API of HSTS.
 
 ![Diagram](doc/diagram.png)
 
@@ -69,14 +69,14 @@ This sample app uses these values from the config file (`config.yaml`):
 ```yaml
 node:
     url: https://server.example.com
-    user: _node_user_here_
-    pass: _node_pass_here_
+    username: _node_user_here_
+    password: _node_pass_here_
     file_download: /aspera-test-dir-small/10MB.1
     folder_upload: /Upload
 server:
     url: ssh://eudemo.asperademo.com:33001
-    user: _server_user_here_
-    pass: _server_pass_here_
+    username: _server_user_here_
+    password: _server_pass_here_
 httpgw:
   url: https://mygw.example.com/aspera/http-gwy
 ```
@@ -85,6 +85,10 @@ httpgw:
 > Node credentials can be either a node user, or an access key.
 > As use of SSH credentials is not recommended, you may ignore the `server` section.
 > The `httpgw` can also be ignored if you do not want to use HTTP Gateway.
+
+> [!CAUTION]
+> This sample app shares the full configuration with the client, including credential.
+> This is for demo, in a real app, such secrets shall not be exposed.
 
 ## Environment Setup
 

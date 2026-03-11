@@ -198,12 +198,22 @@ app.post(
   }
 );
 
+
 app.use(express.static(publicFolder));
 
 // --------------------------------------------------
 // Start server
 // --------------------------------------------------
 
-app.listen(config.web.port, () => {
+const server = app.listen(config.web.port, () => {
   console.log(`Server running at http://localhost:${config.web.port}`);
+});
+
+app.post("/api/shutdown", (req, res) => {
+  res.json({ message: "Server shutting down" });
+  setTimeout(() => {
+    server.close(() => {
+      process.exit(0);
+    });
+  }, 200);
 });

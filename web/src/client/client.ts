@@ -189,6 +189,7 @@ class ClientApp {
     private async reinitSdk(clientType: string) {
         try {
             const initParams = {
+                // unique application ID for this application
                 appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
                 supportMultipleUsers: false,
                 httpGatewaySettings: {
@@ -231,8 +232,8 @@ class ClientApp {
 
         const colors: Record<string, string> = {
             'drop': '#3498db',
-            'dragenter': 'red',
-            'dragleave': 'green'
+            'dragenter': 'green',
+            'dragleave': 'red'
         };
 
         dropArea.style.backgroundColor = colors[event.type] || '';
