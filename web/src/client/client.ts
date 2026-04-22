@@ -1,17 +1,22 @@
 import {
-    init,
+    initSession,
+    getStatus,
     getInfo,
+    launch,
     startTransfer,
     showSelectFileDialog,
     showSelectFolderDialog,
     initDragDrop,
     createDropzone,
+    removeDropzone,
     registerActivityCallback,
+    registerStatusCallback,
     type DataTransferResponse,
     type TransferResponse,
     type TransferSpec,
     type FileDialogOptions,
-    type FolderDialogOptions
+    type FolderDialogOptions,
+    type SdkStatus
 } from '@ibm-aspera/sdk';
 
 /**
@@ -50,6 +55,17 @@ function handleError(title: string, err: any) {
     alert(`${title}\n${msg}`);
 }
 
+/** Merge arrays and remove duplicates */
+const uniqueMerge = <T>(...arrays: T[][]): T[] => [...new Set(arrays.flat())];
+
+/** Status color mapping */
+const STATUS_COLORS: Record<string, string> = {
+    'RUNNING': 'green',
+    'DEGRADED': 'orange',
+    'FAILED': 'red',
+    'DISCONNECTED': 'red'
+};
+
 class ClientApp {
     // =====================
     // STATE: Centralized state.
@@ -61,7 +77,11 @@ class ClientApp {
     /**
      * Currently selected transfer client.
      */
-    private currentClient: 'desktop' | 'connect' | 'httpgw' = 'httpgw';
+    private currentClient: 'desktop' | 'connect' | 'httpgw' | null = null;
+    /**
+     * Flag to track if drag & drop has been initialized for current client
+     */
+    private dragDropInitialized: boolean = false;
 
     constructor(private config: any) { }
 
@@ -83,10 +103,25 @@ class ClientApp {
             const element = document.getElementById(id) as HTMLInputElement;
             if (element) element.value = val;
         });
+
+        // Restore selected client from sessionStorage if available
+        const savedClient = sessionStorage.getItem('selectedClient');
+        if (savedClient) {
+            const radioButton = document.querySelector<HTMLInputElement>(`input[name="client_select"][value="${savedClient}"]`);
+            if (radioButton) {
+                radioButton.checked = true;
+            }
+            sessionStorage.removeItem('selectedClient'); // Clean up
+        }
+
         // Event Bindings
         document.querySelectorAll('input[type=radio]').forEach(el => el.addEventListener('change', () => this.updateUi()));
         document.getElementById('btn_select_files')?.addEventListener('click', () => this.pickFiles());
         document.getElementById('btn_start_transfer')?.addEventListener('click', () => this.startClientTransfer());
+
+        const initialClient = this.uiState.client;
+        await this.reinitSdk(initialClient);
+        this.currentClient = initialClient;
         await this.updateUi();
     }
 
@@ -99,8 +134,7 @@ class ClientApp {
         try {
             const response = await showSelectDialog({ select: 'file', multiple: true, });
             const files = response.dataTransfer?.files || [];
-            // Use Set to ensure unique filenames
-            this.selectedUploadFiles = [...new Set(files.map(f => f.name))];
+            this.selectedUploadFiles = uniqueMerge(files.map(f => f.name));
             this.updateUi();
         } catch (err) {
             handleError("User cancelled or selection failed", err);
@@ -155,11 +189,14 @@ class ClientApp {
      */
     private async updateUi() {
         const state = this.uiState;
-        // SDK Transition Logic
+        // SDK Transition Logic - Force page reload when switching transfer client
         if (state.client !== this.currentClient) {
             console.log(`Switching client from ${this.currentClient} to ${state.client}`);
-            await this.reinitSdk(state.client);
-            this.currentClient = state.client;
+            // Store the selected client in sessionStorage before reload
+            sessionStorage.setItem('selectedClient', state.client);
+            // Force page reload to cleanly reinitialize the SDK
+            window.location.reload();
+            return; // Exit early as page will reload
         }
 
         // Update file list display
@@ -182,29 +219,100 @@ class ClientApp {
 
     private async reinitSdk(clientType: string) {
         try {
-            const initParams = {
-                // unique application ID for this application
+            // Clean up old dropzone before reinitialization
+            try {
+                await removeDropzone('#drop_area');
+                this.dragDropInitialized = false;
+            } catch (e) {
+                // Ignore if no existing dropzone
+            }
+
+            const clientConfigs = {
+                httpgw: {
+                    httpGatewaySettings: { url: this.config.httpgw.url, forceGateway: true },
+                    connectSettings: { useConnect: false, fallback: false, dragDropEnabled: false }
+                },
+                connect: {
+                    connectSettings: { useConnect: true, fallback: false, dragDropEnabled: true, method: 'extension' as const }
+                },
+                desktop: {
+                    connectSettings: { useConnect: false, fallback: false, dragDropEnabled: true, method: 'extension' as const }
+                }
+            };
+
+            const initParams: any = {
                 appId: "C81C7514-BAE4-44F7-83FB-7C4DC5BB0EE7",
                 supportMultipleUsers: false,
-                httpGatewaySettings: {
-                    url: clientType === 'httpgw' ? this.config.httpgw.url : undefined,
-                    forceGateway: clientType === 'httpgw'
-                },
-                connectSettings: {
-                    useConnect: clientType === 'connect',
-                    dragDropEnabled: true
-                }
-            }
+                ...clientConfigs[clientType as keyof typeof clientConfigs]
+            };
+
             console.log("Initializing SDK with params:", initParams);
-            await init(initParams);
-            await initDragDrop();
-            await createDropzone(this.handleDropEvent.bind(this), '#drop_area', { drop: true, allowPropagation: true });
+
+            // Register status callback to monitor SDK lifecycle
+            registerStatusCallback(this.handleStatusEvents.bind(this));
+
+            // Register activity callback for transfer events
             registerActivityCallback(this.handleTransferEvents.bind(this));
+
+            // Use initSession instead of init for non-blocking initialization
+            // Drag & drop will be initialized when status becomes RUNNING
+            initSession(initParams);
         } catch (err) {
             handleError("Initialization Failed", err);
         }
     }
 
+    private async handleStatusEvents(status: SdkStatus) {
+        console.log('SDK Status:', status);
+
+        // When status changes to RUNNING, wait a bit then initialize drag & drop
+        if (status === 'RUNNING') {
+            // Wait for SDK to be fully ready before initializing drag & drop
+            setTimeout(async () => {
+                // Initialize drag & drop only once when SDK becomes ready
+                if (!this.dragDropInitialized && this.currentClient !== 'httpgw') {
+                    try {
+                        await initDragDrop();
+                        await createDropzone(this.handleDropEvent.bind(this), '#drop_area', { drop: true, allowPropagation: true });
+                        this.dragDropInitialized = true;
+                        console.log('Drag & drop initialized successfully');
+                    } catch (err) {
+                        console.error('Failed to initialize drag & drop:', err);
+                    }
+                }
+
+                // Refresh status display after drag & drop is initialized
+                await this.refreshStatusDisplay(this.currentClient || 'desktop');
+            }, 500); // Wait 500ms for SDK to be fully verified
+        } else {
+            // For non-RUNNING statuses, refresh immediately
+            await this.refreshStatusDisplay(this.currentClient || 'desktop');
+        }
+
+        // Add launch link for Desktop when FAILED or DISCONNECTED
+        if (this.currentClient === 'desktop' && ['FAILED', 'DISCONNECTED'].includes(status)) {
+            this.addLaunchLink(status);
+        }
+    }
+
+
+    private addLaunchLink(status: string) {
+        const el = document.getElementById('client_status');
+        if (!el) return;
+
+        const linkId = status === 'FAILED' ? 'launch_desktop' : 'relaunch_desktop';
+        const linkText = status === 'FAILED' ? 'Launch Desktop App' : 'Relaunch Desktop App';
+
+        el.innerHTML += ` - <a href="#" id="${linkId}" style="color: blue; text-decoration: underline;">${linkText}</a>`;
+
+        setTimeout(() => {
+            document.getElementById(linkId)?.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log(`Attempting to ${status === 'FAILED' ? 'launch' : 'relaunch'} IBM Aspera for Desktop...`);
+                launch();
+            });
+        }, 0);
+    }
 
     private handleTransferEvents(response: TransferResponse) {
         // Modernized logging using formatted strings
@@ -217,8 +325,9 @@ class ClientApp {
         this.updateUi();
     }
 
-    private handleDropEvent(data: { event: DragEvent; files: DataTransferResponse }) {
+    private handleDropEvent(data: { event: DragEvent; files?: DataTransferResponse }) {
         const { event, files } = data;
+        if (!files) return;
         event.preventDefault();
 
         const dropArea = document.getElementById('drop_area');
@@ -234,31 +343,38 @@ class ClientApp {
 
         const file_list = files.dataTransfer?.files;
         if (event.type === 'drop' && file_list) {
-            const names = file_list.map(f => f.name);
-            // merge, no dupes
-            this.selectedUploadFiles = [...new Set([...this.selectedUploadFiles, ...names])];
+            this.selectedUploadFiles = uniqueMerge(this.selectedUploadFiles, file_list.map(f => f.name));
             this.updateUi();
         }
     }
 
     private async refreshStatusDisplay(clientType: string) {
-        const info = await getInfo();
         const el = document.getElementById('client_status');
         if (!el) return;
 
-        let version: string = 'N/A';
-        switch (clientType) {
-            case 'desktop':
-                version = info.version;
-                break;
-            case 'httpgw':
-                version = info.httpGateway?.info?.version || 'N/A';
-                break;
-            case 'connect':
-                version = info.connect?.status || 'N/A';
-                break;
+        try {
+            const info = await getInfo();
+            console.log('SDK Info (full):', JSON.stringify(info, null, 2));
+
+            const status = getStatus();
+            const statusFormatters = {
+                desktop: () => `Status: ${status || 'Unknown'} | Desktop Version: ${info.version || 'N/A'}`,
+                httpgw: () => `Status: ${status || 'Unknown'} | Gateway Version: ${info.httpGateway?.info?.version || 'N/A'}`,
+                connect: () => {
+                    const connectInfo = info.connect;
+                    console.log('Connect info:', connectInfo);
+                    return `Status: ${connectInfo?.status || 'N/A'} | Active: ${connectInfo?.active ? '✓' : '✗'}`;
+                }
+            };
+
+            el.textContent = statusFormatters[clientType as keyof typeof statusFormatters]?.() || `Status: ${status || 'Unknown'}`;
+            el.style.color = (status && STATUS_COLORS[status]) || 'gray';
+        } catch (err) {
+            console.debug('SDK info unavailable:', err);
+            const status = getStatus();
+            el.textContent = `Status: ${status || 'N/A'}`;
+            el.style.color = 'gray';
         }
-        el.textContent = `Version: ${version}`;
     }
 
     /** Build Transfer Specification for SSH-based authentication */
