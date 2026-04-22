@@ -49,12 +49,18 @@ interface NodeApiResponse {
 // --------------------------------------------------
 /** Main repository folder */
 const topFolder = process.argv[2];
-if (!topFolder || !fs.statSync(topFolder).isDirectory()) {
+if (!topFolder) {
+  throw new Error(`Missing top folder parameter`);
+}
+if (!fs.existsSync(topFolder) || !fs.statSync(topFolder).isDirectory()) {
   throw new Error(`Parameter is not a folder: ${topFolder}`);
 }
 /** Location of static files */
 const publicFolder = process.argv[3];
-if (!publicFolder || !fs.statSync(publicFolder).isDirectory()) {
+if (!publicFolder) {
+  throw new Error(`Missing public folder parameter`);
+}
+if (!fs.existsSync(publicFolder) || !fs.statSync(publicFolder).isDirectory()) {
   throw new Error(`Parameter is not a folder: ${publicFolder}`);
 }
 console.log(`Using top folder: ${topFolder}`);

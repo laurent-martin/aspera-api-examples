@@ -1,9 +1,10 @@
 # Using Aspera API for Integration and Automation
 <!--
-PANDOC_META_BEGIN
-subtitle: "Unofficial document"
-author: "Laurent MARTIN"
-PANDOC_META_END
+PANDOC_DEFAULTS_BEGIN
+metadata:
+  subtitle: "Unofficial document"
+  author: "Laurent MARTIN"
+PANDOC_DEFAULTS_END
 -->
 <!-- markdownlint-disable MD033 MD060 -->
 

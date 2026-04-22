@@ -50,8 +50,8 @@ button {
   cursor: pointer;
   padding-top: 2px;
   padding-bottom: 2px;
-  #padding-left: 15px;
-  #padding-right: 3px;
+  /* padding-left: 15px; */
+  /* padding-right: 3px; */
   width: 200px;
 }
 

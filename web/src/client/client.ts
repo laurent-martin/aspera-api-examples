@@ -28,9 +28,7 @@ async function showSelectDialog(options: SelectDialogOptions = {}): Promise<Data
     return options.select === 'folder' ? showSelectFolderDialog(options) : showSelectFileDialog(options);
 }
 
-/**
- * Formatter for human-readable file sizes.
- */
+/** Formatter for human-readable file sizes. */
 const bytesFormatter = new Intl.NumberFormat('en', {
     style: 'unit',
     unit: 'byte',
@@ -39,18 +37,13 @@ const bytesFormatter = new Intl.NumberFormat('en', {
     maximumFractionDigits: 2
 });
 
-/**
- * Get value of input text.
- */
+/** Get value of input text. */
 const getVal = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value;
-/**
- * Get status of radio button
- */
+
+/** Get status of radio button */
 const getChecked = (name: string) => document.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value;
 
-/**
- * Display error on UI
- */
+/** Display error on UI. */
 function handleError(title: string, err: any) {
     const msg = err?.message || JSON.stringify(err);
     console.error(`${title}:`, err);
@@ -87,7 +80,8 @@ class ClientApp {
             'folder_for_upload': this.config.server.folder_upload
         };
         Object.entries(fields).forEach(([id, val]) => {
-            (document.getElementById(id) as HTMLInputElement)?.setAttribute('value', val);
+            const element = document.getElementById(id) as HTMLInputElement;
+            if (element) element.value = val;
         });
         // Event Bindings
         document.querySelectorAll('input[type=radio]').forEach(el => el.addEventListener('change', () => this.updateUi()));
@@ -103,7 +97,7 @@ class ClientApp {
     async pickFiles() {
         this.selectedUploadFiles = [];
         try {
-            const response = await showSelectDialog({ multiple: true, });
+            const response = await showSelectDialog({ select: 'file', multiple: true, });
             const files = response.dataTransfer?.files || [];
             // Use Set to ensure unique filenames
             this.selectedUploadFiles = [...new Set(files.map(f => f.name))];
@@ -238,8 +232,12 @@ class ClientApp {
 
         dropArea.style.backgroundColor = colors[event.type] || '';
 
-        if (event.type === 'drop' && files.dataTransfer?.files) {
-            this.storeFileNames(files);
+        const file_list = files.dataTransfer?.files;
+        if (event.type === 'drop' && file_list) {
+            const names = file_list.map(f => f.name);
+            // merge, no dupes
+            this.selectedUploadFiles = [...new Set([...this.selectedUploadFiles, ...names])];
+            this.updateUi();
         }
     }
 
@@ -247,8 +245,8 @@ class ClientApp {
         const info = await getInfo();
         const el = document.getElementById('client_status');
         if (!el) return;
-        el.textContent = JSON.stringify(info, null, 2);
-        var version: string = 'N/A';
+
+        let version: string = 'N/A';
         switch (clientType) {
             case 'desktop':
                 version = info.version;
@@ -262,16 +260,14 @@ class ClientApp {
         }
         el.textContent = `Version: ${version}`;
     }
-    private storeFileNames(selection: DataTransferResponse) {
-        const files = selection.dataTransfer?.files || [];
-        const names = files.map(f => f.name);
-        // merge, no dupes
-        this.selectedUploadFiles = [...new Set([...this.selectedUploadFiles, ...names])];
-        this.updateUi();
-    }
 
+    /** Build Transfer Specification for SSH-based authentication */
     private getTransferSpecSSH(params: any): TransferSpec {
-        const url = new URL(this.uiState.serverUrl.replace(/^ssh:/, 'http://'));
+        const serverUrl = this.uiState.serverUrl;
+        if (!serverUrl) {
+            throw new Error('Server URL is required for SSH authentication');
+        }
+        const url = new URL(serverUrl.replace(/^ssh:/, 'http://'));
         const spec: TransferSpec = {
             remote_host: url.hostname,
             ssh_port: parseInt(url.port, 10) || 22,
@@ -289,16 +285,16 @@ class ClientApp {
         return spec;
     }
 
+    /** Get Transfer Specification from broker application */
     private async getTransferSpecFromServer(params: any): Promise<TransferSpec> {
         const response = await fetch(`${window.location.origin}/api/tspec`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(params)
         });
-
-        const ts = await response.json();
-        if (ts.error) throw new Error(ts.error);
-        return ts;
+        const spec = await response.json();
+        if (spec.error) throw new Error(spec.error);
+        return spec;
     }
 }
 
