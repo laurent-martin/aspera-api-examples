@@ -112,6 +112,54 @@ tags:
     description: Manage workspace membership for users and groups. Grant or revoke workspace access and assign workspace manager permissions.
   - name: Workspaces
     description: Manage collaborative workspaces where members can share files and send packages. Workspaces provide isolated storage contexts with configurable member permissions and roles.
+x-tagGroups:
+  - name: Authentication & Authorization
+    tags:
+      - Clients
+      - Client Authorizations
+      - Client Registration Tokens
+      - Client Settings
+      - Auth Providers
+  - name: User & Organization Management
+    tags:
+      - Self
+      - Users
+      - Organizations
+      - Organization
+      - Feature Flags
+  - name: Workspaces & Collaboration
+    tags:
+      - Workspaces
+      - Workspace Memberships
+      - Workspace Collaborators
+  - name: Content Management
+    tags:
+      - Packages
+      - Packages Count
+      - Dropboxes
+      - Dropbox Memberships
+  - name: Applications
+    tags:
+      - Apps
+      - Apps New
+      - App Memberships
+  - name: Transfer Infrastructure
+    tags:
+      - Nodes
+      - Client Access Keys
+      - Transfers
+      - Transfer Direction
+      - Transfer Report
+  - name: Notifications & Templates
+    tags:
+      - Email Templates
+      - File Upload Notifications
+  - name: Utilities & Reporting
+    tags:
+      - Short Links
+      - Usage Reports
+      - Tier Restrictions
+      - Operations
 paths:
   /apps/app_memberships:
     get:
