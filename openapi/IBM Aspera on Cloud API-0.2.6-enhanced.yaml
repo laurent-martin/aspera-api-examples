@@ -847,10 +847,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
       tags:
@@ -1033,10 +1029,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -1158,10 +1150,6 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedError'
           content:
             application/json:
               schema:
