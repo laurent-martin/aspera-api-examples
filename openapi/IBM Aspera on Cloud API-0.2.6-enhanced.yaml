@@ -3,42 +3,42 @@ info:
   title: Aspera on Cloud and Aspera Enterprise Web Apps
   description: |
     API for Aspera on Cloud and Aspera Enterprise Web Apps
-    
+
     ## Authentication
-    
+
     This API uses OAuth 2.0 for authentication. You must obtain an access token before making API requests.
-    
+
     ### OAuth 2.0 Flow
-    
+
     The API supports the following OAuth 2.0 grant types:
-    
+
     - **Authorization Code**: For web applications with user interaction
     - **Client Credentials**: For server-to-server authentication
     - **JWT Bearer**: For service accounts using signed JWT tokens
-    
+
     ### Getting an Access Token
-    
+
     1. Register your client application using the `/clients` endpoint
     2. Configure authentication method (browser-based or JWT)
     3. Obtain an access token from the authorization server
     4. Include the token in the `Authorization` header: `Bearer <access_token>`
-    
+
     ### Token Usage
-    
+
     All API requests must include a valid OAuth 2.0 access token in the Authorization header:
-    
+
     ```
     Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
     ```
-    
+
     ### JWT Authentication
-    
+
     For JWT-based authentication:
     - Configure your client via `/clients` endpoint
     - Set up authorized users/groups via `/client_authorizations`
     - Sign JWT with user-specific or global private key
     - Users must have their public key registered in their AoC profile
-    
+
     See `/clients` and `/client_authorizations` endpoints for detailed configuration.
   version: 0.2.7-enhanced
   license:
@@ -2316,7 +2316,7 @@ paths:
       summary: Get Application Settings by Type
       description: |
         Retrieve organization-level settings for a specific application type.
-        
+
         The response structure varies based on the `aspera_app_type` parameter:
         - **files**: Returns settings specific to the Files application
         - **packages**: Returns settings specific to the Packages application
@@ -2382,10 +2382,10 @@ paths:
       summary: Update Application Settings by Type
       description: |
         Update organization-level settings for a specific application type.
-        
+
         **Important**: The request body structure must match the application type specified in the path parameter.
         Use the same structure as returned by the GET endpoint for the corresponding `aspera_app_type`.
-        
+
         The payload structure varies based on the `aspera_app_type` parameter:
         - **files**: Accepts settings specific to the Files application (e.g., `can_managers_share_to_workspace`, `can_users_share_to_workspace`)
         - **packages**: Accepts settings specific to the Packages application (e.g., `can_managers_send_to_workspace`, `can_users_send_to_workspace`)
@@ -2409,7 +2409,7 @@ paths:
         description: |
           Application settings to update. The structure depends on the `aspera_app_type` path parameter.
           Only include the properties you want to update; omitted properties will retain their current values.
-          
+
           **Note**: Do NOT include the read-only fields `app_name` and `app_type` in the request body.
         content:
           application/json:
@@ -3776,373 +3776,6 @@ components:
     app_settings_response:
       type: object
       properties:
-        app_name:
-          description: Name of the application (e.g., "Files", "Packages")
-          type: string
-          examples:
-            - Files
-        app_type:
-          description: Type of the application
-          type: string
-          examples:
-            - files
-          enum:
-            - files
-            - packages
-            - activity
-            - automation
-        available:
-          description: Whether the app is available
-          type: boolean
-          examples:
-            - true
-        can_managers_share_to_workspace:
-          description: Whether managers can share to workspace (Files app)
-          type: boolean
-          examples:
-            - true
-        can_users_share_to_workspace:
-          description: Whether users can share to workspace (Files app)
-          type: boolean
-          examples:
-            - true
-        can_managers_send_to_workspace:
-          description: Whether managers can send to workspace (Packages app)
-          type: boolean
-          examples:
-            - true
-        can_users_send_to_workspace:
-          description: Whether users can send to workspace (Packages app)
-          type: boolean
-          examples:
-            - true
-        collaboration_whitelist_enabled:
-          description: Whether collaboration whitelist is enabled
-          type: boolean
-          examples:
-            - true
-        collaboration_with_emails_allowed:
-          description: Whether collaboration with emails is allowed
-          type: boolean
-          examples:
-            - true
-        direct_authorizations_allowed:
-          description: Whether direct authorizations are allowed
-          type: boolean
-          examples:
-            - false
-        editable_by_managers:
-          description: Whether the app settings are editable by managers
-          type: boolean
-          examples:
-            - false
-        public_links_expiration_duration:
-          description: Expiration duration for public links in seconds
-          type:
-            - integer
-            - 'null'
-          examples:
-            - null
-        effective_can_managers_share_to_workspace:
-          description: Effective setting for managers sharing to workspace
-          type: boolean
-          examples:
-            - true
-        effective_can_users_share_to_workspace:
-          description: Effective setting for users sharing to workspace
-          type: boolean
-          examples:
-            - true
-        effective_can_managers_send_to_workspace:
-          description: Effective setting for managers sending to workspace
-          type: boolean
-          examples:
-            - true
-        effective_can_users_send_to_workspace:
-          description: Effective setting for users sending to workspace
-          type: boolean
-          examples:
-            - true
-        effective_collaboration_whitelist_enabled:
-          description: Effective collaboration whitelist setting
-          type: boolean
-          examples:
-            - true
-        effective_collaboration_with_emails_allowed:
-          description: Effective collaboration with emails setting
-          type: boolean
-          examples:
-            - true
-        effective_external_collaboration_allowed:
-          description: Effective external collaboration setting
-          type: boolean
-          examples:
-            - true
-        effective_external_sharing_allowed_by_managers:
-          description: Effective external sharing by managers setting
-          type: boolean
-          examples:
-            - true
-        effective_external_sharing_allowed:
-          description: Effective external sharing setting
-          type: boolean
-          examples:
-            - true
-        effective_external_package_sending_allowed_by_managers:
-          description: Effective external package sending by managers setting
-          type: boolean
-          examples:
-            - true
-        effective_external_package_sending_allowed:
-          description: Effective external package sending setting
-          type: boolean
-          examples:
-            - true
-        effective_folder_resharing_allowed_by_managers:
-          description: Effective folder resharing by managers setting
-          type: boolean
-          examples:
-            - true
-        effective_folder_resharing_allowed:
-          description: Effective folder resharing setting
-          type: boolean
-          examples:
-            - true
-        effective_public_links_password_required:
-          description: Effective public links password requirement
-          type: boolean
-          examples:
-            - false
-        effective_personalized_urls_enabled:
-          description: Effective personalized URLs setting
-          type: boolean
-          examples:
-            - false
-        effective_public_links_allowed_by_managers:
-          description: Effective public links by managers setting
-          type: boolean
-          examples:
-            - true
-        effective_public_links_allowed:
-          description: Effective public links setting
-          type: boolean
-          examples:
-            - true
-        effective_public_invites_allowed_by_managers:
-          description: Effective public invites by managers setting (Packages app)
-          type: boolean
-          examples:
-            - true
-        effective_public_invites_allowed:
-          description: Effective public invites setting (Packages app)
-          type: boolean
-          examples:
-            - true
-        effective_storage_allowed:
-          description: Effective storage setting
-          type: boolean
-          examples:
-            - true
-        effective_url_shortening_enabled:
-          description: Effective URL shortening setting
-          type: boolean
-          examples:
-            - true
-        effective_public_links_expiration_duration:
-          description: Effective expiration duration for public links
-          type:
-            - integer
-            - 'null'
-          examples:
-            - null
-        effective_after_download_package_action:
-          description: Effective action after package download (Packages app)
-          type:
-            - string
-            - 'null'
-          examples:
-            - null
-        effective_allow_access_sent:
-          description: Effective allow access sent setting (Packages app)
-          type: boolean
-          examples:
-            - false
-        effective_allow_managers_to_recall:
-          description: Effective allow managers to recall setting (Packages app)
-          type: boolean
-          examples:
-            - false
-        effective_allow_package_level_expirations:
-          description: Effective allow package level expirations (Packages app)
-          type: boolean
-          examples:
-            - false
-        effective_content_retention_duration:
-          description: Effective content retention duration (Packages app)
-          type:
-            - integer
-            - 'null'
-          examples:
-            - null
-        effective_default_ear_setting:
-          description: Effective default encryption-at-rest setting (Packages app)
-          type: boolean
-          examples:
-            - false
-        effective_delete_package_content_after_download_duration:
-          description: Effective delete package content after download duration (Packages app)
-          type:
-            - integer
-            - 'null'
-          examples:
-            - null
-        effective_draft_expiration_duration:
-          description: Effective draft expiration duration (Packages app)
-          type:
-            - integer
-            - 'null'
-          examples:
-            - null
-        effective_disable_ear_setting:
-          description: Effective disable encryption-at-rest setting (Packages app)
-          type: boolean
-          examples:
-            - false
-        effective_external_package_authentication_required:
-          description: Effective external package authentication requirement (Packages app)
-          type: boolean
-          examples:
-            - false
-        effective_external_sender_email_and_name_required:
-          description: Effective external sender email and name requirement (Packages app)
-          type: boolean
-          examples:
-            - false
-        effective_limited_sending:
-          description: Effective limited sending setting (Packages app)
-          type: boolean
-          examples:
-            - false
-        effective_package_download_counts_enabled:
-          description: Effective package download counts setting (Packages app)
-          type: boolean
-          examples:
-            - true
-        effective_package_sidecar_enabled:
-          description: Effective package sidecar setting (Packages app)
-          type: boolean
-          examples:
-            - false
-        enabled:
-          description: Whether the app is enabled
-          type: boolean
-          examples:
-            - true
-        external_collaboration_allowed:
-          description: Whether external collaboration is allowed
-          type: boolean
-          examples:
-            - true
-        external_sharing_allowed_by_managers:
-          description: Whether external sharing by managers is allowed
-          type: boolean
-          examples:
-            - true
-        external_sharing_allowed:
-          description: Whether external sharing is allowed
-          type: boolean
-          examples:
-            - true
-        external_package_sending_allowed_by_managers:
-          description: Whether external package sending by managers is allowed (Packages app)
-          type: boolean
-          examples:
-            - true
-        external_package_sending_allowed:
-          description: Whether external package sending is allowed (Packages app)
-          type: boolean
-          examples:
-            - true
-        external_package_authentication_required:
-          description: Whether external package authentication is required (Packages app)
-          type: boolean
-          examples:
-            - false
-        external_sender_email_and_name_required:
-          description: Whether external sender email and name are required (Packages app)
-          type: boolean
-          examples:
-            - false
-        folder_resharing_allowed_by_managers:
-          description: Whether folder resharing by managers is allowed
-          type: boolean
-          examples:
-            - true
-        folder_resharing_allowed:
-          description: Whether folder resharing is allowed
-          type: boolean
-          examples:
-            - true
-        id:
-          description: ID of the app settings
-          type: string
-          examples:
-            - '74495'
-        inherit_organization_app_settings:
-          description: Whether to inherit organization app settings
-          type: boolean
-          examples:
-            - false
-        public_links_password_required:
-          description: Whether password is required for public links
-          type: boolean
-          examples:
-            - false
-        personalized_urls_enabled:
-          description: Whether personalized URLs are enabled
-          type: boolean
-          examples:
-            - false
-        public_links_allowed_by_managers:
-          description: Whether public links by managers are allowed
-          type: boolean
-          examples:
-            - true
-        public_links_allowed:
-          description: Whether public links are allowed
-          type: boolean
-          examples:
-            - true
-        public_invites_allowed_by_managers:
-          description: Whether public invites by managers are allowed (Packages app)
-          type: boolean
-          examples:
-            - true
-        public_invites_allowed:
-          description: Whether public invites are allowed (Packages app)
-          type: boolean
-          examples:
-            - true
-        storage_allowed:
-          description: Whether storage is allowed
-          type: boolean
-          examples:
-            - true
-        url_shortening_enabled:
-          description: Whether URL shortening is enabled
-          type: boolean
-          examples:
-            - true
-        workspace_authorizations_allowed:
-          description: Whether workspace authorizations are allowed
-          type: boolean
-          examples:
-            - true
-        workspace_id:
-          description: ID of the workspace
-          type: string
-          examples:
-            - '45071'
         after_download_package_action:
           description: Action to take after package download (Packages app)
           type:
@@ -4165,6 +3798,56 @@ components:
           type: boolean
           examples:
             - false
+        app_name:
+          description: Name of the application (e.g., "Files", "Packages")
+          type: string
+          examples:
+            - Files
+        app_type:
+          description: Type of the application
+          type: string
+          examples:
+            - files
+          enum:
+            - files
+            - packages
+            - activity
+            - automation
+        available:
+          description: Whether the app is available
+          type: boolean
+          examples:
+            - true
+        can_managers_send_to_workspace:
+          description: Whether managers can send to workspace (Packages app)
+          type: boolean
+          examples:
+            - true
+        can_managers_share_to_workspace:
+          description: Whether managers can share to workspace (Files app)
+          type: boolean
+          examples:
+            - true
+        can_users_send_to_workspace:
+          description: Whether users can send to workspace (Packages app)
+          type: boolean
+          examples:
+            - true
+        can_users_share_to_workspace:
+          description: Whether users can share to workspace (Files app)
+          type: boolean
+          examples:
+            - true
+        collaboration_whitelist_enabled:
+          description: Whether collaboration whitelist is enabled
+          type: boolean
+          examples:
+            - true
+        collaboration_with_emails_allowed:
+          description: Whether collaboration with emails is allowed
+          type: boolean
+          examples:
+            - true
         content_retention_duration:
           description: Content retention duration in seconds (Packages app)
           type:
@@ -4184,6 +3867,16 @@ components:
             - 'null'
           examples:
             - null
+        direct_authorizations_allowed:
+          description: Whether direct authorizations are allowed
+          type: boolean
+          examples:
+            - false
+        disable_ear_setting:
+          description: Whether to disable encryption-at-rest setting (Packages app)
+          type: boolean
+          examples:
+            - false
         draft_expiration_duration:
           description: Draft expiration duration in seconds (Packages app)
           type:
@@ -4191,8 +3884,258 @@ components:
             - 'null'
           examples:
             - null
-        disable_ear_setting:
-          description: Whether to disable encryption-at-rest setting (Packages app)
+        editable_by_managers:
+          description: Whether the app settings are editable by managers
+          type: boolean
+          examples:
+            - false
+        effective_after_download_package_action:
+          description: Effective action after package download (Packages app)
+          type:
+            - string
+            - 'null'
+          examples:
+            - null
+        effective_allow_access_sent:
+          description: Effective allow access sent setting (Packages app)
+          type: boolean
+          examples:
+            - false
+        effective_allow_managers_to_recall:
+          description: Effective allow managers to recall setting (Packages app)
+          type: boolean
+          examples:
+            - false
+        effective_allow_package_level_expirations:
+          description: Effective allow package level expirations (Packages app)
+          type: boolean
+          examples:
+            - false
+        effective_can_managers_send_to_workspace:
+          description: Effective setting for managers sending to workspace
+          type: boolean
+          examples:
+            - true
+        effective_can_managers_share_to_workspace:
+          description: Effective setting for managers sharing to workspace
+          type: boolean
+          examples:
+            - true
+        effective_can_users_send_to_workspace:
+          description: Effective setting for users sending to workspace
+          type: boolean
+          examples:
+            - true
+        effective_can_users_share_to_workspace:
+          description: Effective setting for users sharing to workspace
+          type: boolean
+          examples:
+            - true
+        effective_collaboration_whitelist_enabled:
+          description: Effective collaboration whitelist setting
+          type: boolean
+          examples:
+            - true
+        effective_collaboration_with_emails_allowed:
+          description: Effective collaboration with emails setting
+          type: boolean
+          examples:
+            - true
+        effective_content_retention_duration:
+          description: Effective content retention duration (Packages app)
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
+        effective_default_ear_setting:
+          description: Effective default encryption-at-rest setting (Packages app)
+          type: boolean
+          examples:
+            - false
+        effective_delete_package_content_after_download_duration:
+          description: Effective delete package content after download duration (Packages app)
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
+        effective_disable_ear_setting:
+          description: Effective disable encryption-at-rest setting (Packages app)
+          type: boolean
+          examples:
+            - false
+        effective_draft_expiration_duration:
+          description: Effective draft expiration duration (Packages app)
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
+        effective_external_collaboration_allowed:
+          description: Effective external collaboration setting
+          type: boolean
+          examples:
+            - true
+        effective_external_package_authentication_required:
+          description: Effective external package authentication requirement (Packages app)
+          type: boolean
+          examples:
+            - false
+        effective_external_package_sending_allowed:
+          description: Effective external package sending setting
+          type: boolean
+          examples:
+            - true
+        effective_external_package_sending_allowed_by_managers:
+          description: Effective external package sending by managers setting
+          type: boolean
+          examples:
+            - true
+        effective_external_sender_email_and_name_required:
+          description: Effective external sender email and name requirement (Packages app)
+          type: boolean
+          examples:
+            - false
+        effective_external_sharing_allowed:
+          description: Effective external sharing setting
+          type: boolean
+          examples:
+            - true
+        effective_external_sharing_allowed_by_managers:
+          description: Effective external sharing by managers setting
+          type: boolean
+          examples:
+            - true
+        effective_folder_resharing_allowed:
+          description: Effective folder resharing setting
+          type: boolean
+          examples:
+            - true
+        effective_folder_resharing_allowed_by_managers:
+          description: Effective folder resharing by managers setting
+          type: boolean
+          examples:
+            - true
+        effective_limited_sending:
+          description: Effective limited sending setting (Packages app)
+          type: boolean
+          examples:
+            - false
+        effective_package_download_counts_enabled:
+          description: Effective package download counts setting (Packages app)
+          type: boolean
+          examples:
+            - true
+        effective_package_sidecar_enabled:
+          description: Effective package sidecar setting (Packages app)
+          type: boolean
+          examples:
+            - false
+        effective_personalized_urls_enabled:
+          description: Effective personalized URLs setting
+          type: boolean
+          examples:
+            - false
+        effective_public_invites_allowed:
+          description: Effective public invites setting (Packages app)
+          type: boolean
+          examples:
+            - true
+        effective_public_invites_allowed_by_managers:
+          description: Effective public invites by managers setting (Packages app)
+          type: boolean
+          examples:
+            - true
+        effective_public_links_allowed:
+          description: Effective public links setting
+          type: boolean
+          examples:
+            - true
+        effective_public_links_allowed_by_managers:
+          description: Effective public links by managers setting
+          type: boolean
+          examples:
+            - true
+        effective_public_links_expiration_duration:
+          description: Effective expiration duration for public links
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
+        effective_public_links_password_required:
+          description: Effective public links password requirement
+          type: boolean
+          examples:
+            - false
+        effective_storage_allowed:
+          description: Effective storage setting
+          type: boolean
+          examples:
+            - true
+        effective_url_shortening_enabled:
+          description: Effective URL shortening setting
+          type: boolean
+          examples:
+            - true
+        enabled:
+          description: Whether the app is enabled
+          type: boolean
+          examples:
+            - true
+        external_collaboration_allowed:
+          description: Whether external collaboration is allowed
+          type: boolean
+          examples:
+            - true
+        external_package_authentication_required:
+          description: Whether external package authentication is required (Packages app)
+          type: boolean
+          examples:
+            - false
+        external_package_sending_allowed:
+          description: Whether external package sending is allowed (Packages app)
+          type: boolean
+          examples:
+            - true
+        external_package_sending_allowed_by_managers:
+          description: Whether external package sending by managers is allowed (Packages app)
+          type: boolean
+          examples:
+            - true
+        external_sender_email_and_name_required:
+          description: Whether external sender email and name are required (Packages app)
+          type: boolean
+          examples:
+            - false
+        external_sharing_allowed:
+          description: Whether external sharing is allowed
+          type: boolean
+          examples:
+            - true
+        external_sharing_allowed_by_managers:
+          description: Whether external sharing by managers is allowed
+          type: boolean
+          examples:
+            - true
+        folder_resharing_allowed:
+          description: Whether folder resharing is allowed
+          type: boolean
+          examples:
+            - true
+        folder_resharing_allowed_by_managers:
+          description: Whether folder resharing by managers is allowed
+          type: boolean
+          examples:
+            - true
+        id:
+          description: ID of the app settings
+          type: string
+          examples:
+            - '74495'
+        inherit_organization_app_settings:
+          description: Whether to inherit organization app settings
           type: boolean
           examples:
             - false
@@ -4211,6 +4154,53 @@ components:
           type: boolean
           examples:
             - false
+        personalized_urls_enabled:
+          description: Whether personalized URLs are enabled
+          type: boolean
+          examples:
+            - false
+        public_invites_allowed:
+          description: Whether public invites are allowed (Packages app)
+          type: boolean
+          examples:
+            - true
+        public_invites_allowed_by_managers:
+          description: Whether public invites by managers are allowed (Packages app)
+          type: boolean
+          examples:
+            - true
+        public_links_allowed:
+          description: Whether public links are allowed
+          type: boolean
+          examples:
+            - true
+        public_links_allowed_by_managers:
+          description: Whether public links by managers are allowed
+          type: boolean
+          examples:
+            - true
+        public_links_expiration_duration:
+          description: Expiration duration for public links in seconds
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
+        public_links_password_required:
+          description: Whether password is required for public links
+          type: boolean
+          examples:
+            - false
+        storage_allowed:
+          description: Whether storage is allowed
+          type: boolean
+          examples:
+            - true
+        url_shortening_enabled:
+          description: Whether URL shortening is enabled
+          type: boolean
+          examples:
+            - true
         watermark_allowed:
           description: Whether watermark is allowed (Packages app)
           type: boolean
@@ -4221,6 +4211,16 @@ components:
           type: boolean
           examples:
             - false
+        workspace_authorizations_allowed:
+          description: Whether workspace authorizations are allowed
+          type: boolean
+          examples:
+            - true
+        workspace_id:
+          description: ID of the workspace
+          type: string
+          examples:
+            - '45071'
     app_settings_files:
       allOf:
         - $ref: '#/components/schemas/app_settings_readonly_fields'
@@ -4317,9 +4317,6 @@ components:
         available:
           type: boolean
           description: Whether the app is available
-        enabled:
-          type: boolean
-          description: Whether the app is enabled
         collaboration_whitelist_enabled:
           type: boolean
           description: Whether collaboration whitelist is enabled
@@ -4332,15 +4329,20 @@ components:
         editable_by_managers:
           type: boolean
           description: Whether the app settings are editable by managers
-        public_links_expiration_duration:
-          type: [integer, 'null']
-          description: Expiration duration for public links in seconds
-        public_links_allowed_by_managers:
+        enabled:
           type: boolean
-          description: Whether public links by managers are allowed
+          description: Whether the app is enabled
         public_links_allowed:
           type: boolean
           description: Whether public links are allowed
+        public_links_allowed_by_managers:
+          type: boolean
+          description: Whether public links by managers are allowed
+        public_links_expiration_duration:
+          type:
+            - integer
+            - 'null'
+          description: Expiration duration for public links in seconds
         url_shortening_enabled:
           type: boolean
           description: Whether URL shortening is enabled
@@ -4357,24 +4359,24 @@ components:
         external_collaboration_allowed:
           type: boolean
           description: Whether external collaboration is allowed
-        external_sharing_allowed_by_managers:
-          type: boolean
-          description: Whether external sharing by managers is allowed
         external_sharing_allowed:
           type: boolean
           description: Whether external sharing is allowed
-        folder_resharing_allowed_by_managers:
+        external_sharing_allowed_by_managers:
           type: boolean
-          description: Whether folder resharing by managers is allowed
+          description: Whether external sharing by managers is allowed
         folder_resharing_allowed:
           type: boolean
           description: Whether folder resharing is allowed
-        public_links_password_required:
+        folder_resharing_allowed_by_managers:
           type: boolean
-          description: Whether public links require a password
+          description: Whether folder resharing by managers is allowed
         personalized_urls_enabled:
           type: boolean
           description: Whether personalized URLs are enabled
+        public_links_password_required:
+          type: boolean
+          description: Whether public links require a password
         storage_allowed:
           type: boolean
           description: Whether storage is allowed
@@ -4382,26 +4384,10 @@ components:
       type: object
       description: Properties specific to the Packages application
       properties:
-        can_managers_send_to_workspace:
-          type: boolean
-          description: Whether managers can send to workspace (Packages app specific)
-        can_users_send_to_workspace:
-          type: boolean
-          description: Whether users can send to workspace (Packages app specific)
-        external_package_sending_allowed_by_managers:
-          type: boolean
-          description: Whether external package sending by managers is allowed
-        external_package_sending_allowed:
-          type: boolean
-          description: Whether external package sending is allowed
-        external_package_authentication_required:
-          type: boolean
-          description: Whether external package authentication is required
-        external_sender_email_and_name_required:
-          type: boolean
-          description: Whether external sender email and name are required
         after_download_package_action:
-          type: [string, 'null']
+          type:
+            - string
+            - 'null'
           description: Action after package download
         allow_access_sent:
           type: boolean
@@ -4412,21 +4398,45 @@ components:
         allow_package_level_expirations:
           type: boolean
           description: Allow package level expirations
+        can_managers_send_to_workspace:
+          type: boolean
+          description: Whether managers can send to workspace (Packages app specific)
+        can_users_send_to_workspace:
+          type: boolean
+          description: Whether users can send to workspace (Packages app specific)
         content_retention_duration:
-          type: [integer, 'null']
+          type:
+            - integer
+            - 'null'
           description: Content retention duration in seconds
         default_ear_setting:
           type: boolean
           description: Default encryption-at-rest setting
         delete_package_content_after_download_duration:
-          type: [integer, 'null']
+          type:
+            - integer
+            - 'null'
           description: Delete package content after download duration in seconds
-        draft_expiration_duration:
-          type: [integer, 'null']
-          description: Draft expiration duration in seconds
         disable_ear_setting:
           type: boolean
           description: Disable encryption-at-rest setting
+        draft_expiration_duration:
+          type:
+            - integer
+            - 'null'
+          description: Draft expiration duration in seconds
+        external_package_authentication_required:
+          type: boolean
+          description: Whether external package authentication is required
+        external_package_sending_allowed:
+          type: boolean
+          description: Whether external package sending is allowed
+        external_package_sending_allowed_by_managers:
+          type: boolean
+          description: Whether external package sending by managers is allowed
+        external_sender_email_and_name_required:
+          type: boolean
+          description: Whether external sender email and name are required
         limited_sending:
           type: boolean
           description: Limited sending setting
@@ -4436,12 +4446,12 @@ components:
         package_sidecar_enabled:
           type: boolean
           description: Package sidecar enabled
-        public_invites_allowed_by_managers:
-          type: boolean
-          description: Public invites allowed by managers
         public_invites_allowed:
           type: boolean
           description: Public invites allowed
+        public_invites_allowed_by_managers:
+          type: boolean
+          description: Public invites allowed by managers
         watermark_allowed:
           type: boolean
           description: Whether watermark is allowed
@@ -5447,11 +5457,6 @@ components:
     nodes_response:
       type: object
       properties:
-        host:
-          description: Host portion of node URL.
-          type: string
-          examples:
-            - example.com
         access_key:
           description: |
             Access keys are used for authorization when AoC makes a request via the Node API. Each transfer node must have a unique access key.
@@ -5510,6 +5515,11 @@ components:
           type: string
           examples:
             - 2019-06-04T04:41:00.000Z
+        host:
+          description: Host portion of node URL.
+          type: string
+          examples:
+            - example.com
         name:
           description: User-defined identifier for the transfer node. Each transfer node must have a unique name.
           type: string
@@ -7390,12 +7400,12 @@ components:
       type: oauth2
       description: |
         OAuth 2.0 authentication for Aspera on Cloud API.
-        
+
         The API supports multiple OAuth 2.0 flows:
         - Authorization Code flow for web applications
         - Client Credentials flow for server-to-server communication
         - JWT Bearer flow for service accounts
-        
+
         Register your client application via the `/clients` endpoint to obtain client credentials.
         Configure authorized users and groups via the `/client_authorizations` endpoint.
       flows:
@@ -7416,103 +7426,103 @@ components:
       bearerFormat: JWT
       description: |
         JWT Bearer token authentication.
-        
+
         Include the access token obtained from the OAuth 2.0 flow in the Authorization header:
         ```
         Authorization: Bearer <access_token>
         ```
-        
+
         For JWT-based authentication, the token must be signed with either:
         - User-specific private key (user's public key must be registered in AoC)
         - Global private key (configured in client settings)
 tags:
-  - description: Use /clients to register your client application with the Files API. You can also modify your client, retrieve a list of all registered clients or a specific client, or delete a specific client. You can configure your client to use browser-based authentication or JSON web token (JWT) authentication.  For clients using JWT authentication, this endpoint relates to /client_authorizations.
-    name: /clients
-  - description: "When you use the JWT authentication method for your client (see /clients) and enable a whitelist of authorized users or groups, you must configure which users or groups can access the API using your client, and which type of key each user can submit to retrieve an access token–either a user-specific key or a global key. Use the /client_authorizations endpoint to configure the authorized users or groups; use the /users endpoint to configure the user key types; use the /clients endpoint to configure the global key. There are two configuration parameters for users and keys. Users: All users: All users in the AoC organization are eligible to retrieve an access token; Only listed users: Only the users or groups you list are eligible to receive an access token. Keys: User-specific keys: The JWT must be signed with the specified user's own private key; User-specific keys and global key: The JWT can be signed with the specified user's own private key or with the global private key. Note: Any user accessing the AoC API using the JWT method must have their public key listed in their AoC user record. The user can enter their own public key, or the AoC administrator can enter the user's public key in the individual user's record. Important! API clients with a global key can retrieve access tokens for and act as any listed user. Use global keys according to local site security practice."
-    name: /client_authorizations
-  - description: Create a workspace (requires an admin token). The workspace is a distinct context in which workspace members can freely share files and send packages. All workspace users of the same type (for example, members or workspace managers) share collaboration settings for that user type. A workspace is a folder on a specific node; the workspace storage is separate from the storage of other workspaces. The workspace contains member users and groups. A workspace may have a workspace manager, who is also a workspace member, that can perform certain administrative function for that specific workspace. (Configure workspace manager using /workspace_memberships).
-    name: /workspaces
-  - description: Use this endpoint to add existing users as members of a workspace, and to update, retrieve, and delete workspace members. An Aspera on Cloud user can be a direct member of a workspace, or can inherit membership by being a member of a user group that is a member of the workspace. This endpoint allows you to add a user or group as a direct member of a workspace. You can also use this endpoint to grant or revoke workspace manager permission to a member (user or group).
-    name: /workspace_memberships
-  - description: 'A package is a bundle of files and folders (like a ZIP file or TAR file) specified by an AoC user to send to designated recipients. Packages can be sent to individuals, to groups (including to a workspace), or to shared inboxes. Packages can  be sent, received, recalled, archived, deleted. Sending a package can be completed with a user token or with an admin token. The process of sending a package comprises multiple steps. You use the POST, GET, and PUT methods of /packages, along with requests to the Connect API or the Node API.  The folder structure of a package on disk is as follows: {id}.asp-package contains metadata and other package-related files and contains contents, which contains the files and folders in the package. Uploads of package contents should go directly into the named, innermost folder. Downloads of the entire package should be of the named, outermost folder (renamed on download to the package name itself). To get package transfers to properly register, they should be tagged as follows: {"aspera": {"files": {"package_id" : the-package-id}}}.'
-    name: /packages
-  - description: A user is anybody using this service. Users may be organization administrators, workspace managers, photographers, IT, etc. Users are identified by email address, so 'email' is a required property when creating a new user.
-    name: /users
+  - name: /clients
+    description: Use /clients to register your client application with the Files API. You can also modify your client, retrieve a list of all registered clients or a specific client, or delete a specific client. You can configure your client to use browser-based authentication or JSON web token (JWT) authentication.  For clients using JWT authentication, this endpoint relates to /client_authorizations.
+  - name: /client_authorizations
+    description: "When you use the JWT authentication method for your client (see /clients) and enable a whitelist of authorized users or groups, you must configure which users or groups can access the API using your client, and which type of key each user can submit to retrieve an access token–either a user-specific key or a global key. Use the /client_authorizations endpoint to configure the authorized users or groups; use the /users endpoint to configure the user key types; use the /clients endpoint to configure the global key. There are two configuration parameters for users and keys. Users: All users: All users in the AoC organization are eligible to retrieve an access token; Only listed users: Only the users or groups you list are eligible to receive an access token. Keys: User-specific keys: The JWT must be signed with the specified user's own private key; User-specific keys and global key: The JWT can be signed with the specified user's own private key or with the global private key. Note: Any user accessing the AoC API using the JWT method must have their public key listed in their AoC user record. The user can enter their own public key, or the AoC administrator can enter the user's public key in the individual user's record. Important! API clients with a global key can retrieve access tokens for and act as any listed user. Use global keys according to local site security practice."
+  - name: /workspaces
+    description: Create a workspace (requires an admin token). The workspace is a distinct context in which workspace members can freely share files and send packages. All workspace users of the same type (for example, members or workspace managers) share collaboration settings for that user type. A workspace is a folder on a specific node; the workspace storage is separate from the storage of other workspaces. The workspace contains member users and groups. A workspace may have a workspace manager, who is also a workspace member, that can perform certain administrative function for that specific workspace. (Configure workspace manager using /workspace_memberships).
+  - name: /workspace_memberships
+    description: Use this endpoint to add existing users as members of a workspace, and to update, retrieve, and delete workspace members. An Aspera on Cloud user can be a direct member of a workspace, or can inherit membership by being a member of a user group that is a member of the workspace. This endpoint allows you to add a user or group as a direct member of a workspace. You can also use this endpoint to grant or revoke workspace manager permission to a member (user or group).
+  - name: /packages
+    description: 'A package is a bundle of files and folders (like a ZIP file or TAR file) specified by an AoC user to send to designated recipients. Packages can be sent to individuals, to groups (including to a workspace), or to shared inboxes. Packages can  be sent, received, recalled, archived, deleted. Sending a package can be completed with a user token or with an admin token. The process of sending a package comprises multiple steps. You use the POST, GET, and PUT methods of /packages, along with requests to the Connect API or the Node API.  The folder structure of a package on disk is as follows: {id}.asp-package contains metadata and other package-related files and contains contents, which contains the files and folders in the package. Uploads of package contents should go directly into the named, innermost folder. Downloads of the entire package should be of the named, outermost folder (renamed on download to the package name itself). To get package transfers to properly register, they should be tagged as follows: {"aspera": {"files": {"package_id" : the-package-id}}}.'
+  - name: /users
+    description: A user is anybody using this service. Users may be organization administrators, workspace managers, photographers, IT, etc. Users are identified by email address, so 'email' is a required property when creating a new user.
   - name: /nodes
     description: |
       The Nodes resource contains the information that a client app can use to communicate directly with an Aspera transfer server (which has files and folders).
-  - description: |
+  - name: /dropboxes
+    description: |
       A shared inbox (formerly called a dropbox) serves three functions. First, it acts as a place where users can submit content. Second, it notifies its members when new content arrives. Finally, it can ask users who submit new content to fill out a form using a metadata schema.
-    name: /dropboxes
-  - description: |
+  - name: /dropbox_memberships
+    description: |
       Use this endpoint to add existing members to a dropbox and to update, retrieve, and delete existing dropbox members. An Aspera on Cloud user can be a direct member of a dropbox or they can inherit membership through a user group.
-    name: /dropbox_memberships
   - name: /usage_reports
     description: |
       When enabled, usage reporting collects information about the number of bytes transferred into and out of an organization, on a per-workspace or per-access key basis. A report begins at the start of a month (or when usage reporting is enabled) and ends at the beginning of the next month, when a new report is created. An active report for the current month shows  month-to-date usage information, while usage reports for previous months no longer change and show historical data. Due to the way the reporting information is collected, the number of bytes transferred is an approximation and may vary from the actual billed usage if there are transfers that are close to or spanning the changeover between months. NOTE: Usage reports are read-only resources and all attributes are read-only.
   - name: /organizations
     description: |
       An organization contains all the users, groups, and resources belonging to a real-world organization. Users within an organization can see only the organization they are in. Organization admins can change certain properties of the organization. All other users within the organization have read-only access. Note: /organization is an alias to /organizations/{current user's organization id}.
-  - description: |
+  - name: /client_access_keys
+    description: |
       This endpoint is used to manage existing transfer node access keys. Specifically, it streamlines the task of viewing all access keys across all transfer nodes that belong to your organization. Note that this endpoint is not capable of creating or destroying transfer node access keys (that is handled via the Node API). Organization admin or workspace manager permissions are required for any access to this endpoint.
-    name: /client_access_keys
-  - description: |
-      The /apps/app_memberships endpoint is useful for organization admins that want to enable users to access the Automation or Activity apps. Additionally, this endpoint is useful for admins who want to view all app memberships across their entire organization, or for any other user to view their own app memberships.
-    name: /apps/app_memberships
-  - description: |
+  - name: /apps
+    description: |
       The /apps endpoint lists currently available Aspera application settings and provides access to organization-level application configuration by app type. This includes settings for apps such as files, packages, activity, and automation.
-    name: /apps
-  - description: |
+  - name: /apps/app_memberships
+    description: |
+      The /apps/app_memberships endpoint is useful for organization admins that want to enable users to access the Automation or Activity apps. Additionally, this endpoint is useful for admins who want to view all app memberships across their entire organization, or for any other user to view their own app memberships.
+  - name: /apps_new
+    description: |
       The /apps_new endpoint exposes the newer application settings APIs. It can list organization-level or workspace-level apps, filter by aspera_app_type and workspace_id, and retrieve or update a specific app by type and app id. For activity apps, updates may create asynchronous operations when stored reports folders must be created.
-    name: /apps_new
-  - description: |
+  - name: /operations
+    description: |
       The /operations endpoint lists and manages asynchronous operations related to resources such as workspaces, users, groups, group memberships, workspace memberships, and activity apps. Non-admin users can only see operations created by or directly related to themselves.
-    name: /operations
-  - description: |
+  - name: /auth_providers
+    description: |
       The /auth_providers endpoint lists, retrieves, and updates organization authentication providers. It also supports bulk update of multiple records through /auth_providers/updated_records.
-    name: /auth_providers
-  - description: |
+  - name: /client_settings
+    description: |
       The /client_settings endpoint stores client-specific settings for the current authenticated user and OAuth client.
-    name: /client_settings
-  - description: |
+  - name: /client_registration_tokens
+    description: |
       The /client_registration_tokens endpoint lists, retrieves, updates, and deletes registration tokens used for client registration workflows.
-    name: /client_registration_tokens
-  - description: |
+  - name: /email_templates
+    description: |
       The /email_templates endpoint lists, retrieves, updates, and resolves effective email templates at global, organization, workspace, or shared inbox level.
-    name: /email_templates
-  - description: |
+  - name: /feature_flags
+    description: |
       The /feature_flags endpoint lists feature flags visible to the current caller and allows super administrators to create, update, and delete organization feature flags.
-    name: /feature_flags
-  - description: |
+  - name: /file_upload_notifications
+    description: |
       The /file_upload_notifications endpoint manages user notifications related to uploads and can resolve the effective toggle state for a given file on a node.
-    name: /file_upload_notifications
-  - description: |
+  - name: /organization
+    description: |
       The /organization endpoint is an alias for the current organization and can be used to retrieve or update the current organization record without knowing its id.
-    name: /organization
-  - description: |
+  - name: /packages_count
+    description: |
       The /packages_count endpoint returns a package count summary.
-    name: /packages_count
-  - description: |
+  - name: /self
+    description: |
       The /self endpoint returns the current authenticated user, with optional related settings and feature data.
-    name: /self
-  - description: |
+  - name: /short_links
+    description: |
       The /short_links endpoint manages short links. Short links are designed to decouple short URL behavior from URL tokens while remaining compatible with existing token-protected resources.
-    name: /short_links
-  - description: |
+  - name: /tier_restrictions
+    description: |
       The /tier_restrictions endpoint returns feature availability and tier-based restrictions for the current organization.
-    name: /tier_restrictions
-  - description: |
+  - name: /transfer_direction
+    description: |
       The /transfer_direction endpoint reports whether transfers are allowed between two nodes and which node is preferred to initiate the transfer.
-    name: /transfer_direction
-  - description: |
+  - name: /transfer_report
+    description: |
       The /transfer_report endpoint returns a transfer direction matrix for nodes in the current organization.
-    name: /transfer_report
-  - description: |
+  - name: /transfers
+    description: |
       The /transfers endpoint lists and deletes user transfers.
-    name: /transfers
-  - description: |
+  - name: /workspace_collaborators
+    description: |
       The /workspace_collaborators endpoint manages collaborators attached to workspaces.
-    name: /workspace_collaborators
 security:
   - OAuth2: []
   - BearerAuth: []

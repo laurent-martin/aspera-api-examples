@@ -1,0 +1,4 @@
+{
+  "tags": ["name", "description", "externalDocs"],
+  "tagGroup": ["name", "tags"]
+}
