@@ -1,14 +1,14 @@
-openapi: 3.0.0
+openapi: 3.1.0
 info:
-  description: API for Aspera File Management
-  version: 0.2.7
+  description: API for Aspera on Cloud and Aspera Enterprise Web Apps
+  version: 0.2.7-enhanced
   license:
     name: Proprietary
     url: https://www.ibm.com/legal
   title: Files API
   x-ibm-name: files-api_latest
   contact:
-    name: Carole Baden
+    name: Laurent Martin
     email: cbaden@us.ibm.com
 servers:
   - url: https://api.ibmaspera.com
@@ -323,7 +323,8 @@ paths:
                 name:
                   description: The name of the client access key.
                   type: string
-                  example: MyAccessKey
+                  examples:
+                    - MyAccessKey
       responses:
         '204':
           description: No Content
@@ -3317,7 +3318,8 @@ components:
         app_name:
           description: Name of the application
           type: string
-          example: Files
+          examples:
+            - Files
           enum:
             - Activity
             - Automation
@@ -3326,7 +3328,8 @@ components:
         app_type:
           description: Type of the application
           type: string
-          example: files
+          examples:
+            - files
           enum:
             - activity
             - automation
@@ -3335,7 +3338,8 @@ components:
         enabled:
           description: Whether the app is enabled
           type: boolean
-          example: true
+          examples:
+            - true
       required:
         - app_name
         - app_type
@@ -3346,365 +3350,461 @@ components:
         app_name:
           description: Name of the application (e.g., "Files", "Packages")
           type: string
-          example: Files
+          examples:
+            - Files
         app_type:
           description: Type of the application
           type: string
+          examples:
+            - files
           enum:
             - files
             - packages
             - activity
             - automation
-          example: files
         available:
           description: Whether the app is available
           type: boolean
-          example: true
+          examples:
+            - true
         can_managers_share_to_workspace:
           description: Whether managers can share to workspace (Files app)
           type: boolean
-          example: true
+          examples:
+            - true
         can_users_share_to_workspace:
           description: Whether users can share to workspace (Files app)
           type: boolean
-          example: true
+          examples:
+            - true
         can_managers_send_to_workspace:
           description: Whether managers can send to workspace (Packages app)
           type: boolean
-          example: true
+          examples:
+            - true
         can_users_send_to_workspace:
           description: Whether users can send to workspace (Packages app)
           type: boolean
-          example: true
+          examples:
+            - true
         collaboration_whitelist_enabled:
           description: Whether collaboration whitelist is enabled
           type: boolean
-          example: true
+          examples:
+            - true
         collaboration_with_emails_allowed:
           description: Whether collaboration with emails is allowed
           type: boolean
-          example: true
+          examples:
+            - true
         direct_authorizations_allowed:
           description: Whether direct authorizations are allowed
           type: boolean
-          example: false
+          examples:
+            - false
         editable_by_managers:
           description: Whether the app settings are editable by managers
           type: boolean
-          example: false
+          examples:
+            - false
         public_links_expiration_duration:
           description: Expiration duration for public links in seconds
-          type: integer
-          nullable: true
-          example: null
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
         effective_can_managers_share_to_workspace:
           description: Effective setting for managers sharing to workspace
           type: boolean
-          example: true
+          examples:
+            - true
         effective_can_users_share_to_workspace:
           description: Effective setting for users sharing to workspace
           type: boolean
-          example: true
+          examples:
+            - true
         effective_can_managers_send_to_workspace:
           description: Effective setting for managers sending to workspace
           type: boolean
-          example: true
+          examples:
+            - true
         effective_can_users_send_to_workspace:
           description: Effective setting for users sending to workspace
           type: boolean
-          example: true
+          examples:
+            - true
         effective_collaboration_whitelist_enabled:
           description: Effective collaboration whitelist setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_collaboration_with_emails_allowed:
           description: Effective collaboration with emails setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_external_collaboration_allowed:
           description: Effective external collaboration setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_external_sharing_allowed_by_managers:
           description: Effective external sharing by managers setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_external_sharing_allowed:
           description: Effective external sharing setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_external_package_sending_allowed_by_managers:
           description: Effective external package sending by managers setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_external_package_sending_allowed:
           description: Effective external package sending setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_folder_resharing_allowed_by_managers:
           description: Effective folder resharing by managers setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_folder_resharing_allowed:
           description: Effective folder resharing setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_public_links_password_required:
           description: Effective public links password requirement
           type: boolean
-          example: false
+          examples:
+            - false
         effective_personalized_urls_enabled:
           description: Effective personalized URLs setting
           type: boolean
-          example: false
+          examples:
+            - false
         effective_public_links_allowed_by_managers:
           description: Effective public links by managers setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_public_links_allowed:
           description: Effective public links setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_public_invites_allowed_by_managers:
           description: Effective public invites by managers setting (Packages app)
           type: boolean
-          example: true
+          examples:
+            - true
         effective_public_invites_allowed:
           description: Effective public invites setting (Packages app)
           type: boolean
-          example: true
+          examples:
+            - true
         effective_storage_allowed:
           description: Effective storage setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_url_shortening_enabled:
           description: Effective URL shortening setting
           type: boolean
-          example: true
+          examples:
+            - true
         effective_public_links_expiration_duration:
           description: Effective expiration duration for public links
-          type: integer
-          nullable: true
-          example: null
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
         effective_after_download_package_action:
           description: Effective action after package download (Packages app)
-          type: string
-          nullable: true
-          example: null
+          type:
+            - string
+            - 'null'
+          examples:
+            - null
         effective_allow_access_sent:
           description: Effective allow access sent setting (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         effective_allow_managers_to_recall:
           description: Effective allow managers to recall setting (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         effective_allow_package_level_expirations:
           description: Effective allow package level expirations (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         effective_content_retention_duration:
           description: Effective content retention duration (Packages app)
-          type: integer
-          nullable: true
-          example: null
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
         effective_default_ear_setting:
           description: Effective default encryption-at-rest setting (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         effective_delete_package_content_after_download_duration:
           description: Effective delete package content after download duration (Packages app)
-          type: integer
-          nullable: true
-          example: null
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
         effective_draft_expiration_duration:
           description: Effective draft expiration duration (Packages app)
-          type: integer
-          nullable: true
-          example: null
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
         effective_disable_ear_setting:
           description: Effective disable encryption-at-rest setting (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         effective_external_package_authentication_required:
           description: Effective external package authentication requirement (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         effective_external_sender_email_and_name_required:
           description: Effective external sender email and name requirement (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         effective_limited_sending:
           description: Effective limited sending setting (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         effective_package_download_counts_enabled:
           description: Effective package download counts setting (Packages app)
           type: boolean
-          example: true
+          examples:
+            - true
         effective_package_sidecar_enabled:
           description: Effective package sidecar setting (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         enabled:
           description: Whether the app is enabled
           type: boolean
-          example: true
+          examples:
+            - true
         external_collaboration_allowed:
           description: Whether external collaboration is allowed
           type: boolean
-          example: true
+          examples:
+            - true
         external_sharing_allowed_by_managers:
           description: Whether external sharing by managers is allowed
           type: boolean
-          example: true
+          examples:
+            - true
         external_sharing_allowed:
           description: Whether external sharing is allowed
           type: boolean
-          example: true
+          examples:
+            - true
         external_package_sending_allowed_by_managers:
           description: Whether external package sending by managers is allowed (Packages app)
           type: boolean
-          example: true
+          examples:
+            - true
         external_package_sending_allowed:
           description: Whether external package sending is allowed (Packages app)
           type: boolean
-          example: true
+          examples:
+            - true
         external_package_authentication_required:
           description: Whether external package authentication is required (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         external_sender_email_and_name_required:
           description: Whether external sender email and name are required (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         folder_resharing_allowed_by_managers:
           description: Whether folder resharing by managers is allowed
           type: boolean
-          example: true
+          examples:
+            - true
         folder_resharing_allowed:
           description: Whether folder resharing is allowed
           type: boolean
-          example: true
+          examples:
+            - true
         id:
           description: ID of the app settings
           type: string
-          example: '74495'
+          examples:
+            - '74495'
         inherit_organization_app_settings:
           description: Whether to inherit organization app settings
           type: boolean
-          example: false
+          examples:
+            - false
         public_links_password_required:
           description: Whether password is required for public links
           type: boolean
-          example: false
+          examples:
+            - false
         personalized_urls_enabled:
           description: Whether personalized URLs are enabled
           type: boolean
-          example: false
+          examples:
+            - false
         public_links_allowed_by_managers:
           description: Whether public links by managers are allowed
           type: boolean
-          example: true
+          examples:
+            - true
         public_links_allowed:
           description: Whether public links are allowed
           type: boolean
-          example: true
+          examples:
+            - true
         public_invites_allowed_by_managers:
           description: Whether public invites by managers are allowed (Packages app)
           type: boolean
-          example: true
+          examples:
+            - true
         public_invites_allowed:
           description: Whether public invites are allowed (Packages app)
           type: boolean
-          example: true
+          examples:
+            - true
         storage_allowed:
           description: Whether storage is allowed
           type: boolean
-          example: true
+          examples:
+            - true
         url_shortening_enabled:
           description: Whether URL shortening is enabled
           type: boolean
-          example: true
+          examples:
+            - true
         workspace_authorizations_allowed:
           description: Whether workspace authorizations are allowed
           type: boolean
-          example: true
+          examples:
+            - true
         workspace_id:
           description: ID of the workspace
           type: string
-          example: '45071'
+          examples:
+            - '45071'
         after_download_package_action:
           description: Action to take after package download (Packages app)
-          type: string
-          nullable: true
-          example: null
+          type:
+            - string
+            - 'null'
+          examples:
+            - null
         allow_access_sent:
           description: Whether to allow access sent (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         allow_managers_to_recall:
           description: Whether to allow managers to recall packages (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         allow_package_level_expirations:
           description: Whether to allow package level expirations (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         content_retention_duration:
           description: Content retention duration in seconds (Packages app)
-          type: integer
-          nullable: true
-          example: null
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
         default_ear_setting:
           description: Default encryption-at-rest setting (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         delete_package_content_after_download_duration:
           description: Duration to delete package content after download in seconds (Packages app)
-          type: integer
-          nullable: true
-          example: null
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
         draft_expiration_duration:
           description: Draft expiration duration in seconds (Packages app)
-          type: integer
-          nullable: true
-          example: null
+          type:
+            - integer
+            - 'null'
+          examples:
+            - null
         disable_ear_setting:
           description: Whether to disable encryption-at-rest setting (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         limited_sending:
           description: Whether sending is limited (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         package_download_counts_enabled:
           description: Whether package download counts are enabled (Packages app)
           type: boolean
-          example: true
+          examples:
+            - true
         package_sidecar_enabled:
           description: Whether package sidecar is enabled (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         watermark_allowed:
           description: Whether watermark is allowed (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
         watermark_required:
           description: Whether watermark is required (Packages app)
           type: boolean
-          example: false
+          examples:
+            - false
     app_memberships_params:
       type: object
       properties:
         member_id:
           description: The ID of the member that this membership belongs to.
           type: string
-          example: '27'
+          examples:
+            - '27'
         member_type:
           description: The type of member that this membership belongs to.
           type: string
-          example: user
+          examples:
+            - user
           enum:
             - user
             - group
@@ -3714,24 +3814,29 @@ components:
         app_name:
           description: Name of the app that the membership belongs to.
           type: string
-          example: Activity
+          examples:
+            - Activity
         app_type:
           description: Type of app that the membership belongs to.
           type: string
-          example: activity
+          examples:
+            - activity
           enum:
             - activity
             - automation
         id:
           description: ID of the app membership.
           type: string
-          example: '372'
+          examples:
+            - '372'
         member_id:
           type: string
-          example: '213'
+          examples:
+            - '213'
         member_type:
           type: string
-          example: user
+          examples:
+            - user
           enum:
             - user
             - group
@@ -3741,23 +3846,28 @@ components:
         id:
           description: ID of the client access key.
           type: string
-          example: '999'
+          examples:
+            - '999'
         name:
           description: Name of the client access key.
           type: string
-          example: MyAccessKey
+          examples:
+            - MyAccessKey
         node_id:
           description: ID of the transfer node that the client access key belongs to.
           type: string
-          example: '42'
+          examples:
+            - '42'
         permission_id:
           type: string
-          example: '123'
+          examples:
+            - '123'
         root_file_id:
           description: |
             ID of the directory that this access key grants permissions for.
           type: string
-          example: bar
+          examples:
+            - bar
       required:
         - id
         - root_file_id
@@ -3769,52 +3879,63 @@ components:
           description: Date at which the client access key was created.
           type: string
           format: date-time
-          example: 2019-06-20T17:23:50Z
+          examples:
+            - 2019-06-20T17:23:50Z
         id:
           description: ID of the client access key.
           type: string
-          example: '999'
+          examples:
+            - '999'
         name:
           description: Name of the client access key.
           type: string
-          example: MyAccessKey
+          examples:
+            - MyAccessKey
         node_id:
           description: ID of the transfer node that the client access key belongs to.
           type: string
-          example: '42'
+          examples:
+            - '42'
         permission_id:
           type: string
-          example: '123'
+          examples:
+            - '123'
         root_file_id:
           description: |
             ID of the directory that this access key grants permissions for.
           type: string
-          example: bar
+          examples:
+            - bar
         updated_at:
           description: Date when the client access key was last updated.
           type: string
           format: date-time
-          example: 2019-06-20T17:23:50Z
+          examples:
+            - 2019-06-20T17:23:50Z
         workspace_id:
           description: ID of the workspace that the client access key belongs to.
           type: string
-          example: '24'
+          examples:
+            - '24'
     client_authorizations_params:
       type: object
       properties:
         client_id:
           description: The ID of the client.
           type: string
-          example: '23749'
+          examples:
+            - '23749'
         entity_id:
           description: The ID of the entity that can be authorized.
           type: integer
-          example: 0
+          examples:
+            - 0
         entity_type:
           description: |
             The type of entity who can be authorized. Default is user.
           type: string
-          example: user
+          examples:
+            - user
           enum:
             - user
             - group
@@ -3828,77 +3949,89 @@ components:
         client_id:
           description: The ID of the client.
           type: string
-          example: '0'
+          examples:
+            - '0'
         created_at:
           description: The timestamp of authorization.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         entity_id:
           description: The ID of the entity that can be authorized.
           type: integer
-          example: 151
+          examples:
+            - 151
         entity_type:
           description: |
             The type of entity who can be authorized. Default is user.
           type: string
-          example: user
+          examples:
+            - user
           enum:
             - user
             - group
         id:
           description: The client ID
           type: string
-          example: '23749'
+          examples:
+            - '23749'
         updated_at:
           description: The timestamp of the most recent update.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
     clients_params:
       type: object
       properties:
         admin_node_token_retrieval_enabled:
           description: If you use the JWT grant type (jwt_grant_enabled=true), whether or not to allow users of this client who are AoC administrators to retrieve admin-scoped node access tokens. Such a token provides the user with admin privileges on the node itself. Admin permissions required. Defaults to false.
           type: boolean
-          example: false
+          examples:
+            - false
         explicit_authorization_required:
           description: Use with browser-based authorization. When users log in using the client app via a browser, prompt them to explicitly allow access to AoC features. Admin permissions required. Defaults to true.
           type: boolean
-          example: true
+          examples:
+            - true
         jwt_grant_enabled:
           description: Allow the client to authenticate using the JSON web token method. The JWT grant allows the users of the client to log in without having to use a web browser. Admin permissions required.
           type: boolean
-          example: false
+          examples:
+            - false
         name:
           description: 'The name of the client app to register. Admin permissions required. POST: required. PUT: not required.'
           type: string
-          example: AoC_Client
+          examples:
+            - AoC_Client
         origins:
           description: 'The allowable list of origins for the client. An origin is the URI or protocol-host-port of the client app initial login page, from which the user must arrive to the authentication flow. Array of JSON origins (strings) Admin permissions required. Separate multiple origins with commas. Maximum characters: 65535.'
           type: array
           items:
             type: string
-          example:
-            - https://ClientOrigin.com
+          examples:
+            - - https://ClientOrigin.com
         public_key:
           description: 'RSA public key in PEM format. The corresponding private key can be used to generate a JWT assertion for any user in the organization. Admin permissions required. Maximum characters: 65535.'
           type: string
-          example: |-
-            -----BEGIN PUBLIC KEY-----
-            MIIBI ... 7QIDAQAB
-            -----END PUBLIC KEY-----
+          examples:
+            - |-
+              -----BEGIN PUBLIC KEY-----
+              MIIBI ... 7QIDAQAB
+              -----END PUBLIC KEY-----
         redirect_uris:
           description: 'The allowable list of redirect URIs for the client. A redirect URI (protocol-host-port) is an absolute URI invoked after the authentication flow to return the user to the client app. Array of JSON redirect URIs (strings) Admin permissions required. Separate multiple redirect URIs with commas. Maximum characters: 65535.'
           type: array
           items:
             type: string
-          example:
-            - https://ClientRedirect.com
+          examples:
+            - - https://ClientRedirect.com
         whitelist_enabled:
           description: Enable creation of a specific list of users and groups eligible to receive an access token. To create the whitelist, see /client_authorizations. Admin permissions required. Pertains to JWT grants. Default is false.
           type: boolean
-          example: true
+          examples:
+            - true
       required:
         - name
     clients_response:
@@ -3907,74 +4040,87 @@ components:
         admin_node_token_retrieval_enabled:
           description: If you use the JWT grant type (jwt_grant_enabled=true), whether or not to allow users of this client who are AoC administrators to retrieve admin-scoped node access tokens. Such a token provides the user with admin privileges on the node itself. Default is false.
           type: boolean
-          example: true
+          examples:
+            - true
         allow_implicit_grant:
           description: Whether or not to allow the client app to obtain an access token directly from the authorization endpoint, without contacting the token endpoint or authenticating the client.
           type: boolean
-          example: false
+          examples:
+            - false
         created_at:
           description: Timestamp of original creation of the client. Datetime.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         creator_id:
           description: ID of the user who created the client.
           type: string
-          example: '0'
+          examples:
+            - '0'
         explicit_authorization_required:
           description: Use with browser-based authorization. When users log in using the client app via a browser, prompt them to explicitly allow access to AoC features. Default is true.
           type: boolean
-          example: false
+          examples:
+            - false
         id:
           description: ID of the client app.
           type: string
-          example: '0'
+          examples:
+            - '0'
         jwt_grant_enabled:
           description: Allow the client to authenticate using the JSON web token method. The JWT grant allows the users of the client to log in without having to use a web browser. Default is false.
           type: boolean
-          example: false
+          examples:
+            - false
         name:
           description: 'Name assigned to the client. Maximum length: 255 characters.'
           type: string
-          example: AoC_Client
+          examples:
+            - AoC_Client
         organization_id:
           description: ID of the AoC organization to which the client belongs.
           type: string
-          example: '4'
+          examples:
+            - '4'
         origins:
           description: 'The allowable list of origins for the client. An origin is the URI or protocol-host-port of the client app initial login page, from which the user must arrive to the authentication flow. Separate multiple origins with commas. Maximum characters: 65535. Array of json origins (strings).'
           type: array
           items:
             type: string
-          example:
-            - https://origins.com
+          examples:
+            - - https://origins.com
         public_key:
           description: 'The public portion of the RSA key pair. Maximum characters: 65535.'
           type: string
-          example: |-
-            -----BEGIN PUBLIC KEY-----
-            MIIBI ... 7QIDAQAB
-            -----END PUBLIC KEY-----
+          examples:
+            - |-
+              -----BEGIN PUBLIC KEY-----
+              MIIBI ... 7QIDAQAB
+              -----END PUBLIC KEY-----
         redirect_uris:
           description: 'The allowable list of redirect URIs for this client. A redirect URI, or protocol-host-port, is an absolute URI invoked after the authentication flow to return the user to the client app. Separate multiple redirect URIs with commas. Maximum characters: 65535.'
           type: array
           items:
             type: string
-          example:
-            - https://redirect.com
+          examples:
+            - - https://redirect.com
         secret:
           description: The secret associated with this client.
           type: string
-          example: Fw62_Lh7qOK9Z62z-TAwqJncr8Lmej97TbFCnhzd9ShdQ25NxKuLjeOJXSkKrOHuRezeKiXXcuCUoh_hJ1wwzHARdElfsDhw
+          examples:
+            - Fw62_Lh7qOK9Z62z-TAwqJncr8Lmej97TbFCnhzd9ShdQ25NxKuLjeOJXSkKrOHuRezeKiXXcuCUoh_hJ1wwzHARdElfsDhw
         updated_at:
           description: Timestamp of last modification to the client. datetime
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         whitelist_enabled:
           description: Enable creation of a specific list of users and groups eligible to receive an access token. Pertains to JWT grants. Default is false. See /client_authorizations.
           type: boolean
-          example: false
+          examples:
+            - false
     dropbox_memberships_params:
       type: object
       properties:
@@ -3982,30 +4128,36 @@ components:
           description: |
             Indicates whether this member can receive packages.
           type: boolean
-          example: false
+          examples:
+            - false
         can_submit_packages:
           description: |
             Indicates whether this member can submit packages.
           type: boolean
-          example: true
+          examples:
+            - true
         dropbox_id:
           description: ID of the dropbox to which this membership belongs.
           type: string
-          example: '123'
+          examples:
+            - '123'
         manager:
           description: |
             Indicates whether this member is a dropbox manager.
           type: boolean
-          example: false
+          examples:
+            - false
         member_id:
           description: ID of the member to which this membership belongs.
           type: string
-          example: '42'
+          examples:
+            - '42'
         member_type:
           description: |
             Describes the kind of member to which this membership belongs.
           type: string
-          example: user
+          examples:
+            - user
           enum:
             - user
             - group
@@ -4014,7 +4166,8 @@ components:
             Defines the time at which the dropbox will be closed to submission for a specific dropbox member. If null, the dropbox has no submission deadline.
           type: string
           format: date-time
-          example: 2025-01-31T23:59:59Z
+          examples:
+            - 2025-01-31T23:59:59Z
       required:
         - dropbox_id
         - member_id
@@ -4025,38 +4178,46 @@ components:
           description: |
             Indicates whether this member can receive packages.
           type: boolean
-          example: false
+          examples:
+            - false
         can_submit_packages:
           description: |
             Indicates whether this member can submit packages.
           type: boolean
-          example: true
+          examples:
+            - true
         creator_id:
           description: ID of the user who created this membership.
           type: string
-          example: '42'
+          examples:
+            - '42'
         dropbox_id:
           description: ID of the dropbox to which this membership belongs.
           type: string
-          example: '123'
+          examples:
+            - '123'
         id:
           description: ID of this dropbox membership.
           type: string
-          example: '42'
+          examples:
+            - '42'
         manager:
           description: |
             Indicates whether this member is a dropbox manager.
           type: boolean
-          example: false
+          examples:
+            - false
         member_id:
           description: ID of the member to which this membership belongs.
           type: string
-          example: '42'
+          examples:
+            - '42'
         member_type:
           description: |
             Describes the kind of member to which this membership belongs.
           type: string
-          example: user
+          examples:
+            - user
           enum:
             - user
             - group
@@ -4064,18 +4225,21 @@ components:
           description: |
             Indicates whether the member may make a submission to the dropbox.
           type: boolean
-          example: false
+          examples:
+            - false
         submit_expires_at:
           description: |
             Defines the time at which the dropbox will be closed to submission for a specific dropbox member. If null, the dropbox has no submission deadline.
           type: string
           format: date-time
-          example: 2025-01-31T23:59:59Z
+          examples:
+            - 2025-01-31T23:59:59Z
         workspace_id:
           description: |
             The ID of the workspace to which this dropbox membership belongs.
           type: string
-          example: '123'
+          examples:
+            - '123'
     dropbox_memberships_update_params:
       type: object
       properties:
@@ -4083,23 +4247,27 @@ components:
           description: |
             Indicates whether this member can receive packages.
           type: boolean
-          example: false
+          examples:
+            - false
         can_submit_packages:
           description: |
             Indicates whether this member can submit packages.
           type: boolean
-          example: true
+          examples:
+            - true
         manager:
           description: |
             Indicates whether this member is a dropbox manager.
           type: boolean
-          example: false
+          examples:
+            - false
         submit_expires_at:
           description: |
             Defines the time at which the dropbox will be closed to submission for a specific dropbox member. If null, the dropbox has no submission deadline.
           type: string
           format: date-time
-          example: 2025-01-31T23:59:59Z
+          examples:
+            - 2025-01-31T23:59:59Z
     dropboxes_params:
       type: object
       properties:
@@ -4107,27 +4275,32 @@ components:
           description: |
             Configure a time-based expiration policy for packages in this shared inbox by setting this parameter to a non-null value. Once the transfer completes, a timer begins. After the duration configured for this parameter, package contents are deleted (the package record is maintained and includes details about the sender, recipients, contents, and transfer). If null, this shared inbox inherits the content_retention_duration settings of its workspace. Valid values: null - 10 years. Units: seconds. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: integer
-          example: 2592000
+          examples:
+            - 2592000
         custom_notification_list_enabled:
           description: |
             For a package sent to a shared inbox, this parameter determines whether notifications are sent to all package addressees or to a user-defined list of addressees for the shared inbox (see dropbox_notification_recipients). Defaults to false. Valid values: true to send notifications to a user-defined list or false to send notifications to all package addressees. POST: Admin or Manager permission required. PUT: Admin or Manager permission required. RESPONSE: Admin scope.
           type: boolean
-          example: false
+          examples:
+            - false
         delete_package_content_after_download_duration:
           description: |
             Configure a download-based expiration policy for packages in this shared inbox by setting this parameter to a non-null value. Once all package recipients have downloaded the entire package, a timer begins. After the duration configured by this parameter has passed, package contents are deleted (the package record is maintained and includes details about the sender, recipients, contents, and transfer). If null, this shared inbox inherits the delete_package_content_after_download_duration settings of its workspace. Valid values: null - 10 years. Units: seconds. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: integer
-          example: 604800
+          examples:
+            - 604800
         description:
           description: |
             A description for the shared inbox. POST: Admin or Manager permission required. PUT: Admin or Manager permission required. RESPONSE: Admin scope.
           type: string
-          example: Finance shared inbox
+          examples:
+            - Finance shared inbox
         draft_expiration_duration:
           description: |
             Configure a time-based expiration policy for draft packages in this shared inbox by setting this parameter to a non-null value. When a package is saved as a draft, a timer begins. After the duration configured for this parameter, draft package contents are deleted. If this parameter is null, it defaults to the workspace setting. To set a time-based expiration policy for non-draft packages, see content_retention_duration. Units: seconds. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: integer
-          example: 604800
+          examples:
+            - 604800
         dropbox_notification_recipients:
           description: |
             With custom_notification_list_enabled = true, this parameter defines a list of addressees who should receive notifications regarding packages addressed to this shared inbox. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
@@ -4145,9 +4318,9 @@ components:
                   - group
                   - email
             type: object
-          example:
-            - id: email@foo.co
-              type: email
+          examples:
+            - - id: email@foo.co
+                type: email
         email_notification_settings:
           description: |
             Email notifications specification. See below. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
@@ -4158,44 +4331,52 @@ components:
           description: |
             If inherit_email_templates is set to false, you can enable or disable the ability to configure email templates specifically for users outside this shared inbox. When this parameter is set to false, external recipients receive the same email notification messages that users in the shared inbox receive. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: boolean
-          example: false
+          examples:
+            - false
         image_data:
           description: |
             The image data for the shared inbox logo encoded as a string. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: string
-          example: iVBORw0KGgo ... /wB\/DRk84ZdwGQAAAABJRU5ErkJggg==
+          examples:
+            - iVBORw0KGgo ... /wB\/DRk84ZdwGQAAAABJRU5ErkJggg==
         image_type:
           description: |
             The image type of the shared inbox logo. For example, image/png or image/jpg. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: string
-          example: image/png
+          examples:
+            - image/png
         inherit_email_notification_settings:
           description: |
             Inherit the email notification settings configured at the workspace level. POST Admin or Manager permission required. PUT Admin or Manager permission required.
           type: boolean
-          example: true
+          examples:
+            - true
         inherit_email_templates:
           description: |
             Inherit the email templates configured at the workspace level. If false, you can configure email template settings for this shared inbox. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: boolean
-          example: true
+          examples:
+            - true
         inherit_workspace_expiration_settings:
           description: |
             Inherit the content_retention_duration settings configured at the workspace level. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: boolean
-          example: true
+          examples:
+            - true
         instructions:
           description: |
             User-defined instructions for potential shared inbox submissions. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: string
-          example: Video submissions only.
+          examples:
+            - Video submissions only.
         metadata_schema:
           $ref: '#/components/schemas/metadata'
         name:
           description: |
             Shared inbox name. A query parameter for the GET method. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: string
-          example: My Shared Inbox
+          examples:
+            - My Shared Inbox
         package_name_and_message_validation_schema:
           description: |
             Defines illegal characters and/or max length for the name and message fields for package submissions to this shared inbox. Defaults to an empty array ([]). POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
@@ -4210,29 +4391,33 @@ components:
               illegal_characters:
                 description: Defines all disallowed characters.
                 type: string
-                example: '!@#'
+                examples:
+                  - '!@#'
               max_length:
                 description: Defines the max length for the provided string.
                 type: string
-                example: '50'
+                examples:
+                  - '50'
             type: object
-          example:
-            - field_name: package_name
-              illegal_characters: '!@#'
-              max_length: '100'
-            - field_name: package_message
-              illegal_characters: '!@#'
-              max_length: '50'
+          examples:
+            - - field_name: package_name
+                illegal_characters: '!@#'
+                max_length: '100'
+              - field_name: package_message
+                illegal_characters: '!@#'
+                max_length: '50'
         personalized_urls_enabled:
           description: |
             Enable members of this shared inbox to configure personalized URLs to send when inviting people to submit packages. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: boolean
-          example: false
+          examples:
+            - false
         workspace_id:
           description: |
             ID of the workspace to which this shared inbox belongs. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: string
-          example: '123'
+          examples:
+            - '123'
       required:
         - name
         - description
@@ -4245,27 +4430,32 @@ components:
           description: |
             Configure a time-based expiration policy for packages in this shared inbox by setting this parameter to a non-null value. Once the transfer completes, a timer begins. After the duration configured for this parameter, package contents are deleted (the package record is maintained and includes details about the sender, recipients, contents, and transfer). If null, this shared inbox inherits the content_retention_duration settings of its workspace. Valid values: null - 10 years. Units: seconds. POST: Admin or Manager permission required. PUT: Admin or Manager permission required. Write only.
           type: integer
-          example: 2592000
+          examples:
+            - 2592000
         custom_notification_list_enabled:
           description: |
             For a package sent to a shared inbox, this configuration determines whether notifications are sent to all package addressees or a user-defined list of addressees for the shared inbox (see dropbox_notification_recipients). Defaults to false. Valid values: true to send notifications to a user-defined list or false to send notifications to all package addressees. POST: Admin or Manager permission required. PUT: Admin or Manager permission required. RESPONSE: Admin scope.
           type: boolean
-          example: false
+          examples:
+            - false
         delete_package_content_after_download_duration:
           description: |
             Configure a download-based expiration policy for packages in this shared inbox by setting this parameter to a non-null value. Once all package recipients have downloaded the entire package, a timer begins. After the duration configured by this parameter has passed, package contents are deleted (the package record is maintained and includes details about the sender, recipients, contents, and transfer). If null, this shared inbox inherits the delete_package_content_after_download_duration settings of its workspace. Valid values: null - 10 years. Units: seconds. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: integer
-          example: 604800
+          examples:
+            - 604800
         description:
           description: |
             A description for the shared inbox. POST: Admin or Manager permission required. PUT: Admin or Manager permission required. RESPONSE: Admin scope.
           type: string
-          example: Finance shared inbox
+          examples:
+            - Finance shared inbox
         draft_expiration_duration:
           description: |
             Configure a time-based expiration policy for draft packages in this shared inbox by setting this parameter to a non-null value. When a package is saved as a draft, a timer begins. After the duration configured for this parameter, draft package contents are deleted. If this parameter is null, it defaults to the workspace setting. To set a time-based expiration policy for non-draft packages, see content_retention_duration. Units: seconds. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: integer
-          example: null
+          examples:
+            - null
         dropbox_notification_recipients:
           description: |
             With custom_notification_list_enabled = true, this parameter defines a list of addressees who should receive notifications regarding packages addressed to this shared inbox. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
@@ -4283,19 +4473,21 @@ components:
                   - group
                   - email
             type: object
-          example:
-            - id: email@foo.co
-              type: email
+          examples:
+            - - id: email@foo.co
+                type: email
         effective_content_retention_duration:
           description: |
             Amount of time in seconds it takes for packages in this shared inbox to be deleted once their transfers complete. If null, packages will not be deleted on a timer. Read-only.
           type: integer
-          example: null
+          examples:
+            - null
         effective_delete_package_content_after_download_duration:
           description: |
             Amount of time in seconds it takes a package in this shared inbox to be deleted once all recipients have downloaded the entire package. If null, packages will not be deleted on a timer. Read-only.
           type: integer
-          example: null
+          examples:
+            - null
         email_notification_settings:
           description: |
             Email notifications specification. See below. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
@@ -4306,42 +4498,50 @@ components:
           description: |
             If inherit_email_templates is set to false, you can enable or disable the ability to configure email templates specifically for users outside this shared inbox. When this parameter is set to false, external recipients receive the same email notification messages that users in the shared inbox receive. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: boolean
-          example: false
+          examples:
+            - false
         id:
           description: The ID of the shared inbox. Read-only.
           type: string
-          example: '123'
+          examples:
+            - '123'
         image_url:
           description: The URL of the shared inbox logo image. Read-only.
           type: string
-          example: https://api.asperafiles.com/api/v1/user_images/32850?oh=cg-nf7pFnNK0-N3g3r-f2nRg
+          examples:
+            - https://api.asperafiles.com/api/v1/user_images/32850?oh=cg-nf7pFnNK0-N3g3r-f2nRg
         inherit_email_notification_settings:
           description: |
             Inherit the email notification settings configured at the workspace level. POST Admin or Manager permission required. PUT Admin or Manager permission required.
           type: boolean
-          example: true
+          examples:
+            - true
         inherit_email_templates:
           description: |
             Inherit the email templates configured at the workspace level. If false, you can configure email template settings for this shared inbox. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: boolean
-          example: true
+          examples:
+            - true
         inherit_workspace_expiration_settings:
           description: |
             Inherit the content_retention_duration settings configured at the workspace level. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: boolean
-          example: true
+          examples:
+            - true
         instructions:
           description: |
             User defined instructions for potential shared inbox submissions. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: string
-          example: Video submissions only.
+          examples:
+            - Video submissions only.
         metadata_schema:
           $ref: '#/components/schemas/metadata'
         name:
           description: |
             shared inbox name. A query parameter for the GET method. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: string
-          example: My Dropbox
+          examples:
+            - My Dropbox
         package_name_and_message_validation_schema:
           description: |
             Defines illegal characters and/or max length for the name and message fields for package submissions to this shared inbox. Defaults to an empty array ([]). POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
@@ -4356,90 +4556,108 @@ components:
               illegal_characters:
                 description: Defines all disallowed characters.
                 type: string
-                example: '!@#'
+                examples:
+                  - '!@#'
               max_length:
                 description: Defines the max length for the provided string.
                 type: string
-                example: '50'
+                examples:
+                  - '50'
             type: object
-          example:
-            - field_name: package_name
-              illegal_characters: '!@#'
-              max_length: '100'
-            - field_name: package_message
-              illegal_characters: '!@#'
-              max_length: '50'
+          examples:
+            - - field_name: package_name
+                illegal_characters: '!@#'
+                max_length: '100'
+              - field_name: package_message
+                illegal_characters: '!@#'
+                max_length: '50'
         personalized_urls_enabled:
           description: |
             Enable members of this shared inbox to configure personalized URLs to send when inviting people to submit packages. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: boolean
-          example: false
+          examples:
+            - false
         recipients_group_id:
           description: |
             ID of the group that all shared inbox recipients belong to. Read-only.
           type: string
-          example: '123'
+          examples:
+            - '123'
         senders_group_id:
           description: |
             ID of the group that all senders to the shared inbox belong to. Read-only.
           type: string
-          example: '123'
+          examples:
+            - '123'
         workspace_id:
           description: |
             ID of the workspace to which this shared inbox belongs. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
           type: string
-          example: '123'
+          examples:
+            - '123'
     email_notification_settings:
       type: object
       properties:
         dropbox_invitation:
           description: An email notification setting; refer to email_notification_settings. Notify users who receive an invitation to send a package to a dropbox. Refer also to public_invites_allowed(_by_managers).
           type: boolean
-          example: true
+          examples:
+            - true
         file_shared:
           description: An email notification setting; refer to email_notification_settings. Notify users who are recipients of a shared file. Refer also to public_links_allowed(_by_managers).
           type: boolean
-          example: true
+          examples:
+            - true
         invitation_to_send_to_me:
           description: An email notification setting; refer to email_notification_settings. Notifiy users who receive an invitation to send a package to an individual (as opposed to sending to a dropbox; see dropbox_invitation). Refer also to external_package_sending_allowed(_by_managers).
           type: boolean
-          example: true
+          examples:
+            - true
         package_contents_deleted:
           description: An email notification setting; refer to email_notification_settings. Notify package recipients when a package is deleted (senders or administrators can delete packages).
           type: boolean
-          example: true
+          examples:
+            - true
         package_downloaded:
           description: An email notification setting; refer to email_notification_settings. Notify package sender when recipients have downloaded the package.
           type: boolean
-          example: true
+          examples:
+            - true
         package_expired:
           description: An email notification setting; refer to email_notification_settings. Notify package recipients when package contents are deleted according to configured package expiration policy (see also delete_package_content_after_download_duration and content_retention_duration).
           type: boolean
-          example: true
+          examples:
+            - true
         package_failed:
           description: An email notification setting; refer to email_notification_settings. Notify package sender when a package transfer has failed.
           type: boolean
-          example: true
+          examples:
+            - true
         package_recalled:
           description: An email notification setting; refer to email_notification_settings. Notify package recipients when a package has been recalled by the sender. When a package is recalled, the recipient cannot browse or download package contents until the sender resends the package.
           type: boolean
-          example: true
+          examples:
+            - true
         package_received:
           description: An email notification setting; refer to email_notification_settings. Notify package recipients when they have received a package and the package is available.
           type: boolean
-          example: true
+          examples:
+            - true
         package_resent:
           description: An email notification setting; refer to email_notification_settings. Notify package recipients when a recalled package has been resent. The package will be available to the recipient when the transfer completes; at that point the recipient receives the package_received notification.
           type: boolean
-          example: true
+          examples:
+            - true
         package_sent:
           description: An email notification setting; refer to email_notification_settings. Notify package sender that the package was successfully sent. The package will be available to the recipient when the transfer completes; at that point the recipient receives the package_received notification.
           type: boolean
-          example: true
+          examples:
+            - true
         package_uploaded:
           description: An email notification setting; refer to email_notification_settings. Notify package sender that the package was successfully uploaded to the transfer server.
           type: boolean
-          example: true
+          examples:
+            - true
     metadata:
       description: |
         A metadata schema is used to present a form to a user when the user is submitting content to a dropbox. It is an array with "Field" objects, and each Field object defines one field that the user can fill out when submitting content to a dropbox. Note that the order of the fields in the metadata schema array will be the order in which they are shown to the user.
@@ -4452,21 +4670,22 @@ components:
             type: array
             items:
               type: string
-            example:
-              - Option1
-              - Option2
+            examples:
+              - - Option1
+                - Option2
           default_values:
             description: |
               Sets the singular default value for each input_type except multiple-checkbox. In the case of multiple-checkbox, a default value is set for each checkbox.
             type: array
             items:
               type: string
-            example:
-              - Option2
+            examples:
+              - - Option2
           illegal_characters:
             description: Defines all disallowed characters for string fields.
             type: string
-            example: '!@#'
+            examples:
+              - '!@#'
           input_type:
             description: The type of the field.
             type: string
@@ -4480,27 +4699,29 @@ components:
             description: |
               For string fields defines the maximum number of characters allowed.
             type: string
-            example: '100'
+            examples:
+              - '100'
           name:
             description: The label of the metadata field.
             type: string
           required:
             description: Denotes a field as required.
             type: boolean
-            example: true
+            examples:
+              - true
         required:
           - name
           - input_type
         type: object
-      example:
-        - choices:
-            - opt1
-            - opt2
-            - opt3
-          default_values:
-            - opt2
-          input_type: single-dropdown
-          name: Field 1
+      examples:
+        - - choices:
+              - opt1
+              - opt2
+              - opt3
+            default_values:
+              - opt2
+            input_type: single-dropdown
+            name: Field 1
     nodes_params:
       type: object
       properties:
@@ -4508,17 +4729,20 @@ components:
           description: |
             Access keys are used for authorization when AoC makes a request via the Node API. Each transfer node must have a unique access key.
           type: string
-          example: abc123
+          examples:
+            - abc123
         ats_access_key:
           description: |
             Indicates that access_key is a key for an Aspera Transfer Service node. Defaults to false. Used on POST only.
           type: boolean
-          example: false
+          examples:
+            - false
         ats_storage_type:
           description: |
             For Aspera Transfer Service nodes, this field defines which type of storage is used.
           type: string
-          example: aws_s3
+          examples:
+            - aws_s3
           enum:
             - aws_s3
             - azure
@@ -4531,26 +4755,31 @@ components:
           description: |
             References the configuration policy to which a transfer node belongs.
           type: integer
-          example: 42
+          examples:
+            - 42
         name:
           description: User-defined identifier for the transfer node. Each transfer node must have a unique name.
           type: string
-          example: myNode
+          examples:
+            - myNode
         network_policy_id:
           description: |
             References the network configuration policy to which a transfer node belongs.
           type: integer
-          example: 7
+          examples:
+            - 7
         ssh_fingerprint:
           description: |
             If your node has SSH capabilities, used for verifying SSH connections.
           type: string
-          example: SHA256:abcdefghijklmnopqrstuvwxyz1234567890ABCDE
+          examples:
+            - SHA256:abcdefghijklmnopqrstuvwxyz1234567890ABCDE
         status:
           description: |
             If a transfer node has status "error" but the problem has been fixed, it will automatically recover to the "ok" state. Similarly, if a node has status "ok", it will switch to status "error" automatically if there is a problem. Nodes with status "down" remain in the "down" state until marked "ok" by a user.
           type: string
-          example: error
+          examples:
+            - error
           enum:
             - ok
             - error
@@ -4559,38 +4788,45 @@ components:
           description: |
             Specifies the URL where the transfer node is located. Necessary for AoC to make requests via the Node API.
           type: string
-          example: https://example.com
+          examples:
+            - https://example.com
         use_ssl:
           description: Describes node secure socket layer usage. Defaults to true.
           type: boolean
-          example: true
+          examples:
+            - true
         verify_ssl_certificate:
           description: |
             Specifies whether or not node must verify SSL certificate. Defaults to true.
           type: boolean
-          example: true
+          examples:
+            - true
     nodes_response:
       type: object
       properties:
         host:
           description: Host portion of node URL.
           type: string
-          example: example.com
+          examples:
+            - example.com
         access_key:
           description: |
             Access keys are used for authorization when AoC makes a request via the Node API. Each transfer node must have a unique access key.
           type: string
-          example: abc123
+          examples:
+            - abc123
         ats_access_key:
           description: |
             Indicates that access_key is a key for an Aspera Transfer Service node. Defaults to false. Used on POST only.
           type: boolean
-          example: false
+          examples:
+            - false
         ats_storage_type:
           description: |
             For Aspera Transfer Service nodes, this field defines which type of storage is used.
           type: string
-          example: null
+          examples:
+            - null
           enum:
             - aws_s3
             - azure
@@ -4606,44 +4842,52 @@ components:
               name:
                 type: string
               value:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 anyOf:
                   - type: boolean
                   - type: integer
                   - type: string
-                nullable: true
             type: object
         configuration_policy_id:
           description: |
             References the configuration policy to which a node belongs.
           type: integer
-          example: 42
+          examples:
+            - 42
         error_message:
           description: |
             Short message describing the nature of the most recent transfer node error.
           type: string
-          example: 502 Bad Gateway
+          examples:
+            - 502 Bad Gateway
         error_time:
           description: Datetime. Indicates time of most recent error.
           type: string
-          example: 2019-06-04T04:41:00.000Z
+          examples:
+            - 2019-06-04T04:41:00.000Z
         name:
           description: User-defined identifier for the transfer node. Each transfer node must have a unique name.
           type: string
-          example: myNode
+          examples:
+            - myNode
         network_policy_id:
           description: |
             References the network configuration policy to which a transfer node belongs.
           type: integer
-          example: 42
+          examples:
+            - 42
         path:
           description: Path portion of the transfer node URL.
           type: string
-          example: /
+          examples:
+            - /
         port:
           description: Port portion of the transfer node URL.
           type: integer
-          example: 9092
+          examples:
+            - 9092
         settings:
           type: array
           items:
@@ -4651,23 +4895,26 @@ components:
               name:
                 type: string
               value:
-                type: string
+                type:
+                  - string
+                  - 'null'
                 anyOf:
                   - type: boolean
                   - type: integer
                   - type: string
-                nullable: true
             type: object
         ssh_fingerprint:
           description: |
             If your node has SSH capabilities, used for verifying SSH connections.
           type: string
-          example: null
+          examples:
+            - null
         status:
           description: |
             If a transfer node has status "error" but the problem has been fixed, it will automatically recover to the "ok" state. Similarly, if a node has status "ok", it will switch to status "error" automatically if there is a problem. Nodes with status "down" remain in the "down" state until marked "ok" by a user.
           type: string
-          example: error
+          examples:
+            - error
           enum:
             - ok
             - error
@@ -4676,16 +4923,19 @@ components:
           description: |
             Specifies the URL where the transfer node is located. Necessary for AoC to make requests via the Node API.
           type: string
-          example: https://example.com:9092/
+          examples:
+            - https://example.com:9092/
         use_ssl:
           description: Describes node secure socket layer usage. Defaults to true.
           type: boolean
-          example: true
+          examples:
+            - true
         verify_ssl_certificate:
           description: |
             Specifies whether or not node must verify SSL certificate. Defaults to true.
           type: boolean
-          example: true
+          examples:
+            - true
     organizations_params:
       type: object
       properties:
@@ -4693,26 +4943,31 @@ components:
           description: |
             Data for the image to be displayed on the organization sign-in page. The data must be binary and have a maximum size of 4MB. Returned only when image_data is included in the request (e.g., include%5B%5D=image_data).
           type: string
-          example: iVBORw0KGgoAAAANSUhEUgAA...
+          examples:
+            - iVBORw0KGgoAAAANSUhEUgAA...
         background_image_type:
           description: The file type of the background image.
           type: string
-          example: image/gif
+          examples:
+            - image/gif
         consecutive_login_failures_limit:
           description: |
             The number of login failures allowed before the user is required to change passwords. Valid values: 2 - 10. Requires organization admin permission to view or update.
           type: integer
-          example: 2
+          examples:
+            - 2
         default_ear_setting:
           description: |
             Indicates the default encryption-at-rest setting for your organization. Defaults to false. Requires organization admin permission to view or update.
           type: boolean
-          example: false
+          examples:
+            - false
         email_footer:
           description: |
             Text to be added as the footer in email notifications sent for your organization. Must have organization admin permission to view or update.
           type: string
-          example: Thank you for using Aspera on Cloud.
+          examples:
+            - Thank you for using Aspera on Cloud.
         email_notification_settings:
           description: Must have organization admin permission to view or update.
           allOf:
@@ -4721,141 +4976,165 @@ components:
           description: |
             Indicates whether the organization has external email templates enabled. Requires organization admin permission to view or update.
           type: boolean
-          example: false
+          examples:
+            - false
         enforce_password_history_count:
           description: |
             The number of password changes that must occur before a password can be reused. Valid values are 1 - 12, or null to disable. Requires organization admin permission to view or update.
           type: integer
-          example: 3
+          examples:
+            - 3
         event_reporting_uri:
           description: |
             Customer-configurable endpoint that can receive reporting for AoC events. Requires organization admin permission to view or update.
           type: string
-          example: https://example.com/aoc/events
+          examples:
+            - https://example.com/aoc/events
         google_excluded_domains:
           description: |
             If Google OAuth is enabled, this parameter can be used to define a list of domains for email addresses that are not allowed to log into your  organization. This parameter is mutually exclusive with google_included_domains. Requires organization admin permission to view or update.
           type: array
           items:
             type: string
-          example:
-            - example.com
-            - abc.io
+          examples:
+            - - example.com
+              - abc.io
         google_included_domains:
           description: |
             If Google OAuth is enabled, this parameter can be used to define a list of domains for email addresses that are allowed to log into your organization. This parameter is mutually exclusive with google_excluded_domains. Requires organization admin permission to view or update.
           type: array
           items:
             type: string
-          example: []
+          examples:
+            - []
         google_oauth_included:
           description: |
             Indicates whether users can be authenticated through Google OAuth for your organization. Requires organization admin permission to view or update.
           type: boolean
-          example: false
+          examples:
+            - false
         inherit_email_templates:
           description: |
             Indicates whether this organization is using customized email templates. Requires organization admin permission to view or update.
           type: boolean
-          example: true
+          examples:
+            - true
         invitation_message:
           description: |
             Text for the email notification that is sent to new users when they are invited to join your organization. Requires organization admin permission to view or update.
           type: string
-          example: Welcome to MyOrganization. Please activate your account.
+          examples:
+            - Welcome to MyOrganization. Please activate your account.
         local_excluded_domains:
           description: |
             If local OAuth is enabled, this parameter can be used to define a list of domains for email addresses that are not allowed to log into your organization. This parameter is mutually exclusive with local_included_domains. Requires organization admin permission to view or update.
           type: array
           items:
             type: string
-          example: []
+          examples:
+            - []
         local_included_domains:
           description: |
             If local OAuth is enabled, this parameter can be used to define a list of domains for email addresses that are allowed to log into your organization. This parameter is mutually exclusive with local_excluded_domains. Requires organization admin permission to view or update.
           type: array
           items:
             type: string
-          example:
-            - example.com
-            - abc.io
+          examples:
+            - - example.com
+              - abc.io
         local_login_button_text:
           description: |
             Customized text that will appear on the local login button. Requires organization admin permission to view or update.
           type: string
-          example: Log into MyOrganization!
+          examples:
+            - Log into MyOrganization!
         local_oauth_enabled:
           description: |
             Indicates whether users can be authenticated through local OAuth for your organization. Requires organization admin permission to view or update.
           type: boolean
-          example: false
+          examples:
+            - false
         logo_image_data:
           description: |
             Data for the image to be used as the organization logo. The data must be binary and have a maximum size of 512KB. This field is included only when the query string includes "include%5B%5D=image_data".
           type: string
-          example: iVBORw0KGgoAAAANSUhEUgAA...
+          examples:
+            - iVBORw0KGgoAAAANSUhEUgAA...
         logo_image_type:
           description: The data type of the provided logo image.
           type: string
-          example: image/gif
+          examples:
+            - image/gif
         minimum_password_age:
           description: |
             Defines the minimum age for a password before it can be reset. Units: seconds. Valid values: 15 minutes to 1 year (900 - 31536000), or null to disable. Requires organization admin permission to view or update.
           type: integer
-          example: 900
+          examples:
+            - 900
         minimum_password_length:
           description: |
             The minimum length for passwords for users in your organization. Valid values: 8 - 100. Requires organization admin permission to view or update.
           type: integer
-          example: 8
+          examples:
+            - 8
         name:
           description: The name of your organization.
           type: string
-          example: MyOrganization
+          examples:
+            - MyOrganization
         new_user_password_reset_token_duration:
           description: |
             How long a password reset link is valid, when it is sent as part of an invitation to a new user. Units: seconds. Valid values: 1 hour - 1 week (3600 - 604800), or null to disable. Requires organization admin permission to view or update.
           type: integer
-          example: 3600
+          examples:
+            - 3600
         node_token_duration:
           description: |
             Denotes the amount of time that a transfer node access token is valid. Must be at least as long as access_token_duration. Units: seconds. Valid values: 1 hour - 14 days (3600 - 1209600). Requires organization admin permission to view or update.
           type: integer
-          example: 3600
+          examples:
+            - 3600
         organization_contacts_visible_to_managers:
           description: |
             If true, workspace managers can see all organization contacts. Otherwise, workspace managers can only see the contacts for their workspace. Requires organization admin permission to view or update.
           type: boolean
-          example: true
+          examples:
+            - true
         password_expiration_interval:
           description: |
             How often a password change is required. Units: seconds. Valid values: 15 days to 1 year (129600 - 31536000) or null to disable. Requires organization admin permission to view or update.
           type: integer
-          example: 129600
+          examples:
+            - 129600
         password_reset_token_duration:
           description: |
             How long the password reset link is good for. Units: seconds. Valid values: 1 hour - 1 week (3600 - 604800), or null to disable. Requires organization admin permission to view or update.
           type: integer
-          example: 3600
+          examples:
+            - 3600
         require_strong_passwords:
           description: |
             Indicates whether to require users to set "strong" passwords. A "strong" password contains at least three of the following: 1. A lowercase letter 2. An uppercase letter 3. A non-word  character (!, @, #, etc.) 4. A number. Requires organization admin permission to view or update.
           type: boolean
-          example: false
+          examples:
+            - false
         session_duration:
           description: |
             How long a user can be inactive before their session is terminated and their access token is invalidated. Units: seconds. Valid values: 1 hour - 1 week (3600 - 604800), or null to disable.
           type: integer
-          example: 3600
+          examples:
+            - 3600
         sign_on_message:
           description: Message displayed to users on sign-in.
           type: string
-          example: Welcome to MyOrganization!
+          examples:
+            - Welcome to MyOrganization!
         workspace_container_node_id:
           description: |
             When creating a workspace, node_id is required, but the client app can choose to use this value as a default. This is set automatically to the first transfer node created in your organization. Requires organization admin permission to view or update.
           type: string
-          example: '2'
+          examples:
+            - '2'
     organizations_response:
       type: object
       properties:
@@ -4863,51 +5142,61 @@ components:
           description: |
             How long an access token is valid. Units: seconds. Valid values: 3600 - 86400 (1 - 24 hours). Viewable by organization admin only.
           type: integer
-          example: 3600
+          examples:
+            - 3600
         access_token_refresh_duration:
           description: |
             The maximum amount of time that can pass in which an access token can be refreshed. Units: seconds. Valid values: 3600 - 1209600 (1 hour - 14 days), or null to disable access token refreshing. Viewable by organization admin only.
           type: integer
-          example: 3600
+          examples:
+            - 3600
         background_image_data:
           description: |
             Data for the image to be displayed on the organization sign-in page. The data must be binary and have a maximum size of 4MB. Returned only when image_data is included in the request (e.g. include%5B%5D=image_data).
           type: string
-          example: iVBORw0KGgoAAAANSUhEUgAA...
+          examples:
+            - iVBORw0KGgoAAAANSUhEUgAA...
         background_image_type:
           description: The file type of the background image.
           type: string
-          example: image/gif
+          examples:
+            - image/gif
         background_image_url:
           description: The URL at which the background image is stored.
           type: string
-          example: https://example.com/images/background.png
+          examples:
+            - https://example.com/images/background.png
         consecutive_login_failures_limit:
           description: |
             The number of login failures allowed before the user is required to change passwords. Valid values: 2 - 10. Requires organization admin permission to view or update.
           type: integer
-          example: 2
+          examples:
+            - 2
         created_at:
           description: |
             The time at which the organization was created. Viewable by organization admin only.
           type: string
           format: date-time
-          example: 2019-06-20T17:23:50Z
+          examples:
+            - 2019-06-20T17:23:50Z
         default_ear_setting:
           description: |
             Indicates the default encryption-at-rest setting for your organization. Defaults to false. Requires organization admin permission to view or update.
           type: boolean
-          example: false
+          examples:
+            - false
         default_local_login_button_text:
           description: |
             The default text that appears on the local login button. Viewable by organization admin only.
           type: string
-          example: Log in
+          examples:
+            - Log in
         email_footer:
           description: |
             Text to be added as the footer in email notifications sent for your organization. Must have organization admin permission to view or update.
           type: string
-          example: Thank you for using Aspera on Cloud.
+          examples:
+            - Thank you for using Aspera on Cloud.
         email_notification_settings:
           description: Must have organization admin permission to view or update.
           allOf:
@@ -4916,244 +5205,288 @@ components:
           description: |
             Indicates whether the organization has external email templates enabled. Requires organization admin permission to view or update.
           type: boolean
-          example: false
+          examples:
+            - false
         enforce_password_history_count:
           description: |
             The number of password changes that must occur before a password can be reused. Valid values are 1 - 12, or null to disable. Requires organization admin permission to view or update.
           type: integer
-          example: 3
+          examples:
+            - 3
         event_reporting_uri:
           description: |
             Customer-configurable endpoint that can receive reporting for AoC events. Requires organization admin permission to view or update.
           type: string
-          example: https://example.com/aoc/events
+          examples:
+            - https://example.com/aoc/events
         google_excluded_domains:
           description: |
             If Google OAuth is enabled, this parameter can be used to define a list of domains for email addresses that are not allowed to log into your  organization. This parameter is mutually exclusive with google_included_domains. Requires organization admin permission to view or update.
           type: array
           items:
             type: string
-          example:
-            - example.com
-            - abc.io
+          examples:
+            - - example.com
+              - abc.io
         google_included_domains:
           description: |
             If Google OAuth is enabled, this parameter can be used to define a list of domains for email addresses that are allowed to log into your organization. This parameter is mutually exclusive with google_excluded_domains. Requires organization admin permission to view or update.
           type: array
           items:
             type: string
-          example: []
+          examples:
+            - []
         google_oauth_included:
           description: |
             Indicates whether users can be authenticated through Google OAuth for your organization. Requires organization admin permission to view or update.
           type: boolean
-          example: false
+          examples:
+            - false
         id:
           description: The ID of your organization. Read-only.
           type: string
-          example: '4'
+          examples:
+            - '4'
         inherit_email_templates:
           description: |
             Indicates whether this organization is using customized email templates. Requires organization admin permission to view or update.
           type: boolean
-          example: true
+          examples:
+            - true
         invitation_message:
           description: Text for the email notification that is sent to new users when they are invited to join your organization. Requires organization admin permission to view or update.
           type: string
-          example: Welcome to MyOrganization. Please activate your account.
+          examples:
+            - Welcome to MyOrganization. Please activate your account.
         local_excluded_domains:
           description: |
             If local OAuth is enabled, this parameter can be used to define a list of domains for email addresses that are not allowed to log into your organization. This parameter is mutually exclusive with local_included_domains. Requires organization admin permission to view or update.
           type: array
           items:
             type: string
-          example: []
+          examples:
+            - []
         local_included_domains:
           description: |
             If local OAuth is enabled, this parameter can be used to define a list of domains for email addresses that are allowed to log into your organization. This parameter is mutually exclusive with local_excluded_domains. Requires organization admin permission to view or update.
           type: array
           items:
             type: string
-          example:
-            - example.com
-            - abc.io
+          examples:
+            - - example.com
+              - abc.io
         local_login_button_text:
           description: |
             Customized text that will appear on the local login button. Requires organization admin permission to view or update.
           type: string
-          example: Log into MyOrganization!
+          examples:
+            - Log into MyOrganization!
         local_oauth_enabled:
           description: |
             Indicates whether users can be authenticated through local OAuth for your organization. Requires organization admin permission to view or update.
           type: boolean
-          example: false
+          examples:
+            - false
         logo_image_data:
           description: |
             Data for the image to be used as organization logo. The data must be binary and have a maximum size of 512KB. This field is included only when the query string includes "include%5B%5D=image_data".
           type: string
-          example: iVBORw0KGgoAAAANSUhEUgAA...
+          examples:
+            - iVBORw0KGgoAAAANSUhEUgAA...
         logo_image_type:
           description: The data type of the provided logo image.
           type: string
-          example: image/gif
+          examples:
+            - image/gif
         logo_image_url:
           description: The URL at which your logo image is stored. Read-only.
           type: string
-          example: https://example.com/images/logo.png
+          examples:
+            - https://example.com/images/logo.png
         minimum_password_age:
           description: |
             Defines the minimum age for a password before it can be reset. Units: seconds. Valid values: 15 minutes to 1 year (900 - 31536000), or null to disable. Requires organization admin permission to view or update.
           type: integer
-          example: 900
+          examples:
+            - 900
         minimum_password_length:
           description: |
             The minimum length for passwords for users in your organization. Valid values: 8 - 100. Requires organization admin permission to view or update.
           type: integer
-          example: 8
+          examples:
+            - 8
         name:
           description: The name of your organization.
           type: string
-          example: MyOrganization
+          examples:
+            - MyOrganization
         new_user_password_reset_token_duration:
           description: |
             How long a password reset link is valid, when it is sent as part of an invitation to a new user. Units: seconds. Valid values: 1 hour - 1 week (3600 - 604800), or null to disable. Requires organization admin permission to view or update.
           type: integer
-          example: 3600
+          examples:
+            - 3600
         node_token_duration:
           description: |
             Denotes the amount of time that a transfer node access token is valid. Must be at least as long as access_token_duration. Units: seconds. Valid values: 1 hour - 14 days (3600 - 1209600). Requires organization admin permission to view or update.
           type: integer
-          example: 3600
+          examples:
+            - 3600
         oauth_token_verification_key:
           description: |
             RSA public key used to verify OAuth tokens for this org. Requires organization admin permission to view. Read-only.
           type: string
-          example: |
-            -----BEGIN PUBLIC KEY-----
-            ...
-            -----END PUBLIC KEY-----
+          examples:
+            - |
+              -----BEGIN PUBLIC KEY-----
+              ...
+              -----END PUBLIC KEY-----
         organization_contacts_visible_to_managers:
           description: |
             If true, workspace managers can see all organization contacts. Otherwise, workspace managers can see only the contacts for their workspace. Requires organization admin permission to view or update.
           type: boolean
-          example: true
+          examples:
+            - true
         password_expiration_interval:
           description: |
             How often a password change is required. Units: seconds. Valid values: 15 days to 1 year (129600 - 31536000), or null to disable. Requires organization admin permission to view or update.
           type: integer
-          example: 129600
+          examples:
+            - 129600
         password_reset_token_duration:
           description: |
             How long the password reset link is valid. Units: seconds. Valid values: 1 hour - 1 week (3600 - 604800), or null to disable. Requires organization admin permission to view or update.
           type: integer
-          example: 3600
+          examples:
+            - 3600
         require_strong_passwords:
           description: |
             Indicates whether to require users to set "strong" passwords. A "strong" password contains at least three of the following: 1. A lowercase letter 2. An uppercase letter 3. A non-word  character (!, @, #, etc.) 4. A number. Requires organization admin permission to view or update.
           type: boolean
-          example: false
+          examples:
+            - false
         session_duration:
           description: |
             How long a user can be inactive before their session is terminated and their access token is invalidated. Units: seconds. Valid values: 1 hour - 1 week (3600 - 604800), or null to disable.
           type: integer
-          example: 3600
+          examples:
+            - 3600
         sign_on_message:
           description: Message displayed to users on sign-in.
           type: string
-          example: Welcome to MyOrganization!
+          examples:
+            - Welcome to MyOrganization!
         subdomain_name:
           description: The subdomain name for your organization. Read-only.
           type: string
-          example: ibm
+          examples:
+            - ibm
         tier:
           description: |
             The tier of your organization's Aspera on Cloud subscription. Can be any of "paygo", "standard", "advanced", or "enterprise". Read-only.
           type: string
-          example: standard
+          examples:
+            - standard
         trial_expires_at:
           description: |
             For organizations on trial subscriptions, this denotes the time at which their subscription ends. Is null in all other cases. Read-only.
           type: string
           format: date-time
-          example: 2025-12-31T23:59:59Z
+          examples:
+            - 2025-12-31T23:59:59Z
         url_id:
           description: The URL ID for your organization. Read-only.
           type: string
-          example: abc123
+          examples:
+            - abc123
         workspace_container_node_id:
           description: |
             When creating a workspace, node_id is required, but the client app can choose to use this value as a default. This is set automatically to the first transfer node created in your organization. Requires organization admin permission to view or update.
           type: string
-          example: '2'
+          examples:
+            - '2'
     packages_params:
       type: object
       properties:
         archived:
           description: Whether or not this package has been archived by the user.
           type: boolean
-          example: false
+          examples:
+            - false
         bcc_recipients:
           $ref: '#/components/schemas/senders_recipients_object'
         content_retention_duration:
           description: When a time-based content expiration value is set for this package, the duration to retain packages contents. When this duration passes, the packages contents are deleted. Valid values are null to 10 years. Units are seconds.
           type: integer
-          example: 2592000
+          examples:
+            - 2592000
         delete_package_content_after_download_duration:
           description: If 'delete_after_download' is set to 'true', this parameter configures an optional 'grace period', during which the package contents will be retained even after all recipients have downloaded the package. The timer for this setting begins when all recipients have downloaded the package; when the timer expires, the package contents are deleted. Valid values are null - 10 years.  Units are seconds.
           type: integer
-          example: 604800
+          examples:
+            - 604800
         download_notification_recipients:
           $ref: '#/components/schemas/senders_recipients_object'
         draft:
           description: Whether or not the package is in draft status.
           type: boolean
-          example: true
+          examples:
+            - true
         encryption_at_rest:
           description: Whether or not the package has encryption_at_rest applied. For transfers that use the Aspera Connect transfer client, note this requirement to enable Connect to decrypt package contents. When a package is uploaded with encryption-at-rest set to true, the parameter single-source must also be true.
           type: boolean
-          example: false
+          examples:
+            - false
         file_names:
           description: 'The names of the items to include in this package; multiple names separated by commas. Maximum characters: 65535'
           type: string
-          example: file.txt, file2.txt
+          examples:
+            - file.txt, file2.txt
         metadata:
           description: 'JSON object. Maximum characters: 65535'
           type: object
-          example:
-            project: migration
-            priority: high
+          examples:
+            - project: migration
+              priority: high
         name:
           description: Package name. Required for POST. Optional for PUT.
           type: string
-          example: Name of Package
+          examples:
+            - Name of Package
         note:
           description: "The sender's message to recipients to include with the package. Maximum characters: 65535."
           type: string
-          example: Please review and process asap.
+          examples:
+            - Please review and process asap.
         read:
           description: Whether or not the package was read.
           type: boolean
-          example: false
+          examples:
+            - false
         recipients:
           $ref: '#/components/schemas/senders_recipients_object'
         sent:
           description: Whether or not the package was sent.
           type: boolean
-          example: false
+          examples:
+            - false
         single_source:
           description: Whether or not all the contents of this package originate from the same location (node, workstation, etc.). When the package recipient downloads a package with Encryption at Rest (EAR) applied by the sender, and all package contents are from the same source (single-source=true; for example, the sender's desktop; a specific remote server), AoC signals Aspera Connect to prompt the recipient to apply the passphrase created by the sender and decrypt package contents during the download operation. When package contents are from disparate sources, the recipient applies the password to individual files in the downloaded package when opening each file.
           type: boolean
-          example: false
+          examples:
+            - false
         transfers_expected:
           description: The number of transfer sessions expected to bring all package contents to the node supporting the workspace in which the package is sent. The number corresponds to the number of discrete source locations of the designated package contents. For example, if the package includes 20 files and folders from 5 discrete sources, the number of transfers expected is 5.
           type: integer
-          example: 3
+          examples:
+            - 3
         upload_notification_recipients:
           $ref: '#/components/schemas/senders_recipients_object'
         workspace_id:
           description: The ID of the workspace from which this package was sent. Required for POST. Optional for PUT.
           type: integer
-          example: 65
+          examples:
+            - 65
       required:
         - name
         - workspace_id
@@ -5163,190 +5496,233 @@ components:
         active_download_count:
           description: The number of active downloads.
           type: integer
-          example: 12
+          examples:
+            - 12
         archived:
           description: Whether or not this package has been archived by the user. If user_package only.
           type: boolean
-          example: false
+          examples:
+            - false
         average_rate:
           description: Float. User Packages.
           type: number
-          example: 871.096
+          examples:
+            - 871.096
         bcc:
           description: Whether or not there is a BCC list. If user_package only.
           type: boolean
-          example: true
+          examples:
+            - true
         bcc_recipients:
           $ref: '#/components/schemas/senders_recipients_object'
         bytes_transferred:
           description: How many bytes have been transferred.
           type: integer
-          example: 546
+          examples:
+            - 546
         complete:
           description: Whether or not the package is fully available on the transfer node; when the package is complete, all transfers of the designated files and folders into the package have been successful and all designated files and folders are present on the node.
           type: boolean
-          example: false
+          examples:
+            - false
         completed_at:
           description: The timestamp that indicates when the package is complete. Refer to 'complete'.
           type: string
           format: date-time
-          example: 2018-02-06T00:05:25Z
+          examples:
+            - 2018-02-06T00:05:25Z
         content_expires_at:
           description: The time at which package content will expire according to configured expiration policies. Refer to 'content_retention_duration' and to the related parameters 'delete_after_download' and 'delete_package_content_after_download_duration'.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         content_retention_duration:
           description: When a time-based content expiration value is set for this package, the duration to retain packages contents. When this duration passes, the packages contents are deleted. Valid values are null - 10 years. Units are seconds.
           type: integer
-          example: null
+          examples:
+            - null
         contents_file_id:
           description: The file ID on the node that contains package contents.
           type: string
-          example: '479283475'
+          examples:
+            - '479283475'
         created_at:
           description: The timestamp for when this package was created.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         delete_after_download:
           description: Whether or not an expiration policy applies to this package, indicating that package contents will expire (be deleted) after all recipients have downloaded the package.
           type: boolean
-          example: false
+          examples:
+            - false
         delete_package_content_after_download_duration:
           description: If 'delete_after_download' is set to 'true', this parameter configures an optional 'grace period', during which the package contents will be retained even after all recipients have downloaded the package. The timer for this setting begins when all recipients have downloaded the package; when the timer expires, the package contents are deleted. Valid values are null - 10 years. Units are seconds.
           type: integer
-          example: null
+          examples:
+            - null
         deleted:
           description: Whether or not package contents have been deleted, either by the sender, by an administrator, or by configured expiration policies.
           type: boolean
-          example: false
+          examples:
+            - false
         deleted_after_download:
           description: Whether or not package contents were deleted by a download-based expiration policy.
           type: boolean
-          example: false
+          examples:
+            - false
         deleted_at:
           description: The timestamp for the deletion of package contents.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         deleted_by_admin:
           description: Whether or not the deleted package was deleted by an administrator.
           type: boolean
-          example: false
+          examples:
+            - false
         deleted_by_user_id:
           description: The ID of the user who deleted the package.
           type: integer
-          example: 151
+          examples:
+            - 151
         download_notification_recipients:
           $ref: '#/components/schemas/senders_recipients_object'
         draft:
           description: Whether or not the package is in draft status.
           type: boolean
-          example: true
+          examples:
+            - true
         draft_expires_at:
           description: The time the draft expired/expires.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         encryption_at_rest:
           description: Whether or not the package has encryption_at_rest applied.
           type: boolean
-          example: false
+          examples:
+            - false
         expiration_reason:
           description: The reason for expiration. Package can be deleted by an administrator or by the sender, or can be deleted as a result of a configured time-based or download-based expiration policy.
           type: string
-          example: contents_expired
+          examples:
+            - contents_expired
         expired:
           description: Whether or not the package contents are expired due to a configured expiration policy.
           type: boolean
-          example: false
+          examples:
+            - false
         expired_at:
           description: The time the package expired/expires.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         failed:
           description: Whether or not the transfer of this package failed.
           type: boolean
-          example: false
+          examples:
+            - false
         failed_download_count:
           description: The number of failed downloads of this package; download attempts may be full (the entire package) or partial (some contents of the package).
           type: integer
-          example: 0
+          examples:
+            - 0
         file_count:
           description: The number of files included in this package. This counts individual files included in the package, not files that are contents of folders that are included in the package.
           type: integer
-          example: 21
+          examples:
+            - 21
         file_count_from_disk:
           description: Whether or not the file_count value was obtained from the storage.
           type: boolean
-          example: false
+          examples:
+            - false
         file_id:
           description: The ID for the file comprising all package contents.
           type: string
-          example: '7'
+          examples:
+            - '7'
         files_completed:
           description: The number of files that have completed transferring.
           type: integer
-          example: 46
+          examples:
+            - 46
         files_expected:
           description: Number (obtained directly from the node) of files expected to be transferred as part of the package.
           type: integer
-          example: 54
+          examples:
+            - 54
         folder_count:
           description: The number of folders actually included in this package per the transfer session. This counts individual folder included in the package, not folders that are nested within other folders that are included in the package. This value may or may not match the value for folders_expected.
           type: integer
-          example: 5
+          examples:
+            - 5
         folders_completed:
           description: Number (obtained directly from the node) of folders successfully transferred as part of the package.
           type: integer
-          example: 7
+          examples:
+            - 7
         folders_expected:
           description: Number (obtained directly from the node) of folders expected to be transferred as part of the package.
           type: integer
-          example: 8
+          examples:
+            - 8
         full_download_count:
           description: The number of full downloads completed for this package. This counts the times that recipients have downloaded the package as a whole, rather than partial downloads, when a recipient downloads individual files or folders of a package.
           type: integer
-          example: 4
+          examples:
+            - 4
         has_content:
           description: Whether or not the package has contents. If content has been deleted, either by the user, by an administrator, or as the result of configured package expiration policies, the package record remains accessible, but the package content has been deleted from the transfer server and cannot be recovered.
           type: boolean
-          example: false
+          examples:
+            - false
         id:
           description: The ID for the package.
           type: string
-          example: '87234'
+          examples:
+            - '87234'
         metadata:
           $ref: '#/components/schemas/metadata'
         name:
           description: Package name.
           type: string
-          example: test package
+          examples:
+            - test package
         node_id:
           description: The ID of the node that contains the package.
           type: integer
-          example: 21
+          examples:
+            - 21
         note:
           description: "The sender's message to recipients to include with the package. Maximum characters: 65535."
           type: string
-          example: Please download and process asap. Thanks.
+          examples:
+            - Please download and process asap. Thanks.
         package_sent:
           example: 7
         read:
           description: Whether or not the package was read. If user_package only.
           type: boolean
-          example: false
+          examples:
+            - false
         recalled_at:
           description: When the package was recalled.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         received:
           description: Whether or not the package was received. If user_package only.
           type: boolean
-          example: true
+          examples:
+            - true
         recipients:
           description: If not user_package only.
           allOf:
@@ -5356,48 +5732,58 @@ components:
         sent:
           description: Whether or not the package was sent.
           type: boolean
-          example: true
+          examples:
+            - true
         sent_at:
           description: The timestamp for when the package was sent.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         single_source:
           description: "Whether or not all the contents of this package originate from the same location (node, workstation, etc.). When the package recipient downloads a package with Encryption at Rest (EAR) applied by the sender or by workspace configuration, and all package contents are from the same source (for example, the sender's desktop; a specific remote server), AoC signals Aspera Connect to prompt the recipient to apply the passphrase created by the sender and decrypt package contents during the download operation. When package contents are from disparate sources, previous behavior applies: the recipient applies the password to individual files in the downloaded package when opening each file."
           type: boolean
-          example: false
+          examples:
+            - false
         size:
           description: The cumulative size of all the files and folders in the package.
           type: integer
-          example: 345543
+          examples:
+            - 345543
         time_remaining:
           description: The time remaining to complete an in-progress transfer. Float.
           type: number
-          example: 1.3
+          examples:
+            - 1.3
         transfers_expected:
           description: The number of transfer sessions expected to bring all package contents to the node supporting the workspace in which the package is sent. The number corresponds to the number of discrete source locations of the designated package contents. For example, if the package includes 20 files and folders from 5 discrete sources, the number of transfers expected is 5.
           type: integer
-          example: 7
+          examples:
+            - 7
         updated_at:
           description: When the package was updated.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         upload_notification_recipients:
           $ref: '#/components/schemas/senders_recipients_object'
         upload_started:
           description: Whether or not the upload of the package has started.
           type: boolean
-          example: false
+          examples:
+            - false
         upload_started_at:
           description: The timestamp for when the package upload began.
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         workspace_id:
           description: The ID of the workspace from which this package was sent.
           type: integer
-          example: 64792
+          examples:
+            - 64792
     senders_recipients_object:
       type: object
       properties:
@@ -5418,46 +5804,55 @@ components:
         node_id:
           description: The ID of the transfer node for which this usage report was generated.
           type: string
-          example: '1'
+          examples:
+            - '1'
         reporting_period_bytes:
           description: |
             The total number of bytes transferred during this reporting period.
           type: integer
-          example: 1024
+          examples:
+            - 1024
         reporting_period_bytes_in:
           description: |
             The total number of bytes received during this reporting period.
           type: integer
-          example: 512
+          examples:
+            - 512
         reporting_period_bytes_out:
           description: The total number of bytes sent during this reporting period.
           type: integer
-          example: 512
+          examples:
+            - 512
         total_bytes:
           description: |
             The total number of bytes transferred since the transfer node started collecting usage information.
           type: integer
-          example: 2048
+          examples:
+            - 2048
         total_bytes_in:
           description: |
             The total number bytes received since the transfer node started collecting usage information.
           type: integer
-          example: 1024
+          examples:
+            - 1024
         total_bytes_out:
           description: |
             The total number of bytes sent since the transfer node started collecting usage information.
           type: integer
-          example: 1024
+          examples:
+            - 1024
         updated_at:
           description: The date at which this usage report was last updated.
           type: string
           format: date-time
-          example: 2019-06-18T21:46:36.000Z
+          examples:
+            - 2019-06-18T21:46:36.000Z
         workspace_id:
           description: |
             The ID of the workspace for which this usage report was generated.
           type: string
-          example: '2'
+          examples:
+            - '2'
     users_params:
       type: object
       properties:
@@ -5470,55 +5865,68 @@ components:
         deactivated:
           description: Whether or not this user is deactivated. A deactivated user cannot log in to Aspera on Cloud, but still exists in the user database. PUT Admin permission required.
           type: boolean
-          example: false
+          examples:
+            - false
         default_workspace_choice:
           description: The workspace selected by the user as their default; when the user logs in to Aspera on Cloud, the default workspace displays. If the user has not selected a default workspace, the last used workspace displays. PUT User, Manager, Admin for self. POST Manager permission required. POST Admin permission required.
           type: string
-          example: last_used
+          examples:
+            - last_used
         default_workspace_id:
           description: The ID of the user-selected default workspace. If the user has not selected a default workspace, the field contains the ID of the user's last used workspace. PUT User, Manager, Admin for self. POST Manager permission required. POST Admin permission required.
           type: string
-          example: '5988'
+          examples:
+            - '5988'
         email:
           description: The email address associated with this user in the AoC user database. This is the user's login username. PUT User, Manager, Admin for self. POST Manager permission required. POST Admin permission required. Required only for POST.
           type: string
-          example: email@example.com
+          examples:
+            - email@example.com
         first_name:
           description: The user's first name. PUT User, Manager, Admin for self. POST Manager permission required. POST Admin permission required.
           type: string
-          example: Arthur
+          examples:
+            - Arthur
         ibm_uid:
           description: The ID for the user. PUT User, Manager, Admin for self.
           type: integer
-          example: 0
+          examples:
+            - 0
         last_name:
           description: The user's last name. PUT User, Manager, Admin for self. POST Manager permission required. POST Admin permission required.
           type: string
-          example: Lumra
+          examples:
+            - Lumra
         name:
           description: The user first_name and last_name. PUT User, Manager, Admin for self. POST Manager permission required. POST Admin permission required.
           type: string
-          example: Arthur Lumra
+          examples:
+            - Arthur Lumra
         organization_admin:
           description: Whether or not this user has administrative privileges in the organization. PUT Admin permission required.
           type: boolean
-          example: false
+          examples:
+            - false
         provisioned:
           description: Whether or not the user's home folder is ready for use.
           type: boolean
-          example: false
+          examples:
+            - false
         public_key:
           description: Whether or not the user record for this user includes the user's public key. The user can add their public key to their record, or the organization administrator can add it. PUT User, Manager, Admin for self. POST Manager permission required. POST Admin permission required.
           type: boolean
-          example: false
+          examples:
+            - false
         subscription_admin:
           description: future feature PUT Admin permission required.
           type: boolean
-          example: false
+          examples:
+            - false
         user_admin:
           description: future feature PUT Admin permission required.
           type: boolean
-          example: false
+          examples:
+            - false
       required:
         - email
     users_response:
@@ -5527,7 +5935,8 @@ components:
         ats_admin:
           description: Whether or not this user has ATS (Aspera Transfer Service) administrative permissions.
           type: boolean
-          example: false
+          examples:
+            - false
         available_apps:
           description: future feature
           type: string
@@ -5535,122 +5944,151 @@ components:
           description: The timestamp for initial creation of this user. datetime
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         deactivated:
           description: Whether or not this user is deactivated. A deactivated user cannot log in to Aspera on Cloud, but still exists in the user database.
           type: boolean
-          example: false
+          examples:
+            - false
         default_shortlink_name:
           description: When shortened links are enabled for a workspace, and this user has permission to send an invitation inviting another person to send them a package, this is the default configuration of the shortened link for this user. The default shortened link is comprised of 'first_name' and 'last_name' for this user.
           type: string
-          example: artik_lumra
+          examples:
+            - artik_lumra
         default_workspace_choice:
           description: The workspace selected by the user as their default; when the user logs in to Aspera on Cloud, the default workspace displays. If the user has not selected a default workspace, the last used workspace displays.
           type: string
-          example: last_used
+          examples:
+            - last_used
         default_workspace_id:
           description: The ID of the user-selected default workspace. If the user has not selected a default workspace, the field contains the ID of the user's last used workspace.
           type: string
-          example: '0'
+          examples:
+            - '0'
         email:
           description: The email address associated with this user in the Aspera on Cloud user database. This is the user's login username.
           type: string
-          example: email@example.com
+          examples:
+            - email@example.com
         first_name:
           description: The user's first name.
           type: string
-          example: Arthur
+          examples:
+            - Arthur
         home_file_id:
           description: The file ID of the user's root or home folder, which contains all files and folders the user uploads, along with links to folders shared with this user by the administrator or by other users.
           type: integer
-          example: 0
+          examples:
+            - 0
         home_node_id:
           description: The ID of the node containing the user's home folder.
           type: integer
-          example: 0
+          examples:
+            - 0
         id:
           description: The ID for the user.
           type: integer
-          example: 0
+          examples:
+            - 0
         last_login_at:
           description: The timestamp for the last time the user logged in. datetime
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         last_login_provider:
           description: The authorization method used for the most recent login.
           type: string
-          example: saml
+          examples:
+            - saml
         last_name:
           description: The user's last name.
           type: string
-          example: Bartlance
+          examples:
+            - Bartlance
         member_of_any_workspace:
           description: Whether or not the user has membership in any workspace. Refer to .
           type: boolean
-          example: false
+          examples:
+            - false
         name:
           description: The user first_name and last_name.
           type: string
-          example: Artik
+          examples:
+            - Artik
         organization_admin:
           description: Whether or not this user has administrative privileges in the organization.
           type: boolean
-          example: false
+          examples:
+            - false
         organization_id:
           description: ID of the AoC organization to which the client belongs.
           type: integer
-          example: 4
+          examples:
+            - 4
         password_updated_at:
           description: The timestamp for the most recent update to the user password. datetime
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         provisioned:
           description: Whether or not the user's home folder is ready for use.
           type: boolean
-          example: false
+          examples:
+            - false
         public_key:
           description: Whether or not the user record for this user includes the user's public key. The user can add their public key to their record, or the organization administrator can add it.
           type: boolean
-          example: false
+          examples:
+            - false
         read_only_home_file_id:
           description: The file ID of the home folder for a user who may have access to some shared folders in the workspace, but is not a member of the workspace.
           type: string
-          example: '873398'
+          examples:
+            - '873398'
         read_only_home_node_id:
           description: The ID of the node containing the user's read-only home folder.
           type: integer
-          example: 3214
+          examples:
+            - 3214
         running_operation_count:
           description: The number of user-related operations currently in progress.
           type: integer
-          example: 34
+          examples:
+            - 34
         saml_configuration_id:
           description: The ID for this user in the SAML authentication login. If user is not a SAML user, set this parameter to null.
           type: string
-          example: saml-config-123
+          examples:
+            - saml-config-123
         stopped_operation_count:
           description: The number of user-related operations that are stopped for any reason.
           type: integer
-          example: 12
+          examples:
+            - 12
         subscription_admin:
           description: future feature
           type: boolean
-          example: false
+          examples:
+            - false
         trial:
           description: Whether or not this org/user is a trial
           type: boolean
-          example: false
+          examples:
+            - false
         updated_at:
           description: The timestamp for when the user record was most recently updated. datetime
           type: string
           format: date-time
-          example: 2018-02-06T00:03:24Z
+          examples:
+            - 2018-02-06T00:03:24Z
         user_admin:
           description: future feature
           type: boolean
-          example: false
+          examples:
+            - false
     workspace_filter_params:
       type: object
       properties:
@@ -5672,27 +6110,33 @@ components:
         can_invite_by_email:
           description: Whether or not inviting users to this workspace by email is allowed.
           type: boolean
-          example: false
+          examples:
+            - false
         manager:
           description: The user is a workspace manager user type.
           type: boolean
-          example: false
+          examples:
+            - false
         member_id:
           description: The ID of the member
           type: integer
-          example: 0
+          examples:
+            - 0
         member_type:
           description: The member type.
           type: string
-          example: user
+          examples:
+            - user
         storage_allowed:
           description: Whether or not storage is allowed.
           type: boolean
-          example: false
+          examples:
+            - false
         workspace_id:
           description: The ID of the workspace in which to grant this membership.
           type: integer
-          example: 0
+          examples:
+            - 0
       required:
         - member_id
         - member_type
@@ -5703,39 +6147,48 @@ components:
         id:
           description: Membership ID.
           type: string
-          example: '0'
+          examples:
+            - '0'
         inherited:
           description: The membership in this workspace is 'inherited'. The user is not a direct member, but rather a member by means of being a member of a group that is a member of the workspace.
           type: boolean
-          example: false
+          examples:
+            - false
         manager:
           description: The user is a workspace manager user type.
           type: boolean
-          example: false
+          examples:
+            - false
         member_id:
           description: The ID of the member.
           type: integer
-          example: 0
+          examples:
+            - 0
         member_type:
           description: The user type for this member. Valid values- user, group.
           type: string
-          example: user
+          examples:
+            - user
         running_operation_count:
           description: The number of workspace-membership-related operations currently in progress.
           type: integer
-          example: 0
+          examples:
+            - 0
         stopped_operation_count:
           description: The number of workspace-membership-related operations that are stopped for any reason.
           type: integer
-          example: 0
+          examples:
+            - 0
         storage_allowed:
           description: Whether or not storage is allowed.
           type: boolean
-          example: false
+          examples:
+            - false
         workspace_id:
           description: The ID of the workspace.
           type: integer
-          example: 0
+          examples:
+            - 0
     workspace_memberships_update_params:
       type: object
       properties:
@@ -5743,15 +6196,18 @@ components:
           description: |
             Whether or not inviting users to this workspace by email is allowed.
           type: boolean
-          example: false
+          examples:
+            - false
         manager:
           description: The user is a workspace manager user type.
           type: boolean
-          example: false
+          examples:
+            - false
         storage_allowed:
           description: Whether or not storage is allowed.
           type: boolean
-          example: false
+          examples:
+            - false
     workspace_query_params:
       type: object
       properties:
@@ -5774,43 +6230,53 @@ components:
         allow_package_level_expirations:
           description: 'Allow senders to set package expiration when sending. If workspace settings are configured by the admin, senders can only further restrict the workspace setting. Refer to delete_package_content_after_download_duration and to content_retention_duration. POST: Admin permission required. PUT: Admin or Manager permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).'
           type: boolean
-          example: false
+          examples:
+            - false
         collaboration_settings_editable_by_managers:
           description: 'Allow workspace manager to configure workspace collaboration settings. POST: Admin permission required. PUT: Admin permission required. RESPONSE Admin scope (org admin).'
           type: boolean
-          example: false
+          examples:
+            - false
         collaboration_whitelist_enabled:
           description: 'If collaboration with users outside the workspace is enabled (external_package_sending_allowed=true and/or external_sharing_allowed=true), enable a whitelist of external users who can be recipients of packages and/or shared folders. To configure the whitelist, POST or PUT to /workspace_collaborators. POST: Admin permission required. PUT: Manager with collaboration settings edit permission or Admin permission required. settings editable by managers required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).'
           type: boolean
-          example: false
+          examples:
+            - false
         collaboration_with_emails_allowed:
           description: If external_package_sending_allowed(_by_managers) and/or external_sharing_allowed(_by_managers) is/are set to true, setting this parameter to true allows those who are allowed to send to or share with external users (all users or workspace managers only) to see email addresses of external users in the list of contacts displayed in the (1) recipients field of the package sending form, and/or (2) the recipients field of the folder sharing form. POST Admin permission required. PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         content_retention_duration:
           description: 'Configure a time-based expiration policy for packages in this workspace by setting this parameter to a non-null value. Once the transfer completes, a timer begins. After the duration configured for this parameter, package contents are deleted (the package record is maintained, and includes details about sender, recipients, contents, transfer). If null, contents of packages in this workspace are not deleted based on time. To set a download-based expiration policy, refer to delete_package_content_after_download_duration. Valid values: null - 10 years. Units: seconds. POST: Admin permission required. PUT Manager or Admin permission required. RESPONSE User scope. RESPONSE Admin scope (org admin).'
           type: integer
-          example: null
+          examples:
+            - null
         default_ear_setting:
           description: 'When this parameter is set to true, encryption-at-rest is mandatory for all packages sent in this workspace. Senders must set a passphrase for every package they send, then must deliver the passphrase to the recipient according to local site security practice. Only when the recipient applies that passphrase can the package be decrypted. When this parameter is set to true, the parameter of the /packages endpoint that corresponds to EAR is always set to true and cannot be edited. When this parameter is set to false, the field in the /packages endpoint can be set to true or false, giving the sender the choice whether to apply EAR to a given package or not. POST: Admin permission required. PUT: Admin or Manager permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).'
           type: boolean
-          example: false
+          examples:
+            - false
         delete_package_content_after_download_duration:
           description: 'Configure a download-based expiration policy for packages in this workspace by setting this parameter to a non-null value. Once all package recipients have downloaded the entire package, a timer begins. After the duration configured for this parameter, package contents are deleted (the package record is maintained, and includes details about sender, recipients, contents, transfer). If null, contents of packages in this workspace are not deleted based on whether or not recipients have downloaded the package. To set a time-based expiration policy, refer to content_retention_duration. Valid values: null - 10 years. Units: seconds. POST: Admin permission required. PUT: Manager or Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).'
           type: integer
-          example: null
+          examples:
+            - null
         description:
           description: 'A description for the workspace. POST: Admin permission required. PUT: Manager or Admin permission required. RESPONSE Admin scope (org admin).'
           type: string
-          example: 'Maximum characters: 65535'
+          examples:
+            - 'Maximum characters: 65535'
         draft_expiration_duration:
           description: 'Configure a time-based expiration policy for draft packages in this workspace by setting this parameter to a non-null value. When a package is saved as a draft, a timer begins. After the duration configured for this parameter, draft package contents are deleted. If null, contents of draft packages in this workspace are not deleted based on time. To set a time-based expiration policy for non-draft packages in this workspace, refer to content_retention_duration. POST: Admin permission required. PUT Manager or Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).'
           type: integer
-          example: null
+          examples:
+            - null
         email_footer:
           description: "If 'inherit_email_templates' is set to false, configure the footer for email notifications for this workspace. The footer you configure is common to all email notifications for this workspace. POST: Admin permission required. PUT: Manager or Admin permission required. RESPONSE Admin scope (org admin)."
           type: string
-          example: null
+          examples:
+            - null
         email_notification_settings:
           description: 'Email notification specification. See below. POST: Admin permission required. PUT: Admin or Manager permission required. RESPONSE Admin scope (org admin).'
           type: object
@@ -5819,119 +6285,148 @@ components:
         enable_external_email_templates:
           description: "If 'inherit_email_templates' is set to false, you can enable or disable the ability to configure email templates specifically for users outside this workspace. When this parameter is set to false, external recipients receive the same email notification messages that users in the workspace receive. POST: Admin permission required. PUT: Admin permission required. RESPONSE Admin scope (org admin)."
           type: boolean
-          example: false
+          examples:
+            - false
         enable_external_notifications:
           description: Not used.
           type: boolean
-          example: true
+          examples:
+            - true
         event_reporting_headers:
           description: 'If event_reporting_uri is configured, users can submit JSON of all acceptable headers. If event_reporting_uri is not configured, this parameter does not apply. POST: Admin permission required. Maximum characters: 65535.'
           type: string
-          example: ''
+          examples:
+            - ''
         event_reporting_uri:
           description: The URI to collect event and activity reports. If this parameter is not null, you can use the event_reporting_headers parameter to configure acceptable JSON headers. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: string
-          example: null
+          examples:
+            - null
         external_package_authentication_required:
           description: 'Require external recipients of packages sent from this workspace to authenticate before they can access the package. POST: Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).'
           type: boolean
-          example: false
+          examples:
+            - false
         external_package_sending_allowed:
           description: Allow members of this workspace to send packages to (1) people outside the workspace and (2) to people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         external_package_sending_allowed_by_managers:
           description: Allow workspace managers of this workspace to send packages to (1) people outside the workspace and (2) to people who do not have a Files account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         external_sharing_allowed:
           description: Allow members of this workspace to share folders with (1) people outside the workspace and (2) with people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required.
           type: boolean
-          example: true
+          examples:
+            - true
         external_sharing_allowed_by_managers:
           description: Allow workspace managers of this workspace to share folders with (1) people outside the workspace and (2) with people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         home_container_file_id:
           description: The file ID of the folder containing users' home folders for this workspace. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: string
-          example: '5'
+          examples:
+            - '5'
         image_data:
           description: The image data encoded as a string. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope if params[:include]=true. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: string
-          example: iVBORw0KGgo ... /wB\/DRk84ZdwGQAAAABJRU5ErkJggg==
+          examples:
+            - iVBORw0KGgo ... /wB\/DRk84ZdwGQAAAABJRU5ErkJggg==
         image_type:
           description: The image type of the workspace logo; for example, image/png or image/jpg. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: string
-          example: image/png
+          examples:
+            - image/png
         inherit_email_notification_settings:
           description: Inherit the email notification settings configured at the organization. If set to false, you can configure external email notification settings for this workspace; see 'enable_external_notifications'. POST Admin permission required. PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         inherit_email_templates:
           description: Whether or not to inherit the email templates configured at the organization. If set to true, the workspace inherits the settings configured at the organization level. If set to false, you can configure email template settings for this workspace; see 'enable_external_email_templates' and other email notification settings. POST Admin permission required. PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         inherit_external_notifications:
           description: Whether or not the workspace inherits external notifications. PUT Admin permission required.
           type: boolean
-          example: false
+          examples:
+            - false
         invitations_allowed:
           description: Allow members of this workspace to invite users outside the workspace to become workspace members. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         invitations_allowed_by_managers:
           description: Allow workspace managers of this workspace to invite users outside the workspace to become workspace members. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         name:
           description: The workspace name. Query parameter for GET method. POST Admin permission required. PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: string
-          example: My New Workspace
+          examples:
+            - My New Workspace
         node_id:
           description: The ID of the node on which workspace folders and packages are stored. Query parameter for GET method. POST Admin permission required. PUT Manager permission required.
           type: integer
-          example: 14
+          examples:
+            - 14
         package_download_counts_enabled:
           description: Whether or not package download counts are recorded. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         personalized_urls_enabled:
           description: "Enable members of this workspace to configure personalized URLs to send when inviting people to submit packages (refer to public_links_allowed). You can set this parameter to true only if url_shortening_enabled is also set to true. Once you enable personalized URLs, you enable a default personalized URL construction and you also allow workspace member to configure the URLs they send. The default URL configuration contains the sender's username or the dropbox name; for example: https://aspera.pub/John_Doe;https://aspera.pub/Dropbox1. Note that dropboxes in the workspace inherit the settings you configure for the workspace as follows: When short URLs are enabled at the workspace (url_shortening_enabled=true): Short URLs are enabled for all dropboxes in that workspace. You cannot disable short URLs for a dropbox. When personalized URLs are enabled at the workspace: Personalized URLs are enabled for all dropboxes in that workspace. You can disable personalized URLs for specific dropboxes if desired. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required."
           type: boolean
-          example: false
+          examples:
+            - false
         public_invites_allowed:
           description: Allow workspace members to send invitations to users outside the workspace, inviting them to send a package to (1) the user who issues the invitation, and (2) the dropboxes in which the user who issues the invitation is a member. An outside user can be a person who is a member of a different AoC workspace, or a person without an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required.
           type: boolean
-          example: true
+          examples:
+            - true
         public_invites_allowed_by_managers:
           description: Allow workspace managers to send invitations to users outside the workspace, inviting them to send a package to (1) the workspace manager who issues the invitation, and (2) the dropboxes in which the workspace manager is a member. An outside user can be a person who is a member of a different AoC workspace, or a person without an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         public_links_allowed:
           description: Allow users in the workspace to send a link to users outside the workspace, allowing them to access a file or folder that the inviter has access to in the workspace. An outside user can be a person who is a member of a different AoC workspace, or a person without an AoC account. The inviter must have proper permission to the file or folder being shared. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         public_links_allowed_by_managers:
           description: Allow workspace managers to send a link to users outside the workspace, allowing them to access a file or folder that the inviter has access to in the workspace. An outside user can be a person who is a member of a different AoC workspace, or a person without an AoC account. The inviter must have proper permission to the file or folder being shared. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         root_file_id:
           description: The file ID of the root folder containing packages for this workspace. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: string
-          example: null
+          examples:
+            - null
         spool_file_id:
           description: Where packages are stored POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: string
-          example: '4'
+          examples:
+            - '4'
         storage_allowed:
           description: Whether or not the users of this workspace can upload to their respective home folders. Set this parameter to false to prevent users from uploading to or creating new folders in their home folders. Restricting these functions is one way to control storage usage in the workspace. To exempt certain workspace members from this restriction, set storage_allowed to true for those members in /workspace_memberships. POST Admin permission required. PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         url_shortening_enabled:
           description: 'When members of this workspace send a link that allows the recipeint to send a package (refer to public_invites_allowed), the link generated will have the shortened form; for example:  (compared to the standard URL; for example: ). When this parameter is set to true, you can also set personalized_urls_enabled to true. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).'
           type: boolean
-          example: true
+          examples:
+            - true
       required:
         - name
         - node_id
@@ -5941,60 +6436,74 @@ components:
         allow_package_level_expirations:
           description: Allow senders to set package expiration when sending. If workspace settings are configured by the admin, senders can only further restrict the workspace setting. Refer to delete_package_content_after_download_duration and to content_retention_duration. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         can_invite_by_email:
           description: RESPONSE User scope if is_workspace_membership.
           type: boolean
-          example: false
+          examples:
+            - false
         collaboration_settings_editable_by_managers:
           description: Allow workspace manager to configure workspace collaboration settings. POST Admin permission required. PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         collaboration_whitelist_enabled:
           description: If collaboration with users outside the workspace is enabled (external_package_sending_allowed=true and/or external_sharing_allowed=true), enable a whitelist of external users who can be recipients of packages and/or shared folders. To configure the whitelist, POST or PUT to /workspace_collaborators. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         collaboration_with_emails_allowed:
           description: If external_package_sending_allowed(_by_managers) and/or external_sharing_allowed(_by_managers) is/are set to true, setting this parameter to true allows those who are allowed to send to or share with external users (all users or workspace managers only) to see email addresses of external users in the list of contacts displayed in the (1) recipients field of the package sending form, and/or (2) the recipients field of the folder sharing form. POST Admin permission required. PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         content_retention_duration:
           description: Configure a time-based expiration policy for packages in this workspace by setting this parameter to a non-null value. Once the transfer complete, a timer begins. After the duration configured for this parameter, package contents are deleted (the package record is maintained, and includes details about sender, recipients, contents, transfer). If null, contents of packages in this workspace are not deleted based on time. To set a download-based expiration policy, refer to delete_package_content_after_download_duration. Valid values (null - 10 years) Units (seconds) POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (org admin).
           type: integer
-          example: null
+          examples:
+            - null
         created_at:
           description: datetime RESPONSE User scope. RESPONSE Admin scope (org admin).
           type: string
           format: date-time
-          example: 2018-02-16T04:30:58Z
+          examples:
+            - 2018-02-16T04:30:58Z
         default_ear_setting:
           description: When this parameter is set to true, encryption-at-rest is mandatory for all packages sent in this workspace. Senders must set a passphrase for every package they send, then must deliver the passphrase to the recipient according to local site security practice. Only when the recipient applies that passphrase can the package be decrypted. When this parameter is set to true, the parameter of the /packages endpoint that corresponds to EAR is always set to true and cannot be edited. When this parameter is set to false, the field in the /packages endpoint can be set to true or false, giving the sender the choice whether to apply EAR to a given package or not. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         delete_package_content_after_download_duration:
           description: Configure a download-based expiration policy for packages in this workspace by setting this parameter to a non-null value. Once all package recipients have downloaded the entire package, a timer begins. After the duration configured for this parameter, package contents are deleted (the package record is maintained, and includes details about sender, recipients, contents, transfer). If null, contents of packages in this workspace are not deleted based on whether or not recipients have downloaded the package. To set a time-based expiration policy, refer to content_retention_duration. Valid values (null - 10 years) Units (seconds) POST Admin permission required. PUT Manager permission required. or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: integer
-          example: null
+          examples:
+            - null
         description:
           description: A description for the workspace. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: string
-          example: 'Maximum characters: 65535'
+          examples:
+            - 'Maximum characters: 65535'
         draft_expiration_duration:
           description: Configure a time-based expiration policy for draft packages in this workspace by setting this parameter to a non-null value. When a package is saved as a draft, a timer begins. After the duration configured for this parameter, draft package contents are deleted. If null, contents of draft packages in this workspace are not deleted based on time. To set a time-based expiration policy for non-draft packages in this workspace, refer to content_retention_duration. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: integer
-          example: null
+          examples:
+            - null
         effective_default_ear_setting:
           description: RESPONSE User scope. RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         effective_storage_allowed:
           description: RESPONSE User scope if is_workspace_membership.
           type: boolean
-          example: false
+          examples:
+            - false
         email_footer:
           description: If 'inherit_email_templates' is set to false, configure the footer for email notifications for this workspace. The footer you configure is common to all email notifications for this workspace. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: string
-          example: null
+          examples:
+            - null
         email_notification_settings:
           description: Email notification specification. See below. POST Admin permission required. PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: object
@@ -6003,160 +6512,199 @@ components:
         enable_external_email_templates:
           description: If 'inherit_email_templates' is set to false, you can enable or disable the ability to configure email templates specifically for users outside this workspace. When this parameter is set to false, external recipients receive the same email notification messages that users in the workspace receive. POST Admin permission required. PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         enable_external_notifications:
           description: Not used. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         event_reporting_headers:
           description: If event_reporting_uri is configured, users can submit JSON of all acceptable headers. If event_reporting_uri is not configured, this parameter does not apply. POST Admin permission required.
           type: string
-          example: 'Maximum characters: 65535'
+          examples:
+            - 'Maximum characters: 65535'
         event_reporting_uri:
           description: The URI to collect event and activity reports. If this parameter is not null, you can use the event_reporting_headers parameter to configure acceptable JSON headers. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: string
-          example: null
+          examples:
+            - null
         external_package_authentication_required:
           description: Require external recipients of packages sent from this workspace to authenticate before they can access the package. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         external_package_sending_allowed:
           description: Allow members of this workspace to send packages to (1) people outside the workspace and (2) to people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         external_package_sending_allowed_by_managers:
           description: Allow workspace managers of this workspace to send packages to (1) people outside the workspace and (2) to people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         external_sharing_allowed:
           description: Allow members of this workspace to share folders with (1) people outside the workspace and (2) with people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required.
           type: boolean
-          example: true
+          examples:
+            - true
         external_sharing_allowed_by_managers:
           description: Allow workspace managers of this workspace to share folders with (1) people outside the workspace and (2) with people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         group_id:
           description: The ID of the group containing all members of this workspace. RESPONSE User scope. RESPONSE Admin scope (org admin).
           type: integer
-          example: 4
+          examples:
+            - 4
         home_container_file_id:
           description: The file ID of the folder containing users' home folders for this workspace. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: string
-          example: '5'
+          examples:
+            - '5'
         home_file_id:
           description: RESPONSE User scope if is_workspace_membership.
           type: integer
-          example: 0
+          examples:
+            - 0
         home_node_id:
           description: RESPONSE User scope if is_workspace_membership.
           type: integer
-          example: 0
+          examples:
+            - 0
         id:
           description: The ID of the workspace. RESPONSE User scope. RESPONSE Admin scope (org admin).
           type: string
-          example: '3'
+          examples:
+            - '3'
         image_data:
           description: The image data encoded as a string. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope if params[:include]=true. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: string
-          example: iVBORw0KGgo ... /wB\/DRk84ZdwGQAAAABJRU5ErkJggg==
+          examples:
+            - iVBORw0KGgo ... /wB\/DRk84ZdwGQAAAABJRU5ErkJggg==
         image_type:
           description: The image type of the workspace logo; for example, image/png or image/jpg. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: string
-          example: image/png
+          examples:
+            - image/png
         image_url:
           description: The URL of the image. RESPONSE User scope. RESPONSE Admin scope (org admin).
           type: string
-          example: https://api.asperafiles.com/api/v1/user_images/32850?oh=cg-nf7pFnNK0-N3g3r-f2nRg
+          examples:
+            - https://api.asperafiles.com/api/v1/user_images/32850?oh=cg-nf7pFnNK0-N3g3r-f2nRg
         inherit_email_notification_settings:
           description: Inherit the email notification settings configured at the organization. If set to false, you can configure external email notification settings for this workspace; see 'enable_external_notifications'. POST Admin permission required. PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         inherit_email_templates:
           description: Whether or not to inherit the email templates configured at the organization. If set to true, the workspace inherits the settings configured at the organization level. If set to false, you can configure email template settings for this workspace; see 'enable_external_email_templates' and other email notification settings. POST Admin permission required. PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         inherit_external_notifications:
           description: Whether or not the workspace inherits external notifications. PUT Admin permission required.
           type: boolean
-          example: false
+          examples:
+            - false
         invitations_allowed:
           description: Allow members of this workspace to invite users outside the workspace to become workspace members. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         invitations_allowed_by_managers:
           description: Allow workspace managers of this workspace to invite users outside the workspace to become workspace members. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         manager:
           description: The user is a workspace manager user type. RESPONSE User scope if is_workspace_membership.
           type: boolean
-          example: false
+          examples:
+            - false
         managers_group_id:
           description: The ID of the group containing all manager of this workspace. RESPONSE User scope. RESPONSE Admin scope (org admin).
           type: integer
-          example: 0
+          examples:
+            - 0
         member:
           description: The user is part of the workspace. RESPONSE User scope. RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         name:
           description: The workspace name. Query parameter for GET method. POST Admin permission required. PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: string
-          example: My New Workspace
+          examples:
+            - My New Workspace
         node_id:
           description: The ID of the node on which workspace folders and packages are stored. Query parameter for GET method. POST Admin permission required. PUT Manager permission required.
           type: integer
-          example: 14
+          examples:
+            - 14
         package_download_counts_enabled:
           description: Whether or not package download counts are recorded. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: false
+          examples:
+            - false
         personalized_urls_enabled:
           description: "Enable members of this workspace to configure personalized URLs to send when inviting people to submit packages (refer to public_links_allowed). You can set this parameter to true only if url_shortening_enabled is also set to true. Once you enable personalized URLs, you enable a default personalized URL construction and you also allow workspace member to configure the URLs they send. The default URL configuration contains the sender's username or the dropbox name; for example: https://aspera.pub/John_Doe;https://aspera.pub/Dropbox1. Note that dropboxes in the workspace inherit the settings you configure for the workspace as follows: When short URLs are enabled at the workspace (url_shortening_enabled=true): Short URLs are enabled for all dropboxes in that workspace. You cannot disable short URLs for a dropbox. When personalized URLs are enabled at the workspace: Personalized URLs are enabled for all dropboxes in that workspace. You can disable personalized URLs for specific dropboxes if desired. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required."
           type: boolean
-          example: false
+          examples:
+            - false
         public_invites_allowed:
           description: Allow workspace members to send invitations to users outside the workspace, inviting them to send a package to (1) the user who issues the invitation, and (2) the dropboxes in which the user who issues the invitation is a member. An outside user can be a person who is a member of a different AoC workspace, or a person without an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required.
           type: boolean
-          example: true
+          examples:
+            - true
         public_invites_allowed_by_managers:
           description: Allow workspace managers to send invitations to users outside the workspace, inviting them to send a package to (1) the workspace manager who issues the invitation, and (2) the dropboxes in which the workspace manager is a member. An outside user can be a person who is a member of a different AoC workspace, or a person without an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         public_links_allowed:
           description: Allow users in the workspace to send a link to users outside the workspace, allowing them to access a file or folder that the inviter has access to in the workspace. An outside user can be a person who is a member of a different AoC workspace, or a person without an AoC account. The inviter must have proper permission to the file or folder being shared. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         public_links_allowed_by_managers:
           description: Allow workspace managers to send a link to users outside the workspace, allowing them to access a file or folder that the inviter has access to in the workspace. An outside user can be a person who is a member of a different AoC workspace, or a person without an AoC account. The inviter must have proper permission to the file or folder being shared. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         root_file_id:
           description: The file ID of the root folder containing packages for this workspace. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: string
-          example: null
+          examples:
+            - null
         spool_file_id:
           description: Where packages are stored POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
           type: string
-          example: '4'
+          examples:
+            - '4'
         storage_allowed:
           description: Whether or not the users of this workspace can upload to their respective home folders. Set this parameter to false to prevent users from uploading to or creating new folders in their home folders. Restricting these functions is one way to control storage usage in the workspace. To exempt certain workspace members from this restriction, set storage_allowed to true for those members in /workspace_memberships. POST Admin permission required. PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
           type: boolean
-          example: true
+          examples:
+            - true
         updated_at:
           description: datetime RESPONSE User scope. RESPONSE Admin scope (org admin).
           type: string
           format: date-time
-          example: 2018-02-16T04:30:58Z
+          examples:
+            - 2018-02-16T04:30:58Z
         url_shortening_enabled:
           description: 'When members of this workspace send a link that allows the recipient to send a package (refer to public_invites_allowed), the link generated will have the shortened form; for example:  (compared to the standard URL; for example: ). When this parameter is set to true, you can also set personalized_urls_enabled to true. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).'
           type: boolean
-          example: true
+          examples:
+            - true
         user_id:
           description: RESPONSE User scope if is_workspace_membership.
           type: integer
-          example: 0
+          examples:
+            - 0
   requestBodies:
     clients_params:
       content:
