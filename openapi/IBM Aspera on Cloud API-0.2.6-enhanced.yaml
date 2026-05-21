@@ -2189,14 +2189,16 @@ paths:
         description: |
           Application settings to update. The structure depends on the `aspera_app_type` path parameter.
           Only include the properties you want to update; omitted properties will retain their current values.
+          
+          **Note**: Do NOT include the read-only fields `app_name` and `app_type` in the request body.
         content:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/app_settings_files'
-                - $ref: '#/components/schemas/app_settings_packages'
-                - $ref: '#/components/schemas/app_settings_activity'
-                - $ref: '#/components/schemas/app_settings_automation'
+                - $ref: '#/components/schemas/app_settings_files_update'
+                - $ref: '#/components/schemas/app_settings_packages_update'
+                - $ref: '#/components/schemas/app_settings_activity_update'
+                - $ref: '#/components/schemas/app_settings_automation_update'
             examples:
               files:
                 summary: Update Files application settings
@@ -3902,231 +3904,51 @@ components:
           examples:
             - false
     app_settings_files:
-      type: object
-      description: Settings specific to the Files application
-      properties:
-        app_name:
-          type: string
-          description: Name of the application
-          example: Files
-        app_type:
-          type: string
-          enum: [files]
-          description: Application type
-          example: files
-        available:
-          type: boolean
-          description: Whether the app is available
-        enabled:
-          type: boolean
-          description: Whether the app is enabled
-        can_managers_share_to_workspace:
-          type: boolean
-          description: Whether managers can share to workspace (Files app specific)
-        can_users_share_to_workspace:
-          type: boolean
-          description: Whether users can share to workspace (Files app specific)
-        collaboration_whitelist_enabled:
-          type: boolean
-          description: Whether collaboration whitelist is enabled
-        collaboration_with_emails_allowed:
-          type: boolean
-          description: Whether collaboration with emails is allowed
-        direct_authorizations_allowed:
-          type: boolean
-          description: Whether direct authorizations are allowed
-        editable_by_managers:
-          type: boolean
-          description: Whether the app settings are editable by managers
-        public_links_expiration_duration:
-          type: [integer, 'null']
-          description: Expiration duration for public links in seconds
-        external_collaboration_allowed:
-          type: boolean
-          description: Whether external collaboration is allowed
-        external_sharing_allowed_by_managers:
-          type: boolean
-          description: Whether external sharing by managers is allowed
-        external_sharing_allowed:
-          type: boolean
-          description: Whether external sharing is allowed
-        folder_resharing_allowed_by_managers:
-          type: boolean
-          description: Whether folder resharing by managers is allowed
-        folder_resharing_allowed:
-          type: boolean
-          description: Whether folder resharing is allowed
-        public_links_password_required:
-          type: boolean
-          description: Whether public links require a password
-        personalized_urls_enabled:
-          type: boolean
-          description: Whether personalized URLs are enabled
-        public_links_allowed_by_managers:
-          type: boolean
-          description: Whether public links by managers are allowed
-        public_links_allowed:
-          type: boolean
-          description: Whether public links are allowed
-        storage_allowed:
-          type: boolean
-          description: Whether storage is allowed
-        url_shortening_enabled:
-          type: boolean
-          description: Whether URL shortening is enabled
+      allOf:
+        - $ref: '#/components/schemas/app_settings_readonly_fields'
+        - type: object
+          properties:
+            app_name:
+              example: Files
+            app_type:
+              example: files
+        - $ref: '#/components/schemas/app_settings_base'
+        - $ref: '#/components/schemas/app_settings_files_specific'
+      description: Complete settings for the Files application (includes read-only fields)
     app_settings_packages:
-      type: object
-      description: Settings specific to the Packages application
-      properties:
-        app_name:
-          type: string
-          description: Name of the application
-          example: Packages
-        app_type:
-          type: string
-          enum: [packages]
-          description: Application type
-          example: packages
-        available:
-          type: boolean
-          description: Whether the app is available
-        enabled:
-          type: boolean
-          description: Whether the app is enabled
-        can_managers_send_to_workspace:
-          type: boolean
-          description: Whether managers can send to workspace (Packages app specific)
-        can_users_send_to_workspace:
-          type: boolean
-          description: Whether users can send to workspace (Packages app specific)
-        collaboration_whitelist_enabled:
-          type: boolean
-          description: Whether collaboration whitelist is enabled
-        collaboration_with_emails_allowed:
-          type: boolean
-          description: Whether collaboration with emails is allowed
-        direct_authorizations_allowed:
-          type: boolean
-          description: Whether direct authorizations are allowed
-        editable_by_managers:
-          type: boolean
-          description: Whether the app settings are editable by managers
-        public_links_expiration_duration:
-          type: [integer, 'null']
-          description: Expiration duration for public links in seconds
-        external_package_sending_allowed_by_managers:
-          type: boolean
-          description: Whether external package sending by managers is allowed (Packages app specific)
-        external_package_sending_allowed:
-          type: boolean
-          description: Whether external package sending is allowed (Packages app specific)
-        external_package_authentication_required:
-          type: boolean
-          description: Whether external package authentication is required (Packages app specific)
-        external_sender_email_and_name_required:
-          type: boolean
-          description: Whether external sender email and name are required (Packages app specific)
-        after_download_package_action:
-          type: [string, 'null']
-          description: Action after package download (Packages app specific)
-        allow_access_sent:
-          type: boolean
-          description: Allow access sent setting (Packages app specific)
-        allow_managers_to_recall:
-          type: boolean
-          description: Allow managers to recall packages (Packages app specific)
-        allow_package_level_expirations:
-          type: boolean
-          description: Allow package level expirations (Packages app specific)
-        content_retention_duration:
-          type: [integer, 'null']
-          description: Content retention duration in seconds (Packages app specific)
-        default_ear_setting:
-          type: boolean
-          description: Default encryption-at-rest setting (Packages app specific)
-        delete_package_content_after_download_duration:
-          type: [integer, 'null']
-          description: Delete package content after download duration in seconds (Packages app specific)
-        draft_expiration_duration:
-          type: [integer, 'null']
-          description: Draft expiration duration in seconds (Packages app specific)
-        disable_ear_setting:
-          type: boolean
-          description: Disable encryption-at-rest setting (Packages app specific)
-        limited_sending:
-          type: boolean
-          description: Limited sending setting (Packages app specific)
-        package_download_counts_enabled:
-          type: boolean
-          description: Package download counts enabled (Packages app specific)
-        package_sidecar_enabled:
-          type: boolean
-          description: Package sidecar enabled (Packages app specific)
-        public_invites_allowed_by_managers:
-          type: boolean
-          description: Public invites allowed by managers (Packages app specific)
-        public_invites_allowed:
-          type: boolean
-          description: Public invites allowed (Packages app specific)
-        public_links_allowed_by_managers:
-          type: boolean
-          description: Whether public links by managers are allowed
-        public_links_allowed:
-          type: boolean
-          description: Whether public links are allowed
-        url_shortening_enabled:
-          type: boolean
-          description: Whether URL shortening is enabled
-        watermark_allowed:
-          type: boolean
-          description: Whether watermark is allowed (Packages app specific)
-        watermark_required:
-          type: boolean
-          description: Whether watermark is required (Packages app specific)
+      allOf:
+        - $ref: '#/components/schemas/app_settings_readonly_fields'
+        - type: object
+          properties:
+            app_name:
+              example: Packages
+            app_type:
+              example: packages
+        - $ref: '#/components/schemas/app_settings_base'
+        - $ref: '#/components/schemas/app_settings_packages_specific'
+      description: Complete settings for the Packages application (includes read-only fields)
     app_settings_activity:
-      type: object
-      description: Settings specific to the Activity application
-      properties:
-        app_name:
-          type: string
-          description: Name of the application
-          example: Activity
-        app_type:
-          type: string
-          enum: [activity]
-          description: Application type
-          example: activity
-        available:
-          type: boolean
-          description: Whether the app is available
-        enabled:
-          type: boolean
-          description: Whether the app is enabled
-        editable_by_managers:
-          type: boolean
-          description: Whether the app settings are editable by managers
+      allOf:
+        - $ref: '#/components/schemas/app_settings_readonly_fields'
+        - type: object
+          properties:
+            app_name:
+              example: Activity
+            app_type:
+              example: activity
+        - $ref: '#/components/schemas/app_settings_base'
+      description: Complete settings for the Activity application (includes read-only fields)
     app_settings_automation:
-      type: object
-      description: Settings specific to the Automation application
-      properties:
-        app_name:
-          type: string
-          description: Name of the application
-          example: Automation
-        app_type:
-          type: string
-          enum: [automation]
-          description: Application type
-          example: automation
-        available:
-          type: boolean
-          description: Whether the app is available
-        enabled:
-          type: boolean
-          description: Whether the app is enabled
-        editable_by_managers:
-          type: boolean
-          description: Whether the app settings are editable by managers
+      allOf:
+        - $ref: '#/components/schemas/app_settings_readonly_fields'
+        - type: object
+          properties:
+            app_name:
+              example: Automation
+            app_type:
+              example: automation
+        - $ref: '#/components/schemas/app_settings_base'
+      description: Complete settings for the Automation application (includes read-only fields)
     app_memberships_params:
       type: object
       properties:
@@ -4170,11 +3992,179 @@ components:
             - '213'
         member_type:
           type: string
-          examples:
-            - user
+    app_settings_base:
+      type: object
+      description: Common settings properties for all application types
+      properties:
+        available:
+          type: boolean
+          description: Whether the app is available
+        enabled:
+          type: boolean
+          description: Whether the app is enabled
+        collaboration_whitelist_enabled:
+          type: boolean
+          description: Whether collaboration whitelist is enabled
+        collaboration_with_emails_allowed:
+          type: boolean
+          description: Whether collaboration with emails is allowed
+        direct_authorizations_allowed:
+          type: boolean
+          description: Whether direct authorizations are allowed
+        editable_by_managers:
+          type: boolean
+          description: Whether the app settings are editable by managers
+        public_links_expiration_duration:
+          type: [integer, 'null']
+          description: Expiration duration for public links in seconds
+        public_links_allowed_by_managers:
+          type: boolean
+          description: Whether public links by managers are allowed
+        public_links_allowed:
+          type: boolean
+          description: Whether public links are allowed
+        url_shortening_enabled:
+          type: boolean
+          description: Whether URL shortening is enabled
+    app_settings_files_specific:
+      type: object
+      description: Properties specific to the Files application
+      properties:
+        can_managers_share_to_workspace:
+          type: boolean
+          description: Whether managers can share to workspace (Files app specific)
+        can_users_share_to_workspace:
+          type: boolean
+          description: Whether users can share to workspace (Files app specific)
+        external_collaboration_allowed:
+          type: boolean
+          description: Whether external collaboration is allowed
+        external_sharing_allowed_by_managers:
+          type: boolean
+          description: Whether external sharing by managers is allowed
+        external_sharing_allowed:
+          type: boolean
+          description: Whether external sharing is allowed
+        folder_resharing_allowed_by_managers:
+          type: boolean
+          description: Whether folder resharing by managers is allowed
+        folder_resharing_allowed:
+          type: boolean
+          description: Whether folder resharing is allowed
+        public_links_password_required:
+          type: boolean
+          description: Whether public links require a password
+        personalized_urls_enabled:
+          type: boolean
+          description: Whether personalized URLs are enabled
+        storage_allowed:
+          type: boolean
+          description: Whether storage is allowed
+    app_settings_packages_specific:
+      type: object
+      description: Properties specific to the Packages application
+      properties:
+        can_managers_send_to_workspace:
+          type: boolean
+          description: Whether managers can send to workspace (Packages app specific)
+        can_users_send_to_workspace:
+          type: boolean
+          description: Whether users can send to workspace (Packages app specific)
+        external_package_sending_allowed_by_managers:
+          type: boolean
+          description: Whether external package sending by managers is allowed
+        external_package_sending_allowed:
+          type: boolean
+          description: Whether external package sending is allowed
+        external_package_authentication_required:
+          type: boolean
+          description: Whether external package authentication is required
+        external_sender_email_and_name_required:
+          type: boolean
+          description: Whether external sender email and name are required
+        after_download_package_action:
+          type: [string, 'null']
+          description: Action after package download
+        allow_access_sent:
+          type: boolean
+          description: Allow access sent setting
+        allow_managers_to_recall:
+          type: boolean
+          description: Allow managers to recall packages
+        allow_package_level_expirations:
+          type: boolean
+          description: Allow package level expirations
+        content_retention_duration:
+          type: [integer, 'null']
+          description: Content retention duration in seconds
+        default_ear_setting:
+          type: boolean
+          description: Default encryption-at-rest setting
+        delete_package_content_after_download_duration:
+          type: [integer, 'null']
+          description: Delete package content after download duration in seconds
+        draft_expiration_duration:
+          type: [integer, 'null']
+          description: Draft expiration duration in seconds
+        disable_ear_setting:
+          type: boolean
+          description: Disable encryption-at-rest setting
+        limited_sending:
+          type: boolean
+          description: Limited sending setting
+        package_download_counts_enabled:
+          type: boolean
+          description: Package download counts enabled
+        package_sidecar_enabled:
+          type: boolean
+          description: Package sidecar enabled
+        public_invites_allowed_by_managers:
+          type: boolean
+          description: Public invites allowed by managers
+        public_invites_allowed:
+          type: boolean
+          description: Public invites allowed
+        watermark_allowed:
+          type: boolean
+          description: Whether watermark is allowed
+        watermark_required:
+          type: boolean
+          description: Whether watermark is required
+    app_settings_files_update:
+      allOf:
+        - $ref: '#/components/schemas/app_settings_base'
+        - $ref: '#/components/schemas/app_settings_files_specific'
+      description: Settings to update for the Files application (excludes read-only fields app_name and app_type)
+    app_settings_packages_update:
+      allOf:
+        - $ref: '#/components/schemas/app_settings_base'
+        - $ref: '#/components/schemas/app_settings_packages_specific'
+      description: Settings to update for the Packages application (excludes read-only fields app_name and app_type)
+    app_settings_activity_update:
+      allOf:
+        - $ref: '#/components/schemas/app_settings_base'
+      description: Settings to update for the Activity application (excludes read-only fields app_name and app_type)
+    app_settings_automation_update:
+      allOf:
+        - $ref: '#/components/schemas/app_settings_base'
+      description: Settings to update for the Automation application (excludes read-only fields app_name and app_type)
+    app_settings_readonly_fields:
+      type: object
+      description: Read-only fields common to all application settings (app_name and app_type)
+      properties:
+        app_name:
+          type: string
+          description: Name of the application (read-only)
+          readOnly: true
+        app_type:
+          type: string
+          description: Application type (read-only)
+          readOnly: true
           enum:
-            - user
-            - group
+            - files
+            - packages
+            - activity
+            - automation
     client_access_keys_params:
       type: object
       properties:
