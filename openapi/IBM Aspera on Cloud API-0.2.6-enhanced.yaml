@@ -7436,93 +7436,68 @@ components:
         - User-specific private key (user's public key must be registered in AoC)
         - Global private key (configured in client settings)
 tags:
-  - name: /clients
-    description: Use /clients to register your client application with the Files API. You can also modify your client, retrieve a list of all registered clients or a specific client, or delete a specific client. You can configure your client to use browser-based authentication or JSON web token (JWT) authentication.  For clients using JWT authentication, this endpoint relates to /client_authorizations.
-  - name: /client_authorizations
-    description: "When you use the JWT authentication method for your client (see /clients) and enable a whitelist of authorized users or groups, you must configure which users or groups can access the API using your client, and which type of key each user can submit to retrieve an access token–either a user-specific key or a global key. Use the /client_authorizations endpoint to configure the authorized users or groups; use the /users endpoint to configure the user key types; use the /clients endpoint to configure the global key. There are two configuration parameters for users and keys. Users: All users: All users in the AoC organization are eligible to retrieve an access token; Only listed users: Only the users or groups you list are eligible to receive an access token. Keys: User-specific keys: The JWT must be signed with the specified user's own private key; User-specific keys and global key: The JWT can be signed with the specified user's own private key or with the global private key. Note: Any user accessing the AoC API using the JWT method must have their public key listed in their AoC user record. The user can enter their own public key, or the AoC administrator can enter the user's public key in the individual user's record. Important! API clients with a global key can retrieve access tokens for and act as any listed user. Use global keys according to local site security practice."
-  - name: /workspaces
-    description: Create a workspace (requires an admin token). The workspace is a distinct context in which workspace members can freely share files and send packages. All workspace users of the same type (for example, members or workspace managers) share collaboration settings for that user type. A workspace is a folder on a specific node; the workspace storage is separate from the storage of other workspaces. The workspace contains member users and groups. A workspace may have a workspace manager, who is also a workspace member, that can perform certain administrative function for that specific workspace. (Configure workspace manager using /workspace_memberships).
-  - name: /workspace_memberships
-    description: Use this endpoint to add existing users as members of a workspace, and to update, retrieve, and delete workspace members. An Aspera on Cloud user can be a direct member of a workspace, or can inherit membership by being a member of a user group that is a member of the workspace. This endpoint allows you to add a user or group as a direct member of a workspace. You can also use this endpoint to grant or revoke workspace manager permission to a member (user or group).
-  - name: /packages
-    description: 'A package is a bundle of files and folders (like a ZIP file or TAR file) specified by an AoC user to send to designated recipients. Packages can be sent to individuals, to groups (including to a workspace), or to shared inboxes. Packages can  be sent, received, recalled, archived, deleted. Sending a package can be completed with a user token or with an admin token. The process of sending a package comprises multiple steps. You use the POST, GET, and PUT methods of /packages, along with requests to the Connect API or the Node API.  The folder structure of a package on disk is as follows: {id}.asp-package contains metadata and other package-related files and contains contents, which contains the files and folders in the package. Uploads of package contents should go directly into the named, innermost folder. Downloads of the entire package should be of the named, outermost folder (renamed on download to the package name itself). To get package transfers to properly register, they should be tagged as follows: {"aspera": {"files": {"package_id" : the-package-id}}}.'
-  - name: /users
-    description: A user is anybody using this service. Users may be organization administrators, workspace managers, photographers, IT, etc. Users are identified by email address, so 'email' is a required property when creating a new user.
-  - name: /nodes
-    description: |
-      The Nodes resource contains the information that a client app can use to communicate directly with an Aspera transfer server (which has files and folders).
-  - name: /dropboxes
-    description: |
-      A shared inbox (formerly called a dropbox) serves three functions. First, it acts as a place where users can submit content. Second, it notifies its members when new content arrives. Finally, it can ask users who submit new content to fill out a form using a metadata schema.
-  - name: /dropbox_memberships
-    description: |
-      Use this endpoint to add existing members to a dropbox and to update, retrieve, and delete existing dropbox members. An Aspera on Cloud user can be a direct member of a dropbox or they can inherit membership through a user group.
-  - name: /usage_reports
-    description: |
-      When enabled, usage reporting collects information about the number of bytes transferred into and out of an organization, on a per-workspace or per-access key basis. A report begins at the start of a month (or when usage reporting is enabled) and ends at the beginning of the next month, when a new report is created. An active report for the current month shows  month-to-date usage information, while usage reports for previous months no longer change and show historical data. Due to the way the reporting information is collected, the number of bytes transferred is an approximation and may vary from the actual billed usage if there are transfers that are close to or spanning the changeover between months. NOTE: Usage reports are read-only resources and all attributes are read-only.
-  - name: /organizations
-    description: |
-      An organization contains all the users, groups, and resources belonging to a real-world organization. Users within an organization can see only the organization they are in. Organization admins can change certain properties of the organization. All other users within the organization have read-only access. Note: /organization is an alias to /organizations/{current user's organization id}.
-  - name: /client_access_keys
-    description: |
-      This endpoint is used to manage existing transfer node access keys. Specifically, it streamlines the task of viewing all access keys across all transfer nodes that belong to your organization. Note that this endpoint is not capable of creating or destroying transfer node access keys (that is handled via the Node API). Organization admin or workspace manager permissions are required for any access to this endpoint.
-  - name: /apps
-    description: |
-      The /apps endpoint lists currently available Aspera application settings and provides access to organization-level application configuration by app type. This includes settings for apps such as files, packages, activity, and automation.
-  - name: /apps/app_memberships
-    description: |
-      The /apps/app_memberships endpoint is useful for organization admins that want to enable users to access the Automation or Activity apps. Additionally, this endpoint is useful for admins who want to view all app memberships across their entire organization, or for any other user to view their own app memberships.
-  - name: /apps_new
-    description: |
-      The /apps_new endpoint exposes the newer application settings APIs. It can list organization-level or workspace-level apps, filter by aspera_app_type and workspace_id, and retrieve or update a specific app by type and app id. For activity apps, updates may create asynchronous operations when stored reports folders must be created.
-  - name: /operations
-    description: |
-      The /operations endpoint lists and manages asynchronous operations related to resources such as workspaces, users, groups, group memberships, workspace memberships, and activity apps. Non-admin users can only see operations created by or directly related to themselves.
-  - name: /auth_providers
-    description: |
-      The /auth_providers endpoint lists, retrieves, and updates organization authentication providers. It also supports bulk update of multiple records through /auth_providers/updated_records.
-  - name: /client_settings
-    description: |
-      The /client_settings endpoint stores client-specific settings for the current authenticated user and OAuth client.
-  - name: /client_registration_tokens
-    description: |
-      The /client_registration_tokens endpoint lists, retrieves, updates, and deletes registration tokens used for client registration workflows.
-  - name: /email_templates
-    description: |
-      The /email_templates endpoint lists, retrieves, updates, and resolves effective email templates at global, organization, workspace, or shared inbox level.
-  - name: /feature_flags
-    description: |
-      The /feature_flags endpoint lists feature flags visible to the current caller and allows super administrators to create, update, and delete organization feature flags.
-  - name: /file_upload_notifications
-    description: |
-      The /file_upload_notifications endpoint manages user notifications related to uploads and can resolve the effective toggle state for a given file on a node.
-  - name: /organization
-    description: |
-      The /organization endpoint is an alias for the current organization and can be used to retrieve or update the current organization record without knowing its id.
-  - name: /packages_count
-    description: |
-      The /packages_count endpoint returns a package count summary.
-  - name: /self
-    description: |
-      The /self endpoint returns the current authenticated user, with optional related settings and feature data.
-  - name: /short_links
-    description: |
-      The /short_links endpoint manages short links. Short links are designed to decouple short URL behavior from URL tokens while remaining compatible with existing token-protected resources.
-  - name: /tier_restrictions
-    description: |
-      The /tier_restrictions endpoint returns feature availability and tier-based restrictions for the current organization.
-  - name: /transfer_direction
-    description: |
-      The /transfer_direction endpoint reports whether transfers are allowed between two nodes and which node is preferred to initiate the transfer.
-  - name: /transfer_report
-    description: |
-      The /transfer_report endpoint returns a transfer direction matrix for nodes in the current organization.
-  - name: /transfers
-    description: |
-      The /transfers endpoint lists and deletes user transfers.
-  - name: /workspace_collaborators
-    description: |
-      The /workspace_collaborators endpoint manages collaborators attached to workspaces.
+  - name: Clients
+    description: Manage OAuth client applications for API authentication. Configure browser-based or JWT authentication methods for secure API access.
+  - name: Client Authorizations
+    description: Configure authorization rules for JWT-authenticated clients. Define which users or groups can access the API and specify key types (user-specific or global) for token generation.
+  - name: Workspaces
+    description: Manage collaborative workspaces where members can share files and send packages. Workspaces provide isolated storage contexts with configurable member permissions and roles.
+  - name: Workspace Memberships
+    description: Manage workspace membership for users and groups. Grant or revoke workspace access and assign workspace manager permissions.
+  - name: Packages
+    description: Manage file and folder bundles for secure content delivery. Send packages to individuals, groups, workspaces, or shared inboxes with full lifecycle management.
+  - name: Users
+    description: Manage user accounts and profiles. Users are identified by email address and can have various roles including organization administrators and workspace managers.
+  - name: Nodes
+    description: Manage Aspera transfer servers that provide storage and transfer capabilities. Nodes contain the connection information required for high-speed file transfers.
+  - name: Dropboxes
+    description: Manage shared inboxes for content submission. Dropboxes provide a secure location for users to submit content with optional metadata collection and member notifications.
+  - name: Dropbox Memberships
+    description: Manage membership for shared inboxes. Add or remove users and groups with direct or inherited membership.
+  - name: Usage Reports
+    description: Access transfer usage statistics and reporting. Reports track bytes transferred per workspace or access key with monthly aggregation. All attributes are read-only.
+  - name: Organizations
+    description: Manage organization settings and properties. Organizations contain all users, groups, and resources with role-based access control.
+  - name: Client Access Keys
+    description: View and manage transfer node access keys across the organization. Provides centralized access key management for organization administrators and workspace managers.
+  - name: Apps
+    description: Manage Aspera application settings and configurations. Access organization-level settings for files, packages, activity, and automation applications.
+  - name: App Memberships
+    description: Manage user access to Aspera applications. Enable users to access Automation or Activity apps and view membership across the organization.
+  - name: Apps New
+    description: Access advanced application settings APIs. Manage organization-level and workspace-level app configurations with filtering and asynchronous operation support.
+  - name: Operations
+    description: Monitor and manage asynchronous operations for resources. Track long-running tasks related to workspaces, users, groups, and memberships.
+  - name: Auth Providers
+    description: Configure organization authentication providers. Manage authentication settings and perform bulk updates across multiple providers.
+  - name: Client Settings
+    description: Manage client-specific settings for authenticated users. Store and retrieve configuration preferences per OAuth client.
+  - name: Client Registration Tokens
+    description: Manage registration tokens for client onboarding workflows. Create, update, and revoke tokens used in client registration processes.
+  - name: Email Templates
+    description: Manage email notification templates. Configure templates at global, organization, workspace, or shared inbox levels with inheritance resolution.
+  - name: Feature Flags
+    description: Manage feature availability and experimental functionality. Super administrators can control organization-level feature flags.
+  - name: File Upload Notifications
+    description: Configure user notifications for file uploads. Manage notification preferences and resolve effective settings for specific files and nodes.
+  - name: Organization
+    description: Access current organization information. Provides a convenient alias for retrieving and updating the authenticated user's organization.
+  - name: Packages Count
+    description: Retrieve package statistics and summaries. Access aggregated package counts for reporting and monitoring purposes.
+  - name: Self
+    description: Access current user profile and preferences. Retrieve authenticated user information with optional settings and feature data.
+  - name: Short Links
+    description: Manage URL shortening and redirection. Create and manage short links that decouple URL behavior from access tokens.
+  - name: Tier Restrictions
+    description: View feature availability based on organization tier. Access tier-based restrictions and capability information.
+  - name: Transfer Direction
+    description: Determine optimal transfer routing between nodes. Check transfer permissions and identify preferred initiating nodes.
+  - name: Transfer Report
+    description: Access transfer routing matrices and analytics. View comprehensive transfer direction information across organization nodes.
+  - name: Transfers
+    description: Monitor and manage active file transfers. List ongoing transfers and perform administrative actions.
+  - name: Workspace Collaborators
+    description: Manage workspace collaboration settings. Configure and maintain collaborator relationships for workspace resources.
 security:
   - OAuth2: []
   - BearerAuth: []
