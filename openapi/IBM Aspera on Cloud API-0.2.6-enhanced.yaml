@@ -1,15 +1,52 @@
 openapi: 3.1.0
 info:
-  description: API for Aspera on Cloud and Aspera Enterprise Web Apps
+  title: Aspera on Cloud and Aspera Enterprise Web Apps
+  description: |
+    API for Aspera on Cloud and Aspera Enterprise Web Apps
+    
+    ## Authentication
+    
+    This API uses OAuth 2.0 for authentication. You must obtain an access token before making API requests.
+    
+    ### OAuth 2.0 Flow
+    
+    The API supports the following OAuth 2.0 grant types:
+    
+    - **Authorization Code**: For web applications with user interaction
+    - **Client Credentials**: For server-to-server authentication
+    - **JWT Bearer**: For service accounts using signed JWT tokens
+    
+    ### Getting an Access Token
+    
+    1. Register your client application using the `/clients` endpoint
+    2. Configure authentication method (browser-based or JWT)
+    3. Obtain an access token from the authorization server
+    4. Include the token in the `Authorization` header: `Bearer <access_token>`
+    
+    ### Token Usage
+    
+    All API requests must include a valid OAuth 2.0 access token in the Authorization header:
+    
+    ```
+    Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+    ```
+    
+    ### JWT Authentication
+    
+    For JWT-based authentication:
+    - Configure your client via `/clients` endpoint
+    - Set up authorized users/groups via `/client_authorizations`
+    - Sign JWT with user-specific or global private key
+    - Users must have their public key registered in their AoC profile
+    
+    See `/clients` and `/client_authorizations` endpoints for detailed configuration.
   version: 0.2.7-enhanced
   license:
     name: Proprietary
-    url: https://www.ibm.com/legal
-  title: Files API
-  x-ibm-name: files-api_latest
+    url: https://ibm.com/terms
   contact:
     name: Laurent Martin
-    email: cbaden@us.ibm.com
+    email: laurent.martin.aspera@fr.ibm.com
 servers:
   - url: https://api.ibmaspera.com
 paths:
@@ -6743,10 +6780,45 @@ components:
             $ref: '#/components/schemas/workspaces_params'
       required: true
   securitySchemes:
-    HTTP_Basic:
-      bearerFormat: JWT
-      scheme: bearer
+    OAuth2:
+      type: oauth2
+      description: |
+        OAuth 2.0 authentication for Aspera on Cloud API.
+        
+        The API supports multiple OAuth 2.0 flows:
+        - Authorization Code flow for web applications
+        - Client Credentials flow for server-to-server communication
+        - JWT Bearer flow for service accounts
+        
+        Register your client application via the `/clients` endpoint to obtain client credentials.
+        Configure authorized users and groups via the `/client_authorizations` endpoint.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://api.ibmaspera.com/oauth2/authorize
+          tokenUrl: https://api.ibmaspera.com/oauth2/token
+          scopes:
+            user: Access user resources
+            admin: Administrative access
+        clientCredentials:
+          tokenUrl: https://api.ibmaspera.com/oauth2/token
+          scopes:
+            user: Access user resources
+            admin: Administrative access
+    BearerAuth:
       type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT Bearer token authentication.
+        
+        Include the access token obtained from the OAuth 2.0 flow in the Authorization header:
+        ```
+        Authorization: Bearer <access_token>
+        ```
+        
+        For JWT-based authentication, the token must be signed with either:
+        - User-specific private key (user's public key must be registered in AoC)
+        - Global private key (configured in client settings)
 tags:
   - description: Use /clients to register your client application with the Files API. You can also modify your client, retrieve a list of all registered clients or a specific client, or delete a specific client. You can configure your client to use browser-based authentication or JSON web token (JWT) authentication.  For clients using JWT authentication, this endpoint relates to /client_authorizations.
     name: /clients
@@ -6836,7 +6908,8 @@ tags:
       The /workspace_collaborators endpoint manages collaborators attached to workspaces.
     name: /workspace_collaborators
 security:
-  - HTTP_Basic: []
+  - OAuth2: []
+  - BearerAuth: []
 x-ibm-configuration:
   enforced: false
   testable: true
