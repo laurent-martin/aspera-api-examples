@@ -49,6 +49,69 @@ info:
     email: laurent.martin.aspera@fr.ibm.com
 servers:
   - url: https://api.ibmaspera.com
+tags:
+  - name: App Memberships
+    description: Manage user access to Aspera applications. Enable users to access Automation or Activity apps and view membership across the organization.
+  - name: Apps
+    description: Manage Aspera application settings and configurations. Access organization-level settings for files, packages, activity, and automation applications.
+  - name: Apps New
+    description: Access advanced application settings APIs. Manage organization-level and workspace-level app configurations with filtering and asynchronous operation support.
+  - name: Auth Providers
+    description: Configure organization authentication providers. Manage authentication settings and perform bulk updates across multiple providers.
+  - name: Client Access Keys
+    description: View and manage transfer node access keys across the organization. Provides centralized access key management for organization administrators and workspace managers.
+  - name: Client Authorizations
+    description: Configure authorization rules for JWT-authenticated clients. Define which users or groups can access the API and specify key types (user-specific or global) for token generation.
+  - name: Client Registration Tokens
+    description: Manage registration tokens for client onboarding workflows. Create, update, and revoke tokens used in client registration processes.
+  - name: Client Settings
+    description: Manage client-specific settings for authenticated users. Store and retrieve configuration preferences per OAuth client.
+  - name: Clients
+    description: Manage OAuth client applications for API authentication. Configure browser-based or JWT authentication methods for secure API access.
+  - name: Dropbox Memberships
+    description: Manage membership for shared inboxes. Add or remove users and groups with direct or inherited membership.
+  - name: Dropboxes
+    description: Manage shared inboxes for content submission. Dropboxes provide a secure location for users to submit content with optional metadata collection and member notifications.
+  - name: Email Templates
+    description: Manage email notification templates. Configure templates at global, organization, workspace, or shared inbox levels with inheritance resolution.
+  - name: Feature Flags
+    description: Manage feature availability and experimental functionality. Super administrators can control organization-level feature flags.
+  - name: File Upload Notifications
+    description: Configure user notifications for file uploads. Manage notification preferences and resolve effective settings for specific files and nodes.
+  - name: Nodes
+    description: Manage Aspera transfer servers that provide storage and transfer capabilities. Nodes contain the connection information required for high-speed file transfers.
+  - name: Operations
+    description: Monitor and manage asynchronous operations for resources. Track long-running tasks related to workspaces, users, groups, and memberships.
+  - name: Organization
+    description: Access current organization information. Provides a convenient alias for retrieving and updating the authenticated user's organization.
+  - name: Organizations
+    description: Manage organization settings and properties. Organizations contain all users, groups, and resources with role-based access control.
+  - name: Packages
+    description: Manage file and folder bundles for secure content delivery. Send packages to individuals, groups, workspaces, or shared inboxes with full lifecycle management.
+  - name: Packages Count
+    description: Retrieve package statistics and summaries. Access aggregated package counts for reporting and monitoring purposes.
+  - name: Self
+    description: Access current user profile and preferences. Retrieve authenticated user information with optional settings and feature data.
+  - name: Short Links
+    description: Manage URL shortening and redirection. Create and manage short links that decouple URL behavior from access tokens.
+  - name: Tier Restrictions
+    description: View feature availability based on organization tier. Access tier-based restrictions and capability information.
+  - name: Transfer Direction
+    description: Determine optimal transfer routing between nodes. Check transfer permissions and identify preferred initiating nodes.
+  - name: Transfer Report
+    description: Access transfer routing matrices and analytics. View comprehensive transfer direction information across organization nodes.
+  - name: Transfers
+    description: Monitor and manage active file transfers. List ongoing transfers and perform administrative actions.
+  - name: Usage Reports
+    description: Access transfer usage statistics and reporting. Reports track bytes transferred per workspace or access key with monthly aggregation. All attributes are read-only.
+  - name: Users
+    description: Manage user accounts and profiles. Users are identified by email address and can have various roles including organization administrators and workspace managers.
+  - name: Workspace Collaborators
+    description: Manage workspace collaboration settings. Configure and maintain collaborator relationships for workspace resources.
+  - name: Workspace Memberships
+    description: Manage workspace membership for users and groups. Grant or revoke workspace access and assign workspace manager permissions.
+  - name: Workspaces
+    description: Manage collaborative workspaces where members can share files and send packages. Workspaces provide isolated storage contexts with configurable member permissions and roles.
 paths:
   /apps/app_memberships:
     get:
@@ -7435,69 +7498,6 @@ components:
         For JWT-based authentication, the token must be signed with either:
         - User-specific private key (user's public key must be registered in AoC)
         - Global private key (configured in client settings)
-tags:
-  - name: App Memberships
-    description: Manage user access to Aspera applications. Enable users to access Automation or Activity apps and view membership across the organization.
-  - name: Apps
-    description: Manage Aspera application settings and configurations. Access organization-level settings for files, packages, activity, and automation applications.
-  - name: Apps New
-    description: Access advanced application settings APIs. Manage organization-level and workspace-level app configurations with filtering and asynchronous operation support.
-  - name: Auth Providers
-    description: Configure organization authentication providers. Manage authentication settings and perform bulk updates across multiple providers.
-  - name: Client Access Keys
-    description: View and manage transfer node access keys across the organization. Provides centralized access key management for organization administrators and workspace managers.
-  - name: Client Authorizations
-    description: Configure authorization rules for JWT-authenticated clients. Define which users or groups can access the API and specify key types (user-specific or global) for token generation.
-  - name: Client Registration Tokens
-    description: Manage registration tokens for client onboarding workflows. Create, update, and revoke tokens used in client registration processes.
-  - name: Client Settings
-    description: Manage client-specific settings for authenticated users. Store and retrieve configuration preferences per OAuth client.
-  - name: Clients
-    description: Manage OAuth client applications for API authentication. Configure browser-based or JWT authentication methods for secure API access.
-  - name: Dropbox Memberships
-    description: Manage membership for shared inboxes. Add or remove users and groups with direct or inherited membership.
-  - name: Dropboxes
-    description: Manage shared inboxes for content submission. Dropboxes provide a secure location for users to submit content with optional metadata collection and member notifications.
-  - name: Email Templates
-    description: Manage email notification templates. Configure templates at global, organization, workspace, or shared inbox levels with inheritance resolution.
-  - name: Feature Flags
-    description: Manage feature availability and experimental functionality. Super administrators can control organization-level feature flags.
-  - name: File Upload Notifications
-    description: Configure user notifications for file uploads. Manage notification preferences and resolve effective settings for specific files and nodes.
-  - name: Nodes
-    description: Manage Aspera transfer servers that provide storage and transfer capabilities. Nodes contain the connection information required for high-speed file transfers.
-  - name: Operations
-    description: Monitor and manage asynchronous operations for resources. Track long-running tasks related to workspaces, users, groups, and memberships.
-  - name: Organization
-    description: Access current organization information. Provides a convenient alias for retrieving and updating the authenticated user's organization.
-  - name: Organizations
-    description: Manage organization settings and properties. Organizations contain all users, groups, and resources with role-based access control.
-  - name: Packages
-    description: Manage file and folder bundles for secure content delivery. Send packages to individuals, groups, workspaces, or shared inboxes with full lifecycle management.
-  - name: Packages Count
-    description: Retrieve package statistics and summaries. Access aggregated package counts for reporting and monitoring purposes.
-  - name: Self
-    description: Access current user profile and preferences. Retrieve authenticated user information with optional settings and feature data.
-  - name: Short Links
-    description: Manage URL shortening and redirection. Create and manage short links that decouple URL behavior from access tokens.
-  - name: Tier Restrictions
-    description: View feature availability based on organization tier. Access tier-based restrictions and capability information.
-  - name: Transfer Direction
-    description: Determine optimal transfer routing between nodes. Check transfer permissions and identify preferred initiating nodes.
-  - name: Transfer Report
-    description: Access transfer routing matrices and analytics. View comprehensive transfer direction information across organization nodes.
-  - name: Transfers
-    description: Monitor and manage active file transfers. List ongoing transfers and perform administrative actions.
-  - name: Usage Reports
-    description: Access transfer usage statistics and reporting. Reports track bytes transferred per workspace or access key with monthly aggregation. All attributes are read-only.
-  - name: Users
-    description: Manage user accounts and profiles. Users are identified by email address and can have various roles including organization administrators and workspace managers.
-  - name: Workspace Collaborators
-    description: Manage workspace collaboration settings. Configure and maintain collaborator relationships for workspace resources.
-  - name: Workspace Memberships
-    description: Manage workspace membership for users and groups. Grant or revoke workspace access and assign workspace manager permissions.
-  - name: Workspaces
-    description: Manage collaborative workspaces where members can share files and send packages. Workspaces provide isolated storage contexts with configurable member permissions and roles.
 security:
   - OAuth2: []
   - BearerAuth: []
