@@ -121,6 +121,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
       tags:
@@ -144,6 +148,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -172,6 +180,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -210,6 +222,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -255,6 +271,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
       tags:
@@ -280,6 +300,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '409':
           description: Conflict
         '422':
@@ -306,6 +330,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -334,6 +362,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -369,6 +401,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -415,6 +451,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -446,6 +486,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -474,6 +518,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -510,6 +558,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -538,6 +590,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -565,6 +621,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -593,6 +653,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -624,6 +688,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -657,6 +725,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -771,6 +843,14 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
       tags:
@@ -796,6 +876,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '409':
           description: Conflict
         '422':
@@ -823,6 +907,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -856,6 +944,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -885,6 +977,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '409':
           description: Conflict
         '422':
@@ -933,6 +1029,14 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -956,6 +1060,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -984,6 +1092,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '422':
@@ -1013,6 +1125,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -1042,6 +1158,14 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1100,6 +1224,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
       tags:
@@ -1121,6 +1249,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '409':
           description: Conflict
         '422':
@@ -1147,6 +1279,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '422':
           description: Unprocessable Entity
         '500':
@@ -1174,6 +1310,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -1203,6 +1343,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '409':
           description: Conflict
         '422':
@@ -1233,6 +1377,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '500':
@@ -1402,6 +1550,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1429,6 +1581,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1457,6 +1613,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1493,6 +1653,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1526,6 +1690,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1573,6 +1741,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
       tags:
@@ -1640,6 +1812,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1667,6 +1843,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1695,6 +1875,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1731,6 +1915,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1764,6 +1952,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1814,6 +2006,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1845,6 +2041,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1873,6 +2073,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1909,6 +2113,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1942,6 +2150,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -1999,6 +2211,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -2026,6 +2242,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -2054,6 +2274,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '409':
@@ -2092,6 +2316,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
       tags:
         - /apps
   /apps/{aspera_app_type}/settings:
@@ -2153,6 +2381,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
       tags:
@@ -2228,6 +2460,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '422':
@@ -2410,6 +2646,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
       tags:
@@ -2442,6 +2682,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
       tags:
@@ -2482,6 +2726,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '422':
@@ -2500,6 +2748,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
       tags:
         - /auth_providers
   /auth_providers/{id}:
@@ -2520,6 +2772,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
       tags:
@@ -2550,6 +2806,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '422':
@@ -2588,6 +2848,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
       tags:
         - /client_settings
     post:
@@ -2608,6 +2872,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '409':
           description: Conflict
         '422':
@@ -2632,6 +2900,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
       tags:
@@ -2662,6 +2934,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '422':
@@ -2685,6 +2961,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
       tags:
@@ -2701,6 +2981,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
       tags:
         - /client_registration_tokens
   /client_registration_tokens/{id}:
@@ -2721,6 +3005,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
       tags:
@@ -2749,6 +3037,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '422':
@@ -2772,6 +3064,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
       tags:
@@ -2801,6 +3097,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
       tags:
         - /email_templates
   /email_templates/{id}:
@@ -2821,6 +3121,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
       tags:
@@ -2851,6 +3155,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
         '422':
@@ -2887,6 +3195,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
       tags:
         - /email_templates
   /feature_flags:
@@ -3269,6 +3581,10 @@ paths:
           description: Bad Request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
       tags:
         - /tier_restrictions
   /transfer_direction:
@@ -3423,6 +3739,20 @@ paths:
         - /workspace_collaborators
 components:
   schemas:
+    UnauthorizedError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: unauthorized
+        message:
+          type: string
+          description: Error message
+          example: You are not authorized to perform the requested action
+      required:
+        - code
+        - message
     app_simple_response:
       type: object
       properties:
