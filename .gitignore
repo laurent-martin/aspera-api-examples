@@ -1,9 +1,10 @@
-.DS_Store
+build/
 tmp/
 private/
+.DS_Store
 .vscode/
 .idea/
 .tested/
 .checked_env
-build/
 *.sln
+.venv/

@@ -128,7 +128,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /apps/app_memberships
+        - App Memberships
   /apps/app_memberships/{id}:
     delete:
       operationId: delete_app_membership
@@ -157,7 +157,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /apps/app_memberships
+        - App Memberships
     get:
       operationId: get_app_membership_by_id
       summary: Get Information About a Specific App Membership
@@ -189,7 +189,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /apps/app_memberships
+        - App Memberships
   /apps/{aspera_app_type}/app_memberships:
     post:
       operationId: add_app_membership
@@ -235,7 +235,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /apps/app_memberships
+        - App Memberships
   /client_access_keys:
     get:
       operationId: get_client_access_keys
@@ -278,7 +278,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /client_access_keys
+        - Client Access Keys
     post:
       operationId: add_client_access_key
       summary: Register a New Client Access Key with Aspera on Cloud
@@ -311,7 +311,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /client_access_keys
+        - Client Access Keys
   /client_access_keys/{id}:
     delete:
       operationId: delete_client_access_key
@@ -339,7 +339,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /client_access_keys
+        - Client Access Keys
     get:
       operationId: get_client_access_key_by_id
       summary: Get Information About a Specific Client Access Key
@@ -371,7 +371,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /client_access_keys
+        - Client Access Keys
     put:
       operationId: update_client_access_key
       summary: Update the Name of a Client Access Key
@@ -414,7 +414,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /client_access_keys
+        - Client Access Keys
   /client_authorizations:
     get:
       operationId: get_client_authorizations
@@ -464,7 +464,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /client_authorizations
+        - Client Authorizations
     post:
       operationId: add_client_authorization
       summary: Create a New Authorization
@@ -499,7 +499,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /client_authorizations
+        - Client Authorizations
   /client_authorizations/{id}:
     delete:
       operationId: delete_client_authorization
@@ -531,7 +531,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /client_authorizations
+        - Client Authorizations
     get:
       operationId: get_client_authorization_by_id
       summary: Get Information on Entities in a Whitelist for a Specific Client
@@ -571,7 +571,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /client_authorizations
+        - Client Authorizations
   /clients:
     get:
       operationId: get_clients
@@ -603,7 +603,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /clients
+        - Clients
     post:
       operationId: add_client
       summary: Register a New Client with the Files API
@@ -634,7 +634,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /clients
+        - Clients
   /clients/{id}:
     delete:
       operationId: delete_client
@@ -666,7 +666,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /clients
+        - Clients
     get:
       operationId: get_client_by_id
       summary: Get Information about a Specific Registered Client
@@ -701,7 +701,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /clients
+        - Clients
     put:
       operationId: update_client
       summary: Modify a Registered Client
@@ -738,7 +738,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /clients
+        - Clients
   /dropbox_memberships:
     get:
       operationId: get_dropbox_memberships
@@ -850,7 +850,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /dropbox_memberships
+        - Dropbox Memberships
     post:
       operationId: add_dropbox_membership
       summary: Add a Dropbox Member
@@ -883,7 +883,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /dropbox_memberships
+        - Dropbox Memberships
   /dropbox_memberships/{id}:
     delete:
       operationId: delete_dropbox_membership
@@ -912,7 +912,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /dropbox_memberships
+        - Dropbox Memberships
     get:
       operationId: get_dropbox_membership_by_id
       summary: Get Information on a Specific Dropbox Membership
@@ -949,7 +949,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /dropbox_memberships
+        - Dropbox Memberships
     put:
       operationId: update_dropbox_membership
       summary: Update a Dropbox Membership
@@ -984,7 +984,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /dropbox_memberships
+        - Dropbox Memberships
   /dropboxes:
     get:
       operationId: get_dropboxes
@@ -1034,7 +1034,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /dropboxes
+        - Dropboxes
     post:
       operationId: add_dropbox
       summary: Create a New Shared Inbox
@@ -1065,7 +1065,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /dropboxes
+        - Dropboxes
   /dropboxes/{id}:
     delete:
       operationId: delete_dropbox
@@ -1095,7 +1095,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /dropboxes
+        - Dropboxes
     get:
       operationId: get_dropbox_by_id
       summary: Get Information on a Specific Shared Inbox
@@ -1126,7 +1126,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /dropboxes
+        - Dropboxes
     put:
       operationId: update_dropbox
       summary: Update a Shared Inbox
@@ -1163,7 +1163,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /dropboxes
+        - Dropboxes
   /nodes:
     get:
       operationId: get_nodes
@@ -1219,7 +1219,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /nodes
+        - Nodes
     post:
       operationId: add_node
       summary: Create a New Node
@@ -1248,7 +1248,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /nodes
+        - Nodes
   /nodes/{id}:
     delete:
       operationId: delete_node
@@ -1276,7 +1276,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /nodes
+        - Nodes
     get:
       operationId: get_node_by_id
       summary: Get Information on a Specific Node
@@ -1307,7 +1307,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /nodes
+        - Nodes
     put:
       operationId: update_node
       summary: Update a Node
@@ -1342,7 +1342,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /nodes
+        - Nodes
   /organizations/{id}:
     get:
       operationId: get_organization
@@ -1374,7 +1374,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /organizations
+        - Organizations
     put:
       operationId: update_organization
       summary: Update Your Organization
@@ -1404,7 +1404,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /organizations
+        - Organizations
   /packages:
     get:
       operationId: get_packages
@@ -1551,7 +1551,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /packages
+        - Packages
     post:
       operationId: add_package
       summary: Create Package to Send
@@ -1582,7 +1582,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /packages
+        - Packages
   /packages/{id}:
     delete:
       operationId: delete_package
@@ -1614,7 +1614,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /packages
+        - Packages
     get:
       operationId: get_package_by_id
       summary: Get Information on a Specific Package
@@ -1654,7 +1654,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /packages
+        - Packages
     put:
       operationId: update_package
       summary: Update a package
@@ -1691,7 +1691,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /packages
+        - Packages
   /usage_reports:
     get:
       operationId: get_usage_reports
@@ -1736,7 +1736,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /usage_reports
+        - Usage Reports
   /users:
     get:
       operationId: get_users
@@ -1813,7 +1813,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /users
+        - Users
     post:
       operationId: add_user
       summary: Create a New User
@@ -1844,7 +1844,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /users
+        - Users
   /users/{id}:
     delete:
       operationId: delete_user
@@ -1876,7 +1876,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /users
+        - Users
     get:
       operationId: get_user_by_id
       summary: Get Information on a Specific User
@@ -1916,7 +1916,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /users
+        - Users
     put:
       operationId: update_user
       summary: Update a Specific User Record
@@ -1953,7 +1953,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /users
+        - Users
   /workspace_memberships:
     get:
       operationId: get_workspace_memberships
@@ -2007,7 +2007,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /workspace_memberships
+        - Workspace Memberships
     post:
       operationId: add_workspace_membership
       summary: Add a User as a Workspace Member
@@ -2042,7 +2042,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /workspace_memberships
+        - Workspace Memberships
   /workspace_memberships/{id}:
     delete:
       operationId: delete_workspace_membership
@@ -2074,7 +2074,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /workspace_memberships
+        - Workspace Memberships
     get:
       operationId: get_workspace_membership_by_id
       summary: Get Information on a Specific Membership
@@ -2114,7 +2114,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /workspace_memberships
+        - Workspace Memberships
     put:
       operationId: update_workspace_membership
       summary: Update a Workspace Membership
@@ -2151,7 +2151,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /workspace_memberships
+        - Workspace Memberships
   /workspaces:
     get:
       operationId: get_workspaces
@@ -2212,7 +2212,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /workspaces
+        - Workspaces
     post:
       operationId: add_workspace
       summary: Create a New Workspace
@@ -2243,7 +2243,7 @@ paths:
         '500':
           description: Internal Server Error
       tags:
-        - /workspaces
+        - Workspaces
   /workspaces/{id}:
     delete:
       operationId: delete_workspace
@@ -2271,7 +2271,7 @@ paths:
         '409':
           description: Conflict
       tags:
-        - /workspaces
+        - Workspaces
   /apps:
     get:
       operationId: get_apps
@@ -2309,7 +2309,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
       tags:
-        - /apps
+        - Apps
   /apps/{aspera_app_type}/settings:
     get:
       operationId: get_app_settings_by_type
@@ -2376,7 +2376,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - /apps
+        - Apps
     put:
       operationId: update_app_settings_by_type
       summary: Update Application Settings by Type
@@ -2457,7 +2457,7 @@ paths:
         '422':
           description: Unprocessable Entity - Invalid settings for the specified application type
       tags:
-        - /apps
+        - Apps
   /apps_new:
     get:
       operationId: get_apps_new
@@ -2520,7 +2520,7 @@ paths:
         '400':
           description: Bad Request
       tags:
-        - /apps_new
+        - Apps New
   /apps_new/{aspera_app_type}/{aspera_app_id}:
     get:
       operationId: get_apps_new_by_id
@@ -2569,7 +2569,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - /apps_new
+        - Apps New
     put:
       operationId: update_apps_new_by_id
       summary: Update a Specific Application Setting
@@ -2610,7 +2610,7 @@ paths:
         '422':
           description: Unprocessable Entity
       tags:
-        - /apps_new
+        - Apps New
   /apps_new/{aspera_app_type}/{aspera_app_id}/operations:
     get:
       operationId: get_app_operations
@@ -2641,7 +2641,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - /operations
+        - Operations
   /apps_new/{aspera_app_type}/{aspera_app_id}/operations/{id}:
     get:
       operationId: get_app_operation_by_id
@@ -2677,7 +2677,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - /operations
+        - Operations
     put:
       operationId: update_app_operation_by_id
       summary: Update an Application Operation
@@ -2723,7 +2723,7 @@ paths:
         '422':
           description: Unprocessable Entity
       tags:
-        - /operations
+        - Operations
   /auth_providers:
     get:
       operationId: get_auth_providers
@@ -2741,7 +2741,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
       tags:
-        - /auth_providers
+        - Auth Providers
   /auth_providers/{id}:
     get:
       operationId: get_auth_provider_by_id
@@ -2767,7 +2767,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - /auth_providers
+        - Auth Providers
     put:
       operationId: update_auth_provider
       summary: Update an Authentication Provider
@@ -2803,7 +2803,7 @@ paths:
         '422':
           description: Unprocessable Entity
       tags:
-        - /auth_providers
+        - Auth Providers
   /auth_providers/updated_records:
     put:
       operationId: bulk_update_auth_providers
@@ -2823,7 +2823,7 @@ paths:
         '422':
           description: Unprocessable Entity
       tags:
-        - /auth_providers
+        - Auth Providers
   /client_settings:
     get:
       operationId: get_client_settings
@@ -2841,7 +2841,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
       tags:
-        - /client_settings
+        - Client Settings
     post:
       operationId: add_client_setting
       summary: Create a Client Setting
@@ -2869,7 +2869,7 @@ paths:
         '422':
           description: Unprocessable Entity
       tags:
-        - /client_settings
+        - Client Settings
   /client_settings/{id}:
     get:
       operationId: get_client_setting_by_id
@@ -2895,7 +2895,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - /client_settings
+        - Client Settings
     put:
       operationId: update_client_setting
       summary: Update a Client Setting
@@ -2931,7 +2931,7 @@ paths:
         '422':
           description: Unprocessable Entity
       tags:
-        - /client_settings
+        - Client Settings
     delete:
       operationId: delete_client_setting
       summary: Delete a Client Setting
@@ -2956,7 +2956,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - /client_settings
+        - Client Settings
   /client_registration_tokens:
     get:
       operationId: get_client_registration_tokens
@@ -2974,7 +2974,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
       tags:
-        - /client_registration_tokens
+        - Client Registration Tokens
   /client_registration_tokens/{id}:
     get:
       operationId: get_client_registration_token_by_id
@@ -3000,7 +3000,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - /client_registration_tokens
+        - Client Registration Tokens
     put:
       operationId: update_client_registration_token
       summary: Update a Client Registration Token
@@ -3034,7 +3034,7 @@ paths:
         '422':
           description: Unprocessable Entity
       tags:
-        - /client_registration_tokens
+        - Client Registration Tokens
     delete:
       operationId: delete_client_registration_token
       summary: Delete a Client Registration Token
@@ -3059,7 +3059,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - /client_registration_tokens
+        - Client Registration Tokens
   /email_templates:
     get:
       operationId: get_email_templates
@@ -3090,7 +3090,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
       tags:
-        - /email_templates
+        - Email Templates
   /email_templates/{id}:
     get:
       operationId: get_email_template_by_id
@@ -3116,7 +3116,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - /email_templates
+        - Email Templates
     put:
       operationId: update_email_template
       summary: Update an Email Template
@@ -3152,7 +3152,7 @@ paths:
         '422':
           description: Unprocessable Entity
       tags:
-        - /email_templates
+        - Email Templates
   /effective_templates:
     get:
       operationId: get_effective_templates
@@ -3188,7 +3188,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
       tags:
-        - /email_templates
+        - Email Templates
   /feature_flags:
     get:
       operationId: get_feature_flags
@@ -3198,7 +3198,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /feature_flags
+        - Feature Flags
     post:
       operationId: add_feature_flag
       summary: Create a Feature Flag
@@ -3214,7 +3214,7 @@ paths:
         '201':
           description: Created
       tags:
-        - /feature_flags
+        - Feature Flags
   /feature_flags/{id}:
     get:
       operationId: get_feature_flag_by_id
@@ -3230,7 +3230,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /feature_flags
+        - Feature Flags
     put:
       operationId: update_feature_flag
       summary: Update a Feature Flag
@@ -3252,7 +3252,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /feature_flags
+        - Feature Flags
     delete:
       operationId: delete_feature_flag
       summary: Delete a Feature Flag
@@ -3267,7 +3267,7 @@ paths:
         '204':
           description: No Content
       tags:
-        - /feature_flags
+        - Feature Flags
   /file_upload_notifications:
     get:
       operationId: get_file_upload_notifications
@@ -3277,7 +3277,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /file_upload_notifications
+        - File Upload Notifications
     post:
       operationId: add_file_upload_notification
       summary: Create a File Upload Notification
@@ -3293,7 +3293,7 @@ paths:
         '201':
           description: Created
       tags:
-        - /file_upload_notifications
+        - File Upload Notifications
   /file_upload_notifications/{id}:
     put:
       operationId: update_file_upload_notification
@@ -3318,7 +3318,7 @@ paths:
         '204':
           description: No Content
       tags:
-        - /file_upload_notifications
+        - File Upload Notifications
     delete:
       operationId: delete_file_upload_notification
       summary: Delete a File Upload Notification
@@ -3333,7 +3333,7 @@ paths:
         '204':
           description: No Content
       tags:
-        - /file_upload_notifications
+        - File Upload Notifications
   /file_upload_notifications/get_toggle_state:
     get:
       operationId: get_file_upload_notification_toggle_state
@@ -3353,7 +3353,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /file_upload_notifications
+        - File Upload Notifications
   /operations:
     get:
       operationId: get_operations
@@ -3397,7 +3397,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /operations
+        - Operations
   /operations/{id}:
     get:
       operationId: get_operation_by_id
@@ -3413,7 +3413,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /operations
+        - Operations
     put:
       operationId: update_operation
       summary: Update an Operation
@@ -3439,7 +3439,7 @@ paths:
         '422':
           description: Unprocessable Entity
       tags:
-        - /operations
+        - Operations
   /organization:
     get:
       operationId: get_current_organization
@@ -3449,7 +3449,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /organization
+        - Organization
     put:
       operationId: update_current_organization
       summary: Update Current Organization
@@ -3466,7 +3466,7 @@ paths:
         '204':
           description: No Content
       tags:
-        - /organization
+        - Organization
   /packages_count:
     get:
       operationId: get_packages_count
@@ -3476,7 +3476,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /packages_count
+        - Packages Count
   /self:
     get:
       operationId: get_self
@@ -3492,7 +3492,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /self
+        - Self
   /short_links:
     get:
       operationId: get_short_links
@@ -3502,7 +3502,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /short_links
+        - Short Links
     post:
       operationId: add_short_link
       summary: Create a Short Link
@@ -3518,7 +3518,7 @@ paths:
         '201':
           description: Created
       tags:
-        - /short_links
+        - Short Links
   /short_links/{id}:
     put:
       operationId: update_short_link
@@ -3541,7 +3541,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /short_links
+        - Short Links
     delete:
       operationId: delete_short_link
       summary: Delete a Short Link
@@ -3556,7 +3556,7 @@ paths:
         '204':
           description: No Content
       tags:
-        - /short_links
+        - Short Links
   /tier_restrictions:
     get:
       operationId: get_tier_restrictions
@@ -3574,7 +3574,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
       tags:
-        - /tier_restrictions
+        - Tier Restrictions
   /transfer_direction:
     post:
       operationId: get_transfer_direction
@@ -3606,7 +3606,7 @@ paths:
         '400':
           description: Bad Request
       tags:
-        - /transfer_direction
+        - Transfer Direction
   /transfer_report:
     get:
       operationId: get_transfer_report
@@ -3617,7 +3617,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /transfer_report
+        - Transfer Report
   /transfers:
     get:
       operationId: get_transfers
@@ -3627,7 +3627,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /transfers
+        - Transfers
     delete:
       operationId: delete_transfers
       summary: Delete User Transfers
@@ -3636,7 +3636,7 @@ paths:
         '204':
           description: No Content
       tags:
-        - /transfers
+        - Transfers
   /transfers/{id}:
     get:
       operationId: get_transfer_by_id
@@ -3652,7 +3652,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /transfers
+        - Transfers
     delete:
       operationId: delete_transfer
       summary: Delete a Transfer
@@ -3667,7 +3667,7 @@ paths:
         '204':
           description: No Content
       tags:
-        - /transfers
+        - Transfers
   /workspace_collaborators:
     get:
       operationId: get_workspace_collaborators
@@ -3677,7 +3677,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /workspace_collaborators
+        - Workspace Collaborators
     post:
       operationId: add_workspace_collaborator
       summary: Create a Workspace Collaborator
@@ -3693,7 +3693,7 @@ paths:
         '201':
           description: Created
       tags:
-        - /workspace_collaborators
+        - Workspace Collaborators
   /workspace_collaborators/{id}:
     get:
       operationId: get_workspace_collaborator_by_id
@@ -3709,7 +3709,7 @@ paths:
         '200':
           description: OK
       tags:
-        - /workspace_collaborators
+        - Workspace Collaborators
     delete:
       operationId: delete_workspace_collaborator
       summary: Delete a Workspace Collaborator
@@ -3724,7 +3724,7 @@ paths:
         '204':
           description: No Content
       tags:
-        - /workspace_collaborators
+        - Workspace Collaborators
 components:
   schemas:
     UnauthorizedError:
