@@ -7904,21 +7904,6 @@ components:
           type: boolean
           examples:
             - false
-    workspace_filter_params:
-      type: object
-      properties:
-        created_at:
-          type: string
-          format: date-time
-        manager:
-          type: boolean
-        name:
-          type: string
-        node_id:
-          type: integer
-        updated_at:
-          type: string
-          format: date-time
     workspace_memberships_params:
       type: object
       properties:
