@@ -4,6 +4,16 @@ info:
   description: |
     API for Aspera on Cloud and Aspera Enterprise Web Apps
 
+    ## API Endpoints Structure
+
+    This API is available through multiple base paths:
+
+    - **OAuth endpoints**: Available at both `/oauth2/...` and `/api/v1/oauth2/...`
+    - **Resource endpoints**: Available at `/api/v1/...` (workspaces, packages, users, etc.)
+    - **Legacy endpoints**: Some endpoints available without `/api/v1` prefix
+
+    Most API operations require the `/api/v1` prefix. OAuth authentication endpoints support both paths for backward compatibility.
+
     ## Authentication
 
     This API uses OAuth 2.0 for authentication. You must obtain an access token before making API requests.
@@ -15,12 +25,13 @@ info:
     - **Authorization Code**: For web applications with user interaction
     - **Client Credentials**: For server-to-server authentication
     - **JWT Bearer**: For service accounts using signed JWT tokens
+    - **URL Token**: For temporary access via URL-based tokens
 
     ### Getting an Access Token
 
-    1. Register your client application using the `/clients` endpoint
+    1. Register your client application using the `/api/v1/clients` endpoint
     2. Configure authentication method (browser-based or JWT)
-    3. Obtain an access token from the authorization server
+    3. Obtain an access token from `/oauth2/{subdomain}/token` or `/api/v1/oauth2/{subdomain}/token`
     4. Include the token in the `Authorization` header: `Bearer <access_token>`
 
     ### Token Usage
@@ -34,8 +45,8 @@ info:
     ### JWT Authentication
 
     For JWT-based authentication:
-    - Configure your client via `/clients` endpoint
-    - Set up authorized users/groups via `/client_authorizations`
+    - Configure your client via `/api/v1/clients` endpoint
+    - Set up authorized users/groups via `/api/v1/client_authorizations`
     - Sign JWT with user-specific or global private key
     - Users must have their public key registered in their AoC profile
 
@@ -49,6 +60,9 @@ info:
     email: laurent.martin.aspera@fr.ibm.com
 servers:
   - url: https://api.ibmaspera.com
+    description: Production server
+  - url: https://api.ibmaspera.com/api/v1
+    description: Production server (v1 API prefix)
 tags:
   - name: App Memberships
     description: Manage user access to Aspera applications. Enable users to access Automation or Activity apps and view membership across the organization.
@@ -161,6 +175,393 @@ x-tagGroups:
       - Tier Restrictions
       - Operations
 paths:
+  /oauth2/authorize:
+    get:
+      operationId: oauth2_authorize
+      summary: OAuth 2.0 Authorization Endpoint
+      description: |
+        Initiate the OAuth 2.0 authorization code flow.
+        
+        This endpoint presents the user with a login page (if not already authenticated) and an authorization consent screen.
+        After the user grants permission, they are redirected back to the client application with an authorization code.
+        
+        The authorization code can then be exchanged for an access token at the `/oauth2/token` endpoint.
+      tags:
+        - Clients
+      security: []
+      parameters:
+        - name: response_type
+          in: query
+          required: true
+          description: Must be "code" for authorization code flow
+          schema:
+            type: string
+            enum:
+              - code
+          example: code
+        - name: client_id
+          in: query
+          required: true
+          description: The client identifier registered with the authorization server
+          schema:
+            type: string
+          example: my_client_app
+        - name: redirect_uri
+          in: query
+          required: true
+          description: URI where the user will be redirected after authorization
+          schema:
+            type: string
+            format: uri
+          example: https://example.com/callback
+        - name: scope
+          in: query
+          required: false
+          description: Space-separated list of requested scopes
+          schema:
+            type: string
+          example: user:all
+        - name: state
+          in: query
+          required: false
+          description: Opaque value used to maintain state between request and callback (recommended for CSRF protection)
+          schema:
+            type: string
+          example: random_state_string_123
+      responses:
+        '302':
+          description: Redirect to login page or client redirect_uri
+          headers:
+            Location:
+              description: Redirect URL with authorization code or error
+              schema:
+                type: string
+                format: uri
+              examples:
+                success:
+                  summary: Successful Authorization
+                  value: https://example.com/callback?code=abc123def456&state=random_state_string_123
+                error:
+                  summary: Authorization Error
+                  value: https://example.com/callback?error=access_denied&error_description=User+denied+access&state=random_state_string_123
+        '400':
+          description: Bad Request - Invalid authorization request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuth2TokenError'
+              examples:
+                invalid_request:
+                  summary: Invalid Request
+                  value:
+                    error: invalid_request
+                    error_description: missing required parameter
+                    state: null
+                invalid_client:
+                  summary: Invalid Client
+                  value:
+                    error: invalid_client
+                    error_description: client not found
+                    state: null
+                unauthorized_client:
+                  summary: Unauthorized Client
+                  value:
+                    error: unauthorized_client
+                    error_description: client not authorized for this grant type
+                    state: null
+                invalid_scope:
+                  summary: Invalid Scope
+                  value:
+                    error: invalid_scope
+                    error_description: requested scope is invalid
+                    state: null
+  /oauth2/revoke:
+    post:
+      operationId: oauth2_revoke
+      summary: OAuth 2.0 Token Revocation Endpoint
+      description: |
+        Revoke an access token or refresh token.
+        
+        This endpoint allows clients to notify the authorization server that a previously obtained
+        token is no longer needed. This can be used to revoke both access tokens and refresh tokens.
+        
+        The client must authenticate using HTTP Basic authentication with client credentials.
+      tags:
+        - Clients
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: The token to be revoked (access token or refresh token)
+                  example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                token_type_hint:
+                  type: string
+                  description: Hint about the type of token being revoked
+                  enum:
+                    - access_token
+                    - refresh_token
+                  example: access_token
+              required:
+                - token
+      responses:
+        '200':
+          description: Token successfully revoked or token was already invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+        '400':
+          description: Bad Request - Invalid revocation request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuth2TokenError'
+              examples:
+                missing_token:
+                  summary: Missing Token Parameter
+                  value:
+                    error: invalid_request
+                    error_description: missing 'token'
+                    state: null
+        '401':
+          description: Unauthorized - Invalid client credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuth2TokenError'
+              examples:
+                invalid_client:
+                  summary: Invalid Client Credentials
+                  value:
+                    error: invalid_client
+                    error_description: invalid client id or secret
+                    state: null
+  /oauth2/token:
+    post:
+      operationId: oauth2_token
+      summary: OAuth 2.0 Token Endpoint
+      description: |
+        Request an access token using various OAuth 2.0 grant types.
+        
+        This endpoint supports multiple authentication flows:
+        - **Authorization Code**: Exchange an authorization code for tokens
+        - **Refresh Token**: Obtain a new access token using a refresh token
+        - **JWT Bearer**: Authenticate using a signed JWT assertion
+        - **URL Token**: Exchange a URL token for an access token
+        
+        The response includes an access token and optionally a refresh token depending on the grant type.
+      tags:
+        - Clients
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  description: The OAuth 2.0 grant type
+                  enum:
+                    - authorization_code
+                    - refresh_token
+                    - urn:ietf:params:oauth:grant-type:jwt-bearer
+                    - url_token
+                  example: authorization_code
+                code:
+                  type: string
+                  description: Authorization code (required for authorization_code grant)
+                  example: abc123def456
+                redirect_uri:
+                  type: string
+                  format: uri
+                  description: Redirect URI (required for authorization_code grant, must match the one used in authorization request)
+                  example: https://example.com/callback
+                refresh_token:
+                  type: string
+                  description: Refresh token (required for refresh_token grant)
+                  example: refresh_abc123
+                assertion:
+                  type: string
+                  description: JWT assertion (required for jwt-bearer grant)
+                  example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                url_token:
+                  type: string
+                  description: URL token identifier (required for url_token grant)
+                  example: token_abc123
+                password:
+                  type: string
+                  description: Password for password-protected URL tokens (optional, required only if URL token is password-protected)
+                  example: secret123
+                scope:
+                  type: string
+                  description: Requested scope (optional)
+                  example: user:all
+              required:
+                - grant_type
+            examples:
+              authorization_code:
+                summary: Authorization Code Grant
+                value:
+                  grant_type: authorization_code
+                  code: abc123def456
+                  redirect_uri: https://example.com/callback
+              refresh_token:
+                summary: Refresh Token Grant
+                value:
+                  grant_type: refresh_token
+                  refresh_token: refresh_abc123
+              jwt_bearer:
+                summary: JWT Bearer Grant
+                value:
+                  grant_type: urn:ietf:params:oauth:grant-type:jwt-bearer
+                  assertion: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+              url_token:
+                summary: URL Token Grant
+                value:
+                  grant_type: url_token
+                  url_token: token_abc123
+              url_token_with_password:
+                summary: URL Token Grant (Password Protected)
+                value:
+                  grant_type: url_token
+                  url_token: token_abc123
+                  password: secret123
+      responses:
+        '200':
+          description: Successfully obtained access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: The access token for API authentication
+                    example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                  token_type:
+                    type: string
+                    description: Token type (always "Bearer")
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    description: Token lifetime in seconds
+                    example: 3600
+                  refresh_token:
+                    type: string
+                    description: Refresh token (only for certain grant types)
+                    example: refresh_abc123
+                  scope:
+                    type: string
+                    description: Granted scope
+                    example: user:all
+                required:
+                  - access_token
+                  - token_type
+        '400':
+          description: Bad Request - Invalid OAuth 2.0 request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuth2TokenError'
+              examples:
+                invalid_grant_url_token:
+                  summary: Invalid URL Token
+                  value:
+                    error: invalid_grant
+                    error_description: invalid URL token
+                    state: null
+                invalid_grant_auth_code:
+                  summary: Invalid Authorization Code
+                  value:
+                    error: invalid_grant
+                    error_description: invalid authorization code
+                    state: null
+                invalid_grant_refresh_token:
+                  summary: Invalid Refresh Token
+                  value:
+                    error: invalid_grant
+                    error_description: invalid refresh token
+                    state: null
+                authorization_code_reused:
+                  summary: Authorization Code Already Used
+                  value:
+                    error: invalid_grant
+                    error_description: authorization code already used
+                    state: null
+                redirect_uri_mismatch:
+                  summary: Redirect URI Mismatch
+                  value:
+                    error: invalid_grant
+                    error_description: redirect uri doesn't match authorized redirect uri
+                    state: null
+                access_denied_expired:
+                  summary: Link Expired
+                  value:
+                    error: access_denied
+                    error_description: link is expired
+                    state: null
+                access_denied_password:
+                  summary: Invalid Password
+                  value:
+                    error: access_denied
+                    error_description: invalid password for url_token
+                    state: null
+                invalid_request_missing_grant:
+                  summary: Missing Grant Type
+                  value:
+                    error: invalid_request
+                    error_description: missing 'grant_type'
+                    state: null
+                invalid_request_missing_code:
+                  summary: Missing Authorization Code
+                  value:
+                    error: invalid_request
+                    error_description: missing 'code'
+                    state: null
+                invalid_request_missing_url_token:
+                  summary: Missing URL Token
+                  value:
+                    error: invalid_request
+                    error_description: missing 'url_token'
+                    state: null
+                invalid_request_missing_password:
+                  summary: Missing Password for URL Token
+                  value:
+                    error: invalid_request
+                    error_description: missing password for url_token
+                    state: null
+                unsupported_grant_type:
+                  summary: Unsupported Grant Type
+                  value:
+                    error: unsupported_grant_type
+                    error_description: grant type not supported
+                    state: null
+        '401':
+          description: Unauthorized - Invalid client credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuth2TokenError'
+              examples:
+                invalid_client:
+                  summary: Invalid Client Credentials
+                  value:
+                    error: invalid_client
+                    error_description: invalid client id or secret
+                    state: null
   /apps/app_memberships:
     get:
       operationId: get_app_memberships
@@ -2065,6 +2466,75 @@ paths:
           description: Internal Server Error
       tags:
         - Users
+  /users/{id}/user_interaction_preferences:
+    get:
+      operationId: get_user_interaction_preferences
+      summary: Get User Interaction Preferences
+      description: Retrieve the user interaction preferences for a specific user. These preferences control UI behavior, default settings, and personalization options.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user_interaction_preferences_response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden - User can only access their own preferences unless they are an organization admin
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+      tags:
+        - Users
+    put:
+      operationId: update_user_interaction_preferences
+      summary: Update User Interaction Preferences
+      description: Update the user interaction preferences for a specific user. Users can update their own preferences, or organization admins can update any user's preferences. The preferences object accepts arbitrary key-value pairs for flexibility.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/user_interaction_preferences_params'
+      responses:
+        '204':
+          description: No Content - Preferences updated successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden - User can only update their own preferences unless they are an organization admin
+        '404':
+          description: Not Found
+        '422':
+          description: Unprocessable Entity
+        '500':
+          description: Internal Server Error
+      tags:
+        - Users
   /workspace_memberships:
     get:
       operationId: get_workspace_memberships
@@ -2630,6 +3100,26 @@ paths:
                   package_download_counts_enabled: true
         '400':
           description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '422':
+          description: Unprocessable Entity - Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              examples:
+                parameter_missing:
+                  summary: Missing Required Parameter
+                  value:
+                    param: aspera_app_type or workspace_id must be present
+                    code: parameter_missing
+                    message: param is missing or the value is empty
+                    request_id: 910723e1-d7ac-4d01-9b4a-5949cf870f98
       tags:
         - Apps New
   /apps_new/{aspera_app_type}/{aspera_app_id}:
@@ -3852,6 +4342,84 @@ components:
       required:
         - code
         - message
+    OAuth2TokenError:
+      type: object
+      description: |
+        OAuth 2.0 error response returned by token endpoint as defined in RFC 6749 section 5.2.
+        This error format is used for all OAuth 2.0 token-related errors including authorization code exchange,
+        refresh token usage, and URL token authentication.
+      properties:
+        error:
+          type: string
+          description: OAuth 2.0 error code indicating the type of error
+          enum:
+            - invalid_request
+            - invalid_client
+            - invalid_grant
+            - unauthorized_client
+            - unsupported_grant_type
+            - invalid_scope
+            - access_denied
+          example: invalid_grant
+        error_description:
+          type: string
+          description: Human-readable error description providing additional context about the error
+          example: invalid URL token
+        state:
+          type: string
+          nullable: true
+          description: State parameter from the authorization request, if present. Used to maintain state between request and callback.
+      required:
+        - error
+        - state
+      example:
+        error: invalid_grant
+        error_description: invalid URL token
+        state: null
+    ValidationError:
+      type: object
+      description: |
+        Standard validation error response for API v1 endpoints (422 Unprocessable Entity).
+        Returned when request parameters are missing, invalid, or violate business rules.
+      properties:
+        code:
+          type: string
+          description: Error code identifying the type of validation error
+          enum:
+            - parameter_missing
+            - unpermitted_parameters
+            - invalid_parameter_value
+            - unknown_sort_field
+            - too_many_sort_fields
+          example: parameter_missing
+        message:
+          type: string
+          description: Human-readable error message
+          example: param is missing or the value is empty
+        param:
+          type: string
+          description: Name of the problematic parameter (for parameter_missing, invalid_parameter_value, unknown_sort_field)
+          example: aspera_app_type or workspace_id must be present
+        params:
+          type: array
+          description: List of unpermitted parameters (for unpermitted_parameters error)
+          items:
+            type: string
+          example: ["invalid_param1", "invalid_param2"]
+        request_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the request, useful for debugging and support
+          example: 910723e1-d7ac-4d01-9b4a-5949cf870f98
+      required:
+        - code
+        - message
+        - request_id
+      example:
+        param: aspera_app_type or workspace_id must be present
+        code: parameter_missing
+        message: param is missing or the value is empty
+        request_id: 910723e1-d7ac-4d01-9b4a-5949cf870f98
     app_simple_response:
       type: object
       properties:
@@ -6784,9 +7352,492 @@ components:
         organization_admin:
           description: Whether or not this user has administrative privileges in the organization.
           type: boolean
+    user_interaction_preferences_params:
+      type: object
+      description: |
+        User interaction preferences for customizing the UI experience. This object accepts arbitrary key-value pairs
+        to allow for flexible frontend preferences storage. All fields are optional and can be extended as needed.
+      properties:
+        autofill_shared_inbox_sending:
+          description: Whether to automatically fill the shared inbox when sending packages
+          type: boolean
+          nullable: true
+          example: true
+        default_aoc_app:
+          description: The default Aspera on Cloud application to display on login (e.g., "packages", "files", "activity")
+          type: string
+          nullable: true
+          example: packages
+        default_language:
+          description: The user's preferred language for the UI (e.g., "en-us", "fr-fr", "de-de")
+          type: string
+          nullable: true
+          example: en-us
+        first_connect_transfer:
+          description: Whether this is the user's first time connecting for a transfer (used for onboarding)
+          type: boolean
+          nullable: true
+          example: true
+        first_connect_download:
+          description: Whether this is the user's first time connecting for a download (used for onboarding)
+          type: boolean
+          nullable: true
+          example: true
+        pinned_dropbox_ids:
+          description: Array of dropbox IDs that the user has pinned for quick access
+          type: array
+          nullable: true
+          items:
+            type: integer
+          example: [1, 2, 3]
+        pinned_workspace_ids:
+          description: Array of workspace IDs that the user has pinned for quick access
+          type: array
+          nullable: true
+          items:
+            type: integer
+          example: [10, 20]
+        auto_workflow_view:
+          description: The default view mode for automation workflows
+          type: string
+          nullable: true
+          example: ""
+        grid_view_workspaces:
+          description: The view mode for workspaces display (e.g., "list", "grid")
+          type: string
+          nullable: true
+          example: list
+        last_read_coming_soon:
+          description: Timestamp of the last time the user viewed the "Coming Soon" announcements
+          type: string
+          nullable: true
+          example: "03/19/2021_1"
+        last_read_whats_new:
+          description: Timestamp of the last time the user viewed the "What's New" announcements
+          type: string
+          nullable: true
+          example: "03/30/2021_1"
+        recent_transfers:
+          description: Object storing information about recent transfers for quick access
+          type: object
+          nullable: true
+          additionalProperties: true
+          example: {}
+        help_recent:
+          description: Array of recently accessed help topics for quick reference
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["subscription_management", "creating_a_new_workspace"]
+        tableDataStore:
+          description: JSON string containing table configuration and sizing preferences for various UI tables
+          type: string
+          nullable: true
+          example: '[{"id":"files-table"},{"id":"user-list","tableSizing":"{\"displayUserStatus\":198}"}]'
+      additionalProperties: true
+      example:
+        autofill_shared_inbox_sending: true
+        default_aoc_app: packages
+        default_language: en-us
+        pinned_workspace_ids: [10, 20]
+        grid_view_workspaces: list
+    user_interaction_preferences_response:
+      type: object
+      description: |
+        User interaction preferences response. Contains all preference fields with their current values.
+        Fields not explicitly set will return null. The object supports arbitrary additional properties
+        for frontend-specific preferences.
+      properties:
+        autofill_shared_inbox_sending:
+          description: Whether to automatically fill the shared inbox when sending packages
+          type: boolean
+          nullable: true
+          example: true
+        default_aoc_app:
+          description: The default Aspera on Cloud application to display on login
+          type: string
+          nullable: true
+          example: packages
+        default_language:
+          description: The user's preferred language for the UI
+          type: string
+          nullable: true
+          example: en-us
+        first_connect_transfer:
+          description: Whether this is the user's first time connecting for a transfer
+          type: boolean
+          nullable: true
+          example: null
+        first_connect_download:
+          description: Whether this is the user's first time connecting for a download
+          type: boolean
+          nullable: true
+          example: null
+        pinned_dropbox_ids:
+          description: Array of pinned dropbox IDs
+          type: array
+          nullable: true
+          items:
+            type: integer
+          example: null
+        pinned_workspace_ids:
+          description: Array of pinned workspace IDs
+          type: array
+          nullable: true
+          items:
+            type: integer
+          example: []
+        auto_workflow_view:
+          description: Default view mode for automation workflows
+          type: string
+          nullable: true
+          example: ""
+        grid_view_workspaces:
+          description: View mode for workspaces display
+          type: string
+          nullable: true
+          example: list
+        last_read_coming_soon:
+          description: Last viewed "Coming Soon" timestamp
+          type: string
+          nullable: true
+          example: "03/19/2021_1"
+        last_read_whats_new:
+          description: Last viewed "What's New" timestamp
+          type: string
+          nullable: true
+          example: "03/30/2021_1"
+        recent_transfers:
+          description: Recent transfers information
+          type: object
+          nullable: true
+          additionalProperties: true
+          example: {}
+        help_recent:
+          description: Recently accessed help topics
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["subscription_management", "creating_a_new_workspace", "attach_azure_blob_storage"]
+        tableDataStore:
+          description: Table configuration and sizing preferences (JSON string)
+          type: string
+          nullable: true
+          example: '[{"id":"files-table"},{"id":"user-list","tableSizing":"{\"displayUserStatus\":198}"}]'
+      additionalProperties: true
+      example:
+        autofill_shared_inbox_sending: true
+        default_aoc_app: packages
+        default_language: en-us
+        first_connect_transfer: null
+        first_connect_download: null
+        pinned_dropbox_ids: null
+        pinned_workspace_ids: []
+        auto_workflow_view: ""
+        grid_view_workspaces: list
+        last_read_coming_soon: "03/19/2021_1"
+        last_read_whats_new: "03/30/2021_1"
+        recent_transfers: {}
+        help_recent: ["subscription_management", "creating_a_new_workspace"]
+        tableDataStore: '[{"id":"files-table"}]'
+    workspace_filter_params:
+      type: object
+      properties:
+        created_at:
+          type: string
+          format: date-time
+        manager:
+          type: boolean
+        name:
+          type: string
+        node_id:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+    workspace_memberships_params:
+      type: object
+      properties:
+        can_invite_by_email:
+          description: Whether or not inviting users to this workspace by email is allowed.
+          type: boolean
           examples:
             - false
-        organization_id:
+        manager:
+          description: The user is a workspace manager user type.
+          type: boolean
+          examples:
+            - false
+        member_id:
+          description: The ID of the member
+          type: integer
+          examples:
+            - 0
+        member_type:
+          description: The member type.
+          type: string
+          examples:
+            - user
+        storage_allowed:
+          description: Whether or not storage is allowed.
+          type: boolean
+          examples:
+            - false
+        workspace_id:
+          description: The ID of the workspace in which to grant this membership.
+          type: integer
+          examples:
+            - 0
+      required:
+        - member_id
+        - member_type
+        - workspace_id
+    workspace_memberships_response:
+      type: object
+      properties:
+        can_invite_by_email:
+          description: Whether or not inviting users to this workspace by email is allowed.
+          type: boolean
+          examples:
+            - false
+        created_at:
+          description: The timestamp for initial creation of this workspace membership. datetime
+          type: string
+          format: date-time
+          examples:
+            - 2018-02-06T00:03:24Z
+        id:
+          description: The ID of the workspace membership.
+          type: integer
+          examples:
+            - 0
+        manager:
+          description: The user is a workspace manager user type.
+          type: boolean
+          examples:
+            - false
+        member_id:
+          description: The ID of the member
+          type: integer
+          examples:
+            - 0
+        member_type:
+          description: The member type.
+          type: string
+          examples:
+            - user
+        storage_allowed:
+          description: Whether or not storage is allowed.
+          type: boolean
+          examples:
+            - false
+        updated_at:
+          description: The timestamp for when the workspace membership was most recently updated. datetime
+          type: string
+          format: date-time
+          examples:
+            - 2018-02-06T00:03:24Z
+        workspace_id:
+          description: The ID of the workspace in which to grant this membership.
+          type: integer
+          examples:
+            - 0
+    workspace_memberships_update_params:
+      type: object
+      properties:
+        can_invite_by_email:
+          description: Whether or not inviting users to this workspace by email is allowed.
+          type: boolean
+          examples:
+            - false
+        manager:
+          description: The user is a workspace manager user type.
+          type: boolean
+          examples:
+            - false
+        storage_allowed:
+          description: Whether or not storage is allowed.
+          type: boolean
+          examples:
+            - false
+    workspace_query_params:
+      type: object
+      properties:
+        embed[]:
+          type: string
+        filter[created_at]:
+          type: string
+          format: date-time
+        filter[manager]:
+          type: boolean
+        filter[name]:
+          type: string
+        filter[node_id]:
+          type: integer
+        filter[updated_at]:
+          type: string
+          format: date-time
+        include_setup_incomplete:
+          type: boolean
+        page:
+          type: integer
+        per_page:
+          type: integer
+        q:
+          type: string
+        sort:
+          type: string
+    workspaces_params:
+      type: object
+      properties:
+        allow_dropbox_creation:
+          description: Allow members of this workspace to create dropboxes. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - false
+        allow_dropbox_creation_by_managers:
+          description: Allow workspace managers of this workspace to create dropboxes. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - false
+        allow_package_creation:
+          description: Allow members of this workspace to create packages. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - false
+        allow_package_creation_by_managers:
+          description: Allow workspace managers of this workspace to create packages. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - false
+        allow_shared_folder_creation:
+          description: Allow members of this workspace to create shared folders. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - false
+        allow_shared_folder_creation_by_managers:
+          description: Allow workspace managers of this workspace to create shared folders. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - false
+        collaboration_settings_editable_by_managers:
+          description: Allow workspace managers of this workspace to edit collaboration settings. POST Admin permission required. PUT Admin permission required. RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - false
+        enable_external_email_templates:
+          description: Whether or not to enable external email templates. PUT Admin permission required.
+          type: boolean
+          examples:
+            - false
+        enable_external_notifications:
+          description: Whether or not to enable external notifications. PUT Admin permission required.
+          type: boolean
+          examples:
+            - false
+        external_package_sending_allowed:
+          description: Allow members of this workspace to send packages to (1) people outside the workspace and (2) to people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - true
+        external_package_sending_allowed_by_managers:
+          description: Allow workspace managers of this workspace to send packages to (1) people outside the workspace and (2) to people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - true
+        external_sharing_allowed:
+          description: Allow members of this workspace to share folders with (1) people outside the workspace and (2) with people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required.
+          type: boolean
+          examples:
+            - true
+        external_sharing_allowed_by_managers:
+          description: Allow workspace managers of this workspace to share folders with (1) people outside the workspace and (2) with people who do not have an AoC account. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - true
+        group_id:
+          description: The ID of the group containing all members of this workspace. RESPONSE User scope. RESPONSE Admin scope (org admin).
+          type: integer
+          examples:
+            - 4
+        home_container_file_id:
+          description: The file ID of the folder containing users' home folders for this workspace. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
+          type: string
+          examples:
+            - '5'
+        home_file_id:
+          description: RESPONSE User scope if is_workspace_membership.
+          type: integer
+          examples:
+            - 0
+        home_node_id:
+          description: RESPONSE User scope if is_workspace_membership.
+          type: integer
+          examples:
+            - 0
+        id:
+          description: The ID of the workspace. RESPONSE User scope. RESPONSE Admin scope (org admin).
+          type: string
+          examples:
+            - '3'
+        image_data:
+          description: The image data encoded as a string. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope if params[:include]=true. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
+          type: string
+          examples:
+            - iVBORw0KGgo ... /wB\/DRk84ZdwGQAAAABJRU5ErkJggg==
+        image_type:
+          description: The image type of the workspace logo; for example, image/png or image/jpg. POST Admin permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
+          type: string
+          examples:
+            - image/png
+        image_url:
+          description: The URL of the image. RESPONSE User scope. RESPONSE Admin scope (org admin).
+          type: string
+          examples:
+            - https://api.asperafiles.com/api/v1/user_images/32850?oh=cg-nf7pFnNK0-N3g3r-f2nRg
+        inherit_email_notification_settings:
+          description: Inherit the email notification settings configured at the organization. If set to false, you can configure external email notification settings for this workspace; see 'enable_external_notifications'. POST Admin permission required. PUT Admin permission required. RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - true
+        inherit_email_templates:
+          description: Whether or not to inherit the email templates configured at the organization. If set to true, the workspace inherits the settings configured at the organization level. If set to false, you can configure email template settings for this workspace; see 'enable_external_email_templates' and other email notification settings. POST Admin permission required. PUT Admin permission required. RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - true
+        inherit_external_notifications:
+          description: Whether or not the workspace inherits external notifications. PUT Admin permission required.
+          type: boolean
+          examples:
+            - false
+        invitations_allowed:
+          description: Allow members of this workspace to invite users outside the workspace to become workspace members. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - false
+        invitations_allowed_by_managers:
+          description: Allow workspace managers of this workspace to invite users outside the workspace to become workspace members. POST Admin permission required. PUT Manager permission and collaboration settings editable by managers required or PUT Admin permission required. RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - true
+        manager:
+          description: The user is a workspace manager user type. RESPONSE User scope if is_workspace_membership.
+          type: boolean
+          examples:
+            - false
+        managers_group_id:
+          description: The ID of the group containing all manager of this workspace. RESPONSE User scope. RESPONSE Admin scope (org admin).
+          type: integer
+          examples:
+            - 0
+        member:
+          description: The user is part of the workspace. RESPONSE User scope. RESPONSE Admin scope (org admin).
+          type: boolean
+          examples:
+            - false
+        name:
           description: ID of the AoC organization to which the client belongs.
           type: integer
           examples:
