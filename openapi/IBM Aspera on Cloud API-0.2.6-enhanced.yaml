@@ -64,12 +64,12 @@ servers:
   - url: https://api.ibmaspera.com/api/v1
     description: Production server (v1 API prefix)
 tags:
+  - name: App Types
+    description: Manage application types. Access organization-level settings for files, packages, activity, and automation applications.
+  - name: App Instances
+    description: Manage application instances. Manage organization-level and workspace-level app configurations with filtering and asynchronous operation support.
   - name: App Memberships
-    description: Manage user access to Aspera applications. Enable users to access Automation or Activity apps and view membership across the organization.
-  - name: Apps
-    description: Manage Aspera application settings and configurations. Access organization-level settings for files, packages, activity, and automation applications.
-  - name: Apps New
-    description: Access advanced application settings APIs. Manage organization-level and workspace-level app configurations with filtering and asynchronous operation support.
+    description: Manage user access to applications. Enable users to access Automation or Activity apps and view membership across the organization.
   - name: Auth Providers
     description: Configure organization authentication providers. Manage authentication settings and perform bulk updates across multiple providers.
   - name: Client Access Keys
@@ -154,8 +154,8 @@ x-tagGroups:
       - Dropbox Memberships
   - name: Applications
     tags:
-      - Apps
-      - Apps New
+      - App Types
+      - App Instances
       - App Memberships
   - name: Transfer Infrastructure
     tags:
@@ -2890,7 +2890,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
       tags:
-        - Apps
+        - App Types
   /apps/{aspera_app_type}/settings:
     get:
       operationId: get_app_settings_by_type
@@ -2957,7 +2957,7 @@ paths:
         '404':
           description: Not Found
       tags:
-        - Apps
+        - App Types
     put:
       operationId: update_app_settings_by_type
       summary: Update Application Settings by Type
@@ -3038,13 +3038,13 @@ paths:
         '422':
           description: Unprocessable Entity - Invalid settings for the specified application type
       tags:
-        - Apps
+        - App Types
   /apps_new:
     get:
       operationId: get_apps_new
-      summary: Get Application Settings Using the New API
+      summary: Get a list of application instances.
       description: |
-        List application settings using the newer application settings API. Depending on caller privileges, this can return organization-level apps, workspace-level apps, or only enabled and available apps visible to the current user.
+        List application instances. Depending on caller privileges, this can return organization-level apps, workspace-level apps, or only enabled and available apps visible to the current user.
       parameters:
         - name: organization_apps
           in: query
@@ -3121,11 +3121,11 @@ paths:
                     message: param is missing or the value is empty
                     request_id: 910723e1-d7ac-4d01-9b4a-5949cf870f98
       tags:
-        - Apps New
+        - App Instances
   /apps_new/{aspera_app_type}/{aspera_app_id}:
     get:
       operationId: get_apps_new_by_id
-      summary: Get a Specific Application Setting
+      summary: Get a information for a Specific Application Instance.
       description: Retrieve a specific application setting by type and app id.
       parameters:
         - name: aspera_app_type
@@ -3170,12 +3170,12 @@ paths:
         '404':
           description: Not Found
       tags:
-        - Apps New
+        - App Instances
     put:
       operationId: update_apps_new_by_id
-      summary: Update a Specific Application Setting
+      summary: Update a Specific Application Instance.
       description: |
-        Update a specific application setting by type and app id. For activity apps, some updates may trigger an asynchronous operation and return an operation location.
+        Update a specific application instance by type and app id. For activity apps, some updates may trigger an asynchronous operation and return an operation location.
       parameters:
         - name: aspera_app_type
           in: path
@@ -3211,7 +3211,7 @@ paths:
         '422':
           description: Unprocessable Entity
       tags:
-        - Apps New
+        - App Instances
   /apps_new/{aspera_app_type}/{aspera_app_id}/operations:
     get:
       operationId: get_app_operations
