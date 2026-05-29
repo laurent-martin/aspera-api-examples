@@ -666,6 +666,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -698,6 +702,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -740,6 +748,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -848,6 +860,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -880,6 +896,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -919,6 +939,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -969,6 +993,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1004,6 +1032,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1036,6 +1068,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1076,6 +1112,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1108,6 +1148,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1139,6 +1183,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1171,6 +1219,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1206,6 +1258,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1243,6 +1299,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1421,6 +1481,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -1458,6 +1522,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -1543,6 +1611,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -1570,6 +1642,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1602,6 +1678,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '422':
           description: Unprocessable Entity
         '500':
@@ -1635,6 +1715,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -1668,6 +1752,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -1816,6 +1904,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -1883,6 +1975,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -2056,6 +2152,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2087,6 +2187,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2119,6 +2223,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2159,6 +2267,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2196,6 +2308,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2318,6 +2434,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2349,6 +2469,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2381,6 +2505,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2421,6 +2549,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2458,6 +2590,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2495,6 +2631,10 @@ paths:
           description: Forbidden - User can only access their own preferences unless they are an organization admin
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
       tags:
@@ -2529,6 +2669,10 @@ paths:
           description: Forbidden - User can only update their own preferences unless they are an organization admin
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '422':
           description: Unprocessable Entity
         '500':
@@ -2581,6 +2725,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2616,6 +2764,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2648,6 +2800,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2688,6 +2844,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2725,6 +2885,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2786,6 +2950,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2817,6 +2985,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
         '422':
@@ -2849,6 +3021,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: Conflict
       tags:
@@ -2956,6 +3132,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
       tags:
         - App Types
     put:
@@ -3035,6 +3215,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '422':
           description: Unprocessable Entity - Invalid settings for the specified application type
       tags:
@@ -3169,6 +3353,10 @@ paths:
                 url_shortening_enabled: true
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
       tags:
         - App Instances
     put:
@@ -3208,6 +3396,10 @@ paths:
           description: No Content
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '422':
           description: Unprocessable Entity
       tags:
@@ -3241,6 +3433,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
       tags:
         - Operations
   /apps_new/{aspera_app_type}/{aspera_app_id}/operations/{id}:
@@ -3277,6 +3473,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
       tags:
         - Operations
     put:
@@ -3321,6 +3521,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '422':
           description: Unprocessable Entity
       tags:
@@ -3367,6 +3571,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
       tags:
         - Auth Providers
     put:
@@ -3401,6 +3609,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '422':
           description: Unprocessable Entity
       tags:
@@ -3495,6 +3707,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
       tags:
         - Client Settings
     put:
@@ -3529,6 +3745,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '422':
           description: Unprocessable Entity
       tags:
@@ -3556,6 +3776,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
       tags:
         - Client Settings
   /client_registration_tokens:
@@ -3600,6 +3824,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
       tags:
         - Client Registration Tokens
     put:
@@ -3632,6 +3860,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '422':
           description: Unprocessable Entity
       tags:
@@ -3659,6 +3891,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
       tags:
         - Client Registration Tokens
   /email_templates:
@@ -3716,6 +3952,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
       tags:
         - Email Templates
     put:
@@ -3750,6 +3990,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '422':
           description: Unprocessable Entity
       tags:
@@ -4420,6 +4664,35 @@ components:
         code: parameter_missing
         message: param is missing or the value is empty
         request_id: 910723e1-d7ac-4d01-9b4a-5949cf870f98
+    NotFoundError:
+      type: object
+      description: |
+        Standard error response for 404 Not Found.
+        Returned when the requested resource does not exist.
+      properties:
+        code:
+          type: string
+          description: Error code identifying the type of error
+          enum:
+            - not_found
+          example: not_found
+        message:
+          type: string
+          description: Human-readable error message
+          example: The resource you were looking for does not exist
+        request_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the request, useful for debugging and support
+          example: 58825f7f-42bb-4f4e-90bc-a6deb9b999db
+      required:
+        - code
+        - message
+        - request_id
+      example:
+        code: not_found
+        message: The resource you were looking for does not exist
+        request_id: 58825f7f-42bb-4f4e-90bc-a6deb9b999db
     app_simple_response:
       type: object
       properties:
