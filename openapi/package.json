@@ -1,0 +1,14 @@
+{
+  "name": "openapi-menu-updater",
+  "version": "1.0.0",
+  "description": "Automatically update the OpenAPI menu with spec files",
+  "main": "update.js",
+  "scripts": {
+    "update": "node update.js"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "author": "",
+  "license": "MIT"
+}

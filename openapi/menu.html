@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aspera API Developer Menu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+        }
+
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .api-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .api-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .api-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .api-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .api-version {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+
+        .api-format {
+            display: inline-block;
+            background: #f0f0f0;
+            color: #666;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-left: 8px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .api-links {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .stats {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .stats-content {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .no-results-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .no-results-text {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 20px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .api-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .api-links {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Aspera API Developer Menu</h1>
+            <p class="subtitle">Explore and test IBM Aspera OpenAPI specifications</p>
+        </header>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-input"
+                placeholder="🔍 Search APIs by name, version, or format...">
+        </div>
+
+        <div id="apiGrid" class="api-grid"></div>
+
+        <div class="stats">
+            <div class="stats-content">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalApis">0</div>
+                    <div class="stat-label">API Specifications</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="yamlCount">0</div>
+                    <div class="stat-label">YAML Files</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="jsonCount">0</div>
+                    <div class="stat-label">JSON Files</div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>IBM Aspera API Examples Repository</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                <a href="https://github.com/laurent-martin/aspera-api-examples"
+                    style="color: white; text-decoration: none;">
+                    📦 GitHub Repository
+                </a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+                        // List of OpenAPI files with their spec versions
+        const openApiSpecs = [
+            { filename: 'IBM Aspera Faspex API-5.0-enhanced.yaml', specVersion: 'OpenAPI 3.1' },
+            { filename: 'IBM Aspera Faspex API-5.0.json', specVersion: 'OpenAPI 3.0' },
+            { filename: 'IBM Aspera Node API-4.4.1.json', specVersion: 'Swagger 2.0' },
+            { filename: 'IBM Aspera Node API-4.4.1.yaml', specVersion: 'Swagger 2.0' },
+            { filename: 'IBM Aspera Node API-4.4.6.yaml', specVersion: 'OpenAPI 3.0' },
+            { filename: 'IBM Aspera faspio Gateway API-1.0.0.json', specVersion: 'OpenAPI 3.0' },
+            { filename: 'IBM Aspera faspio Gateway API-1.0.0.yaml', specVersion: 'OpenAPI 3.0' },
+            { filename: 'IBM Aspera on Cloud API-0.2.6-enhanced.yaml', specVersion: 'OpenAPI 3.1' },
+            { filename: 'IBM Aspera on Cloud API-0.2.6.json', specVersion: 'OpenAPI 3.0' },
+            { filename: 'IBM Aspera on Cloud API-0.2.6.yaml', specVersion: 'OpenAPI 3.0' },
+            { filename: 'IBM_Aspera_Shares.yaml', specVersion: 'OpenAPI 3.0' }
+        ];
+
+        // Function to extract information from spec object
+        function parseApiInfo(spec) {
+            const filename = spec.filename;
+            const format = filename.endsWith('.yaml') ? 'yaml' : 'json';
+            const nameWithoutExt = filename.replace(/\.(yaml|json)$/, '');
+
+            // Extract name and version
+            const versionMatch = nameWithoutExt.match(/-(\d+\.\d+\.\d+)/);
+            const version = versionMatch ? versionMatch[1] : null;
+
+            let name = nameWithoutExt;
+            if (version) {
+                name = name.replace(`-${version}`, '');
+            }
+
+            // Check if it's an enhanced version
+            const isEnhanced = nameWithoutExt.includes('-enhanced');
+            if (isEnhanced) {
+                name = name.replace('-enhanced', '');
+            }
+
+            return {
+                filename,
+                name,
+                version,
+                format,
+                isEnhanced,
+                specVersion: spec.specVersion,
+                displayName: name.replace(/_/g, ' ')
+            };
+        }
+
+        // Function to generate viewer URL
+        function generateViewerUrl(filename) {
+            const baseUrl = 'https://eudemo.asperademo.com/openapi.html?spec=';
+            const specUrl = `https://raw.githubusercontent.com/laurent-martin/aspera-api-examples/refs/heads/main/openapi/${encodeURIComponent(filename)}`;
+            return baseUrl + encodeURIComponent(specUrl);
+        }
+
+        // Function to generate raw URL
+        function generateRawUrl(filename) {
+            return `https://raw.githubusercontent.com/laurent-martin/aspera-api-examples/refs/heads/main/openapi/${encodeURIComponent(filename)}`;
+        }
+
+        // Function to create API card
+        function createApiCard(apiInfo) {
+            const card = document.createElement('div');
+            card.className = 'api-card';
+            card.dataset.searchText = `${apiInfo.displayName} ${apiInfo.version || ''} ${apiInfo.format}`.toLowerCase();
+
+            const versionBadge = apiInfo.version
+                ? `<span class="api-version">v${apiInfo.version}</span>`
+                : '';
+
+            const enhancedBadge = apiInfo.isEnhanced
+                ? '<span class="api-format" style="background: #4caf50; color: white;">Enhanced</span>'
+                : '';
+
+            card.innerHTML = `
+                <div class="api-name">${apiInfo.displayName}</div>
+                ${versionBadge}
+                <span class="api-format">${apiInfo.format}</span>
+                <span class="api-format" style="background: #9c27b0; color: white;">${apiInfo.specVersion}</span>
+                ${enhancedBadge}
+                <div class="api-links">
+                    <a href="${generateViewerUrl(apiInfo.filename)}"
+                       target="_blank"
+                       class="btn btn-primary"
+                       title="Open in OpenAPI viewer">
+                        📖 View Spec
+                    </a>
+                    <a href="${generateRawUrl(apiInfo.filename)}"
+                       target="_blank"
+                       class="btn btn-secondary"
+                       title="View raw file">
+                        📄 Raw File
+                    </a>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Function to display APIs
+        function displayApis(specs = openApiSpecs) {
+            const grid = document.getElementById('apiGrid');
+            grid.innerHTML = '';
+
+            if (specs.length === 0) {
+                grid.innerHTML = `
+                    <div class="no-results" style="grid-column: 1 / -1;">
+                        <div class="no-results-icon">🔍</div>
+                        <div class="no-results-text">No APIs found</div>
+                    </div>
+                `;
+                return;
+            }
+
+            specs.forEach(spec => {
+                const apiInfo = parseApiInfo(spec);
+                const card = createApiCard(apiInfo);
+                grid.appendChild(card);
+            });
+        }
+
+        // Function to update statistics
+        function updateStats() {
+            const yamlCount = openApiSpecs.filter(s => s.filename.endsWith('.yaml')).length;
+            const jsonCount = openApiSpecs.filter(s => s.filename.endsWith('.json')).length;
+
+            document.getElementById('totalApis').textContent = openApiSpecs.length;
+            document.getElementById('yamlCount').textContent = yamlCount;
+            document.getElementById('jsonCount').textContent = jsonCount;
+        }
+
+        // Search function
+        function handleSearch(event) {
+            const searchTerm = event.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.api-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const searchText = card.dataset.searchText;
+                if (searchText.includes(searchTerm)) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Display message if no results
+            const grid = document.getElementById('apiGrid');
+            const noResults = grid.querySelector('.no-results');
+
+            if (visibleCount === 0 && searchTerm !== '') {
+                if (!noResults) {
+                    const noResultsDiv = document.createElement('div');
+                    noResultsDiv.className = 'no-results';
+                    noResultsDiv.style.gridColumn = '1 / -1';
+                    noResultsDiv.innerHTML = `
+                        <div class="no-results-icon">🔍</div>
+                        <div class="no-results-text">No APIs found for "${event.target.value}"</div>
+                    `;
+                    grid.appendChild(noResultsDiv);
+                }
+            } else if (noResults) {
+                noResults.remove();
+            }
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            displayApis();
+            updateStats();
+
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', handleSearch);
+        });
+    </script>
+</body>
+
+</html>
