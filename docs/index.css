@@ -98,7 +98,7 @@ h1 {
 }
 
 .enhanced-card {
-    /* No special styling for enhanced cards */
+    border: 4px solid #000000;
 }
 
 .versions-container {

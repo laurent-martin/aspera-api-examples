@@ -109,7 +109,10 @@ function generateRawUrl(filename) {
 // Function to create API card for a product group
 function createProductCard(productName, versions) {
     const card = document.createElement("div");
-    card.className = "api-card";
+
+    // Check if any version is enhanced
+    const hasEnhanced = versions.some(v => v.isEnhanced);
+    card.className = hasEnhanced ? "api-card enhanced-card" : "api-card";
 
     // Build search text from all versions
     const searchText = `${productName} ${versions.map(v =>
