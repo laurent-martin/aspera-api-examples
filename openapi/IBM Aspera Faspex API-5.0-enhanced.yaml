@@ -25,7 +25,7 @@ servers:
         default: /api/v5
         enum:
           - /api/v5
-          - auth
+          - /auth
           - ''
 paths:
   /advanced_configuration:
@@ -105,7 +105,7 @@ paths:
             - admin
       tags:
         - Server configuration
-  /auth/authorize:
+  /authorize:
     get:
       operationId: authorizeToRegisteredOAuthClient
       summary: Authorize to a registered OAuth client
@@ -233,7 +233,7 @@ paths:
               default: /auth
       tags:
         - Authorization
-  /auth/authenticate:
+  /authenticate:
     post:
       operationId: authenticateBasicAuthToRegisteredOAuthClient
       summary: Request an authorization code
@@ -297,7 +297,7 @@ paths:
               default: /auth
       tags:
         - Authorization
-  /auth/authorize/public_link:
+  /authorize/public_link:
     get:
       operationId: authorizePubToRegisteredOAuthClient
       summary: Request an authorization code for public link
@@ -2478,7 +2478,7 @@ paths:
                 $ref: '#/components/schemas/InternalError'
       tags:
         - Metadata profiles
-  /auth/mfa/send_code:
+  /mfa/send_code:
     post:
       operationId: sendMfaCode
       summary: Send verification code
@@ -2542,7 +2542,7 @@ paths:
               default: /auth
       tags:
         - MFA
-  /auth/mfa/verify_code:
+  /mfa/verify_code:
     post:
       operationId: verifyMfaCode
       summary: Verify verification code
@@ -11659,7 +11659,7 @@ paths:
       security: []
       tags:
         - My account
-  /auth/oauth_clients:
+  /oauth_clients:
     post:
       operationId: registerOAuth2Client
       summary: Register an OAuth 2 client
@@ -11761,7 +11761,7 @@ paths:
             - admin
       tags:
         - OAuth 2 clients
-  /auth/oauth_clients/{id}:
+  /oauth_clients/{id}:
     delete:
       operationId: deleteOAuth2Client
       summary: Delete an OAuth 2 client
@@ -11984,7 +11984,7 @@ paths:
             - admin
       tags:
         - Rate limits
-  /auth/token:
+  /token:
     post:
       operationId: requestOAuthToken
       summary: Request an OAuth token
@@ -62705,8 +62705,8 @@ components:
         5. Use the bearer token to authenticate your API requests by including it in your requests as a header with format: `Authorization: Bearer <bearer_token>`
       flows:
         authorizationCode:
-          authorizationUrl: https://faspex.example.com/auth/authorize
-          tokenUrl: https://faspex.example.com/auth/token
+          authorizationUrl: https://{host}{main_path}/auth/authorize
+          tokenUrl: https://{host}{main_path}/auth/token
           scopes:
             user: Grant permissions to send and receive packages (sending permissions defined by admins).
             manager: Grant permissions to manage users, in addition to user permissions.
