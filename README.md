@@ -26,6 +26,8 @@ Various programming languages are proposed.
 
 The [IBM Aspera Web SDK GitHub site](https://github.com/IBM/aspera-sdk-js) contains examples about using the Aspera Connect SDK.
 
+[Open API Ref for the repo](https://laurent-martin.github.io/aspera-api-examples/)
+
 ## Introduction
 
 IBM Aspera provides two types of APIs:
