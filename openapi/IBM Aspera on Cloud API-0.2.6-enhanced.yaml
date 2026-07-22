@@ -3866,6 +3866,12 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/operations_response'
         '400':
           description: Bad Request
         '401':
@@ -3909,6 +3915,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operations_response'
         '400':
           description: Bad Request
         '401':
@@ -3958,6 +3968,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operations_response'
         '204':
           description: No Content
         '400':
@@ -4096,6 +4110,12 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/client_settings_response'
         '400':
           description: Bad Request
         '401':
@@ -4120,6 +4140,10 @@ paths:
       responses:
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/client_settings_response'
         '400':
           description: Bad Request
         '401':
@@ -4149,6 +4173,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/client_settings_response'
         '400':
           description: Bad Request
         '401':
@@ -4567,6 +4595,12 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/feature_flags_response'
       tags:
         - Feature Flags
     post:
@@ -4583,6 +4617,10 @@ paths:
       responses:
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/feature_flags_response'
       tags:
         - Feature Flags
   /feature_flags/{id}:
@@ -4600,6 +4638,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/feature_flags_response'
       tags:
         - Feature Flags
     put:
@@ -4623,6 +4665,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/feature_flags_response'
       tags:
         - Feature Flags
     delete:
@@ -4782,6 +4828,12 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/operations_response'
       tags:
         - Operations
   /operations/{id}:
@@ -4799,6 +4851,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operations_response'
       tags:
         - Operations
     put:
@@ -4822,6 +4878,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operations_response'
         '204':
           description: No Content
         '422':
@@ -4836,6 +4896,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/organizations_response'
       tags:
         - Organizations
     put:
@@ -4851,6 +4915,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/organizations_response'
         '204':
           description: No Content
       tags:
@@ -4863,6 +4931,12 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: integer
+                description: Total number of packages visible to the current caller.
+                example: 6982
       tags:
         - Packages
   /self:
@@ -4880,6 +4954,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/users_response'
       tags:
         - Self
   /short_links:
@@ -4890,6 +4968,12 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/short_links_response'
       tags:
         - Short Links
     post:
@@ -4906,6 +4990,10 @@ paths:
       responses:
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/short_links_response'
       tags:
         - Short Links
   /short_links/{id}:
@@ -4930,6 +5018,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/short_links_response'
       tags:
         - Short Links
     delete:
@@ -4952,10 +5044,19 @@ paths:
     get:
       operationId: get_tier_restrictions
       summary: Get Tier Restrictions
-      description: Retrieve tier-based feature restrictions for the organization.
+      description: |
+        Retrieve the feature restrictions that apply to the organization based on its subscription tier.
+
+        Each field is a boolean (or null) indicating whether the corresponding feature is available.
+        Administrators can use this endpoint to determine which capabilities are enabled before
+        attempting to configure them.
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tier_restrictions_response'
         '400':
           description: Bad Request
         '401':
@@ -5007,6 +5108,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/transfer_report_response'
       tags:
         - Transfer Analytics
   /transfers:
@@ -5017,6 +5122,12 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/transfers_response'
       tags:
         - Transfers
     delete:
@@ -5043,6 +5154,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/transfers_response'
       tags:
         - Transfers
     delete:
@@ -8899,6 +9014,237 @@ components:
             - group
       required:
         - id
+    client_settings_response:
+      type: object
+      description: A key-value configuration setting scoped to the current OAuth client and user.
+      properties:
+        id:
+          type: string
+          description: Setting name (key).
+        value:
+          type: string
+          description: Setting value.
+        created_at:
+          type: string
+          format: date-time
+          description: Time at which the setting was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Time at which the setting was last updated.
+    feature_flags_response:
+      type: object
+      description: A feature flag controlling availability of an optional or experimental feature.
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the feature flag.
+        name:
+          type: string
+          description: Internal name of the feature flag.
+        enabled:
+          type: boolean
+          description: Whether the feature is currently enabled.
+        organization_id:
+          type: string
+          description: ID of the organization this flag applies to.
+        created_at:
+          type: string
+          format: date-time
+          description: Time at which the flag was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Time at which the flag was last updated.
+    operations_response:
+      type: object
+      description: >
+        An asynchronous operation tracking a long-running task such as a workspace membership creation
+        or group membership change.
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the operation.
+        status:
+          type: string
+          description: Current status of the operation (e.g. `success`, `pending`, `failed`).
+          example: success
+        type:
+          type: string
+          description: >
+            Type of the operation, expressed as `resource.action`
+            (e.g. `workspace_membership.create`, `group_membership.create`).
+          example: workspace_membership.create
+        user_id:
+          type: string
+          description: ID of the user who initiated the operation.
+        workspace_membership_id:
+          type: string
+          description: ID of the workspace membership affected by the operation, if applicable.
+        group_membership_id:
+          type: string
+          description: ID of the group membership affected by the operation, if applicable.
+        created_at:
+          type: string
+          format: date-time
+          description: Time at which the operation was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Time at which the operation status was last updated.
+    short_links_response:
+      type: object
+      description: A short link that maps a compact URL to a token-based redirection.
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the short link.
+        short_url:
+          type: string
+          description: The full short URL (e.g. `https://aspera.pub/MbgH-vg`).
+          example: https://aspera.pub/MbgH-vg
+        short_url_path:
+          type: string
+          description: The path segment of the short URL (e.g. `MbgH-vg`).
+          example: MbgH-vg
+        purpose:
+          type: string
+          description: Purpose of the short link (e.g. `token_auth_redirection`).
+          example: token_auth_redirection
+        resource_id:
+          type: string
+          description: Identifier of the associated resource (e.g. a URL token value).
+        resource_type:
+          type: string
+          description: Type of the associated resource (e.g. `UrlToken`).
+        token_value:
+          type: string
+          description: The URL token value embedded in this short link.
+        password_enabled:
+          type: boolean
+          description: Whether a password is required to follow the short link.
+        password_protected:
+          type: boolean
+          description: Whether the short link is currently password-protected.
+        expired:
+          type: boolean
+          description: Whether the short link has expired.
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Expiry date-time, or null if the link does not expire.
+        data:
+          type: object
+          description: Arbitrary metadata associated with the short link.
+          additionalProperties: true
+        updated_by_user_id:
+          type: string
+          description: ID of the user who last updated the short link.
+        created_at:
+          type: string
+          format: date-time
+          description: Time at which the short link was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Time at which the short link was last updated.
+    transfer_report_response:
+      type: object
+      description: >
+        A communication matrix describing transfer routing between nodes in the organization.
+        Keys are node IDs; each value is a map of target node IDs to routing information.
+      additionalProperties:
+        type: object
+        additionalProperties:
+          type: object
+          properties:
+            allowed:
+              type: boolean
+              description: Whether transfers between these two nodes are permitted.
+            preferred_node:
+              type: integer
+              description: ID of the preferred initiating node for transfers between the two nodes.
+            prefered_node:
+              type: integer
+              description: Deprecated alias for `preferred_node`.
+              deprecated: true
+    transfers_response:
+      type: object
+      description: A file transfer record.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the transfer.
+        status:
+          type: string
+          description: Current status of the transfer (e.g. `running`, `completed`, `failed`).
+          example: failed
+        bytes_expected:
+          type: integer
+          format: int64
+          description: Total bytes expected to be transferred.
+        bytes_transferred:
+          type: integer
+          format: int64
+          description: Bytes transferred so far.
+        created_at:
+          type: string
+          format: date-time
+          description: Time at which the transfer was initiated.
+        transfer_spec:
+          type: object
+          description: The transfer specification used for this transfer.
+          additionalProperties: true
+
+    tier_restrictions_response:
+      type: object
+      description: Feature availability flags for the organization's subscription tier.
+      properties:
+        dropbox_creation:
+          type: boolean
+          description: Whether shared inboxes (dropboxes) can be created.
+        dropbox_package:
+          type: boolean
+          description: Whether packages can be sent to shared inboxes.
+        email_template_creation:
+          type: boolean
+          description: Whether custom email notification templates can be created.
+        file_deletion_policy_creation:
+          type: boolean
+          description: Whether file deletion policies can be configured.
+        geo_fencing:
+          type: boolean
+          description: Whether geographic access restrictions (geo-fencing) are available.
+        http_gateway_enabled:
+          type: boolean
+          description: Whether HTTP gateway transfers are enabled.
+        preview_maker:
+          type: boolean
+          description: Whether file preview generation is available.
+        saml_configuration_creation:
+          type: boolean
+          description: Whether SAML authentication providers can be configured.
+        saml_login:
+          type: boolean
+          description: Whether SAML-based login is enabled.
+        tethered_node_creation:
+          type: boolean
+          description: Whether tethered (sub-organization) nodes can be created.
+        trend_antivirus_enabled:
+          type: boolean
+          description: Whether Trend Micro antivirus scanning is enabled.
+        user_limit:
+          type: integer
+          nullable: true
+          description: Maximum number of users allowed. Null means unlimited.
+        watermarking_enabled:
+          type: boolean
+          description: Whether watermarking of transferred files is available.
+        workspace_creation:
+          type: boolean
+          description: Whether new workspaces can be created.
     usage_reports_response:
       type: object
       properties:
