@@ -28,6 +28,12 @@
 }
 
 /* ── Redoc viewer ──────────────────────────────────────── */
+body.redoc-active {
+    background: none;
+    padding: 0;
+    min-height: unset;
+}
+
 #redoc-container {
     height: 100vh;
 }

@@ -33,6 +33,7 @@ if (!specUrl) {
 
   document.getElementById("form-screen").hidden = true;
   document.getElementById("redoc-container").hidden = false;
+  document.body.classList.add("redoc-active");
 
   Redoc.init(
     addCacheBuster(specUrl),
