@@ -1764,6 +1764,7 @@ paths:
             format: date-time
         - name: name
           in: query
+          description: Filter by exact shared inbox name (case-insensitive).
           schema:
             type: string
         - name: updated_at
@@ -1965,6 +1966,7 @@ paths:
             type: string
         - name: name
           in: query
+          description: Filter by exact node name (case-insensitive).
           schema:
             type: string
         - name: path
@@ -2239,6 +2241,7 @@ paths:
             type: boolean
         - name: name
           in: query
+          description: Filter by exact package name (case-insensitive).
           schema:
             type: string
         - name: sent_at
@@ -2584,6 +2587,7 @@ paths:
             type: string
         - name: name
           in: query
+          description: Filter by exact user name (case-insensitive).
           schema:
             type: string
         - name: organization_admin
@@ -3096,6 +3100,7 @@ paths:
             format: date-time
         - name: name
           in: query
+          description: Filter by exact workspace name (case-insensitive).
           schema:
             type: string
         - name: node_id
