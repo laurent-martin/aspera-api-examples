@@ -96,9 +96,8 @@ function groupSpecsByProduct(specs) {
 
 // Function to generate viewer URL
 function generateViewerUrl(filename) {
-    const baseUrl = "https://eudemo.asperademo.com/openapi.html?spec=";
     const specUrl = `https://raw.githubusercontent.com/laurent-martin/aspera-api-examples/refs/heads/main/openapi/${encodeURIComponent(filename)}`;
-    return baseUrl + encodeURIComponent(specUrl);
+    return `openapi.html?spec=${encodeURIComponent(specUrl)}`;
 }
 
 // Function to generate raw URL
