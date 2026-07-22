@@ -29,7 +29,7 @@
 
 /* ── Redoc viewer ──────────────────────────────────────── */
 body.redoc-active {
-    background: none;
+    background: white;
     padding: 0;
     min-height: unset;
 }
