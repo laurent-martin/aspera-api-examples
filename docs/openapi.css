@@ -1,0 +1,33 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+#form-container {
+  max-width: 700px;
+  margin: 80px auto;
+  padding: 24px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+}
+
+button {
+  padding: 12px 18px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#redoc-container {
+  height: 100vh;
+}
+
+.error {
+  color: red;
+  margin-top: 12px;
+}
