@@ -90,6 +90,8 @@ tags:
     description: Manage shared inboxes for content submission. Dropboxes provide a secure location for users to submit content with optional metadata collection and member notifications.
   - name: Email Templates
     description: Manage email notification templates. Configure templates at global, organization, workspace, or shared inbox levels with inheritance resolution.
+  - name: Configuration Policies
+    description: Manage configuration policies for the organization. Control organization-level settings and enforce configuration rules.
   - name: Feature Flags
     description: Manage feature availability and experimental functionality. Super administrators can control organization-level feature flags.
   - name: File Upload Notifications
@@ -98,24 +100,20 @@ tags:
     description: Manage Aspera transfer servers that provide storage and transfer capabilities. Nodes contain the connection information required for high-speed file transfers.
   - name: Operations
     description: Monitor and manage asynchronous operations for resources. Track long-running tasks related to workspaces, users, groups, and memberships.
-  - name: Organization
-    description: Access current organization information. Provides a convenient alias for retrieving and updating the authenticated user's organization.
   - name: Organizations
     description: Manage organization settings and properties. Organizations contain all users, groups, and resources with role-based access control.
   - name: Packages
     description: Manage file and folder bundles for secure content delivery. Send packages to individuals, groups, workspaces, or shared inboxes with full lifecycle management.
-  - name: Packages Count
-    description: Retrieve package statistics and summaries. Access aggregated package counts for reporting and monitoring purposes.
   - name: Self
     description: Access current user profile and preferences. Retrieve authenticated user information with optional settings and feature data.
   - name: Short Links
     description: Manage URL shortening and redirection. Create and manage short links that decouple URL behavior from access tokens.
+  - name: Network Policies
+    description: Manage network policies for the organization. Define and enforce network-level access rules and restrictions.
   - name: Tier Restrictions
     description: View feature availability based on organization tier. Access tier-based restrictions and capability information.
-  - name: Transfer Direction
-    description: Determine optimal transfer routing between nodes. Check transfer permissions and identify preferred initiating nodes.
-  - name: Transfer Report
-    description: Access transfer routing matrices and analytics. View comprehensive transfer direction information across organization nodes.
+  - name: Transfer Analytics
+    description: Analyse transfer routing and usage. Determine optimal transfer direction between nodes and access comprehensive transfer routing matrices.
   - name: Transfers
     description: Monitor and manage active file transfers. List ongoing transfers and perform administrative actions.
   - name: Usage Reports
@@ -142,8 +140,6 @@ x-tagGroups:
       - Users
       - Contacts
       - Organizations
-      - Organization
-      - Feature Flags
   - name: Workspaces & Collaboration
     tags:
       - Workspaces
@@ -152,7 +148,6 @@ x-tagGroups:
   - name: Content Management
     tags:
       - Packages
-      - Packages Count
       - Dropboxes
       - Dropbox Memberships
   - name: Applications
@@ -160,13 +155,13 @@ x-tagGroups:
       - App Types
       - App Instances
       - App Memberships
+      - Operations
   - name: Transfer Infrastructure
     tags:
       - Nodes
       - Client Access Keys
       - Transfers
-      - Transfer Direction
-      - Transfer Report
+      - Transfer Analytics
   - name: Notifications & Templates
     tags:
       - Email Templates
@@ -176,7 +171,11 @@ x-tagGroups:
       - Short Links
       - Usage Reports
       - Tier Restrictions
-      - Operations
+  - name: Policies & Governance
+    tags:
+      - Configuration Policies
+      - Network Policies
+      - Feature Flags
 paths:
   /oauth2/authorize:
     get:
@@ -4540,7 +4539,7 @@ paths:
         '200':
           description: OK
       tags:
-        - Organization
+        - Organizations
     put:
       operationId: update_current_organization
       summary: Update Current Organization
@@ -4557,7 +4556,7 @@ paths:
         '204':
           description: No Content
       tags:
-        - Organization
+        - Organizations
   /packages_count:
     get:
       operationId: get_packages_count
@@ -4567,7 +4566,7 @@ paths:
         '200':
           description: OK
       tags:
-        - Packages Count
+        - Packages
   /self:
     get:
       operationId: get_self
@@ -4697,7 +4696,7 @@ paths:
         '400':
           description: Bad Request
       tags:
-        - Transfer Direction
+        - Transfer Analytics
   /transfer_report:
     get:
       operationId: get_transfer_report
@@ -4708,7 +4707,7 @@ paths:
         '200':
           description: OK
       tags:
-        - Transfer Report
+        - Transfer Analytics
   /transfers:
     get:
       operationId: get_transfers
