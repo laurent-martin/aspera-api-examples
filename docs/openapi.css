@@ -1,33 +1,33 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-}
-
+/* ── Form screen ───────────────────────────────────────── */
 #form-container {
-  max-width: 700px;
-  margin: 80px auto;
-  padding: 24px;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
-input {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  box-sizing: border-box;
-  margin-bottom: 12px;
+#form-container h1 {
+    margin-bottom: 8px;
 }
 
-button {
-  padding: 12px 18px;
-  font-size: 16px;
-  cursor: pointer;
+.form-card {
+    margin-top: 0;
 }
 
-#redoc-container {
-  height: 100vh;
+.form-card p {
+    margin-bottom: 16px;
+    color: #555;
+}
+
+.form-card .text-input {
+    margin-bottom: 12px;
 }
 
 .error {
-  color: red;
-  margin-top: 12px;
+    color: #c0392b;
+    margin-top: 12px;
+    font-size: 0.9rem;
+}
+
+/* ── Redoc viewer ──────────────────────────────────────── */
+#redoc-container {
+    height: 100vh;
 }

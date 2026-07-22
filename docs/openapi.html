@@ -1,13 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/svg+xml" href="/openapi.svg">
   <title>OpenAPI Viewer</title>
 
   <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
 
+  <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="openapi.css">
   <script src="openapi.js" defer></script>
 
@@ -19,7 +21,30 @@
 
 <body>
 
-  <div id="app"></div>
+  <div id="form-screen" class="container">
+    <header>
+      <h1>📖 OpenAPI Viewer</h1>
+      <p class="subtitle">Enter a spec URL to browse interactive documentation</p>
+    </header>
+    <div id="form-container">
+      <div class="card form-card">
+        <p>Enter an OpenAPI / Swagger spec URL:</p>
+        <input
+          id="spec-input"
+          type="text"
+          class="text-input"
+          placeholder="https://example.com/openapi.json"
+        />
+        <button id="load-btn" class="btn">Load Documentation</button>
+        <div class="error" id="error"></div>
+      </div>
+    </div>
+    <footer>
+      <p>IBM Aspera API Examples Repository</p>
+    </footer>
+  </div>
+
+  <div id="redoc-container" hidden></div>
 
 </body>
 
