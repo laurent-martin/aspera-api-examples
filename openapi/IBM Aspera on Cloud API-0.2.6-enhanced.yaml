@@ -619,7 +619,7 @@ paths:
               - workspace
         - name: q
           in: query
-          description: Searches member.email and member.name.
+          description: Filter (case-insensitive substring) by member (user, group, or workspace) fields `email` and `name`.
           schema:
             type: string
         - name: sort
@@ -808,7 +808,7 @@ paths:
             type: string
         - name: q
           in: query
-          description: Searches member.email and member.name (and workspace/group name).
+          description: Filter (case-insensitive substring) by member (user, group, or workspace) fields `email` and `name`.
           schema:
             type: string
         - name: sort
@@ -1580,8 +1580,7 @@ paths:
             type: string
         - name: q
           in: query
-          description: |
-            Search member.email, member.first_name, member.last_name, and member.name.
+          description: Filter (case-insensitive substring) by member (user or group) fields `email`, `first_name`, `last_name`, and `name`.
           schema:
             type: string
         - name: updated_at
@@ -1776,7 +1775,7 @@ paths:
             format: date-time
         - name: q
           in: query
-          description: Searches across shared inbox descriptions and names.
+          description: Filter (case-insensitive substring) by `name` and `description`.
           schema:
             type: string
       responses:
@@ -1979,7 +1978,7 @@ paths:
             type: string
         - name: q
           in: query
-          description: Full text search that will show transfer nodes with matching access_key, host, name, path, or port.
+          description: Filter (case-insensitive substring) by `access_key`, `host`, `name`, `path`, and `port`.
           schema:
             type: string
         - name: status
@@ -4828,7 +4827,7 @@ paths:
       parameters:
         - name: q
           in: query
-          description: Search query to filter contacts by name or email (substring match)
+          description: Filter (case-insensitive substring) by `name` and `email`.
           schema:
             type: string
         - name: workspace_id
