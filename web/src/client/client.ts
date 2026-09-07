@@ -3,6 +3,7 @@ import {
     getStatus,
     getInfo,
     launch,
+    getInstallerInfo,
     startTransfer,
     showSelectFileDialog,
     showSelectFolderDialog,
@@ -296,22 +297,31 @@ class ClientApp {
     }
 
 
-    private addLaunchLink(status: string) {
+    private async addLaunchLink(status: string) {
         const el = document.getElementById('client_status');
         if (!el) return;
 
-        const linkId = status === 'FAILED' ? 'launch_desktop' : 'relaunch_desktop';
-        const linkText = status === 'FAILED' ? 'Launch Desktop App' : 'Relaunch Desktop App';
+        // Always show a "Launch" link
+        let extra = ` - <a href="#" id="launch_desktop" style="color:blue;text-decoration:underline;">${status === 'FAILED' ? 'Launch' : 'Relaunch'} Desktop App</a>`;
 
-        el.innerHTML += ` - <a href="#" id="${linkId}" style="color: blue; text-decoration: underline;">${linkText}</a>`;
+        // For FAILED: also fetch installer URL and show a download link
+        if (status === 'FAILED') {
+            try {
+                const info = await getInstallerInfo();
+                const entry = info.entries[0];
+                if (entry?.url) {
+                    extra += ` - <a href="${entry.url}" target="_blank" rel="noopener noreferrer" style="color:blue;text-decoration:underline;">Download (${entry.platform} ${entry.version})</a>`;
+                }
+            } catch (e) {
+                console.debug('Could not fetch installer info:', e);
+            }
+        }
 
-        setTimeout(() => {
-            document.getElementById(linkId)?.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log(`Attempting to ${status === 'FAILED' ? 'launch' : 'relaunch'} IBM Aspera for Desktop...`);
-                launch();
-            });
-        }, 0);
+        el.innerHTML += extra;
+        document.getElementById('launch_desktop')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            launch();
+        });
     }
 
     private handleTransferEvents(response: TransferResponse) {

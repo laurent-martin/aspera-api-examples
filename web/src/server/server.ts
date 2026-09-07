@@ -253,6 +253,5 @@ server = app.listen(config.web.port, "0.0.0.0", () => {
     .flat()
     .find((iface) => iface?.family === "IPv4" && !iface.internal)?.address ?? "localhost";
   console.log(`API server listening on HTTP port ${port}`);
-  console.log(`Use Vite UI at               http://localhost:${vitePort}`);
-  console.log(`  or any local address, e.g. http://${localIp}:${vitePort}`);
+  console.log(`Use Vite UI at any of the URLs shown above.`);
 });
