@@ -5,6 +5,7 @@
 import express, { Request, Response } from "express";
 import yaml from "js-yaml";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { Agent, setGlobalDispatcher } from "undici";
 
@@ -206,6 +207,30 @@ app.post(
 
 let server: ReturnType<typeof app.listen>;
 
+app.get("/", (req, res) => {
+  const vitePort = 5173;
+  const viteUrl = `http://localhost:${vitePort}`;
+  res.type("text/html").send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Aspera Demo — API server</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 480px; margin: 10vh auto; padding: 0 1.5rem; color: #1f2328; }
+    h1   { font-size: 1.25rem; margin-bottom: .5rem; }
+    p    { color: #57606a; line-height: 1.6; }
+    a    { color: #3b82d4; }
+    code { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 6px; font-size: .9em; }
+  </style>
+</head>
+<body>
+  <h1>Aspera Demo — API server</h1>
+  <p>This port (<code>${config.web.port}</code>) exposes the REST API only and serves no UI.</p>
+  <p>Open the application at <a href="${viteUrl}">${viteUrl}</a> (Vite dev server).</p>
+</body>
+</html>`);
+});
+
 app.post("/api/shutdown", (req, res) => {
   res.json({ message: "Server shutting down" });
   setTimeout(() => {
@@ -221,6 +246,14 @@ app.use(express.static(publicFolder));
 // Start server
 // --------------------------------------------------
 
-server = app.listen(config.web.port, () => {
-  console.log(`Server running at http://localhost:${config.web.port}`);
+server = app.listen(config.web.port, "0.0.0.0", () => {
+  const port = config.web.port;
+  const vitePort = 5173;
+  const localIp = Object.values(os.networkInterfaces())
+    .flat()
+    .find((iface) => iface?.family === "IPv4" && !iface.internal)?.address ?? "localhost";
+  console.log(`API server listening on http://localhost:${port}`);
+  console.log(`                    and http://${localIp}:${port}`);
+  console.log(`Use Vite UI at      --> http://localhost:${vitePort}`);
+  console.log(`                    --> http://${localIp}:${vitePort}`);
 });
