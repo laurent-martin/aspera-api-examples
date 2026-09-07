@@ -43,12 +43,17 @@
     </div>
     <div>
       <input type="radio" id="basic_token_radio" name="transfer_auth" value="basic_token">
-      <label for="basic_token">Token: Basic (Access Key only)</label>
+      <label for="basic_token_radio">Token: Basic (Access Key only)</label>
     </div>
     <div id="div_ssh_creds_selector">
       <input type="radio" id="ssh_creds_radio" name="transfer_auth" value="ssh_creds">
-      <label for="ssh_creds">SSH Credentials</label>
+      <label for="ssh_creds_radio">SSH Credentials</label>
     </div>
+  </fieldset>
+  <fieldset id="hsts_basic_info">
+    <legend>Basic token credentials</legend>
+    <p>Access Key: <input type="text" id="basic_access_key" /></p>
+    <p>Secret: <input type="password" id="basic_secret" /></p>
   </fieldset>
   <fieldset id="hsts_ssh_info">
     <legend>HSTS SSH credentials</legend>

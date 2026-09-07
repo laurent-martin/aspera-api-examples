@@ -98,7 +98,9 @@ class ClientApp {
             'server_user': this.config.server.username,
             'server_pass': this.config.server.password,
             'file_to_download': this.config.server.file_download,
-            'folder_for_upload': this.config.server.folder_upload
+            'folder_for_upload': this.config.server.folder_upload,
+            'basic_access_key': this.config.node.username,
+            'basic_secret': this.config.node.password
         };
         Object.entries(fields).forEach(([id, val]) => {
             const element = document.getElementById(id) as HTMLInputElement;
@@ -150,7 +152,9 @@ class ClientApp {
             operation: state.direction,
             sources: isDownload ? [state.downloadPath] : this.selectedUploadFiles,
             destination: isDownload ? undefined : state.uploadDest,
-            basic_token: state.authType === 'basic_token'
+            basic_token: state.authType === 'basic_token',
+            basic_access_key: state.authType === 'basic_token' ? getVal('basic_access_key') : undefined,
+            basic_secret: state.authType === 'basic_token' ? getVal('basic_secret') : undefined
         };
 
         try {
@@ -208,6 +212,7 @@ class ClientApp {
         const visibilityMatrix: Record<string, boolean> = {
             'httpgw_url': state.client === 'httpgw',
             'div_ssh_creds_selector': ['connect', 'desktop'].includes(state.client),
+            'hsts_basic_info': state.authType === 'basic_token',
             'hsts_ssh_info': state.authType === 'ssh_creds',
             'download_selection': state.direction === 'download',
             'upload_selection': state.direction === 'upload'

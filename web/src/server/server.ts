@@ -20,6 +20,8 @@ interface TSpecRequestBody {
   sources: string[];
   destination?: string;
   basic_token?: boolean;
+  basic_access_key?: string;
+  basic_secret?: string;
 }
 
 /**
@@ -127,7 +129,7 @@ app.post(
   "/api/tspec",
   async (req: Request<{}, {}, TSpecRequestBody>, res: Response) => {
     try {
-      const { operation, sources, destination, basic_token } = req.body;
+      const { operation, sources, destination, basic_token, basic_access_key, basic_secret } = req.body;
 
       if (!operation || !sources || !Array.isArray(sources)) {
         return res.status(400).json({ error: "Invalid request body" });
@@ -149,11 +151,11 @@ app.post(
         return res.status(400).json({ error: `Invalid operation: ${operation}` });
       }
 
+      const nodeUser = basic_token && basic_access_key ? basic_access_key : config.node.username;
+      const nodePass = basic_token && basic_secret ? basic_secret : config.node.password;
       const basicAuth =
         "Basic " +
-        Buffer.from(
-          `${config.node.username}:${config.node.password}`
-        ).toString("base64");
+        Buffer.from(`${nodeUser}:${nodePass}`).toString("base64");
 
       // Call Aspera HSTS Node API for transfer authorization.
       const response = await fetch(
