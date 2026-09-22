@@ -1,6 +1,10 @@
 // List of OpenAPI files with their spec versions
 const openApiSpecs = [
     {
+        filename: "IBM Aspera Console-unofficial.yaml",
+        specVersion: "OpenAPI 3.1",
+    },
+    {
         filename: "IBM Aspera Faspex API-5.0-enhanced.yaml",
         specVersion: "OpenAPI 3.1",
     },
