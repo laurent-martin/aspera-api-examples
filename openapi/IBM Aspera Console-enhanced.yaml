@@ -521,6 +521,30 @@ paths:
       tags:
         - admin
       x-undocumented: true
+  /health/up:
+    servers:
+      - url: https://{host}/aspera/console
+        description: Aspera Console server (root scope, outside the /api prefix)
+        variables:
+          host:
+            default: console.example.com
+    get:
+      operationId: getHealthUp
+      summary: Health check
+      description: >-
+        Load-balancer / uptime probe. Unauthenticated;
+        returns success if Aspera Console process is up and responding.
+      security: []
+      responses:
+        "200":
+          description: Console is up
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "503":
+          description: Console is not healthy
+      tags:
+        - health
+      x-undocumented: true
 components:
   parameters:
     JobStepId:
@@ -1062,6 +1086,8 @@ tags:
   - name: endpoints
     description: Source/destination endpoints and SSH keys available to the account
   - name: admin
-    description: Undocumented administrative routes present in routes.rb only
+    description: Undocumented administrative actions
+  - name: health
+    description: Unauthenticated liveness/health-check endpoint for load balancers
 security:
   - basicAuth: []
