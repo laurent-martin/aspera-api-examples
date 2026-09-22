@@ -1,19 +1,13 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Aspera Console REST API
-  description:
-    'Submit, control, and monitor Aspera FASP transfers through the Aspera
-    Console web application. All calls are made over HTTPS using HTTP Basic Auth with
-    a valid Console account; the operations a caller can perform are limited by that
-    account''s permission level in Console.
-
-    Generated from the IBM Developer "Aspera Console REST API" guide and cross-checked
-    against the Rails `routes.rb` for the `/aspera/console/api` scope. A few routes
-    exist in `routes.rb` with no corresponding entry in the public docs (`smart_transfers/{id}/pause`,
-    `email_server_update`, `nodeapi_credentials_update`); these are included with
-    a minimal, best-effort schema and flagged `x-undocumented: true`.'
+  description: |-
+    Submit, control, and monitor Aspera FASP transfers through the Aspera Console web application. All calls are made over HTTPS using HTTP Basic Auth with a valid Console account; the operations a caller can perform are limited by that account's permission level in Console.
+    Generated from the IBM Developer "Aspera Console REST API" guide and cross-checked against the Rails `routes.rb` for the `/aspera/console/api` scope. A few routes exist in `routes.rb` with no corresponding entry in the public docs (`smart_transfers/{id}/pause`, `email_server_update`, `nodeapi_credentials_update`); these are included with a minimal, best-effort schema and flagged `x-undocumented: true`.
   version: 1.0.0
-  license: IBM
+  license:
+    url: https://ibm.com
+    name: (c) IBM. All rights reserved
   contact:
     name: IBM Aspera
     url: https://developer.ibm.com/apis/catalog/aspera--aspera-console-rest-api/Developer+Guides
@@ -26,10 +20,9 @@ servers:
 paths:
   /transfers:
     get:
+      operationId: getTransfers
       summary: List transfers (TransferList)
-      description:
-        Nearly identical to the Activity view in the Console UI. Multi-step
-        Smart Transfers appear as multiple individual items, each with its own id.
+      description: Nearly identical to the Activity view in the Console UI. Multi-step Smart Transfers appear as multiple individual items, each with its own id.
       parameters:
         - name: from
           in: query
@@ -39,10 +32,7 @@ paths:
             type: string
         - name: to
           in: query
-          description:
-            UTC date/time. Optional if `from` is less than 24 hours ago,
-            otherwise required and must be no later than `from` + 24 hours. Defaults
-            to the current time if omitted.
+          description: UTC date/time. Optional if `from` is less than 24 hours ago, otherwise required and must be no later than `from` + 24 hours. Defaults to the current time if omitted.
           required: false
           schema:
             type: string
@@ -86,8 +76,8 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: getTransfers
     post:
+      operationId: postTransfers
       summary: Submit a simple transfer (SimpleTransferSubmit)
       description: Equivalent to starting a simple transfer in the Console interface.
       requestBody:
@@ -109,9 +99,9 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: postTransfers
   /transfers/{id}:
     get:
+      operationId: getTransfersId
       summary: Get transfer details (TransferDetails)
       description: Nearly identical to the drill-down detail screen for a transfer.
       parameters:
@@ -129,13 +119,11 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: getTransfersId
   /transfers/{id}/files:
     get:
+      operationId: getTransfersIdFiles
       summary: List files in a transfer (TransferFileList)
-      description:
-        Nearly identical to the file list at the bottom of the transfer
-        details page.
+      description: Nearly identical to the file list at the bottom of the transfer details page.
       parameters:
         - $ref: "#/components/parameters/JobStepId"
         - name: offset
@@ -175,13 +163,11 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: getTransfersIdFiles
   /transfers/{id}/start:
     put:
+      operationId: putTransfersIdStart
       summary: Start a scheduled transfer (TransferStart)
-      description:
-        Equivalent to clicking "start" for a scheduled transfer on the
-        Activity page.
+      description: Equivalent to clicking "start" for a scheduled transfer on the Activity page.
       parameters:
         - $ref: "#/components/parameters/JobStepId"
       responses:
@@ -195,9 +181,9 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: putTransfersIdStart
   /transfers/{id}/pause:
     put:
+      operationId: putTransfersIdPause
       summary: Pause a transfer (TransferPause)
       description: Equivalent to clicking "pause" for a transfer on the Activity page.
       parameters:
@@ -213,13 +199,11 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: putTransfersIdPause
   /transfers/{id}/resume:
     put:
+      operationId: putTransfersIdResume
       summary: Resume a transfer (TransferResume)
-      description:
-        Equivalent to clicking "resume" for a transfer on the Activity
-        page.
+      description: Equivalent to clicking "resume" for a transfer on the Activity page.
       parameters:
         - $ref: "#/components/parameters/JobStepId"
       responses:
@@ -233,13 +217,11 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: putTransfersIdResume
   /transfers/{id}/cancel:
     put:
+      operationId: putTransfersIdCancel
       summary: Cancel a transfer (TransferCancel)
-      description:
-        Equivalent to clicking "cancel" for a transfer on the Activity
-        page.
+      description: Equivalent to clicking "cancel" for a transfer on the Activity page.
       parameters:
         - $ref: "#/components/parameters/JobStepId"
       responses:
@@ -253,9 +235,9 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: putTransfersIdCancel
   /transfers/{id}/rerun:
     post:
+      operationId: postTransfersIdRerun
       summary: Rerun a transfer (TransferRerun)
       description: Equivalent to clicking "rerun" for a transfer on the Activity page.
       parameters:
@@ -273,13 +255,11 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: postTransfersIdRerun
   /transfers/{id}/change_rate:
     put:
+      operationId: putTransfersIdChangeRate
       summary: Change transfer rate (TransferChangeRate)
-      description:
-        Equivalent to entering a new target rate in the chart on the transfer's
-        Detail page.
+      description: Equivalent to entering a new target rate in the chart on the transfer's Detail page.
       parameters:
         - $ref: "#/components/parameters/JobStepId"
       requestBody:
@@ -297,13 +277,11 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: putTransfersIdChangeRate
   /transfers/{id}/change_policy:
     put:
+      operationId: putTransfersIdChangePolicy
       summary: Change transfer policy (TransferChangePolicy)
-      description:
-        Equivalent to choosing a new policy in the chart on the transfer's
-        Detail page.
+      description: Equivalent to choosing a new policy in the chart on the transfer's Detail page.
       parameters:
         - $ref: "#/components/parameters/JobStepId"
       requestBody:
@@ -321,9 +299,9 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - transfers
-      operationId: putTransfersIdChangePolicy
   /endpoints:
     get:
+      operationId: getEndpoints
       summary: List endpoints (EndPointList)
       description: Retrieves the list of endpoints available for SimpleTransferSubmit.
       responses:
@@ -339,9 +317,9 @@ paths:
           $ref: "#/components/responses/Unauthorized"
       tags:
         - endpoints
-      operationId: getEndpoints
   /ssh_keys:
     get:
+      operationId: getSshKeys
       summary: List SSH keys (SshKeyList)
       description: Retrieves the list of SSH keys available for use with SimpleTransferSubmit.
       responses:
@@ -357,9 +335,9 @@ paths:
           $ref: "#/components/responses/Unauthorized"
       tags:
         - endpoints
-      operationId: getSshKeys
   /smart_transfers:
     get:
+      operationId: getSmartTransfers
       summary: List Smart Transfers (SmartTransferList)
       description: Retrieves the list of Smart Transfers the user is allowed to start.
       responses:
@@ -375,15 +353,11 @@ paths:
           $ref: "#/components/responses/Unauthorized"
       tags:
         - smart-transfers
-      operationId: getSmartTransfers
   /smart_transfers/{id}:
     post:
+      operationId: postSmartTransfersId
       summary: Submit a Smart Transfer (SmartTransferSubmit)
-      description:
-        Nearly identical to starting a simple transfer in the Console interface,
-        but with fewer overridable settings. If the Smart Transfer does not allow
-        selecting source items at start, including a `source` section returns an error.
-        Multi-step Smart Transfers create multiple transfers.
+      description: Nearly identical to starting a simple transfer in the Console interface, but with fewer overridable settings. If the Smart Transfer does not allow selecting source items at start, including a `source` section returns an error. Multi-step Smart Transfers create multiple transfers.
       parameters:
         - name: id
           in: path
@@ -399,9 +373,7 @@ paths:
               $ref: "#/components/schemas/SmartTransferSubmitRequest"
       responses:
         "200":
-          description:
-            One id per transfer created (multiple for a multi-step Smart
-            Transfer)
+          description: One id per transfer created (multiple for a multi-step Smart Transfer)
           content:
             application/json:
               schema:
@@ -414,14 +386,11 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - smart-transfers
-      operationId: postSmartTransfersId
   /smart_transfers/{id}/pause:
     put:
+      operationId: putSmartTransfersIdPause
       summary: Pause a Smart Transfer
-      description:
-        Present in routes.rb (`api#pause_smart_transfer`) but not described
-        in the public API guide. Assumed to behave like TransferPause, scoped to a
-        Smart Transfer id. Verify against the controller before relying on this.
+      description: Present in routes.rb (`api#pause_smart_transfer`) but not described in the public API guide. Assumed to behave like TransferPause, scoped to a Smart Transfer id. Verify against the controller before relying on this.
       parameters:
         - name: id
           in: path
@@ -439,9 +408,9 @@ paths:
       tags:
         - smart-transfers
       x-undocumented: true
-      operationId: putSmartTransfersIdPause
   /queues/{queue_id}/items:
     get:
+      operationId: getQueuesQueueIdItems
       summary: Get queue contents (QueueContents)
       description: Returns a list of items in the queue, frontmost item first.
       parameters:
@@ -463,13 +432,11 @@ paths:
           $ref: "#/components/responses/Unauthorized"
       tags:
         - queues
-      operationId: getQueuesQueueIdItems
   /queues/{queue_id}/items/{id}/move_forwards:
     put:
+      operationId: putQueuesQueueIdItemsIdMoveForwards
       summary: Move a queued transfer forward (QueuedTransferMoveForward)
-      description:
-        Equivalent to clicking "Move Up" on a transfer in the displayed
-        queue.
+      description: Equivalent to clicking "Move Up" on a transfer in the displayed queue.
       parameters:
         - name: queue_id
           in: path
@@ -488,13 +455,11 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - queues
-      operationId: putQueuesQueueIdItemsIdMoveForwards
   /queues/{queue_id}/items/{id}/move_back:
     put:
+      operationId: putQueuesQueueIdItemsIdMoveBack
       summary: Move a queued transfer back (QueuedTransferMoveBack)
-      description:
-        Equivalent to clicking "Move Down" on a transfer in the displayed
-        queue.
+      description: Equivalent to clicking "Move Down" on a transfer in the displayed queue.
       parameters:
         - name: queue_id
           in: path
@@ -513,15 +478,11 @@ paths:
           $ref: "#/components/responses/UnprocessableEntity"
       tags:
         - queues
-      operationId: putQueuesQueueIdItemsIdMoveBack
   /email_server_update:
     post:
+      operationId: postEmailServerUpdate
       summary: Update email server configuration
-      description:
-        Present in routes.rb (`api#email_server_update`) but not described
-        in the public API guide. Payload shape is unknown; likely mirrors the "Email
-        Server" admin settings screen. Confirm against `Api::EmailServerUpdate` /
-        the corresponding controller action before use.
+      description: Present in routes.rb (`api#email_server_update`) but not described in the public API guide. Payload shape is unknown; likely mirrors the "Email Server" admin settings screen. Confirm against `Api::EmailServerUpdate` / the corresponding controller action before use.
       requestBody:
         content:
           application/json:
@@ -538,15 +499,11 @@ paths:
       tags:
         - admin
       x-undocumented: true
-      operationId: postEmailServerUpdate
   /nodeapi_credentials_update:
     post:
+      operationId: postNodeapiCredentialsUpdate
       summary: Update Node API credentials
-      description:
-        Present in routes.rb (`api#nodeapi_credentials_update`) but not
-        described in the public API guide. Payload shape is unknown; likely updates
-        stored Node API credentials for a node. Confirm against the controller action
-        before use.
+      description: Present in routes.rb (`api#nodeapi_credentials_update`) but not described in the public API guide. Payload shape is unknown; likely updates stored Node API credentials for a node. Confirm against the controller action before use.
       requestBody:
         content:
           application/json:
@@ -563,7 +520,6 @@ paths:
       tags:
         - admin
       x-undocumented: true
-      operationId: postNodeapiCredentialsUpdate
 components:
   parameters:
     JobStepId:
@@ -613,59 +569,62 @@ components:
       type: object
       properties:
         bytes_transferred:
-          description:
-            Total bytes actually transferred over the network. Bytes already
-            present at the destination at transfer start are not counted if 'resume'
-            was enabled.
+          description: Total bytes actually transferred over the network. Bytes already present at the destination at transfer start are not counted if 'resume' was enabled.
           type: integer
         bytes_written:
-          description:
-            Total bytes completed and written to disk at the destination.
-            May exceed bytes_transferred (includes pre-existing bytes).
+          description: Total bytes completed and written to disk at the destination. May exceed bytes_transferred (includes pre-existing bytes).
           type: integer
         contact:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         destination:
           description: IP address of destination machine
           type: string
         error_description:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         eta:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         id:
           type: integer
         name:
           type: string
         queued_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         scheduled_start_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         source:
           description: IP address of the source machine
           type: string
         started_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         started_via:
           type: string
         status:
           type: string
         stopped_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         submitted_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         total_bytes:
           description: '"unknown" or numeric, per source node reporting'
           oneOf:
@@ -690,11 +649,13 @@ components:
             bytes_lost:
               type: integer
             comment:
-              type: string
-              nullable: true
+              type:
+                - string
+                - "null"
             destination_description:
-              type: string
-              nullable: true
+              type:
+                - string
+                - "null"
             destination_endpoint_id:
               type: integer
             destination_path:
@@ -711,11 +672,10 @@ components:
                 - source
                 - destination
             last_calculated_rate_bps:
-              description:
-                Periodic estimate of actual throughput. Null for short transfers
-                where Console had no chance to compute it.
-              type: integer
-              nullable: true
+              description: Periodic estimate of actual throughput. Null for short transfers where Console had no chance to compute it.
+              type:
+                - integer
+                - "null"
             min_rate_kbps:
               type: integer
             network_delay_ms:
@@ -729,14 +689,13 @@ components:
             session_uuid:
               type: string
             source_description:
-              type: string
-              nullable: true
+              type:
+                - string
+                - "null"
             source_endpoint_id:
               type: integer
             source_paths:
-              description:
-                Specified source items from the ascp command. Truncated to
-                approximately 4KB, so may not contain the full list.
+              description: Specified source items from the ascp command. Truncated to approximately 4KB, so may not contain the full list.
               type: array
               items:
                 type: string
@@ -756,8 +715,9 @@ components:
         bytes_written:
           type: integer
         error_description:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         id:
           type: integer
         path:
@@ -774,16 +734,18 @@ components:
       type: object
       properties:
         credential_type:
-          type: string
+          type:
+            - string
+            - "null"
           enum:
             - password
             - ssh_key
             - none
             - null
-          nullable: true
         description:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         dest:
           type: boolean
         endpoint_type:
@@ -800,8 +762,9 @@ components:
         source:
           type: boolean
         ssh_key_id:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - "null"
         ssh_port:
           type: integer
     SshKey:
@@ -898,15 +861,13 @@ components:
         error_template_id:
           type: integer
     TransferSourceSpec:
-      description:
-        If the referenced endpoint has credential_type null, password or
-        ssh_key_id is required. If its ip_address is "*", ip_address is required here.
-        If its user is "*", user is required here.
+      description: If the referenced endpoint has credential_type null, password or ssh_key_id is required. If its ip_address is "*", ip_address is required here. If its user is "*", user is required here.
       type: object
       properties:
         endpoint_id:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - "null"
         ip_address:
           type: string
         port:
@@ -921,22 +882,25 @@ components:
         password:
           type: string
         ssh_key_id:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - "null"
         paths:
           type: array
           items:
             type: string
         source_base:
           description: Path prefix to remove from source paths.
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
     TransferDestinationSpec:
       type: object
       properties:
         endpoint_id:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - "null"
         ip_address:
           type: string
         port:
@@ -951,8 +915,9 @@ components:
         password:
           type: string
         ssh_key_id:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - "null"
         path:
           type: string
     SimpleTransferSubmitRequest:
@@ -1002,34 +967,40 @@ components:
         delete_source_files_after_transfer:
           $ref: "#/components/schemas/DeleteSourceFilesSpec"
         exclude_file_filter:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         symbolic_links:
-          type: string
+          type:
+            - string
+            - "null"
           enum:
             - follow
             - copy
             - copy+force
             - skip
             - null
-          nullable: true
         mtu_size:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - "null"
         read_block_size:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - "null"
         write_block_size:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - "null"
         notifications:
           type: array
           items:
             $ref: "#/components/schemas/NotificationSpec"
         scheduled_start:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
       required:
         - source
         - destination
@@ -1041,40 +1012,36 @@ components:
           items:
             type: string
         source_base:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
     SmartTransferSubmitRequest:
       type: object
       properties:
         name:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         comment:
           type: string
         source:
-          description:
-            Omit entirely if the Smart Transfer does not allow selecting
-            source items at start — including this section in that case returns an
-            error.
+          description: Omit entirely if the Smart Transfer does not allow selecting source items at start — including this section in that case returns an error.
           allOf:
             - $ref: "#/components/schemas/SmartTransferSourceOverride"
         scheduled_start:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
   responses:
     Ok:
       description: Success
     Unauthorized:
       description: Bad, missing, or locked username/password
     Forbidden:
-      description:
-        The operation lets the current user know the item exists, but they
-        do not have permission to change it.
+      description: The operation lets the current user know the item exists, but they do not have permission to change it.
     UnprocessableEntity:
-      description:
-        Error. A JSON body with details is normally returned; if absent,
-        check the mongrel logs.
+      description: Error. A JSON body with details is normally returned; if absent, check the mongrel logs.
       content:
         application/json:
           schema:
@@ -1083,10 +1050,7 @@ components:
     basicAuth:
       type: http
       scheme: basic
-      description:
-        Username and password of a valid Console account. Console 3.2.0+
-        also supports submitting an authorization token in the JSON payload of a simple/smart
-        transfer submission for Node API-based destinations that require tokens.
+      description: Username and password of a valid Console account. Console 3.2.0+ also supports submitting an authorization token in the JSON payload of a simple/smart transfer submission for Node API-based destinations that require tokens.
 tags:
   - name: transfers
     description: Submit, control, and monitor individual transfers
