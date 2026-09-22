@@ -2,8 +2,9 @@ openapi: 3.1.0
 info:
   title: Aspera Console REST API
   description: |-
-    Submit, control, and monitor Aspera FASP transfers through the Aspera Console web application. All calls are made over HTTPS using HTTP Basic Auth with a valid Console account; the operations a caller can perform are limited by that account's permission level in Console.
-    Generated from the IBM Developer "Aspera Console REST API" guide and cross-checked against the Rails `routes.rb` for the `/aspera/console/api` scope. A few routes exist in `routes.rb` with no corresponding entry in the public docs (`smart_transfers/{id}/pause`, `email_server_update`, `nodeapi_credentials_update`); these are included with a minimal, best-effort schema and flagged `x-undocumented: true`.
+    Submit, control, and monitor Aspera FASP transfers through the Aspera Console web application.
+    All calls are made over HTTPS using HTTP Basic Auth with a valid Console account;
+    the operations a caller can perform are limited by that account's permission level in Console.
   version: 1.0.0
   license:
     url: https://ibm.com
@@ -16,7 +17,7 @@ servers:
     description: Aspera Console server
     variables:
       host:
-        default: console.asperasoft.com
+        default: console.example.com
 paths:
   /transfers:
     get:
