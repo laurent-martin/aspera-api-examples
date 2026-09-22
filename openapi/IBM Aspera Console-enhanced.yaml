@@ -5,7 +5,34 @@ info:
     Submit, control, and monitor Aspera FASP transfers through the Aspera Console web application.
     All calls are made over HTTPS using HTTP Basic Auth with a valid Console account;
     the operations a caller can perform are limited by that account's permission level in Console.
+
+    ## Version compatibility
+    The Console API is available for Console version 2.0.1 and newer; older versions do not
+    support it. Console 2.0.1 currently supports API version 1.0.
+
+    ## Token authorization
+    Console 3.2.0 and later supports token authorization: admins can submit an authorization
+    token in the JSON payload when creating a simple (or smart) transfer with the Node API.
+    In the most common case, the remote (destination) server is configured to require tokens in
+    order to allow transfers.
+    See the [Aspera Node API "Upload Setup" guide](https://developer.ibm.com/apis/catalog/aspera--aspera-node-api/api/API--aspera--aspera-node-api)
+    for an example of how to submit the token.
+
+    ## Common response codes
+    All responses use standard HTTP response codes. The commonly used codes for this API are:
+      - `200` - Success
+      - `401` - Bad, missing, or locked username/password
+      - `403` - The specific operation allows the current user to know the item exists, but
+        they cannot change it
+      - `422` - Used for other errors; a JSON body is normally returned with details, but if
+        none is returned, check the mongrel logs
+
+    ## Response content
+    If a response contains content, it is returned in JSON format with UTF-8 encoding. All
+    times are in UTC.
   version: 1.0.0
+  x-console-api-version: "1.0"
+  x-console-minimum-version: 2.0.1
   license:
     url: https://ibm.com
     name: (c) IBM. All rights reserved
@@ -1075,7 +1102,7 @@ components:
     basicAuth:
       type: http
       scheme: basic
-      description: Username and password of a valid Console account. Console 3.2.0+ also supports submitting an authorization token in the JSON payload of a simple/smart transfer submission for Node API-based destinations that require tokens.
+      description: Username and password of a valid Console account.
 tags:
   - name: transfers
     description: Submit, control, and monitor individual transfers
