@@ -1,0 +1,2332 @@
+openapi: 3.0.0
+info:
+  title: Automation API
+  description: >-
+    The Automation API allows you to create multistep workflows with
+    event-based 
+     triggers cued to IBM Aspera on Cloud endpoints. The first step in your workflow contains the trigger, 
+     which can be a person or an API, a series of scheduled times, a new file added to a folder, or a 
+     package arriving in a shared inbox, or the deletion of a file or folder. 
+
+    The rest of the steps in the workflow contain one or more actions. An
+    action 
+     can transfer a file, send a package, call an API, notify users, create custom substitution variables, or create a folder. 
+     After you activate the workflow, you can monitor active jobs and update 
+     the state of the workflow, which allows you to make edits. Note: Each workflow 
+     must contain at least one action that transfers a file or sends a package. 
+     
+     Access Control: You must include a JSON Web Token (bearer token) in the authorization 
+     header of your request. 
+     
+     For additional information, visit the Aspera Developer Center at https://www.ibm.developer.com/aspera/
+  version: 1.0.5
+servers:
+  - url: https://api.ibmaspera.com/automation/v1
+    description: The Automation App production server
+paths:
+  /workflows:
+    get:
+      tags:
+        - workflows
+      summary: Get workflows
+      description: >-
+        Returns all workflows. Access Control: You must include a JSON Web
+        Token 
+         (bearer token) in the authorization header of your request.
+      responses:
+        '200':
+          description: OK - Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/200-Workflows'
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '500':
+          description: Internal Server Error
+    post:
+      tags:
+        - workflows
+      summary: Create a workflow
+      description: |-
+        Creates a new workflow. Once you have created the workflow, 
+         you can create one or more steps within the workflow. Access Control: You must 
+         include a JSON Web Token (bearer token) in the authorization header of your request.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createWorkflowRequest'
+      responses:
+        '201':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/201-Workflow'
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '422':
+          description: Unprocessable Entity. Incorrect parameter information in payload.
+  /workflows/:id:
+    get:
+      tags:
+        - workflows
+      summary: Gets a workflow
+      description: >-
+        Returns a workflow with a unique ID. Access Control: You must include a
+        JSON Web Token 
+         (bearer token) in the authorization header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the workflow to get
+        - in: query
+          name: workflow_version_id
+          schema:
+            type: string
+          required: false
+          description: Numeric ID of the workflow version to get
+      responses:
+        '200':
+          description: OK - Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/200-Workflows'
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - workflows
+      summary: Update a workflow
+      description: |-
+        Allows user to edit a workflow with a unique ID. Access Control: 
+         You must include a JSON Web Token (bearer token) in the authorization header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the workflow to get
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateWorkflow'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '422':
+          description: Unprocessable Entity. Incorrect parameter information in payload.
+    delete:
+      tags:
+        - workflows
+      summary: Delete a workflow
+      description: >-
+        Allows user to delete a workflow with a find ID. Access Control: You
+        must 
+         include a JSON Web Token (bearer token) in the authorization header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the workflow to delete
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+  /workflows/:id/update_state:
+    put:
+      tags:
+        - workflows
+      summary: Update the workflow state
+      description: >-
+        Updates the state of a workflow with a unique ID. Access Control: You
+        must 
+         include a JSON Web Token (bearer token) in the authorization header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the workflow to edit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateState'
+            example:
+              event: activate
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '422':
+          description: Unprocessable Entity. Incorrect parameter information in payload.
+  /workflows/:id/launch:
+    post:
+      tags:
+        - workflows
+      summary: Launch a workflow
+      description: |-
+        For a workflow with a manual trigger, launches (activates) a workflow. 
+         Access Control: You must include a JSON Web Token (bearer token) in the authorization 
+         header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the workflow that you intend to launch
+          example: '2116'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+  /workflows/:id/cancel_instances:
+    put:
+      tags:
+        - workflows
+      summary: Cancel all jobs
+      description: |-
+        Cancels all running jobs of an active workflow with a particular ID. 
+         Access Control: You must include a JSON Web Token (bearer token) in the authorization 
+         header of your request.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: ID of the workflow for which you are cancelling all running jobs
+          example: '1120'
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '404':
+          description: Not Found. The workflow ID submitted in the request is incorrect.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404-Workflows'
+  /workflows/:id/delete_instances:
+    delete:
+      tags:
+        - workflows
+      summary: Delete all jobs
+      description: |-
+        Deletes all jobs for an active workflow with a particular ID. 
+         Access Control: You must include a JSON Web Token (bearer token) in the authorization 
+         header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the workflow for which you are cancelling all running jobs
+          example: '1120'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '404':
+          description: Not Found. The workflow ID submitted in the request is incorrect.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404-Workflows'
+  /workflow_instances:
+    get:
+      tags:
+        - workflow_instances
+      summary: Get jobs
+      description: |-
+        Returns all jobs of active workflows - whether running, complete, 
+         or failed. If you add query parameters (for a particular workflow ID or status), 
+         returns a filtered subset of jobs associated with that workflow or 
+         status. Access Control: You must include a JSON Web Token (bearer token) in the 
+         authorization header of your request.
+      parameters:
+        - $ref: '#/components/parameters/workflowID'
+        - $ref: '#/components/parameters/status'
+      responses:
+        '200':
+          description: OK - Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/200-WorkflowInstances'
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '500':
+          description: Internal Server Error
+  /workflow_instances/:id:
+    get:
+      tags:
+        - workflow_instances
+      summary: Get a job
+      description: |-
+        Returns a job with a unique ID. 
+         Access Control: You must include a JSON Web Token (bearer token) in the authorization 
+         header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: '8588'
+          required: true
+          description: Numeric ID of the job to get
+      responses:
+        '200':
+          description: OK - Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowInstances'
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '500':
+          description: Internal Server Error
+    delete:
+      tags:
+        - workflow_instances
+      summary: Delete a job
+      description: |-
+        Allows user to delete a job with a unique ID. Access Control: 
+         You must include a JSON Web Token (bearer token) in the authorization header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the job to delete
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+    put:
+      tags:
+        - workflow_instances
+      summary: Cancel a job
+      description: |-
+        Cancels a running job with a unique ID. Doing so 
+         allows you to edit the workflow that generated the job. Access Control: 
+         You must include a JSON Web Token (bearer token) in the authorization header of 
+         your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the job to cancel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cancelWorkflowInstance'
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+  /steps:
+    post:
+      tags:
+        - steps
+      summary: Create a step
+      description: |-
+        Creates a step in the workflow. Each step can hold one or more 
+         actions, which you create with POST /actions after creating the step. Steps 
+         can be re-ordered within the workflow after they are created, using a PUT /steps/:id 
+         request. Access Control: You must include a JSON Web Token (bearer token) in the 
+         authorization header of your request.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Step'
+      responses:
+        '201':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/201-Step'
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '422':
+          description: Unprocessable Entity. Incorrect parameter information in payload.
+  /steps/:id:
+    get:
+      tags:
+        - steps
+      summary: Get a step
+      description: |-
+        Returns the data for a step with a unique ID, such as the actions 
+         associated with that step. 
+         Access Control: You must include a JSON Web Token (bearer token) in the authorization 
+         header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: '1076'
+          required: true
+          description: Numeric ID of the step to get
+      responses:
+        '200':
+          description: OK - Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/200-StepsID'
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - steps
+      summary: Update a step
+      description: >-
+        Allows user to edit the details of a step with a unique ID. Access
+        Control: 
+         You must include a JSON Web Token (bearer token) in the authorization header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the workflow that is edited
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createStepRequest'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '422':
+          description: Unprocessable Entity. Incorrect parameter information in payload.
+    delete:
+      tags:
+        - steps
+      summary: Delete a step
+      description: |-
+        Allows user to delete a step with a unique ID. Access Control: You must 
+         include a JSON Web Token (bearer token) in the authorization header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the step to delete
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+  /actions:
+    post:
+      tags:
+        - actions
+      summary: Create an action
+      description: |-
+        Creates an action that can be used in one or more workflows. Actions
+         can transfer to a node or workspace, send a package, call an API, or notify users.
+         An action is contained in a step; a step can contain multiple actions. An example request
+         body for a transfer action is defined below. For examples of the other action types, go to
+         https://developer.ibm.com/aspera/docs/automation-api-guide/automation-api-action-examples/.
+         Access Control: You must include a JSON Web Token (bearer token) in the authorization header of your request.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createActionTransfer'
+      responses:
+        '201':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/201-ActionTransfer'
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '422':
+          description: Unprocessable Entity. Incorrect parameter information in payload.
+  /actions/:id:
+    get:
+      tags:
+        - actions
+      summary: Get an action
+      description: |-
+        Returns data for an action with a unique ID. 
+         Access Control: You must include a JSON Web Token (bearer token) in the authorization 
+         header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: '1076'
+          required: true
+          description: Numeric ID of the action to get
+      responses:
+        '200':
+          description: OK - Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/actionData'
+    put:
+      tags:
+        - actions
+      summary: Update an action
+      description: |-
+        Allows user to edit the values of an action with a unique ID. 
+         Access Control: You must include a JSON Web Token (bearer token) in the authorization 
+         header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the workflow to delete
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createActionAPI'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '422':
+          description: Unprocessable Entity. Incorrect parameter information in payload.
+    delete:
+      tags:
+        - actions
+      summary: Delete an action
+      description: |-
+        Allows user to delete a action with a unique ID. Access Control: 
+         You must include a JSON Web Token (bearer token) in the authorization header of your request.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the action to delete
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+  /workflow_permissions:
+    get:
+      tags:
+        - workflow_permissions
+      summary: Get workflow permissions
+      description: >
+        "Returns all workflow permissions. Access Control: You must include a
+        JSON Web Token (bearer token) in the authorization header of your
+        request."
+      parameters:
+        - $ref: '#/components/parameters/workflow_ID'
+      responses:
+        '200':
+          description: OK - Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/200-WorkflowPermissions'
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '500':
+          description: Internal Server Error
+    post:
+      tags:
+        - workflow_permissions
+      summary: Create a workflow permission
+      description: >
+        "Creates a new permission for a workflow. Access Control: You must
+        include a JSON Web Token (bearer token) in the authorization header of
+        your request."
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createWorkflowPermissionRequest'
+      responses:
+        '201':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowPermissions'
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '422':
+          description: Unprocessable Entity. Incorrect parameter information in payload.
+  /workflow_permissions/:id:
+    put:
+      tags:
+        - workflow_permissions
+      summary: Update a workflow permission
+      description: >
+        "Allows the user to edit a workflow permission with a unique ID. Access
+        Control: You must include a JSON Web Token (bearer token) in the
+        authorization header of your request."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the workflow permission
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateWorkflow'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: >-
+            Bad Request. The payload may not be in the correct format (JSON
+            format).
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+        '422':
+          description: Unprocessable Entity. Incorrect parameter information in payload.
+    delete:
+      tags:
+        - workflow_permissions
+      summary: Delete a workflow permission
+      description: >
+        "Allows user to delete a workflow permission with a unique ID. Access
+        Control: You must include a JSON Web Token (bearer token) in the
+        authorization header of your request."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Numeric ID of the workflow permission to delete
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden. The bearer token is missing or incorrect.
+components:
+  schemas:
+    200-WorkflowInstances:
+      title: Success response
+      description: Returned data for all jobs
+      type: object
+      properties:
+        offset:
+          description: |-
+            Controls pagination of the response, in coordination with 
+             the limit parameter. If offset = 0 and limit = 20, returns results 1-20 
+             (first page of results). If offset = 1 and limit = 20, returns results 
+             21-40 (second page of results)
+          type: integer
+          default: 0
+          example: 0
+        limit:
+          description: Maximum number of workflows for which to return data
+          type: integer
+          example: 20
+        first:
+          description: The link for the first page of results
+          type: object
+          properties:
+            href:
+              description: URL for the first page of results
+              type: string
+              format: uri
+              example: >-
+                http://api.qa.ibmaspera.com/automation/v1/workflow_instances?limit=20&offset=0
+        last:
+          description: The link for the last page of results
+          type: object
+          properties:
+            href:
+              description: URL for the last page of results
+              type: string
+              format: uri
+              example: >-
+                http://api.qa.ibmaspera.com/automation/v1/workflow_instances?limit=20&offset=20
+        next:
+          description: The link for the second page of results
+          type: object
+          properties:
+            href:
+              description: URL for the second page of results
+              type: string
+              format: uri
+              example: >-
+                http://api.qa.ibmaspera.com/automation/v1/workflow_instances?limit=20&offset=1
+        workflow_instances:
+          description: Array of jobs
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowInstances'
+    WorkflowInstances:
+      type: object
+      description: Job data
+      properties:
+        id:
+          description: ID for the workflow instance
+          type: string
+          example: '8588'
+        workflow_version_id:
+          description: >-
+            ID for the workflow version that is used in generating this workflow
+            instance
+          type: string
+          example: '8588'
+        instance_id:
+          description: UUID. Can be used for debugging purposes.
+          type: string
+          example: f5d74b9c-e2de-4782-9a44-e65b4857d98b
+        organization_id:
+          description: ID of organization from which the workflow originates
+          type: string
+          example: '58'
+        user_id:
+          description: User ID of user initiating the workflow instance
+          type: string
+          example: '3201'
+        workflow_id:
+          description: ID of the workflow that generates the workflow instance
+          type: string
+          example: '699'
+        step_id:
+          description: ID of step in the workflow that generates the workflow instance
+          type: string
+          example: '1290'
+        step_name:
+          description: |-
+            Name of step in the workflow that is currently active. If 
+             the workflow is complete or failed, step_name is the name of the final 
+             step in the workflow.
+          type: string
+          example: transfer step
+        status:
+          description: >-
+            Status of the workflow instance. Allowed values: executing, failed,
+            complete, canceled.
+          enum:
+            - executing
+            - failed
+            - complete
+            - canceled
+          type: string
+          example: complete
+        status_details:
+          description: Error message - only returned for a failed workflow instance
+          type: string
+          example: No valid permission on the source node available
+        launch_time:
+          description: Original start time for activation of the workflow
+          type: string
+          format: date-time
+          example: '2019-03-17T07:07:15.000Z'
+        state_change_time:
+          description: |-
+            Time the workflow instance state was changed--for example, 
+             with a PUT request.
+          type: string
+          format: date-time
+          example: '2019-03-17T07:07:22.000Z'
+        workflow_name:
+          description: Name of the workflow
+          type: string
+          example: media content
+    200-WorkflowPermissions:
+      title: Success response
+      description: Returned data for all jobs
+      type: object
+      properties:
+        workflow_permissions:
+          description: Array of jobs
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowPermissions'
+    WorkflowPermissions:
+      title: Success response
+      type: object
+      properties:
+        id:
+          description: Workflow Permission ID
+          type: string
+          example: '26'
+        user_id:
+          description: User ID
+          type: string
+          example: '26'
+        workflow_id:
+          description: Workflow ID
+          type: string
+          example: '26'
+        manage_jobs:
+          description: Whether there is permission to manage jobs
+          type: boolean
+          example: true
+        duplicate:
+          description: Whether there is permission to duplicate workflows
+          type: boolean
+          example: true
+        updated_at:
+          description: Time workflow is updated
+          type: string
+          format: date-time
+          example: '2019-01-10T21:25:24.000Z'
+        created_at:
+          description: Time workflow permission is created
+          type: string
+          format: date-time
+          example: '2019-01-10T21:25:24.000Z'
+    200-Workflows:
+      title: Success response
+      type: object
+      properties:
+        offset:
+          description: |-
+            Controls pagination of the response, in coordination with 
+             the limit parameter. If offset = 0 and limit = 20, returns results 1-20 
+             (first page of results). If offset = 1 and limit = 20, returns results 
+             21-40 (second page of results)
+          type: integer
+          default: 0
+          example: 0
+        limit:
+          description: Maximum number of workflows for which to return data
+          type: integer
+          example: 20
+        first:
+          description: The link for the first page of results
+          type: object
+          properties:
+            href:
+              description: URL for the first page of results
+              type: string
+              format: uri
+              example: >-
+                http://api.qa.ibmaspera.com/automation/v1/workflow_instances?limit=20&offset=0
+        last:
+          description: The link for the last page of results
+          type: object
+          properties:
+            href:
+              description: URL for the last page of results
+              type: string
+              format: uri
+              example: >-
+                http://api.qa.ibmaspera.com/automation/v1/workflow_instances?limit=20&offset=20
+        next:
+          description: The link for the second page of results
+          type: object
+          properties:
+            href:
+              description: URL for the second page of results
+              type: string
+              format: uri
+              example: >-
+                http://api.qa.ibmaspera.com/automation/v1/workflow_instances?limit=20&offset=1
+        total_count:
+          description: Number of workflows for the current user
+          type: integer
+          example: 6
+        workflows:
+          type: array
+          items:
+            $ref: '#/components/schemas/workflowData'
+    workflowData:
+      type: object
+      description: Returned workflow data
+      properties:
+        id:
+          description: Workflow ID
+          type: string
+          example: '26'
+        name:
+          description: Workflow name
+          type: string
+          example: test workflow
+        organization_id:
+          description: ID of organization associated with the workflow
+          type: string
+          example: '58'
+        user_id:
+          description: ID of user who created the workflow
+          type: string
+          example: '1072'
+        state:
+          description: >-
+            State of the workflow. Allowed values: draft, active, inactive,
+            error.
+          type: string
+          enum:
+            - draft
+            - active
+            - inactive
+            - error
+          example: draft
+        status:
+          description: >-
+            Workflow status. Allowed values: executing, failed, complete,
+            canceled.
+          type: string
+          enum:
+            - executing
+            - failed
+            - complete
+            - canceled
+          example: not_started
+        steps:
+          description: Array of step data
+          type: array
+          items:
+            $ref: '#/components/schemas/Steps'
+        step_order:
+          description: Array of step IDs, in the order they appear in the workflow
+          type: array
+          example:
+            - '1076'
+            - '1077'
+            - '1078'
+          items:
+            type: string
+        workflow_notifications:
+          description: >-
+            Object containing hashes of recipient data for workflow
+            notifications with a status of started, completed, and failed
+          type: object
+          properties:
+            started:
+              description: >-
+                Hashes of recipient data for workflow notifications with a
+                status of started
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    description: ID of user or group, or email of user
+                    type: string
+                  type:
+                    description: Type of recipient
+                    type: string
+                    enum:
+                      - User
+                      - Group
+                      - Email
+              example:
+                - id: example@email.com
+                  type: Email
+            failed:
+              description: >-
+                Hashes of recipient data for workflow notifications with a
+                status of failed
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    description: ID of user or group, or email of user
+                    type: string
+                  type:
+                    description: Type of recipient
+                    type: string
+                    enum:
+                      - User
+                      - Group
+                      - Email
+              example:
+                - id: example@email.com
+                  type: Email
+            completed:
+              description: >-
+                Hashes of recipient data for workflow notifications with a
+                status of completed
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    description: ID of user or group, or email of user
+                    type: string
+                  type:
+                    description: Type of recipient
+                    type: string
+                    enum:
+                      - User
+                      - Group
+                      - Email
+              example:
+                - id: example@email.com
+                  type: Email
+        updated_at:
+          description: Time workflow is updated
+          type: string
+          format: date-time
+          example: '2019-01-10T21:25:24.000Z'
+        trigger_type:
+          description: >-
+            Trigger type for the workflow. Allowed values: manual,
+            shared_inbox, 
+             watch_folder, scheduled.
+          type: string
+          enum:
+            - manual
+            - shared_inbox
+            - watch_folder
+            - scheduled
+          example: scheduled
+        workflow_can_activate:
+          description: |-
+            The workflow has a transfer step or send package step. 
+             This is a mandatory condition.
+          type: boolean
+          example: false
+        instance_stats:
+          description: Shows the running/completed/failed stats for the workflow
+          type: object
+          $ref: '#/components/schemas/InstanceStats'
+    InstanceStats:
+      type: object
+      description: Shows runtime statstics of a workflow
+      properties:
+        running:
+          description: Number of running instances
+          type: string
+          example: '10'
+        failed:
+          description: Number of failed instances
+          type: string
+          example: '10'
+        completed:
+          description: Number of completed instances
+          type: string
+          example: '10'
+    Steps:
+      type: object
+      description: Object that contains step data
+      properties:
+        id:
+          description: Step ID
+          type: string
+          example: '1260'
+        name:
+          description: Name you assign to the step
+          type: string
+          example: transcode step
+        action_order:
+          description: Order of actions in a step, listed by action ID
+          type: array
+          example:
+            - '1272'
+            - '1263'
+          items:
+            type: string
+    201-Workflow:
+      title: Success response
+      type: object
+      properties:
+        id:
+          description: Workflow ID
+          type: string
+          example: '560'
+        name:
+          description: Workflow name
+          type: string
+          example: Send Files to CBS
+        organization_id:
+          description: Organization ID
+          type: string
+          example: '7301'
+        user_id:
+          description: User ID
+          type: string
+          example: '1230'
+        state:
+          description: >-
+            The state of the workflow. Allowed values: draft, active, inactive,
+            error.
+          type: string
+          enum:
+            - draft
+            - active
+            - inactive
+            - error
+          example: draft
+        status:
+          description: >-
+            Workflow status. Allowed values: executing, failed, complete,
+            canceled.
+          type: string
+          enum:
+            - executing
+            - failed
+            - complete
+            - canceled
+          example: not_started
+        steps:
+          description: Array of step data
+          type: array
+          items:
+            $ref: '#/components/schemas/Steps'
+        step_order:
+          description: Array of step IDs, in the order they appear in the workflow
+          type: array
+          example:
+            - '1076'
+            - '1077'
+            - '1078'
+          items:
+            type: string
+        updated_at:
+          description: Time workflow is updated
+          type: string
+          format: date-time
+          example: '2019-02-19T23:52:20.000Z'
+        trigger_type:
+          description: >-
+            Trigger type for the workflow. Allowed values: manual,
+            shared_inbox, 
+             watch_folder, scheduled.
+          type: string
+          enum:
+            - manual
+            - shared_inbox
+            - watch_folder
+            - scheduled
+          example: manual
+        workflow_can_activate:
+          description: |-
+            The workflow has a transfer step or send package step. 
+             This is a mandatory condition.
+          type: boolean
+          example: false
+    404-Workflows:
+      title: Error response
+      description: The workflow ID submitted in the request is incorrect.
+      type: object
+      properties:
+        message:
+          description: The error message in the response
+          type: string
+          example: Couldn't find workflow with 'id'=42343242
+    200-StepsID:
+      title: Success response
+      description: Returned data for a step with a unique ID.
+      type: object
+      properties:
+        id:
+          description: ID of the step
+          type: string
+          example: '1076'
+        name:
+          description: Name of the step. Null if no name is assigned.
+          type: string
+          example: notification to admins
+        action_order:
+          description: Order of actions in a step, listed by action ID
+          type: array
+          items:
+            type: string
+          example:
+            - 1273, 1262, 1274
+        actions:
+          description: Data for actions in the step
+          type: array
+          items:
+            $ref: '#/components/schemas/actionData'
+    actionData:
+      type: object
+      properties:
+        id:
+          description: ID of the action
+          type: string
+          example: '1071'
+        name:
+          description: Name of the action. Null if no name is assigned.
+          type: string
+          example: 'null'
+        type:
+          description: >-
+            Type of action, which can include a workflow trigger. Allowed
+            values: 
+             transfer, send_package, api, email_notification, manual, shared_inbox, watch_folder, 
+             scheduled.
+          enum:
+            - transfer
+            - send_package
+            - api
+            - email_notification
+            - manual
+            - shared_inbox
+            - watch_folder
+            - scheduled
+          type: string
+          example: scheduled
+        data:
+          description: Detailed action data
+          type: object
+          properties:
+            start_date:
+              description: Date and time when the scheduled trigger is initiated
+              type: string
+              format: date-time
+              example: '2019-03-13T05:32:28.784Z'
+            substitutions:
+              description: Data for substitution variables included in the message
+              type: array
+              items:
+                $ref: '#/components/schemas/substitutionVariables'
+            repeat_interval:
+              description: Details about the workflow trigger (action) of type 'scheduled'
+              type: object
+              properties:
+                repeat_type:
+                  description: Unit of time for the scheduled trigger
+                  type: string
+                  example: minutes
+                repeat_number:
+                  description: Number of times to trigger the workflow
+                  type: integer
+                  example: 20
+                days_of_the_week:
+                  description: Days on which to trigger the workflow, if applicable
+                  type: string
+                  example: '[]'
+        outputs:
+          description: |-
+            Describes the format of action outputs that can be added 
+             as substitution variables in subsequent actions.
+          type: object
+          properties:
+            timestamp:
+              description: Transfer timestamp output
+              type: string
+              example: iso8601
+    201-Step:
+      title: Success response
+      type: object
+      properties:
+        id:
+          description: ID of the new step
+          type: string
+          example: '1454'
+        name:
+          description: Name of the step. Null if not declared in the request.
+          type: string
+          example: notification step
+        action_order:
+          description: Order of actions in a step, listed by action ID
+          type: array
+          items:
+            type: string
+          example:
+            - 1273, 1262, 1274
+    substitutionVariables:
+      type: object
+      properties:
+        template:
+          description: |-
+            Template for insertion of substitution variables in the 
+             message
+          type: string
+          example: '{{step_id_1357.action_id_1409.node_id}}'
+        path:
+          description: Path to the substitution variable
+          type: array
+          items:
+            $ref: '#/components/schemas/substitutionVariablesPath'
+    substitutionVariablesPath:
+      type: object
+      properties:
+        name:
+          description: >-
+            Name for the path. Allowed values, source, file_id, node_id,
+            message, 
+             value, conditions.
+          type: string
+          enum:
+            - source
+            - file_id
+            - node_id
+            - message
+            - value
+            - conditions
+          example: message
+        type:
+          description: |-
+            Path type. Allowed values: map, array. Note that path type of map 
+             indicates a key:value pair.
+          type: string
+          enum:
+            - map
+            - array
+          example: map
+        index:
+          description: Index of the substitution variable
+          type: integer
+          example: 0
+    201-ActionAPI:
+      title: Success response
+      type: object
+      properties:
+        id:
+          description: Action ID
+          type: string
+          example: '647'
+        name:
+          description: 'Name assigned to the action. Default: null.'
+          type: string
+          example: Get status
+        type:
+          description: |-
+            The type of action. For an action that calls an API, type is 
+             always api.
+          type: string
+          example: api
+        data:
+          type: object
+          properties:
+            method:
+              description: 'API method. Allowed values: get, post, put, delete.'
+              type: string
+              example: get
+            endpoint:
+              description: Endpoint for the API call
+              type: string
+              format: uri
+              example: https://api.asperafiles.com/automation/v1/workflows
+            authentication:
+              description: Authentication for the request.
+              type: object
+              properties:
+                type:
+                  description: "Authentication type required by the API. Allowed values: \n bearer, basic, none. Default: none. Use 'bearer' for bearer token \n authentication, for basic authentication, 'none' for no authentication \n method.\_\n \n The bearer authentication\_type requires a token parameter. Allowed values: \n none, bearer, basic. Default: none. The basic authentication type\_requires username \n and password parameters. The 'none' authentication type does not require \n additional parameters."
+                  type: string
+                  enum:
+                    - none
+                    - bearer
+                    - basic
+                  default: none
+                  example: bearer
+                token:
+                  description: Bearer token for the bearer authentication type
+                  type: string
+                  example: ''
+                username:
+                  description: Username for the basic authentication type
+                  type: string
+                  example: jabrams
+                password:
+                  description: Password for the basic authentication type
+                  type: string
+                  example: llk3lk4&W@
+            headers:
+              description: Headers returned in the response
+              type: array
+              items:
+                $ref: '#/components/schemas/Headers'
+            substitutions:
+              description: Data for substitution variables included in the message
+              type: array
+              items:
+                $ref: '#/components/schemas/substitutionVariables'
+        outputs:
+          description: |-
+            Describes the format of action outputs that can be added 
+             as substitution variables in subsequent actions.
+          type: object
+          properties:
+            status:
+              description: Status output
+              type: string
+              example: string
+            response_code:
+              description: Response code output
+              type: string
+              example: integer
+            response_body:
+              description: Response body output
+              type: string
+              example: hash
+    201-ActionTransfer:
+      title: Success response
+      type: object
+      properties:
+        id:
+          description: Action ID
+          type: string
+          example: '647'
+        name:
+          description: Action Name
+          type: string
+          example: first transfer
+        type:
+          description: |-
+            The type of action. For an action that transfers a file, 
+             the type is always transfer.
+          type: string
+          example: transfer
+        data:
+          description: Data for the action
+          type: object
+          properties:
+            target_rate:
+              properties:
+                rate:
+                  description: Target rate for the transfer, in seconds
+                  type: integer
+                  example: 10000
+                  default: 10000
+                allow_retry:
+                  description: Whether to allow retry of a failed transfer
+                  type: boolean
+                  example: true
+                  default: true
+                retry_attempts:
+                  description: Number of allowed retry attempts for the transfer
+                  type: integer
+                  example: 3
+                  default: 3
+                retry_interval:
+                  description: |-
+                    Interval, in seconds, after which Automation retries 
+                     the transfer
+                  type: integer
+                  example: 30
+                  default: 30
+            content_encryption:
+              properties:
+                encryption:
+                  description: Type of content encryption.
+                  type: string
+                  enum:
+                    - aes-128
+                    - aes-256
+                    - aes-192
+                    - none
+                  example: aes-128
+                apply_protection:
+                  description: Apply protection to the file transfer
+                  type: boolean
+                  example: true
+                password:
+                  description: >-
+                    Password for the transfer, used if the value of
+                    apply_protection 
+                     is true.
+                  type: string
+                  example: lHF%SHJrjk
+            resume_policy:
+              properties:
+                resume_partials:
+                  description: Resume partial transfers for a paused transfer
+                  type: boolean
+                  example: true
+                difference_check:
+                  description: |-
+                    Type of check used to validate content. Allowed values: 
+                     attrs, none.
+                  type: string
+                  enum:
+                    - attrs
+                    - none
+                  example: attrs
+                destination_file_options:
+                  description: |-
+                    Processing options for file at destination. Allowed values: 
+                     overwrite_always, overwrite_both_newer_and_different, overwrite_different, 
+                     overwrite_newer, overwrite_never.
+                  type: string
+                  enum:
+                    - “overwrite_always”
+                    - “overwrite_both_newer_and_different”
+                    - “overwrite_different”
+                    - “overwrite_newer”
+                    - “overwrite_never”
+                  example: “overwrite_always”
+            file_attributes:
+              description: ''
+              type: boolean
+              example: true
+            source_archive:
+              description: Archive policy for the transfer source
+              type: object
+              properties:
+                archive_option:
+                  description: >-
+                    Archive policy for the package at the source. Allowed
+                    values: 
+                     none, archive, delete.
+                  type: string
+                  enum:
+                    - none
+                    - archive
+                    - delete
+                  example: archive
+                delete_empty_subdirectories:
+                  description: Delete empty subdirectories at source after transfer
+                  type: boolean
+                  example: false
+                move_after_transfer:
+                  description: >-
+                    Archive location in case of archiving. (location relative to
+                    source path)
+                  type: string
+                  example: /abc/def
+                remove_skipped:
+                  description: >-
+                    Archive location in case of delete source. to remove the
+                    skipped files
+                  type: boolean
+                  example: true
+            conditions_type:
+              description: |-
+                The conditions type for the transfer. Allowed values: all_new 
+                 (transfers all new files), custom (adds custom filtering conditions). 
+                 Default: all-new.
+              type: string
+              enum:
+                - custom
+                - all_new
+              default: all_new
+              example: custom
+            join_type:
+              description: 'The logical operator. Allowed values: and, or'
+              type: string
+              example: and
+            conditions:
+              description: Filtering conditions for the transfer
+              type: array
+              items:
+                $ref: '#/components/schemas/Conditions'
+            substitutions:
+              description: |-
+                Data for substitution variables from previous steps, 
+                 inserted into the message
+              type: array
+              items:
+                $ref: '#/components/schemas/substitutionVariables'
+            source:
+              properties:
+                type:
+                  description: 'Source type for transfer. Allowed values: node, workspace.'
+                  type: string
+                  example: node
+                node_id:
+                  description: ID of node
+                  type: string
+                  example: 4724
+                node_name:
+                  description: Name of node
+                  type: string
+                  example: Lor_3_node
+                workspace_id:
+                  description: ID of workspace
+                  type: string
+                  example: 367
+                workspace_name:
+                  description: Name of workspace
+                  type: string
+                  example: editing_team
+                file_name:
+                  description: Filename for file being transferred
+                  type: string
+                  example: 1112_m
+                file_id:
+                  description: File ID for file being transferred
+                  type: string
+                  example: '1755550'
+                paths:
+                  description: Array of objects that contain source paths for transfer
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Paths'
+        outputs:
+          description: >-
+            Describes the format of action outputs that can be added as
+            substitution variables in subsequent actions.
+          type: object
+          properties:
+            status:
+              description: Status output
+              type: string
+              example: string
+            transfer_uuid:
+              description: Transfer UUID output
+              type: string
+              example: string
+            timestamp:
+              description: Transfer timestamp output
+              type: string
+              example: iso8601
+    Step:
+      required:
+        - workflow_id
+      type: object
+      properties:
+        workflow_id:
+          type: string
+          description: ID of workflow that contains the step
+          example: 1260
+        name:
+          type: string
+          description: The name of the step
+          example: transfer step
+        action_order:
+          description: Order of actions in a step, listed by action ID
+          type: array
+          items:
+            type: string
+          example:
+            - 1273, 1262, 1274
+    createWorkflowRequest:
+      title: Creates a new workflow
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          description: Name of new workflow
+          type: string
+          example: Send Files to Media
+    createWorkflowPermissionRequest:
+      title: Creates a new workflow permission
+      required:
+        - user_id
+        - workflow_id
+        - duplicate
+        - manage_jobs
+      type: object
+      properties:
+        user_id:
+          description: User ID to associate with the permission
+          type: string
+          example: '32'
+        workflow_id:
+          description: ID for the workflow on which to create the permission
+          type: string
+          example: '32'
+        duplicate:
+          description: Whether to give permission to duplicate the workflow
+          type: boolean
+          example: true
+        manage_jobs:
+          description: Whether to give permission to manage workflow jobs
+          type: boolean
+          example: true
+    updateWorkflow:
+      title: Updates an existing workflow
+      description: Updates name and step order of an existing workflow
+      required:
+        - name
+        - step_order
+      type: object
+      properties:
+        name:
+          description: Name of new workflow
+          type: string
+          example: Send Files to Media
+        step_order:
+          description: Array of workflow steps, in the order they appear in the workflow
+          type: array
+          items:
+            type: string
+          example:
+            - '321'
+            - '123'
+            - '111'
+    cancelWorkflowInstance:
+      title: Cancel a running workflow instance
+      required:
+        - status
+      type: object
+      properties:
+        status:
+          description: |-
+            Status of the workflow instance. To cancel a workflow instance, 
+             the value is always canceled.
+          type: string
+          example: canceled
+    createStepRequest:
+      title: Creates a new step
+      required:
+        - id
+        - workflow_id
+      type: object
+      properties:
+        workflow_id:
+          description: ID of the workflow
+          type: string
+          example: '2512'
+        name:
+          description: Name of the step
+          type: string
+          example: notification step
+        action_order:
+          description: Order of actions in a step, listed by action ID
+          type: array
+          example:
+            - 1273, 1262, 1274
+          items:
+            type: string
+    createActionAPI:
+      title: Creates a new action that calls an API
+      type: object
+      required:
+        - method
+        - endpoint
+        - username
+        - password
+        - token
+      properties:
+        data:
+          description: Payload for the action
+          type: object
+          properties:
+            method:
+              description: >-
+                API method for the request. Allowed values: get, post, put,
+                delete.
+              type: string
+              enum:
+                - get
+                - post
+                - put
+                - delete
+              example: get
+            headers:
+              description: Request headers
+              type: array
+              items:
+                $ref: '#/components/schemas/Headers'
+            authentication:
+              description: Authentication for the request.
+              type: object
+              properties:
+                type:
+                  description: "Authentication type required by the API. Allowed values: \n bearer, basic, none. Default: none. Use 'bearer' for bearer token \n authentication, for basic authentication, 'none' for no authentication \n method.\_\n \n Allowed values: none, bearer, basic. Default: none. The basic authentication type\_\n requires a username parameter and a password parameter. The bearer \n authentication\_type requires a token parameter. The 'none' authentication \n type does not require additional parameters."
+                  type: string
+                  enum:
+                    - none
+                    - bearer
+                    - basic
+                  default: none
+                  example: bearer
+                token:
+                  description: Bearer token for the bearer authentication type
+                  type: string
+                  example: ''
+                username:
+                  description: Username for the basic authentication type
+                  type: string
+                  example: jabrams
+                password:
+                  description: Password for the basic authentication type
+                  type: string
+                  example: llk3lk4&W@
+            endpoint:
+              description: Endpoint for the request
+              type: string
+              format: uri
+              example: https://www.google.com
+            substitutions:
+              description: |-
+                Data for substitution variables from previous steps, 
+                 inserted into the message
+              type: array
+              items:
+                $ref: '#/components/schemas/substitutionVariables'
+        type:
+          description: >-
+            Action type. For an action that calls an API, the type is always
+            api.
+          type: string
+          example: api
+        step_id:
+          description: ID of step that contains the action
+          type: string
+          example: '1406'
+    Headers:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          description: Header key
+          type: string
+          example: Content-Type
+        value:
+          description: Header value
+          type: string
+          example: text/html
+    createActionTransfer:
+      title: Creates a new action to send a file or folder
+      description: >-
+        The node_id and file_id are required parameters in the payload to create
+        a transfer action.
+      type: object
+      required:
+        - data
+        - source
+        - destination
+        - type
+        - node_id
+        - file_id
+        - step_id
+        - paths
+      properties:
+        data:
+          description: Data in the payload
+          type: object
+          properties:
+            content_encryption:
+              description: Encryption information
+              type: object
+              properties:
+                encryption:
+                  description: Method of content encryption.
+                  type: string
+                  enum:
+                    - AES-128
+                    - AES-256
+                    - AES-192
+                    - none
+                  default: none
+                  example: AES-128
+                apply_protection:
+                  description: Apply protection to the file transfer
+                  type: boolean
+                  example: true
+                password:
+                  description: >-
+                    Password for the transfer, used if the value of
+                    apply_protection 
+                     is true.
+                  type: string
+                  example: lHF%SHJrjk
+            destination:
+              description: Object with details about destination
+              type: object
+              properties:
+                file_id:
+                  description: >-
+                    ID of file to be transferred. Required for a transfer source
+                    that is a workspace or node.
+                  type: string
+                  example: '1818255'
+                file_name:
+                  description: Name of file to be transferred.
+                  type: string
+                  example: folder1
+                node_id:
+                  description: >-
+                    ID of destination node. Required for a transfer source that
+                    is a workspace or node.
+                  type: string
+                  example: '95'
+                node_name:
+                  description: Name of the source node for the transfer.
+                  type: string
+                  example: Tor02_node
+                paths:
+                  description: Array of objects that contain source paths for transfer
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Paths'
+                type:
+                  description: >-
+                    Type of destination for transfer. Allowed values: workspace,
+                    node.
+                  type: string
+                  enum:
+                    - workspace
+                    - node
+                  example: workspace
+                workspace_id:
+                  description: ID of workspace at destination
+                  type: string
+                  example: '638'
+                workspace_name:
+                  description: Name of workspace at destination
+                  type: string
+                  example: dev_workspace
+            file_attributes:
+              description: File attributes are defined
+              type: boolean
+              example: true
+            conditions_type:
+              description: |-
+                The conditions type for the transfer. Allowed values: all_new 
+                 (transfers all new files), custom (adds custom filtering conditions). 
+                 Default: all-new.
+              type: string
+              enum:
+                - custom
+                - all_new
+              default: all_new
+              example: custom
+            join_type:
+              description: |-
+                The logical operator that joins multiple conditions. Allowed 
+                 values: and, or.
+              type: string
+              enum:
+                - and
+                - or
+              example: and
+            conditions:
+              description: Filtering conditions for the transfer
+              type: array
+              items:
+                $ref: '#/components/schemas/Conditions'
+            resume_policy:
+              description: Policy for resuming a transfer
+              type: object
+              properties:
+                destination_file_options:
+                  description: >-
+                    Processing options for file at destination. Allowed values:
+                    overwrite_always, 
+                     overwrite_both_newer_and_different, overwrite_different, overwrite_newer, overwrite_never.
+                  type: string
+                  enum:
+                    - “overwrite_always”
+                    - “overwrite_both_newer_and_different”
+                    - “overwrite_different”
+                    - “overwrite_newer”
+                    - “overwrite_never”
+                  example: “overwrite_always”
+                difference_check:
+                  description: |-
+                    Type of check used to validate content. Allowed values: 
+                     attrs, none.
+                  type: string
+                  enum:
+                    - attrs
+                    - none
+                  example: attrs
+                resume_partials:
+                  description: Partial transfers should be resumed
+                  type: boolean
+                  example: true
+            source:
+              description: Source of the transfer
+              type: object
+              properties:
+                type:
+                  description: 'Source type. Allowed values: workspace, node.'
+                  type: string
+                  enum:
+                    - workspace
+                    - node
+                  example: node
+                file_id:
+                  description: ID of file that is transferred
+                  type: string
+                  example: '1730980'
+                file_name:
+                  description: Name of file that is transferred
+                  type: string
+                  example: 01-test
+                node_id:
+                  description: ID of the source node.
+                  type: string
+                  example: '95'
+                node_name:
+                  description: Name of the source node.
+                  type: string
+                  example: Tor02_node
+                paths:
+                  description: Array of objects that contain source paths for transfer
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Paths'
+                token:
+                  description: Token for the transfer
+                  type: string
+                  example: <token>
+            source_archive:
+              description: Archive policy for the transfer source
+              type: object
+              properties:
+                archive_option:
+                  description: >-
+                    Archive policy for the package at the source. Allowed
+                    values: 
+                     none, archive, delete.
+                  type: string
+                  enum:
+                    - none
+                    - archive
+                    - delete
+                  example: none
+                delete_empty_subdirectories:
+                  description: Delete empty subdirectories at source after transfer
+                  type: boolean
+                  example: false
+                move_after_transfer:
+                  description: >-
+                    Archive location in case of archiving. (location relative to
+                    source path)
+                  type: string
+                  example: /abc/def
+                remove_skipped:
+                  description: >-
+                    Archive location in case of delete source. to remove the
+                    skipped files
+                  type: boolean
+                  example: true
+            substitutions:
+              description: |-
+                Data for substitution variables from previous steps, 
+                 inserted into the message
+              type: array
+              items:
+                $ref: '#/components/schemas/substitutionVariables'
+            timeout:
+              description: >-
+                The maximum time the action can take before it is marked as
+                failed. Default: 24 hours (in seconds), mimimum 1 hour (in
+                seconds), maximum: 48 hours (in seconds).
+              type: integer
+              default: 86400
+              example: 144000
+            target_rate:
+              description: Rate and retry conditions for the transfer
+              type: object
+              properties:
+                rate:
+                  description: Transfer rate, in bytes per second
+                  type: integer
+                  default: 10000
+                  example: 10000
+                allow_retry:
+                  description: Whether to allow retry of a failed transfer
+                  type: boolean
+                  default: true
+                  example: true
+                retry_attempts:
+                  description: Number of times Automation can retry the transfer
+                  type: integer
+                  default: 3
+                  example: 3
+                retry_interval:
+                  description: |-
+                    Length of time to wait before retrying the transfer, in 
+                     seconds
+                  type: integer
+                  default: 30
+                  example: 30
+        step_id:
+          description: ID for step that contains the action
+          type: string
+          example: '1314'
+        type:
+          description: |-
+            Action type. For an action that transfers a file, the type is 
+             always transfer.
+          type: string
+          example: transfer
+    Conditions:
+      type: object
+      required:
+        - field_name
+        - field_type
+        - match_type
+        - value
+        - size
+      properties:
+        field_name:
+          description: >-
+            Name of the condition field. Allowed values: file_name,
+            extension_name, file_size
+          type: string
+          enum:
+            - file_name
+            - extension_name
+            - file_size
+          example: file_name
+        field_type:
+          description: >-
+            Type of the condition field. Allowed values: string, byte. The
+            value 
+             'string' is used with a field_name of file_name or extension_name. The value 
+             'byte' is used with a field_name of file_size.
+          type: string
+          enum:
+            - string
+            - byte
+          example: string
+        match_type:
+          description: >-
+            Logic for the matching condition. Allowed values: includes,
+            excludes, 
+             matches, regex, equal, greater_than, less_than, greater_than_or_equal, 
+             less_than_or_equal. A value of includes, excludes, matches, or regex is used with 
+             a field_name of file_name or extension_name. A value of equal, greater_than, 
+             less_than, greater_than_or_equal or less_than_or_equal is used with a field_name 
+             of file_size.
+          type: string
+          enum:
+            - includes
+            - excludes
+            - matches
+            - regex
+            - equal
+            - greater_than
+            - less_than
+            - greater_than_or_equal
+            - less_than_or_equal
+          example: includes
+        value:
+          description: Value of the condition
+          type: string
+          example: .jpg
+        size:
+          description: Size of file being transferred, in bytes
+          type: integer
+          example: 500000
+    Recipients:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          description: Recipient ID
+          type: string
+          example: '3201'
+        type:
+          description: 'User type of recipient. Allowed values: user, admin.'
+          type: string
+          enum:
+            - user
+            - admin
+          example: user
+        name:
+          description: Name of recipient
+          type: string
+          example: Adam Smith
+    bccRecipients:
+      required:
+        - id
+        - type
+      type: object
+      description: |-
+        Properties of user (recipient) who receives notification that 
+         the package is sent
+      properties:
+        id:
+          description: Recipient ID
+          type: string
+          example: '3202'
+        type:
+          description: 'User type of recipient. Allowed values: user, admin.'
+          type: string
+          enum:
+            - user
+            - admin
+          example: admin
+        name:
+          description: Name of recipient
+          type: string
+          example: Benita Tyme
+    uploadNotificationRecipients:
+      required:
+        - id
+        - type
+      type: object
+      description: |-
+        Properties of user (recipient) who receives notification that 
+         the package is sent
+      properties:
+        id:
+          description: Recipient ID
+          type: string
+          example: '3203'
+        type:
+          description: 'User type of recipient. Allowed values: user, admin.'
+          type: string
+          enum:
+            - user
+            - admin
+          example: admin
+        name:
+          description: Name of recipient
+          type: string
+          example: Constance Upshaw
+    downloadNotificationRecipients:
+      required:
+        - id
+        - type
+      type: object
+      description: |-
+        Properties of user (recipient) who receives notification that 
+         the package is sent
+      properties:
+        id:
+          description: Recipient ID
+          type: string
+          example: '3204'
+        type:
+          description: 'User type of recipient. Allowed values: user, admin.'
+          type: string
+          enum:
+            - user
+            - admin
+          example: user
+        name:
+          description: Name of recipient
+          type: string
+          example: David Vale
+    Paths:
+      title: Paths
+      type: object
+      required:
+        - source
+      description: Source paths for the transfer
+      properties:
+        source:
+          description: >-
+            Describes the source path. If "/", all files transfer from the same
+            folder location.
+          type: string
+          example: /
+    updateState:
+      title: Updates the state of the workflow
+      required:
+        - event
+      properties:
+        event:
+          description: |-
+            Request a state change. Allowed values: save_as_draft, activate, 
+             deactivate. To save a workflow in a state that can be edited, use 'save_as_draft'. 
+             To launch running instances of the workflow, use 'activate'. To stop all running 
+             instances of a workflow, use 'deactivate'; this event allows you to edit the workflow.
+          type: string
+          enum:
+            - save_as_draft
+            - activate
+            - deactivate
+          example: save_as_draft
+  parameters:
+    status:
+      name: status
+      in: query
+      description: |-
+        Status of the workflow. Allowed values: executing, failed, complete, 
+         canceled.
+      required: false
+      schema:
+        type: string
+        enum:
+          - executing
+          - failed
+          - complete
+          - canceled
+      example: executing
+    workflowID:
+      name: workflow_id
+      in: query
+      description: ID of the workflow
+      required: false
+      schema:
+        type: string
+      example: '362'
+    workflow_ID:
+      name: workflow_id
+      in: query
+      description: ID of the workflow
+      required: true
+      schema:
+        type: string
+      example: '362'
