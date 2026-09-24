@@ -32,6 +32,14 @@ const openApiSpecs = [
         filename: "IBM Aspera on Cloud API-0.2.6.yaml",
         specVersion: "OpenAPI 3.0",
     },
+    {
+        filename: "IBM Aspera on Cloud Automation API-1.0.5-enhanced.yaml",
+        specVersion: "OpenAPI 3.1",
+    },
+    {
+        filename: "IBM Aspera on Cloud Automation API-1.0.5.yaml",
+        specVersion: "OpenAPI 3.0",
+    },
     { filename: "IBM_Aspera_Shares.yaml", specVersion: "OpenAPI 3.0" },
 ];
 
