@@ -179,7 +179,7 @@ module Utils
       )
 
       transfer_response = @transfer_service.start_transfer(transfer_request)
-      throw_on_error(transfer_response.status, transfer_response.error)
+      throw_on_error(transfer_response.status, error_description(transfer_response.error&.description))
       transfer_response.transferId
     end
 
@@ -192,7 +192,10 @@ module Utils
         status = transfer_response.status
         # @logger.info("transfer: #{::Transferd::Api::TransferStatus.constants[status]}")
         @logger.info("transfer: #{status}")
-        throw_on_error(status, transfer_response.error)
+        # `error` is empty on session errors: the cause is in session or transfer information
+        throw_on_error(status, error_description(transfer_response.error&.description,
+                                                 transfer_response.sessionInfo&.errorDesc,
+                                                 transfer_response.transferInfo&.errorDescription))
         break if status == :COMPLETED
       end
       @logger.info("Transfer #{transfer_id} completed successfully.")
@@ -204,13 +207,18 @@ module Utils
     end
 
     # @param status [Symbol] transfer status
-    # @param error [Transferd::Api::Error, nil] error information
-    def throw_on_error(status, error)
+    # @param description [String] error description
+    def throw_on_error(status, description)
       if status == :FAILED
-        raise "transfer failed: #{error&.description}"
+        raise "transfer failed: #{description}"
       elsif status == :UNKNOWN_STATUS
-        raise "unknown transfer id: #{error&.description}"
+        raise "unknown transfer id: #{description}"
       end
+    end
+
+    # @return [String] first non-empty error description
+    def error_description(*texts)
+      texts.map { |text| text.to_s.strip }.find { |text| !text.empty? } || 'unknown error'
     end
 
     private

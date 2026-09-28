@@ -109,6 +109,18 @@ public class TransferClient {
     }
 
     /**
+     * @return first non-empty error description
+     */
+    private static String errorDescription(final String... texts) {
+        for (final String text : texts) {
+            if (text != null && !text.isBlank()) {
+                return text.strip();
+            }
+        }
+        return "unknown error";
+    }
+
+    /**
      * Convert log level for ascp from string to int
      */
     private int ascpLevel(String level) {
@@ -289,8 +301,8 @@ public class TransferClient {
         final Transferd.TransferStatus status = transferResponse.getStatus();
         if (status == Transferd.TransferStatus.FAILED
                 || status == Transferd.TransferStatus.UNKNOWN_STATUS) {
-            throw new RuntimeException(
-                    "transfer start failed: " + transferResponse.getError().getDescription());
+            throw new RuntimeException("transfer start failed: "
+                    + errorDescription(transferResponse.getError().getDescription()));
         }
         transferId = transferResponse.getTransferId();
         LOGGER.log(Level.FINE, "transfer session started with id {0} / {1}",
@@ -426,10 +438,12 @@ public class TransferClient {
                 LOGGER.log(Level.FINE, "L: err: {0}", response.getError());
             }
             if (status == Transferd.TransferStatus.FAILED) {
-                LOGGER.log(Level.SEVERE, "L: transfer failed: {0}",
-                        response.getError().getDescription());
-                throw new RuntimeException(
-                        "transfer failed: " + response.getError().getDescription());
+                // `error` is empty on session errors: the cause is in session or transfer information
+                final String description = errorDescription(response.getError().getDescription(),
+                        response.getSessionInfo().getErrorDesc(),
+                        response.getTransferInfo().getErrorDescription());
+                LOGGER.log(Level.SEVERE, "L: transfer failed: {0}", description);
+                throw new RuntimeException("transfer failed: " + description);
             }
             if (status == Transferd.TransferStatus.COMPLETED) {
                 LOGGER.log(Level.INFO, "L: upload finished, received: {0}", status);

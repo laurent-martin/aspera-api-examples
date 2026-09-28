@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	pb "aspera_examples/build/grpc_aspera"
@@ -282,7 +283,7 @@ func (tc *TransferClient) StartTransfer(transferSpec map[string]interface{}) (st
 		return "", fmt.Errorf("failed to start transfer: %w", err)
 	}
 
-	if err := tc.throwOnError(resp.Status, resp.Error); err != nil {
+	if err := tc.throwOnError(resp.Status, errorDescription(resp.GetError().GetDescription())); err != nil {
 		return "", err
 	}
 
@@ -309,7 +310,9 @@ func (tc *TransferClient) WaitTransfer(transferID string) error {
 
 		tc.config.Log.Info("Transfer status", zap.String("status", pb.TransferStatus_name[int32(info.Status)]))
 
-		if err := tc.throwOnError(info.Status, info.Error); err != nil {
+		// `error` is empty on session errors: the cause is in session or transfer information
+		description := errorDescription(info.GetError().GetDescription(), info.GetSessionInfo().GetErrorDesc(), info.GetTransferInfo().GetErrorDescription())
+		if err := tc.throwOnError(info.Status, description); err != nil {
 			return err
 		}
 
@@ -334,16 +337,26 @@ func (tc *TransferClient) StartTransferAndWait(transferSpec map[string]interface
 	return tc.WaitTransfer(transferID)
 }
 
-func (tc *TransferClient) throwOnError(status pb.TransferStatus, trError *pb.Error) error {
+func (tc *TransferClient) throwOnError(status pb.TransferStatus, description string) error {
 	switch status {
 	case pb.TransferStatus_FAILED:
-		tc.config.Log.Errorf("Transfer failed: %s", trError.GetDescription())
-		return fmt.Errorf("transfer failed: %s", trError.GetDescription())
+		tc.config.Log.Errorf("Transfer failed: %s", description)
+		return fmt.Errorf("transfer failed: %s", description)
 	case pb.TransferStatus_UNKNOWN_STATUS:
-		return fmt.Errorf("unknown transfer status: %s", trError.GetDescription())
+		return fmt.Errorf("unknown transfer status: %s", description)
 	default:
 		return nil
 	}
+}
+
+// First non-empty error description
+func errorDescription(texts ...string) string {
+	for _, text := range texts {
+		if text = strings.TrimSpace(text); text != "" {
+			return text
+		}
+	}
+	return "unknown error"
 }
 
 // Open a log file for the daemon output

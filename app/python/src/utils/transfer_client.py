@@ -178,7 +178,7 @@ class TransferClient:
         )
         # send start transfer request to transfer manager daemon
         transfer_response = self._transfer_service.StartTransfer(transfer_request)
-        self.throw_on_error(transfer_response.status, transfer_response.error)
+        self.throw_on_error(transfer_response)
         return transfer_response.transferId
 
     def wait_transfer(self, transfer_id):
@@ -194,7 +194,7 @@ class TransferClient:
             # check transfer status in response, and exit if it's done
             status = transfer_info.status
             logging.info('transfer: %s', transfer_manager.TransferStatus.Name(status))
-            self.throw_on_error(status, transfer_info.error)
+            self.throw_on_error(transfer_info)
             if status == transfer_manager.COMPLETED:
                 break
 
@@ -205,13 +205,26 @@ class TransferClient:
         self.startup()
         self.wait_transfer(self.start_transfer(t_spec))
 
-    def throw_on_error(self, status, error):
-        '''raise exception if status contains an error'''
-        if status == transfer_manager.TransferStatus.FAILED:
+    def throw_on_error(self, response):
+        '''raise exception if status of response (start or monitor) is an error'''
+        if response.status == transfer_manager.TransferStatus.FAILED:
             logging.error(utils.configuration.last_file_line(self._daemon_log))
-            raise Exception("transfer failed: " + error.description)
-        if status == transfer_manager.TransferStatus.UNKNOWN_STATUS:
-            raise Exception("unknown transfer id: " + error.description)
+            raise Exception("transfer failed: " + error_description(response))
+        if response.status == transfer_manager.TransferStatus.UNKNOWN_STATUS:
+            raise Exception("unknown transfer id: " + error_description(response))
+
+
+def error_description(response):
+    '''
+    Error description in a response.
+
+    `error` is empty on session errors: the cause is in session or transfer information.
+    '''
+    texts = [response.error.description]
+    for field, attribute in (('sessionInfo', 'errorDesc'), ('transferInfo', 'errorDescription')):
+        if field in response.DESCRIPTOR.fields_by_name and response.HasField(field):
+            texts.append(getattr(getattr(response, field), attribute))
+    return next((text.strip() for text in texts if text.strip()), 'unknown error')
 
 
 def find_listening_port(log_file, offset):

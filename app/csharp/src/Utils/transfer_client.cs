@@ -280,7 +280,10 @@ public class TransferClient
             Transferd.Api.TransferStatus status = queryTransferResponse.Status;
             if (status == Transferd.Api.TransferStatus.Failed)
             {
-                throw new Exception($"transfer failed: {queryTransferResponse.Error?.Description}");
+                // `error` is empty on session errors: the cause is in transfer information
+                var description = new[] { queryTransferResponse.Error?.Description, queryTransferResponse.TransferInfo?.ErrorDescription }
+                    .Select(text => text?.Trim()).FirstOrDefault(text => !string.IsNullOrEmpty(text)) ?? "unknown error";
+                throw new Exception($"transfer failed: {description}");
             }
             if (status == Transferd.Api.TransferStatus.Completed)
             {

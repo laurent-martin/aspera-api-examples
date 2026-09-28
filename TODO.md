@@ -148,9 +148,9 @@ Port 0 requires `trsdk.level` `info` or more verbose.
 Reference contract:
 
 - [x] Readiness: wait-for-ready or retry with timeout instead of fixed `sleep` (see phase 2, "All languages")
-- [ ] Failure: raise/return error and exit with non-zero code
-- [ ] Failure message: `error` is empty in `SESSION_ERROR` events, the cause is in `sessionInfo.errorDesc` / `transferInfo.errorDescription` (done in JS; other languages print an empty message)
-- [ ] `startup` / `shutdown` idempotent
+- [x] Failure: raise/return error and exit with non-zero code (verified end-to-end in the 8 languages: `server` sample with an unreachable server)
+- [x] Failure message: `error` is empty in `SESSION_ERROR` events, the cause is in `sessionInfo.errorDesc` / `transferInfo.errorDescription` (all languages)
+- [x] `startup` / `shutdown` idempotent
 - [ ] Shutdown: SIGTERM, then kill after timeout; wait for process; close channel
 - [ ] README: matrix of available samples per language (`TEST_CASES` differ)
 

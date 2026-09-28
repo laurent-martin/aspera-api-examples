@@ -3,6 +3,7 @@
 #include <grpcpp/create_channel.h>
 #include <sys/wait.h>
 
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>
@@ -196,7 +197,7 @@ class TransferClient {
         check_rpc_status(
             "StartTransfer",
             _transfer_service->StartTransfer(&start_transfer_context, transfer_request, &start_transfer_response));
-        transfer_check_failed_status(start_transfer_response.status(), start_transfer_response.error());
+        transfer_check_failed_status(start_transfer_response.status(), error_description({start_transfer_response.error().description()}));
         const std::string transfer_id = start_transfer_response.transferid();
         LOGGER(info) << "transfer id: " << transfer_id << ", status: " << TransferStatus_to_string(start_transfer_response.status());
         return transfer_id;
@@ -215,7 +216,10 @@ class TransferClient {
                 _transfer_service->QueryTransfer(&query_transfer_context, transfer_info_request, &query_transfer_response));
             const trapi::TransferStatus status = query_transfer_response.status();
             LOGGER(info) << "transfer: " << TransferStatus_to_string(status);
-            transfer_check_failed_status(status, query_transfer_response.error());
+            // `error` is empty on session errors: the cause is in transfer information
+            transfer_check_failed_status(
+                status,
+                error_description({query_transfer_response.error().description(), query_transfer_response.transferinfo().errordescription()}));
             if (status == trapi::TransferStatus::COMPLETED)
                 break;
         }
@@ -289,13 +293,24 @@ class TransferClient {
         }
     }
 
-    void transfer_check_failed_status(const trapi::TransferStatus& status, const trapi::Error& error) {
+    // First non-empty error description
+    static std::string error_description(std::initializer_list<std::string> texts) {
+        for (std::string text : texts) {
+            boost::algorithm::trim(text);
+            if (!text.empty()) {
+                return text;
+            }
+        }
+        return "unknown error";
+    }
+
+    void transfer_check_failed_status(const trapi::TransferStatus& status, const std::string& description) {
         if (status == trapi::TransferStatus::FAILED) {
             LOGGER(error) << last_file_line(_daemon_log);
-            throw std::runtime_error("transfer failed: " + error.description());
+            throw std::runtime_error("transfer failed: " + description);
         }
         if (status == trapi::TransferStatus::UNKNOWN_STATUS) {
-            throw std::runtime_error("unknown transfer id: " + error.description());
+            throw std::runtime_error("unknown transfer id: " + description);
         }
     }
 };

@@ -320,7 +320,17 @@ impl TransferClient {
         }
         if status == TransferStatus::Failed {
             log::error!("Transfer failed: {:?}", response.transfer_info);
-            return Err("Transfer failed".into());
+            // `error` is empty on session errors: the cause is in transfer information
+            let description = [
+                response.error.as_ref().map(|err| err.description.as_str()),
+                response.transfer_info.as_ref().map(|info| info.error_description.as_str()),
+            ]
+            .into_iter()
+            .flatten()
+            .map(str::trim)
+            .find(|text| !text.is_empty())
+            .unwrap_or("unknown error");
+            return Err(format!("Transfer failed: {description}").into());
         }
         if status == TransferStatus::UnknownStatus {
             log::error!("Unknown transfer id: {transfer_id:?} : {response:?}");
