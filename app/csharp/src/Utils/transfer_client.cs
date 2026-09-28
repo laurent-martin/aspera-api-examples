@@ -23,6 +23,12 @@ public class TransferClient
     private static readonly TimeSpan STARTUP_TIMEOUT = TimeSpan.FromSeconds(10);
     // max wait time for the connection to the daemon
     private static readonly TimeSpan CONNECT_TIMEOUT = TimeSpan.FromSeconds(5);
+    // max wait time for the daemon to stop gracefully
+    private static readonly TimeSpan SHUTDOWN_TIMEOUT = TimeSpan.FromSeconds(5);
+    private const int SIGINT = 2;
+    // .NET has no API to send SIGINT to a process
+    [System.Runtime.InteropServices.DllImport("libc", SetLastError = true)]
+    private static extern int kill(int pid, int sig);
     // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
     private static readonly Regex LISTENING_PORT_REGEX = new Regex(@"API Server: Listening on [^\s""]+:(\d+)");
     private Configuration _config;
@@ -225,8 +231,21 @@ public class TransferClient
         if (_daemonProcess != null)
         {
             Log.log.Info("Stopping Transfer daemon...");
-            _daemonProcess.Kill();
-            _daemonProcess.WaitForExit();
+            // transferd stops cleanly on SIGINT (not on SIGTERM); Windows has no SIGINT for child processes
+            if (OperatingSystem.IsWindows())
+            {
+                _daemonProcess.Kill();
+            }
+            else
+            {
+                kill(_daemonProcess.Id, SIGINT);
+            }
+            if (!_daemonProcess.WaitForExit(SHUTDOWN_TIMEOUT))
+            {
+                Log.log.Warn("Daemon did not stop, killing it");
+                _daemonProcess.Kill();
+                _daemonProcess.WaitForExit();
+            }
             _daemonProcess = null;
             Log.log.Info("Transfer daemon has been terminated.");
             foreach (var stream in _daemonStreams)

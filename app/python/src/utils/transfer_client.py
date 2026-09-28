@@ -9,6 +9,7 @@ import json
 import time
 import grpc
 import logging
+import signal
 import subprocess
 import utils.configuration
 from urllib.parse import urlparse
@@ -24,6 +25,8 @@ ASCP_LOG_FILE = "aspera-scp-transfer.log"
 DEBUG_HTTP = False
 # default port of transferd if not specified in URL
 TRANSFERD_DEFAULT_PORT = 55002
+# max wait time for the daemon to stop gracefully
+SHUTDOWN_TIMEOUT_SEC = 5
 # max wait time for the daemon to log its listening port
 STARTUP_TIMEOUT_SEC = 10
 # API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
@@ -160,10 +163,7 @@ class TransferClient:
             self._channel = None
         if self._transfer_daemon_process is not None:
             logging.info('Shutting down daemon...')
-            # self._transfer_daemon_process.send_signal(signal.CTRL_C_EVENT)
-            # self._transfer_daemon_process.terminate()
-            self._transfer_daemon_process.kill()
-            self._transfer_daemon_process.wait()
+            stop_process(self._transfer_daemon_process)
             self._transfer_daemon_process = None
 
     def start_transfer(self, transfer_spec):
@@ -212,6 +212,25 @@ class TransferClient:
             raise Exception("transfer failed: " + error_description(response))
         if response.status == transfer_manager.TransferStatus.UNKNOWN_STATUS:
             raise Exception("unknown transfer id: " + error_description(response))
+
+
+def stop_process(process):
+    '''
+    Stop the daemon gracefully, or kill it after a timeout.
+
+    transferd stops cleanly on SIGINT (not on SIGTERM).
+    Windows has no SIGINT for child processes: the process is terminated.
+    '''
+    if os.name == 'nt':
+        process.terminate()
+    else:
+        process.send_signal(signal.SIGINT)
+    try:
+        process.wait(timeout=SHUTDOWN_TIMEOUT_SEC)
+    except subprocess.TimeoutExpired:
+        logging.warning('Daemon did not stop, killing it')
+        process.kill()
+        process.wait()
 
 
 def error_description(response):

@@ -19,6 +19,8 @@ module Utils
     STARTUP_TIMEOUT_SEC = 10
     # max wait time for the connection to the daemon
     CONNECT_TIMEOUT_SEC = 5
+    # max wait time for the daemon to stop gracefully
+    SHUTDOWN_TIMEOUT_SEC = 5
     # API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
     LISTENING_PORT_REGEX = /API Server: Listening on [^\s"]+:(\d+)/
     def initialize(config)
@@ -161,8 +163,7 @@ module Utils
     def shutdown
       if @transfer_daemon_process
         @logger.info('Shutting down daemon...')
-        Process.kill('KILL', @transfer_daemon_process)
-        Process.wait(@transfer_daemon_process)
+        stop_process(@transfer_daemon_process)
         @transfer_daemon_process = nil
       end
       @transfer_service = nil
@@ -222,6 +223,23 @@ module Utils
     end
 
     private
+
+    # Stop the daemon gracefully, or kill it after a timeout.
+    # transferd stops cleanly on SIGINT (not on SIGTERM).
+    # Windows has no SIGINT for child processes: the process is killed.
+    # @param pid [Integer] process id
+    def stop_process(pid)
+      Process.kill(Gem.win_platform? ? 'KILL' : 'INT', pid)
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + SHUTDOWN_TIMEOUT_SEC
+      while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+        return if Process.wait(pid, Process::WNOHANG)
+
+        sleep 0.1
+      end
+      @logger.warn('Daemon did not stop, killing it')
+      Process.kill('KILL', pid)
+      Process.wait(pid)
+    end
 
     def ascp_level(level_string)
       case level_string

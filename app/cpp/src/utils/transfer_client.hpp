@@ -1,7 +1,6 @@
 #pragma once
 
 #include <grpcpp/create_channel.h>
-#include <sys/wait.h>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/io_context.hpp>
@@ -33,6 +32,8 @@ inline constexpr const int MAX_CONNECTION_WAIT_SEC = 10;
 inline constexpr const uint16_t TRANSFERD_DEFAULT_PORT = 55002;
 // max wait time for the daemon to log its listening port
 inline constexpr const std::chrono::seconds STARTUP_TIMEOUT{10};
+// max wait time for the daemon to stop gracefully
+inline constexpr const std::chrono::seconds SHUTDOWN_TIMEOUT{5};
 // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
 inline const boost::regex LISTENING_PORT_REGEX("API Server: Listening on [^\\s\"]+:([0-9]+)");
 
@@ -112,15 +113,12 @@ class TransferClient {
     void wait_daemon_listening(const std::uintmax_t log_offset) {
         const auto deadline = std::chrono::steady_clock::now() + STARTUP_TIMEOUT;
         while (true) {
-            // check if the daemon has already exited.
+            // check if the daemon has already exited
             // Note: kill(pid, 0) cannot be used: it also succeeds on a zombie (exited, not yet reaped) process
-            int wait_status = 0;
-            const pid_t wait_result = ::waitpid(_transfer_daemon_process->id(), &wait_status, WNOHANG);
-            if (wait_result != 0) {
+            boost::system::error_code ec;
+            if (!_transfer_daemon_process->running(ec)) {
                 LOGGER(error) << "Daemon not started.";
-                if (wait_result > 0 && WIFEXITED(wait_status)) {
-                    LOGGER(error) << "Exited with code: " << WEXITSTATUS(wait_status);
-                }
+                LOGGER(error) << "Exited with code: " << _transfer_daemon_process->exit_code();
                 LOGGER(error) << "Check daemon log: " << _daemon_log;
                 throw std::runtime_error("daemon startup failed");
             }
@@ -172,7 +170,16 @@ class TransferClient {
         if (_transfer_daemon_process != nullptr) {
             LOGGER(info) << "Shutting down daemon...";
             boost::system::error_code ec;
-            _transfer_daemon_process->terminate(ec);
+            // transferd stops cleanly on SIGINT (not on SIGTERM), kill it if it does not stop in time
+            _transfer_daemon_process->interrupt(ec);
+            const auto deadline = std::chrono::steady_clock::now() + SHUTDOWN_TIMEOUT;
+            while (_transfer_daemon_process->running(ec) && std::chrono::steady_clock::now() < deadline) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            if (_transfer_daemon_process->running(ec)) {
+                LOGGER(warning) << "Daemon did not stop, killing it";
+                _transfer_daemon_process->terminate(ec);
+            }
             _transfer_daemon_process->wait(ec);
             _transfer_daemon_process = nullptr;
         }

@@ -16,6 +16,8 @@ const TRANSFERD_DEFAULT_PORT = 55002;
 const STARTUP_TIMEOUT_MS = 10000;
 // max wait time for the connection to the daemon
 const CONNECT_TIMEOUT_MS = 5000;
+// max wait time for the daemon to stop gracefully
+const SHUTDOWN_TIMEOUT_MS = 5000;
 // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
 const LISTENING_PORT_REGEX = /API Server: Listening on [^\s"]+:(\d+)/;
 
@@ -228,7 +230,14 @@ export class TransferClient {
 		this.transferDaemonProcess = null;
 		if (daemon && daemon.exitCode === null && daemon.signalCode === null) {
 			logger.debug('Stopping daemon...');
+			// transferd stops cleanly on SIGINT (not on SIGTERM), kill it if it does not stop in time
 			daemon.kill('SIGINT');
+			const timer = setTimeout(() => {
+				logger.warn('Daemon did not stop, killing it');
+				daemon.kill('SIGKILL');
+			}, SHUTDOWN_TIMEOUT_MS);
+			await this.daemonExited;
+			clearTimeout(timer);
 		}
 		await this.daemonExited;
 		this.daemonExited = null;

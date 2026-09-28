@@ -1650,6 +1650,7 @@ dependencies = [
  "anyhow",
  "env_logger",
  "jsonwebtoken",
+ "libc",
  "log",
  "prost",
  "regex",

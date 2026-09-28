@@ -39,6 +39,8 @@ public class TransferClient {
     private static final int STARTUP_TIMEOUT_SEC = 10;
     // max wait time for the connection to the daemon
     private static final int CONNECT_TIMEOUT_SEC = 5;
+    // max wait time for the daemon to stop gracefully
+    private static final int SHUTDOWN_TIMEOUT_SEC = 5;
     // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on
     // 127.0.0.1:55002 ...`
     private static final Pattern LISTENING_PORT_REGEX =
@@ -260,15 +262,32 @@ public class TransferClient {
         }
         if (daemonProcess != null) {
             LOGGER.log(Level.INFO, "L: Shutting down daemon");
-            daemonProcess.destroy();
-            try {
-                final int exitStatus = daemonProcess.waitFor();
-                LOGGER.log(Level.INFO, "L: daemon exited with status {0}", exitStatus);
-            } catch (final InterruptedException e) {
-                LOGGER.log(Level.SEVERE, "L: error waiting for daemon to shutdown: {0}",
-                        e.getMessage());
-            }
+            stopProcess(daemonProcess);
             daemonProcess = null;
+        }
+    }
+
+    /**
+     * Stop the daemon gracefully, or kill it after a timeout.
+     *
+     * transferd stops cleanly on SIGINT (not on SIGTERM). Java has no API to send SIGINT: use
+     * command `kill`. Windows has no SIGINT for child processes: the process is terminated.
+     */
+    private static void stopProcess(final Process process) {
+        try {
+            if (System.getProperty("os.name").startsWith("Windows")) {
+                process.destroy();
+            } else {
+                new ProcessBuilder("kill", "-INT", Long.toString(process.pid())).start().waitFor();
+            }
+            if (!process.waitFor(SHUTDOWN_TIMEOUT_SEC, TimeUnit.SECONDS)) {
+                LOGGER.log(Level.WARNING, "L: daemon did not stop, killing it");
+                process.destroyForcibly().waitFor();
+            }
+            LOGGER.log(Level.INFO, "L: daemon exited with status {0}", process.exitValue());
+        } catch (final IOException | InterruptedException e) {
+            LOGGER.log(Level.SEVERE, "L: error stopping daemon: {0}", e.getMessage());
+            process.destroyForcibly();
         }
     }
 

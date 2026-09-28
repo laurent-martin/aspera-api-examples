@@ -30,6 +30,8 @@ const (
 	CONNECT_TIMEOUT = 5 * time.Second
 	// max wait time for the daemon to log its listening port
 	STARTUP_TIMEOUT = 10 * time.Second
+	// max wait time for the daemon to stop gracefully
+	SHUTDOWN_TIMEOUT = 5 * time.Second
 )
 
 // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
@@ -256,10 +258,19 @@ func (tc *TransferClient) Shutdown() error {
 		return nil
 	}
 	tc.config.Log.Info("Shutting down daemon...")
-	if err := tc.transferDaemonProc.Process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
-		return err
+	// transferd stops cleanly on SIGINT (not on SIGTERM); not supported on Windows: kill
+	if err := tc.transferDaemonProc.Process.Signal(os.Interrupt); err != nil && !errors.Is(err, os.ErrProcessDone) {
+		tc.transferDaemonProc.Process.Kill()
 	}
-	<-tc.daemonExited
+	select {
+	case <-tc.daemonExited:
+	case <-time.After(SHUTDOWN_TIMEOUT):
+		tc.config.Log.Warn("Daemon did not stop, killing it")
+		if err := tc.transferDaemonProc.Process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+			return err
+		}
+		<-tc.daemonExited
+	}
 	tc.transferDaemonProc = nil
 	return nil
 }

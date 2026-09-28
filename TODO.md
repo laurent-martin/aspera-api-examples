@@ -151,7 +151,7 @@ Reference contract:
 - [x] Failure: raise/return error and exit with non-zero code (verified end-to-end in the 8 languages: `server` sample with an unreachable server)
 - [x] Failure message: `error` is empty in `SESSION_ERROR` events, the cause is in `sessionInfo.errorDesc` / `transferInfo.errorDescription` (all languages)
 - [x] `startup` / `shutdown` idempotent
-- [ ] Shutdown: SIGTERM, then kill after timeout; wait for process; close channel
+- [x] Shutdown: SIGTERM, then kill after timeout; wait for process; close channel (transferd stops cleanly on SIGINT, not on SIGTERM: now SIGINT, then kill after 5 s, in the 8 languages; Windows: immediate stop; clean stop verified in the 8 languages, kill after timeout tested in Python only)
 - [ ] README: matrix of available samples per language (`TEST_CASES` differ)
 
 ## 5. Documentation

@@ -23,6 +23,10 @@ anyhow = "1.0.104"
 regex = "1.13.1"
 ssh2 = "0.9.6"
 
+# send SIGINT to the daemon
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.189"
+
 [build-dependencies]
 tonic-prost-build = "0.14.6"
 

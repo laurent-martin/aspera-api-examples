@@ -31,6 +31,8 @@ const TRANSFERD_DEFAULT_PORT: u16 = 55002;
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(10);
 /// max wait time for the connection to the daemon
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+/// max wait time for the daemon to stop gracefully
+const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 /// API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
 const PORT_REGEX: &str = r#"API Server: Listening on [^\s"]+:([0-9]+)"#;
 
@@ -297,15 +299,37 @@ impl TransferClient {
         }
         Ok(())
     }
-    /// Shutdown the daemon (kill) and wait for its termination
+    /// Shutdown the daemon gracefully, or kill it after a timeout, and wait for its termination
     pub fn daemon_shutdown(&mut self) -> Result<(), String> {
         self.transfer_service = None;
         if let Some(mut daemon_process) = self.daemon_process.take() {
             log::debug!("Shutting down daemon...");
-            daemon_process.kill().map_err(|e| e.to_string())?;
-            daemon_process.wait().map_err(|e| e.to_string())?;
+            Self::interrupt(&mut daemon_process);
+            let deadline = Instant::now() + SHUTDOWN_TIMEOUT;
+            while daemon_process.try_wait().map_err(|e| e.to_string())?.is_none() {
+                if Instant::now() > deadline {
+                    log::warn!("Daemon did not stop, killing it");
+                    daemon_process.kill().map_err(|e| e.to_string())?;
+                    daemon_process.wait().map_err(|e| e.to_string())?;
+                    break;
+                }
+                thread::sleep(Duration::from_millis(100));
+            }
         }
         Ok(())
+    }
+    /// transferd stops cleanly on SIGINT (not on SIGTERM)
+    #[cfg(unix)]
+    fn interrupt(process: &mut Child) {
+        // SAFETY: sends a signal to our own child process
+        unsafe {
+            libc::kill(process.id() as libc::pid_t, libc::SIGINT);
+        }
+    }
+    /// Windows has no SIGINT for child processes: kill
+    #[cfg(not(unix))]
+    fn interrupt(process: &mut Child) {
+        let _ = process.kill();
     }
     /// Check if transfer is failed.
     /// If failed, log error and return error
