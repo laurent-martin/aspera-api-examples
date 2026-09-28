@@ -28,7 +28,7 @@ try:
     # add file list in transfer spec
     config.add_sources(t_spec, 'paths')
 
-    # start transfer, here we use the FASP Manager, but the newer Transfer SDK can be used as well
+    # start transfer, using Transfer SDK
     transfer_client.start_transfer_and_wait(t_spec)
 finally:
     transfer_client.shutdown()

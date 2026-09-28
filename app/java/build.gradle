@@ -52,7 +52,7 @@ tasks.withType(JavaCompile) {
 }
 
 application {
-  mainClass = 'COSFileUploadExample'
+  mainClass = 'examples.COSFileUploadExample'
 }
 
 jar {

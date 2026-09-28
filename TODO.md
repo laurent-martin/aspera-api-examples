@@ -156,14 +156,15 @@ Reference contract:
 
 ## 5. Documentation
 
-- [ ] `README.md`: config example uses `user`/`pass`, code uses `username`/`password`; `faspex5` and `shares` sections missing
-- [ ] `config/config.tmpl`: personal path in `local.file`
-- [ ] `app/python/README.md`: `transfer_pb2.py`, `utils.tools`, `TransferClient()`, `CONFIG`, `make stop` are outdated
-- [ ] `app/python/src/examples/node.py`: comment mentions FASP Manager
+- [x] `README.md`: config example uses `user`/`pass`, code uses `username`/`password`; `faspex5` and `shares` sections missing (example aligned with the template: all parameters used by the code; port 0 and CA certificates documented)
+- [x] `config/config.tmpl`: personal path in `local.file` (and real AoC organization name)
+- [x] `app/python/README.md`: `transfer_pb2.py`, `utils.tools`, `TransferClient()`, `CONFIG`, `make stop` are outdated
+- [x] `app/python/src/examples/cos.py`: commented alternative (service credential file) uses section `cos` instead of `coscreds`, and has syntax errors
+- [x] `app/python/src/examples/node.py`: comment mentions FASP Manager
 - [x] `app/csharp/README.md`: `transfer.proto` and generated stubs path outdated
 - [x] `app/java/build.gradle`: default `proto_file` is `transfer.proto`
-- [ ] `app/java/build.gradle`: `mainClass` without package
-- [ ] French comments in Rust sources (Go done)
+- [x] `app/java/build.gradle`: `mainClass` without package
+- [x] French comments in Rust sources (Go done)
 - [x] `misc.level: warning` is not a valid winston level (`warn`)
 
 ## 6. Tooling

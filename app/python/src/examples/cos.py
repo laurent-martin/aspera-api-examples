@@ -12,12 +12,12 @@ config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
 
 try:
-    # get Aspera Transfer Service Node information using service credential file
-    # config=config.param('coscreds')
-    # with open(config.param('cos','service_credential_file']) as f:
-    #    credentials = json.load(f)
-    # info=utils.helper_aspera_cos.from_service_credentials(credentials=credentials,region=config.param('cos','region'])
-    # cos_node_info=utils.helper_aspera_cos.node(bucket=config.param('cos','bucket'],endpoint=info['endpoint'],key=info['key'],crn=info['crn'])
+    # Alternative: get Aspera Transfer Service Node information using service credential file
+    # (configuration section `coscreds`, requires `import json`):
+    # with open(config.param('coscreds', 'service_credential_file')) as f:
+    #     credentials = json.load(f)
+    # info = utils.helper_aspera_cos.from_service_credentials(credentials=credentials, region=config.param('coscreds', 'region'))
+    # cos_node_info = utils.helper_aspera_cos.node(bucket=config.param('coscreds', 'bucket'), endpoint=info['endpoint'], key=info['key'], crn=info['crn'])
 
     # get Aspera Transfer Service Node information for specified COS bucket
     cos_node_info = utils.helper_aspera_cos.node(

@@ -169,23 +169,25 @@ Set the parameter `misc.platform` to the architecture used:
 - `linux-ppc64le`
 - `aix-ppc64`
 
-The parameter `trsdk.url` can be set to `grpc://127.0.0.1:55002` (specify the local port that SDK will use).
-If port zero (0) is used, then a port is dynamically chosen in some examples.
+The parameter `trsdk.url` is the address of the Transfer Daemon, for example `grpc://127.0.0.1:55002`.
+If the port is zero (`0`), as in the template, the daemon chooses a free port, and the samples read it from the daemon log:
+this requires `trsdk.level` set to `info` or a more verbose level.
 
 Section `httpgw` is used by the `web` example only.
 
 Other sections are used by the various examples.
 For example, if you want to test only the COS transfer using the Transfer Daemon, you can fill the `cos` section only and leave other sections empty.
 
-Example (with random credentials):
+Example (with random credentials), the reference being the template [`config/config.tmpl`](config/config.tmpl):
 
 ```yaml
 misc:
-  platform: osx-x86_64
+  platform: osx-arm64
   level: debug
+  # Java: false to use streaming (PersistentUploadExample)
   transfer_regular: true
 trsdk:
-  url: grpc://127.0.0.1:55002
+  url: grpc://127.0.0.1:0
   level: trace
   ascp_level: trace
 web:
@@ -193,21 +195,39 @@ web:
 httpgw:
   url: https://1.2.3.4/aspera/http-gwy
 server:
-  user: aspera
-  pass: demoaspera
   url: ssh://demo.asperasoft.com:33001
+  username: aspera
+  password: demoaspera
   file_download: /aspera-test-dir-small/10MB.1
   folder_upload: /Upload
+  persist_max: 10
+  persist_ms: 100
 node:
   url: https://node.example.com:9092
   verify: false
-  user: node_user
-  pass: _the_password_here_
+  username: node_user
+  password: _the_password_here_
   folder_upload: /Upload
 faspex:
   url: https://faspex.example.com/aspera/faspex
-  user: faspex_user
-  pass: _the_password_here_
+  verify: true
+  username: faspex_user
+  password: _the_password_here_
+faspex5:
+  url: https://faspex5.example.com/aspera/faspex
+  verify: true
+  username: john@example.com
+  client_id: _the_client_id_here_
+  client_secret: _the_client_secret_here_
+  private_key: /path/to/my_faspex5_key
+  shared_folder_name: Server Files
+  shared_folder_file: /testfiles/aspera-test-dir-small/10MB.1
+shares:
+  url: https://shares.example.com
+  verify: true
+  username: shares_user
+  password: _the_password_here_
+  folder_upload: my_share
 cos:
   endpoint: https://s3.eu-de.cloud-object-storage.appdomain.cloud
   bucket: my_bucket
@@ -226,11 +246,16 @@ aoc:
   client_secret: frpmsRsG4mjZ0PlxCgdJlvONqBg4Vlpz_IX7gXmBMAfsgMLy2FO6CXLodKfKAuhqnCqSptLbe_wdmnm9JRuEPO-PpFqpq_Kb
   workspace: Default
   shared_inbox: TheSharedInbox
+local:
+  file: /path/to/a/local/file
+  folder: /tmp
 ```
 
 > [!NOTE]
 > Sections with HTTPS URLs have a parameter `verify`.
 > Set it to `false` to disable server certificate validation for development environments.
+> Certificates are validated with the CA certificates of the system.
+> For C++, the environment variable `SSL_CERT_FILE` can specify another file of CA certificates.
 
 Some relative paths are defined in [`config/paths.yaml`](config/paths.yaml) (keep those values intact).
 
@@ -239,8 +264,6 @@ The following log levels can be set:
 - `misc.level`: sample code log level: `debug` `info` `warning` `error`
 - `trsdk.level`: `transferd` log level: `trace` `debug` `info` `warning` `error` `fatal` `panic`
 - `trsdk.ascp_level`: `ascp` log level: `trace` `debug` `info`
-
-Some examples support setting port to `0` (zero) in `trsdk.url` to use a random port.
 
 Sample application generate a file `transferd.conf` provided to the transfer daemon, log level there are taken from the general YAML config file.
 
