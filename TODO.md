@@ -117,11 +117,15 @@ Port 0 requires `trsdk.level` `info` or more verbose.
 
 - [x] Go: `rest.go` logs the private key and the client secret
 - [ ] Java: RSA private key hard-coded in `TransferClient.java` (workaround for SDK 1.1.3, repo requires 1.1.5+)
-- [ ] Java: snakeyaml 1.30 (CVE-2022-1471), org.json 20211205 (CVE-2022-45688, CVE-2023-5072), jjwt 0.11.5
-- [ ] Java: shadow plugin `com.github.johnrengelman.shadow` archived, use `com.gradleup.shadow`
-- [ ] Java: unirest versions mismatch (4.4.4 / 4.2.9); Gradle 8 hard requirement
-- [ ] Go: `dgrijalva/jwt-go` archived (CVE-2020-26160), use `golang-jwt/jwt/v5`
-- [ ] Go: `twinj/uuid` unmaintained, use `google/uuid`; `x/crypto` v0.26.0 has SSH CVEs
+- [x] Java: snakeyaml 1.30 (CVE-2022-1471), org.json 20211205 (CVE-2022-45688, CVE-2023-5072), jjwt 0.11.5 (now 2.7, 20260814, 0.13.0 with non-deprecated API; gRPC 1.84.0)
+- [x] Java: shadow plugin `com.github.johnrengelman.shadow` archived, use `com.gradleup.shadow` (8.3.9; removed configuration deprecated in Gradle 9)
+- [x] Java: unirest versions mismatch (4.4.4 / 4.2.9): `unirest-object-mappers-gson` replaced by `unirest-modules-gson` 4.10.1
+- [ ] Java: Gradle 8 hard requirement (Gradle 9 requires shadow plugin 9.x)
+- [x] Java: `Rest.setAuthBearer` logs `authData` (client secret) at FINE level
+- [x] Go: `dgrijalva/jwt-go` archived (CVE-2020-26160), use `golang-jwt/jwt/v5`
+- [x] Go: `twinj/uuid` unmaintained, use `google/uuid`; `x/crypto` v0.26.0 has SSH CVEs (govulncheck: 10 reachable vulnerabilities in x/crypto and grpc, now 0; `go` directive 1.26 required by grpc 1.84)
+- [ ] Go: GO-2026-6443 (grpc server transport, not reachable from the client samples): fixed only in grpc 1.85.0-dev, update when released
+- [ ] Debug logs contain credentials: HTTP traces with `Authorization` headers, bearer tokens, JWT assertions (JS, C++, C#, Rust): mask them
 - [x] Go: `grpc.WithInsecure` deprecated
 - [x] C#: `net7.0` end of life, move to `net10.0` (current .NET SDK has no 7.0 runtime: samples do not start); `Grpc.Core` deprecated (`Grpc.Net.Client` is enough)
 - [x] C#: known vulnerabilities reported by NuGet in `BouncyCastle.Cryptography` 2.2.1 (unused: removed) and `log4net` 2.0.15 (now 3.4.0); other packages updated; obsolete `packages.config` removed
@@ -148,7 +152,8 @@ Reference contract:
 - [ ] `app/python/README.md`: `transfer_pb2.py`, `utils.tools`, `TransferClient()`, `CONFIG`, `make stop` are outdated
 - [ ] `app/python/src/examples/node.py`: comment mentions FASP Manager
 - [x] `app/csharp/README.md`: `transfer.proto` and generated stubs path outdated
-- [ ] `app/java/build.gradle`: default `proto_file` is `transfer.proto`; `mainClass` without package
+- [x] `app/java/build.gradle`: default `proto_file` is `transfer.proto`
+- [ ] `app/java/build.gradle`: `mainClass` without package
 - [ ] French comments in Rust sources (Go done)
 - [ ] `misc.level: warning` is not a valid winston level (`warn`)
 

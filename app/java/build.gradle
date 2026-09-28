@@ -2,14 +2,12 @@
 plugins {
     id 'java'
     id 'application'
-    // Creation of fat Jar file:
+    // Creation of fat Jar file (8.x for Gradle 8, 9.x requires Gradle 9):
     // https://plugins.gradle.org/plugin/com.gradleup.shadow
     // https://gradleup.com/shadow/
-    //id 'com.gradleup.shadow' version '9.2.2'
-    // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '8.3.9'
     // https://plugins.gradle.org/plugin/com.google.protobuf
-    id 'com.google.protobuf' version '0.9.5'
+    id 'com.google.protobuf' version '0.9.6'
     //id 'idea' // use the idea plugin if using Jetbrains IntelliJ
 }
 
@@ -18,15 +16,17 @@ version = "0.1"
 
 // If compilation lead to missing symbol:
 // check that gRPC and protoc versions are compatible
-// check on https://github.com/grpc/grpc-java/tree/v1.65.x
+// protoc version: same as protobuf-java used by grpc-protobuf
 // https://mvnrepository.com/artifact/io.grpc/grpc-protobuf
-def grpcVersion = '1.76.0'
+def grpcVersion = '1.84.0'
 // https://mvnrepository.com/artifact/com.google.protobuf/protoc
-def protocVersion = '3.25.8'
+def protocVersion = '3.25.9'
+// https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api
+def jjwtVersion = '0.13.0'
 
 // Variables that can be set with -Pproto_dir=... -Pproto_file=...
 def proto_dir = project.hasProperty('proto_dir') ? project.getProperty('proto_dir') : "$projectDir/build/resources/main"
-def proto_file = project.hasProperty('proto_file') ? project.getProperty('proto_file') : 'transfer.proto'
+def proto_file = project.hasProperty('proto_file') ? project.getProperty('proto_file') : 'transferd.proto'
 
 def gradleMajorVersion = 8
 def javaMajorVersion = 21
@@ -97,10 +97,8 @@ sourceSets {
     }
 }
 
-// build jar with -all ext with all dependencies in it
+// build jar with -all ext with all dependencies in it (runtimeClasspath by default)
 shadowJar {
-    project.configurations.implementation.canBeResolved = true
-    configurations = [project.configurations.implementation]
     // For grpc exception: NameResolver 'unix' for '...' not supported by transport
     // https://github.com/grpc/grpc-java/issues/10853
     mergeServiceFiles() 
@@ -112,14 +110,14 @@ dependencies {
     implementation "io.grpc:grpc-okhttp:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
-    implementation 'org.json:json:20211205'
-    implementation 'org.yaml:snakeyaml:1.30'
-    // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api
-    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-    implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
-    implementation 'io.jsonwebtoken:jjwt-gson:0.11.5'
+    implementation 'org.json:json:20260814'
+    implementation 'org.yaml:snakeyaml:2.7'
+    implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+    implementation "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+    implementation "io.jsonwebtoken:jjwt-gson:${jjwtVersion}"
     // http://kong.github.io/unirest-java/
     // https://mvnrepository.com/artifact/com.konghq/unirest-java-core
-    implementation 'com.konghq:unirest-java-core:4.4.4'
-    implementation 'com.konghq:unirest-object-mappers-gson:4.2.9'
+    implementation 'com.konghq:unirest-java-core:4.10.1'
+    // JSON support of unirest
+    implementation 'com.konghq:unirest-modules-gson:4.10.1'
 }

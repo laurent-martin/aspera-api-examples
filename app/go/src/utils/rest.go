@@ -13,8 +13,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/twinj/uuid"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 const (
@@ -86,7 +86,7 @@ func (r *Rest) getBearer(scope string) string {
 		"nbf": secondsSinceEpoch - JWT_CLIENT_SERVER_OFFSET_SEC,
 		"exp": secondsSinceEpoch + JWT_VALIDITY_SEC,
 		"iat": secondsSinceEpoch - JWT_CLIENT_SERVER_OFFSET_SEC,
-		"jti": uuid.NewV4().String(),
+		"jti": uuid.NewString(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwtPayload)

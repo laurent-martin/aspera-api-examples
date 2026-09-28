@@ -14,7 +14,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.Base64;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -48,7 +47,8 @@ public class Rest {
     }
 
     public void setAuthBearer(final Map<String, String> authData) {
-        logger.log(Level.FINE, "authData>> {0}", authData);
+        // do not log values: they contain secrets
+        logger.log(Level.FINE, "authData keys>> {0}", authData.keySet());
         this.authData.putAll(authData);
     }
 
@@ -69,12 +69,11 @@ public class Rest {
             jwt_payload.put("exp", epochDate + JWT_VALIDITY_SEC);
             jwt_payload.put("jti", UUID.randomUUID().toString());
 
+            // header `alg` is set by `signWith`
             final JwtBuilder assertion = Jwts.builder()//
-                    .signWith(Crypto.loadKey(authData.get("key_pem_path")),
-                            SignatureAlgorithm.RS256) //
-                    .setHeaderParam("typ", "JWT") //
-                    .setHeaderParam("alg", "RS256") //
-                    .setClaims(jwt_payload);
+                    .signWith(Crypto.loadKey(authData.get("key_pem_path")), Jwts.SIG.RS256) //
+                    .header().add("typ", "JWT").and() //
+                    .claims(jwt_payload);
             if (authData.containsKey("org")) {
                 assertion.claim("org", authData.get("org"));
 
