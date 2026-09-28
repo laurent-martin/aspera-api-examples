@@ -43,8 +43,10 @@ clean:: clean_flags clean_daemon
 	rm -fr $(DIR_TESTED_FLAG)
 # clean all generated and compiled files
 clobber:: clean
+# stop only the daemon started by the samples (other instances of transferd may run on the system):
+# compare the executable path exactly (pkill -f would also match the shell running this command)
 clean_daemon:
-	killall -q $(SDK_NAME_DAEMON)||:
+	ps -A -o pid= -o command= | awk -v exe='$(SDK_FILE_DAEMON)' '{p = $$2; gsub("/+", "/", p)} p == exe {system("kill " $$1)}'
 $(GBL_DIR_TMP).exists:
 	mkdir -p $(GBL_DIR_TMP)
 	touch $@
@@ -67,4 +69,3 @@ $(GBL_FILE_CONFIG):
 	cp $(GBL_FILE_CONF_TMPL) $@
 	@echo 'Created file $@ using template $(GBL_FILE_CONF_TMPL), refer to README.md'
 	@echo "\033[5m>>>> Edit and customize $@ <<<<\033[0m"
-# cspell:ignore killall

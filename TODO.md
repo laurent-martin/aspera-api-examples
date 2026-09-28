@@ -54,7 +54,7 @@ Port 0 requires `trsdk.level` `info` or more verbose.
 - [x] Rust
 - [x] C#
 - [x] Default port 55002 when the URL has no port (all languages)
-- [ ] `common.mak`: `clean_daemon` runs `killall transferd`, which also kills `transferd` instances not started by the samples (e.g. `~/.aspera/sdk/transferd`)
+- [x] `common.mak`: `clean_daemon` runs `killall transferd`, which also kills `transferd` instances not started by the samples (e.g. `~/.aspera/sdk/transferd`); now matches the executable path of the samples daemon
 
 ### Python
 
