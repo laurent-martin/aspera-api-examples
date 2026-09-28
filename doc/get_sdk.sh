@@ -10,7 +10,16 @@ TMP_DIR=$2
 SDK_DIR=$3
 DAEMON=$4
 SDK_LOCATION_URL=https://ibm.biz/sdk_location
-SDK_URL=$(curl -sL $SDK_LOCATION_URL|grep -B4 "platform: $PLATFORM"|sed -n 's/.*url: *//p' | sort | tail -n1)
+# latest version for the platform (entries: url, version, ..., platform)
+SDK_URL=$(curl -sL $SDK_LOCATION_URL | awk -v platform="$PLATFORM" '
+  /^- url:/ {url = $3}
+  /^ +version:/ {version = $2}
+  /^ +platform:/ && $2 == platform {print version, url}
+' | sort -V | tail -n1 | cut -d' ' -f2)
+if test -z "$SDK_URL"; then
+	echo "No SDK found for platform: $PLATFORM"
+	exit 1
+fi
 SDK_ARCHIVE=${TMP_DIR}${SDK_URL##*/}
 echo "Downloading Aspera Transfer Daemon archive for $PLATFORM from $SDK_URL"
 curl -sLo $SDK_ARCHIVE $SDK_URL

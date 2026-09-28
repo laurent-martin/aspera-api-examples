@@ -2,6 +2,8 @@ ifeq ($(DIR_TOP),)
 $(error DIR_TOP is not set. Please set this Makefile macro.)
 endif
 export DIR_TOP
+# recipes use bash syntax (e.g. `source`), /bin/sh may be another shell (e.g. dash on Debian/Ubuntu)
+SHELL := /bin/bash
 GBL_FILE_PATHS=$(DIR_TOP)config/paths.yaml
 # main folder for generated/downloaded files/temporary files
 GBL_DIR_TMP=$(DIR_TOP)$(shell sed -n -e 's/^temp: //p' $(GBL_FILE_PATHS))/

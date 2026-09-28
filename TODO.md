@@ -9,7 +9,6 @@ Order of work:
 3. Security and dependencies.
 4. Align `TransferClient` behavior across languages.
 5. Documentation.
-6. Tooling (CI, lint, dependency updates).
 
 > [!NOTE]
 > Validation of the fixes done so far: all languages build, and a local test (not committed)
@@ -166,9 +165,3 @@ Reference contract:
 - [x] `app/java/build.gradle`: `mainClass` without package
 - [x] French comments in Rust sources (Go done)
 - [x] `misc.level: warning` is not a valid winston level (`warn`)
-
-## 6. Tooling
-
-- [ ] GitHub Actions: generate stubs and build each language (no server needed)
-- [ ] Linters: ruff, eslint, golangci-lint, clippy, rubocop
-- [ ] Dependabot or Renovate
