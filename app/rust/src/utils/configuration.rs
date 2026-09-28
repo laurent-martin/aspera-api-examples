@@ -15,8 +15,8 @@ pub struct Configuration {
     log_folder_path: PathBuf,
     top_folder_path: PathBuf,
     file_list: Vec<String>,
-    paths: serde_yaml::Value,
-    config: serde_yaml::Value,
+    paths: serde_yaml_ng::Value,
+    config: serde_yaml_ng::Value,
 }
 
 /// Parameters from configuration files
@@ -72,23 +72,23 @@ impl Configuration {
     }
     /// Get value from yaml file
     fn get_subkey_value(
-        yaml: serde_yaml::Value,
+        yaml: serde_yaml_ng::Value,
         key: &str,
         subkey: &str,
-    ) -> Result<serde_yaml::Value, Box<dyn Error>> {
+    ) -> Result<serde_yaml_ng::Value, Box<dyn Error>> {
         // Access the top-level map and retrieve the key
         let map = yaml
             .as_mapping()
             .ok_or("The root YAML structure is not a map")?;
         let hash_value = map
-            .get(&serde_yaml::Value::String(key.to_string()))
+            .get(&serde_yaml_ng::Value::String(key.to_string()))
             .ok_or(format!("Key '{}' not found", key))?;
         // Access the sub-map and retrieve the subkey
         let submap = hash_value
             .as_mapping()
             .ok_or(format!("The value for '{}' is not a map", key))?;
         let subkey_value = submap
-            .get(&serde_yaml::Value::String(subkey.to_string()))
+            .get(&serde_yaml_ng::Value::String(subkey.to_string()))
             .ok_or(format!("Subkey '{}' not found in '{}'", subkey, key))?;
         Ok(subkey_value.clone()) // Return the found value
     }
@@ -205,17 +205,17 @@ impl Configuration {
             String::from_utf8(buffer).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         Ok(last_line)
     }
-    fn load_yaml(_name: &str, path: PathBuf) -> Result<serde_yaml::Value, Box<dyn Error>> {
+    fn load_yaml(_name: &str, path: PathBuf) -> Result<serde_yaml_ng::Value, Box<dyn Error>> {
         //log::debug!("{:width$}: {}", name, path.display(), width = ITEM_WIDTH);
         let mut file = File::open(path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let yaml: serde_yaml::Value = serde_yaml::from_str(&contents)?;
-        //let yaml_dump = serde_yaml::to_string(&yaml)?;
+        let yaml: serde_yaml_ng::Value = serde_yaml_ng::from_str(&contents)?;
+        //let yaml_dump = serde_yaml_ng::to_string(&yaml)?;
         //log::debug!("{}:\n{}", name, yaml_dump);
         Ok(yaml)
     }
-    fn get_path_from_yaml(yaml: &serde_yaml::Value, key: &str) -> io::Result<String> {
+    fn get_path_from_yaml(yaml: &serde_yaml_ng::Value, key: &str) -> io::Result<String> {
         Ok(yaml[key].as_str().unwrap_or("").to_string())
     }
     fn get_level_filter(level: &str) -> Result<log::LevelFilter, Box<dyn Error>> {

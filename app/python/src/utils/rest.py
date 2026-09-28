@@ -5,6 +5,7 @@ import calendar
 import time
 import uuid
 import logging as log
+import utils.configuration
 
 # take come time back to account for time offset between client and server
 JWT_CLIENT_SERVER_OFFSET_SEC = 60
@@ -13,6 +14,8 @@ JWT_VALIDITY_SEC = 600
 MIME_JSON = 'application/json'
 MIME_WWW = 'application/x-www-form-urlencoded'
 IETF_GRANT_JWT = 'urn:ietf:params:oauth:grant-type:jwt-bearer'
+# max time to wait for a server response
+HTTP_TIMEOUT_SEC = 60
 
 
 class Rest:
@@ -39,7 +42,7 @@ class Rest:
         Provide Basic authentication info.
         """
         self.authData = None
-        self.headers['Authorization'] = requests.auth._basic_auth_str(user, password)
+        self.headers['Authorization'] = utils.configuration.basic_authorization(user, password)
 
     def setAuthBearer(self, auth_data):
         """
@@ -110,7 +113,8 @@ class Rest:
                 'Content-Type': MIME_WWW,
                 'Accept': MIME_JSON,
             },
-            verify=self.verify
+            verify=self.verify,
+            timeout=HTTP_TIMEOUT_SEC,
         )
         response.raise_for_status()
         response_data = response.json()
@@ -137,7 +141,8 @@ class Rest:
             headers=req_headers,
             verify=self.verify,
             json=body,
-            params=query
+            params=query,
+            timeout=HTTP_TIMEOUT_SEC,
         )
         response.raise_for_status()
         if method == 'PUT' or method == 'DELETE':

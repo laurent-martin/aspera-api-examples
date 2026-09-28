@@ -8,6 +8,8 @@ import json
 import logging
 
 IBM_CLOUD_OAUTH_URL = 'https://iam.cloud.ibm.com/identity/token'
+# max time to wait for a server response
+HTTP_TIMEOUT_SEC = 60
 
 
 def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
@@ -38,6 +40,7 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
         auth,
         data=token_req_data,
         headers={'Content-type': 'application/x-www-form-urlencoded'},
+        timeout=HTTP_TIMEOUT_SEC,
     )
     if response.status_code != 200:
         raise Exception('error')
@@ -54,6 +57,7 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
         url=f'{endpoint}/{bucket}',
         headers=header_auth,
         params={'faspConnectionInfo': True},
+        timeout=HTTP_TIMEOUT_SEC,
     )
     if response.status_code != 200:
         raise Exception('error accessing endpoint')
@@ -71,6 +75,7 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
         auth,
         data=token_req_data,
         headers={'Content-type': 'application/x-www-form-urlencoded'},
+        timeout=HTTP_TIMEOUT_SEC,
     )
     if response.status_code != 200:
         raise Exception('error when generating token')
@@ -112,7 +117,7 @@ def from_service_credentials(*, credentials, region):
     logging.debug(credentials)
 
     # read endpoints from url in service credentials
-    response = requests.get(credentials['endpoints'])
+    response = requests.get(credentials['endpoints'], timeout=HTTP_TIMEOUT_SEC)
     if response.status_code != 200:
         raise Exception('error')
 

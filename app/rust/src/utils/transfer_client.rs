@@ -253,7 +253,7 @@ impl TransferClient {
             .start_transfer(request)
             .await?
             .into_inner();
-        let status = TransferStatus::from_i32(response.status).unwrap_or(TransferStatus::UnknownStatus);
+        let status = TransferStatus::try_from(response.status).unwrap_or(TransferStatus::UnknownStatus);
         if status == TransferStatus::Failed || status == TransferStatus::UnknownStatus {
             let description = response.error.map(|e| e.description).unwrap_or_default();
             return Err(format!("transfer start failed: {}: {}", status.as_str_name(), description).into());
@@ -285,7 +285,7 @@ impl TransferClient {
                 .query_transfer(query_transfer_request)
                 .await?
                 .into_inner();
-            let status = TransferStatus::from_i32(query_transfer_response.status)
+            let status = TransferStatus::try_from(query_transfer_response.status)
                 .unwrap_or(TransferStatus::UnknownStatus);
             log::info!("transfer: {:?}", status.as_str_name());
             //log::debug!("response: {:?}", query_transfer_response);

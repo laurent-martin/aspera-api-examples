@@ -12,11 +12,7 @@ import logging
 import subprocess
 import utils.configuration
 from urllib.parse import urlparse
-import warnings
-warnings.filterwarnings("ignore", ".*obsolete", UserWarning, "google.protobuf.runtime_version")
 
-# before stub import: protobuf: avoid incompatibility of version, use pure python implementation
-os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 # avoid message: 'Other threads are currently calling into gRPC, skipping fork() handlers'
 os.environ['GRPC_ENABLE_FORK_SUPPORT'] = 'false'
 

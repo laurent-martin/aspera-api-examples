@@ -11,8 +11,8 @@ $(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) node_modules/.package-l
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
-node_modules/.package-lock.json:
-	npm install
+# install packages with the versions of package-lock.json
+node_modules/.package-lock.json: package.json package-lock.json
+	npm ci
 clean::
-	rm -f package-lock.json
 	rm -fr node_modules tmp

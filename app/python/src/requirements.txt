@@ -1,8 +1,11 @@
-requests
-PyYAML
-pyjwt
-cryptography
-# refer to: <trsdk>/connectors/python/requirements.txt
-grpcio
-grpcio-tools
-protobuf
+# versions tested together
+requests==2.34.2
+PyYAML==6.0.3
+pyjwt==2.15.0
+cryptography==50.0.1
+# minimum versions for the stub code of the SDK: <sdk>/api/python/pyproject.toml
+# grpcio and grpcio-tools must have the same version
+grpcio==1.84.0
+# generation of stub code from transferd.proto
+grpcio-tools==1.84.0
+protobuf==7.36.2

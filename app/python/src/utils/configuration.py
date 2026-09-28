@@ -33,9 +33,11 @@ class Configuration:
             raise NotADirectoryError(f"The folder specified by {DIR_TOP_VAR} does not exist or is not a directory: {self._top_folder}")
         self._log_folder = tempfile.gettempdir()
         # read project's relative paths config file
-        self._paths = yaml.load(open(os.path.join(self._top_folder, *PATHS_FILE_REL.split('/'))), Loader=yaml.FullLoader)
+        with open(os.path.join(self._top_folder, *PATHS_FILE_REL.split('/'))) as paths_file:
+            self._paths = yaml.safe_load(paths_file)
         # Read configuration from configuration file
-        self._config = yaml.load(open(self.get_path('main_config')), Loader=yaml.FullLoader)
+        with open(self.get_path('main_config')) as config_file:
+            self._config = yaml.safe_load(config_file)
         log_level = getattr(logging, self.param('misc', 'level').upper(), logging.WARN)
         # set logger for debugging
         logging.basicConfig(format='%(levelname)-8s %(message)s', level=log_level)

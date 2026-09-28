@@ -10,11 +10,10 @@ export SDK_FILE_PROTO
 # Build and Execute one sample
 $(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(EXAMPLES_DIR)%.rs
 	@echo "== Test: $(notdir $@) ==========================="
-	RUST_BACKTRACE=1 cargo run --bin $(notdir $@) $(GBL_FILE_SAMPLE)
+	RUST_BACKTRACE=1 cargo run --locked --bin $(notdir $@) $(GBL_FILE_SAMPLE)
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
 clean::
 clobber::
 	rm -fr target
-	rm -f Cargo.lock

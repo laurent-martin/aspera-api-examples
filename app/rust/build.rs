@@ -6,6 +6,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let proto_path = env::var("SDK_FILE_PROTO").expect("SDK_FILE_PROTO environment variable must be set");
 
     // Compile the proto file
-    tonic_build::compile_protos(&proto_path)?;
+    tonic_prost_build::compile_protos(&proto_path)?;
     Ok(())
 }
