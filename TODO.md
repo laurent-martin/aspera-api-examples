@@ -117,7 +117,7 @@ Port 0 requires `trsdk.level` `info` or more verbose.
 ## 3. Security and dependencies
 
 - [x] Go: `rest.go` logs the private key and the client secret
-- [ ] Java: RSA private key hard-coded in `TransferClient.java` (workaround for SDK 1.1.3, repo requires 1.1.5+)
+- [x] Java: RSA private key hard-coded in `TransferClient.java` (workaround for SDK 1.1.3, repo requires 1.1.5+): removed, with SDK 1.1.9 ascp uses the same default key in stream mode (checked locally with a fake SSH server logging the offered keys)
 - [x] Java: snakeyaml 1.30 (CVE-2022-1471), org.json 20211205 (CVE-2022-45688, CVE-2023-5072), jjwt 0.11.5 (now 2.7, 20260814, 0.13.0 with non-deprecated API; gRPC 1.84.0)
 - [x] Java: shadow plugin `com.github.johnrengelman.shadow` archived, use `com.gradleup.shadow` (8.3.9; removed configuration deprecated in Gradle 9)
 - [x] Java: unirest versions mismatch (4.4.4 / 4.2.9): `unirest-object-mappers-gson` replaced by `unirest-modules-gson` 4.10.1
