@@ -5,20 +5,25 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
+    <!-- reproducible restore: resolved versions are recorded in packages.lock.json -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
   <ItemGroup>
     <!-- gRPC client stubs generated from the proto file of the Transfer SDK -->
     <Protobuf Include="$(Proto_File)" GrpcServices="Client" />
-    <PackageReference Include="Google.Protobuf" Version="3.36.2" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.84.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.84.0">
+  </ItemGroup>
+  <ItemGroup>
+    <!-- versions are defined in Directory.Packages.props -->
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Tools">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="jose-jwt" Version="5.3.0" />
-    <PackageReference Include="log4net" Version="3.4.0" />
-    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+    <PackageReference Include="jose-jwt" />
+    <PackageReference Include="log4net" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <Target Name="CheckProtoFile" BeforeTargets="BeforeBuild">
