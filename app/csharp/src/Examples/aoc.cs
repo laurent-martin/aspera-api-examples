@@ -32,7 +32,7 @@ class Aoc : SampleInterface
             var user_info = aoc_api.read("self");
             Log.DumpJObject("user_info", user_info);
             // we use the default workspace of the user
-            string default_workspace_id = (string)(user_info["default_workspace_id"]);
+            string default_workspace_id = (string?)user_info["default_workspace_id"] ?? throw new Exception("user has no default workspace");
             var workspace_info = aoc_api.read($"workspaces/{default_workspace_id}");
             // this user must be registered, else different code is needed
             string recipient_email = config.GetParam("aoc", "user_email");

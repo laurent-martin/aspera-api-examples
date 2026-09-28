@@ -30,7 +30,6 @@ public class Rest
         mVerify = true;
         mHttpClient = createHttpClient();
         mHeaders = new StringDict();
-        mAuthData = null;
     }
     /// <summary>
     /// Disable verification of server certificate with false (development servers with self-signed certificate)
@@ -64,7 +63,7 @@ public class Rest
         // shallow copy sufficient here
         mAuthData = auth.ToDictionary(entry => entry.Key, entry => entry.Value);
     }
-    public void setDefaultScope(string scope)
+    public void setDefaultScope(string? scope)
     {
         mHeaders.Add("Authorization", get_bearer_token(scope));
     }
@@ -72,28 +71,29 @@ public class Rest
     {
         mHeaders.Add(name, value);
     }
-    public string get_bearer_token(string scope)
+    public string get_bearer_token(string? scope)
     {
-        RSA private_key = readKeyFromFile(mAuthData["key_pem_path"]);
+        var authData = mAuthData ?? throw new InvalidOperationException("setAuthBearer must be called first");
+        RSA private_key = readKeyFromFile(authData["key_pem_path"]);
         long seconds_since_epoch = System.DateTimeOffset.Now.ToUnixTimeSeconds();
         var jwt_payload = new JObject{
-                    { "iss", mAuthData["iss"]},
-                    { "sub", mAuthData["sub"]},
-                    { "aud", mAuthData["aud"]},
+                    { "iss", authData["iss"]},
+                    { "sub", authData["sub"]},
+                    { "aud", authData["aud"]},
                     { "nbf", seconds_since_epoch - Const.JWT_CLIENT_SERVER_OFFSET_SEC},
                     { "iat", seconds_since_epoch - Const.JWT_CLIENT_SERVER_OFFSET_SEC},
                     { "exp", seconds_since_epoch + Const.JWT_VALIDITY_SEC},
                     { "jti", Guid.NewGuid().ToString()},
                 };
         // if client id starts with "aspera", add key "org" to jwt_payload
-        if (mAuthData.ContainsKey("org") && mAuthData["client_id"].StartsWith("aspera"))
+        if (authData.ContainsKey("org") && authData["client_id"].StartsWith("aspera"))
         {
-            jwt_payload["org"] = mAuthData["org"];
+            jwt_payload["org"] = authData["org"];
         }
         Log.DumpJObject("jwt_payload", jwt_payload);
         string assertion = Jose.JWT.Encode(JsonConvert.SerializeObject(jwt_payload), private_key, Jose.JwsAlgorithm.RS256, extraHeaders: new Dictionary<string, object> { { "typ", "JWT" } });
         var token_parameters = new JObject{
-            {"client_id",mAuthData["client_id"]},
+            {"client_id",authData["client_id"]},
             {"grant_type",Const.IETF_GRANT_JWT},
             {"assertion",assertion},
         };
@@ -101,15 +101,15 @@ public class Rest
         {
             token_parameters["scope"] = scope;
         }
-        Rest oauth_api = new Rest(mAuthData["token_url"]);
+        Rest oauth_api = new Rest(authData["token_url"]);
         oauth_api.setVerify(mVerify);
-        oauth_api.setAuthBasic(mAuthData["client_id"], mAuthData["client_secret"]);
+        oauth_api.setAuthBasic(authData["client_id"], authData["client_secret"]);
         //oauth_api.setHeader("Content-Type", Const.MIME_WWW);
         JObject data = (JObject)oauth_api.call(
             method: HttpMethod.Post,
             body: token_parameters,
             body_type: "www");
-        return "Bearer " + (string)data["access_token"];
+        return "Bearer " + ((string?)data["access_token"] ?? throw new Exception("no access_token in token response"));
     }
     /// <summary>
     /// Call REST API.
@@ -123,11 +123,11 @@ public class Rest
     /// <exception cref="System.Exception"></exception>
     public JContainer call(
         HttpMethod method,
-        string endpoint = null,
-        JObject body = null,
+        string? endpoint = null,
+        JObject? body = null,
         string body_type = "json",
-        JObject query = null,
-        StringDict headers = null
+        JObject? query = null,
+        StringDict? headers = null
         )
     {
         string uri_string = mBaseUrl;
@@ -195,7 +195,8 @@ public class Rest
         {
             throw new System.Exception($"ERROR: {response.StatusCode} {response.ReasonPhrase}");
         }
-        JContainer result = null;
+        // empty response (e.g. PUT, DELETE): empty object
+        JContainer result = new JObject();
         if (resp_str.Length != 0)
         {
             if (resp_str.StartsWith("["))
@@ -213,7 +214,7 @@ public class Rest
     {
         return call(method: HttpMethod.Post, endpoint: endpoint, body: body);
     }
-    public JContainer read(string endpoint, JObject query = null)
+    public JContainer read(string endpoint, JObject? query = null)
     {
         return call(method: HttpMethod.Get, endpoint: endpoint, query: query);
     }
@@ -226,7 +227,8 @@ public class Rest
         return call(method: HttpMethod.Delete, endpoint: endpoint);
     }
     private string mBaseUrl;
-    private StringDict mAuthData;
+    // set by setAuthBearer
+    private StringDict? mAuthData;
     private StringDict mHeaders;
     private HttpClient mHttpClient;
     private bool mVerify;

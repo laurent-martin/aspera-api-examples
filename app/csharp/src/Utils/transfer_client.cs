@@ -28,9 +28,9 @@ public class TransferClient
     private Configuration _config;
     private string _serverAddress;
     private int _serverPort;
-    private System.Diagnostics.Process _daemonProcess = null;
+    private System.Diagnostics.Process? _daemonProcess = null;
     private List<StreamWriter> _daemonStreams = new List<StreamWriter>();
-    private Transferd.Api.TransferService.TransferServiceClient _daemonService = null;
+    private Transferd.Api.TransferService.TransferServiceClient? _daemonService = null;
     private string _daemonName;
     private string _daemonLog;
 
@@ -116,15 +116,16 @@ public class TransferClient
     /// <param name="logOffset">only read the log after this offset</param>
     private void WaitDaemonListening(long logOffset)
     {
+        var daemonProcess = _daemonProcess ?? throw new InvalidOperationException("daemon not started");
         var deadline = DateTime.UtcNow + STARTUP_TIMEOUT;
         while (true)
         {
-            if (_daemonProcess.HasExited)
+            if (daemonProcess.HasExited)
             {
                 Log.log.Error($"Daemon not started.");
-                Log.log.Error($"Exited with code: {_daemonProcess.ExitCode}");
+                Log.log.Error($"Exited with code: {daemonProcess.ExitCode}");
                 Log.log.Error($"Check daemon log: {_daemonLog}");
-                _daemonProcess.WaitForExit();
+                daemonProcess.WaitForExit();
                 _daemonProcess = null;
                 throw new Exception("daemon startup failed");
             }
@@ -199,6 +200,13 @@ public class TransferClient
         _daemonService = daemonService;
         Log.log.Info("Connected !");
     }
+    /// <summary>
+    /// Client of the daemon API, once connected
+    /// </summary>
+    private Transferd.Api.TransferService.TransferServiceClient DaemonService()
+    {
+        return _daemonService ?? throw new InvalidOperationException("not connected to daemon");
+    }
     public void Startup()
     {
         if (_daemonService == null)
@@ -244,7 +252,7 @@ public class TransferClient
             TransferSpec = Newtonsoft.Json.JsonConvert.SerializeObject(aSpecObj),
         };
 
-        var transferResponse = _daemonService.StartTransfer(transferRequest);
+        var transferResponse = DaemonService().StartTransfer(transferRequest);
 
         if (transferResponse.Status == Transferd.Api.TransferStatus.Failed
             || transferResponse.Status == Transferd.Api.TransferStatus.UnknownStatus)
@@ -265,7 +273,7 @@ public class TransferClient
         while (true)
         {
             // check the current state of the transfer
-            var queryTransferResponse = _daemonService.QueryTransfer(new Transferd.Api.TransferInfoRequest() { TransferId = aTransferId });
+            var queryTransferResponse = DaemonService().QueryTransfer(new Transferd.Api.TransferInfoRequest() { TransferId = aTransferId });
             Console.Out.WriteLine("transfer info " + queryTransferResponse);
 
             // check transfer status in response, and exit if it's done

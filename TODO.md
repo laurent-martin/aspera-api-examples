@@ -136,7 +136,7 @@ Port 0 requires `trsdk.level` `info` or more verbose.
 - [x] Go: `grpc.WithInsecure` deprecated
 - [x] C#: `net7.0` end of life, move to `net10.0` (current .NET SDK has no 7.0 runtime: samples do not start); `Grpc.Core` deprecated (`Grpc.Net.Client` is enough)
 - [x] C#: known vulnerabilities reported by NuGet in `BouncyCastle.Cryptography` 2.2.1 (unused: removed) and `log4net` 2.0.15 (now 3.4.0); other packages updated; obsolete `packages.config` renamed to `Directory.Packages.props` (central package management, history kept), lock file `packages.lock.json`
-- [ ] C#: `Nullable` is `disable`: enabling it gives about 48 warnings to fix (annotations of nullable types)
+- [x] C#: `Nullable` is `disable`: enabling it gives about 48 warnings to fix (annotations of nullable types) (now `enable`, 0 warning: 25 distinct warnings fixed; `Rest.call` returns an empty object for an empty response)
 - [x] C#: private key file only accepted in PKCS#1 format (`BEGIN RSA PRIVATE KEY`), OpenSSL 3 generates PKCS#8 by default (now `RSA.ImportFromPem`)
 - [x] Rust: update tonic 0.9, prost 0.11, reqwest 0.11, jsonwebtoken 8; `from_i32` deprecated (now tonic/prost 0.14 with `tonic-prost-build`, reqwest 0.13, jsonwebtoken 11 with aws-lc-rs backend, deprecated `serde_yaml` replaced by `serde_yaml_ng`, edition 2024; `cargo audit`: 0 vulnerability)
 - [x] JS: `@grpc/proto-loader ^0.5.4` very old; runtime deps declared in `devDependencies` (all updated: ky 2, js-yaml 5, proto-loader 0.8; `uuid` replaced by `crypto.randomUUID`; `npm audit`: 0 vulnerability)

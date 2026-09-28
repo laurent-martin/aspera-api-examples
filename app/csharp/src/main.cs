@@ -22,6 +22,7 @@ class Program
             }
         }
         // call the sample class, based on name, keeping remaining args
-        ((SampleInterface)Activator.CreateInstance(Type.GetType(capitalized_name.ToString(), throwOnError: true))).start(args.Skip(1).ToArray());
+        Type sampleType = Type.GetType(capitalized_name.ToString(), throwOnError: true)!;
+        ((SampleInterface)Activator.CreateInstance(sampleType)!).start(args.Skip(1).ToArray());
     }
 }

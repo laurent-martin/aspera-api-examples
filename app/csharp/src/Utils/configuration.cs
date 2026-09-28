@@ -27,11 +27,12 @@ public class Configuration
         // init logger
         log4net.Config.BasicConfigurator.Configure();
         // get project root folder
-        mTopFolder = Environment.GetEnvironmentVariable("DIR_TOP");
-        if (string.IsNullOrEmpty(mTopFolder))
+        string? topFolder = Environment.GetEnvironmentVariable("DIR_TOP");
+        if (string.IsNullOrEmpty(topFolder))
         {
             throw new InvalidOperationException("Environment variable DIR_TOP is not set.");
         }
+        mTopFolder = topFolder;
         if (!Directory.Exists(mTopFolder))
         {
             throw new DirectoryNotFoundException($"The folder specified by DIR_TOP does not exist: {mTopFolder}");
@@ -78,7 +79,7 @@ public class Configuration
     /// Get parameter from configuration file
     /// </summary>
     /// <param name="defaultValue">value if parameter is not set, else the parameter is mandatory</param>
-    public string GetParam(string section, string key, string defaultValue = null)
+    public string GetParam(string section, string key, string? defaultValue = null)
     {
         if (!_config.ContainsKey(section) || !_config[section].ContainsKey(key))
         {
@@ -93,9 +94,10 @@ public class Configuration
     public void AddSources(JObject aSpecObj, string where)
     {
         // add file list in transfer spec
+        var paths = aSpecObj[where] as JArray ?? throw new ArgumentException($"{where} is not an array in transfer spec");
         foreach (string f in _fileList)
         {
-            ((JArray)aSpecObj[where]).Add(new JObject { { "source", f } });
+            paths.Add(new JObject { { "source", f } });
         }
     }
     /// <summary>
@@ -107,8 +109,8 @@ public class Configuration
         using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
         using (var reader = new StreamReader(file))
         {
-            string lastLine = null;
-            string line;
+            string? lastLine = null;
+            string? line;
             while ((line = reader.ReadLine()) != null)
             {
                 if (line.Length != 0)
