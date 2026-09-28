@@ -1,6 +1,8 @@
 # Examples using Java
 
-The `TestEnvironment` class checks if the daemon is running and if not, it will start it before running the test.
+The `TransferClient` class starts the Transfer Daemon, if not already started, before the transfer.
+
+Requirements: Gradle 9 and a JDK 25 or newer.
 
 Samples show logs on terminal.
 
@@ -37,12 +39,12 @@ Any toolchain can be used to generate the classes with `protoc` and `grpc-java`.
   | Native executables
 ```
 
-The appropriate toolchain should be used to match your java version.
+Classes are compiled for Java 25 (`--release 25`) with the JDK used by Gradle: any JDK 25 or newer.
 
-To test the example with a specific java version set the env var `JAVA_HOME`, for example on macos:
+To use a specific JDK, set the env var `JAVA_HOME`, for example on macOS:
 
 ```bash
-JAVA_HOME=/opt/homebrew/Cellar/openjdk@11/11.0.23 make
+JAVA_HOME=$(/usr/libexec/java_home -v 25) make
 ```
 
 ## gRPC and `protoc` versions

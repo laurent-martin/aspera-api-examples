@@ -2,12 +2,12 @@
 plugins {
     id 'java'
     id 'application'
-    // Creation of fat Jar file (8.x for Gradle 8, 9.x requires Gradle 9):
+    // Creation of fat Jar file (version 9.x requires Gradle 9):
     // https://plugins.gradle.org/plugin/com.gradleup.shadow
     // https://gradleup.com/shadow/
-    id 'com.gradleup.shadow' version '8.3.9'
+    id 'com.gradleup.shadow' version '9.6.1'
     // https://plugins.gradle.org/plugin/com.google.protobuf
-    id 'com.google.protobuf' version '0.9.6'
+    id 'com.google.protobuf' version '0.10.0'
     //id 'idea' // use the idea plugin if using Jetbrains IntelliJ
 }
 
@@ -28,8 +28,8 @@ def jjwtVersion = '0.13.0'
 def proto_dir = project.hasProperty('proto_dir') ? project.getProperty('proto_dir') : "$projectDir/build/resources/main"
 def proto_file = project.hasProperty('proto_file') ? project.getProperty('proto_file') : 'transferd.proto'
 
-def gradleMajorVersion = 8
-def javaMajorVersion = 21
+def gradleMajorVersion = 9
+def javaMajorVersion = 25
 
 def gv = GradleVersion.current()
 if (gv.baseVersion.version.split('\\.')[0].toInteger() != gradleMajorVersion) {
@@ -40,12 +40,7 @@ if (!JavaVersion.current().isCompatibleWith(JavaVersion.valueOf("VERSION_${javaM
     throw new GradleException("This project requires Java ${javaMajorVersion} (or compatible). Current: ${JavaVersion.current()}")
 }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(javaMajorVersion)
-    }
-}
-
+// compile for Java 25 with the current JDK (25 or newer): no specific JDK installation required
 tasks.withType(JavaCompile) {
     options.release = javaMajorVersion
     options.compilerArgs << "-Xlint:deprecation"
@@ -101,8 +96,9 @@ sourceSets {
 shadowJar {
     // For grpc exception: NameResolver 'unix' for '...' not supported by transport
     // https://github.com/grpc/grpc-java/issues/10853
-    mergeServiceFiles() 
-    append('META-INF/services/io.grpc.LoadBalancerProvider')
+    mergeServiceFiles()
+    // Shadow 9 excludes duplicate files before transformers are applied: include them, so that service files are merged
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 dependencies {
