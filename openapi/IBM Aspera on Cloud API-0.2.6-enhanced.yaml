@@ -749,6 +749,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - App Memberships
   /apps/app_memberships/{id}:
@@ -783,6 +787,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - App Memberships
     get:
@@ -820,6 +828,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - App Memberships
   /apps/{aspera_app_type}/app_memberships:
@@ -873,6 +885,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - App Memberships
     get:
@@ -944,6 +960,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - App Memberships
   /apps/{aspera_app_type}/app_memberships/{id}:
@@ -993,6 +1013,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - App Memberships
     put:
@@ -1044,6 +1068,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
           description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '404':
           description: Not Found
           content:
@@ -1054,6 +1082,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - App Memberships
   /client_access_keys:
@@ -1101,6 +1133,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Client Access Keys
     post:
@@ -1134,6 +1170,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Client Access Keys
   /client_access_keys/{id}:
@@ -1167,6 +1207,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Client Access Keys
     get:
@@ -1204,6 +1248,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Client Access Keys
     put:
@@ -1252,6 +1300,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Client Access Keys
   /client_authorizations:
@@ -1309,6 +1361,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Client Authorizations
     post:
@@ -1348,6 +1404,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Client Authorizations
   /client_authorizations/{id}:
@@ -1385,6 +1445,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Client Authorizations
     get:
@@ -1430,6 +1494,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Client Authorizations
   /clients:
@@ -1466,6 +1534,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Clients
     post:
@@ -1501,6 +1573,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Clients
   /clients/{id}:
@@ -1538,6 +1614,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Clients
     get:
@@ -1578,6 +1658,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Clients
     put:
@@ -1620,6 +1704,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Clients
   /dropbox_memberships:
@@ -1748,6 +1836,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropbox Memberships
     post:
@@ -1781,6 +1873,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropbox Memberships
   /dropbox_memberships/{id}:
@@ -1816,6 +1912,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropbox Memberships
     get:
@@ -1858,6 +1958,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropbox Memberships
     put:
@@ -1894,6 +1998,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropbox Memberships
   /dropboxes:
@@ -1949,6 +2057,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropboxes
     post:
@@ -1984,6 +2096,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropboxes
   /dropboxes/{id}:
@@ -2019,6 +2135,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropboxes
     get:
@@ -2055,6 +2175,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropboxes
     put:
@@ -2097,6 +2221,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropboxes
   /nodes:
@@ -2159,6 +2287,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Nodes
     post:
@@ -2188,6 +2320,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Nodes
   /nodes/{id}:
@@ -2217,6 +2353,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Nodes
     get:
@@ -2253,6 +2393,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Nodes
     put:
@@ -2289,6 +2433,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Nodes
   /nodes/{id}/update_status:
@@ -2326,6 +2474,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Nodes
   /organizations/{id}:
@@ -2363,6 +2515,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Organizations
     put:
@@ -2394,6 +2550,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Organizations
   /packages:
@@ -2574,6 +2734,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Packages
     post:
@@ -2609,6 +2773,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Packages
   /packages/{id}:
@@ -2649,6 +2817,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Packages
     get:
@@ -2694,6 +2866,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Packages
     put:
@@ -2739,6 +2915,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Packages
   /usage_reports:
@@ -2788,6 +2968,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Usage Reports
   /users:
@@ -2878,6 +3062,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
     post:
@@ -2913,6 +3101,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
   /users/{id}:
@@ -2950,6 +3142,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
     get:
@@ -2995,6 +3191,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
     put:
@@ -3037,6 +3237,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
   /users/{id}/user_interaction_preferences:
@@ -3068,6 +3272,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
           description: Forbidden - User can only access their own preferences unless they are an organization admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '404':
           description: Not Found
           content:
@@ -3076,6 +3284,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
     put:
@@ -3109,6 +3321,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
           description: Forbidden - User can only update their own preferences unless they are an organization admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '404':
           description: Not Found
           content:
@@ -3119,6 +3335,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
   /workspace_memberships:
@@ -3183,6 +3403,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspace Memberships
     post:
@@ -3222,6 +3446,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspace Memberships
   /workspace_memberships/{id}:
@@ -3261,6 +3489,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspace Memberships
     get:
@@ -3308,6 +3540,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspace Memberships
     put:
@@ -3350,6 +3586,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspace Memberships
   /workspaces:
@@ -3419,6 +3659,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspaces
     post:
@@ -3454,6 +3698,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspaces
   /workspaces/{id}:
@@ -3565,6 +3813,13 @@ paths:
                   - $ref: '#/components/schemas/app_settings_packages'
                   - $ref: '#/components/schemas/app_settings_activity'
                   - $ref: '#/components/schemas/app_settings_automation'
+                discriminator:
+                  propertyName: app_type
+                  mapping:
+                    files: '#/components/schemas/app_settings_files'
+                    packages: '#/components/schemas/app_settings_packages'
+                    activity: '#/components/schemas/app_settings_activity'
+                    automation: '#/components/schemas/app_settings_automation'
               examples:
                 files:
                   summary: Files application settings
@@ -3647,7 +3902,7 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
+              anyOf:
                 - $ref: '#/components/schemas/app_settings_files_update'
                 - $ref: '#/components/schemas/app_settings_packages_update'
                 - $ref: '#/components/schemas/app_settings_activity_update'
@@ -3675,6 +3930,13 @@ paths:
                   - $ref: '#/components/schemas/app_settings_packages'
                   - $ref: '#/components/schemas/app_settings_activity'
                   - $ref: '#/components/schemas/app_settings_automation'
+                discriminator:
+                  propertyName: app_type
+                  mapping:
+                    files: '#/components/schemas/app_settings_files'
+                    packages: '#/components/schemas/app_settings_packages'
+                    activity: '#/components/schemas/app_settings_activity'
+                    automation: '#/components/schemas/app_settings_automation'
         '204':
           description: No Content
         '400':
@@ -4638,6 +4900,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/feature_flags_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Feature Flags
     post:
@@ -4658,6 +4934,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/feature_flags_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Feature Flags
   /feature_flags/{id}:
@@ -4679,6 +4969,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/feature_flags_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Feature Flags
     put:
@@ -4706,6 +5016,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/feature_flags_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Feature Flags
     delete:
@@ -4722,6 +5052,26 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Feature Flags
   /file_upload_notifications:
@@ -4732,6 +5082,20 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - File Upload Notifications
     post:
@@ -4748,6 +5112,20 @@ paths:
       responses:
         '201':
           description: Created
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - File Upload Notifications
   /file_upload_notifications/{id}:
@@ -4774,6 +5152,26 @@ paths:
           description: OK
         '204':
           description: No Content
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - File Upload Notifications
     delete:
@@ -4790,6 +5188,26 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - File Upload Notifications
   /file_upload_notifications/get_toggle_state:
@@ -4812,6 +5230,26 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden. Also returned when neither `node_id` nor `file_id` is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - File Upload Notifications
   /operations:
@@ -4871,6 +5309,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/operations_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Operations
   /operations/{id}:
@@ -4892,6 +5344,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/operations_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Operations
     put:
@@ -4937,6 +5409,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/organizations_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Organizations
     put:
@@ -4958,6 +5444,20 @@ paths:
                 $ref: '#/components/schemas/organizations_response'
         '204':
           description: No Content
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Organizations
   /packages_count:
@@ -4974,6 +5474,20 @@ paths:
                 type: integer
                 description: Total number of packages visible to the current caller.
                 example: 6982
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Packages
   /self:
@@ -4995,6 +5509,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/users_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Self
   /short_links:
@@ -5057,6 +5585,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/short_links_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Short Links
     post:
@@ -5082,6 +5624,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/short_links_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Short Links
   /short_links/{id}:
@@ -5114,6 +5670,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/short_links_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Short Links
     delete:
@@ -5145,6 +5721,26 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Short Links
   /tier_restrictions:
@@ -5219,6 +5815,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/transfer_report_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Transfer Analytics
   /transfers:
@@ -5235,6 +5845,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/transfers_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Transfers
     delete:
@@ -5244,6 +5868,20 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Transfers
   /transfers/{id}:
@@ -5265,6 +5903,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/transfers_response'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Transfers
     delete:
@@ -5281,6 +5939,26 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Transfers
   /workspace_collaborators:
@@ -5291,6 +5969,20 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspace Collaborators
     post:
@@ -5307,6 +5999,20 @@ paths:
       responses:
         '201':
           description: Created
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspace Collaborators
   /workspace_collaborators/{id}:
@@ -5324,6 +6030,26 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspace Collaborators
     delete:
@@ -5340,6 +6066,26 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Workspace Collaborators
   /contacts:
@@ -5466,6 +6212,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Contacts
     post:
@@ -5542,6 +6292,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
           description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '404':
           description: Not Found
           content:
@@ -5556,6 +6310,10 @@ paths:
                 $ref: '#/components/schemas/ValidationError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Contacts
         - Contacts
@@ -5581,6 +6339,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Configuration Policies
     post:
@@ -5612,6 +6374,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Configuration Policies
   /configuration_policies/{id}:
@@ -5643,6 +6409,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Configuration Policies
     get:
@@ -5677,6 +6447,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Configuration Policies
     put:
@@ -5721,6 +6495,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Configuration Policies
   /network_policies:
@@ -5745,6 +6523,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Network Policies
     post:
@@ -5776,6 +6558,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Network Policies
   /network_policies/{id}:
@@ -5807,6 +6593,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Network Policies
     get:
@@ -5841,6 +6631,10 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Network Policies
     put:
@@ -5885,6 +6679,10 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Network Policies
 components:
@@ -6015,6 +6813,62 @@ components:
         code: not_found
         message: The resource you were looking for does not exist
         request_id: 58825f7f-42bb-4f4e-90bc-a6deb9b999db
+    ForbiddenError:
+      type: object
+      description: |
+        Standard error response for 403 Forbidden.
+      properties:
+        code:
+          type: string
+          description: Error code identifying the type of error
+          enum:
+            - forbidden
+          example: forbidden
+        message:
+          type: string
+          description: Human-readable error message
+          example: "You are not authorized to perform the requested action"
+        request_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the request, useful for debugging and support
+          example: 4387db5b-d84b-43f8-b5c1-0d9d878714d6
+      required:
+        - code
+        - message
+        - request_id
+      example:
+        code: forbidden
+        message: "You are not authorized to perform the requested action"
+        request_id: 4387db5b-d84b-43f8-b5c1-0d9d878714d6
+    InternalServerError:
+      type: object
+      description: |
+        Standard error response for 500 Internal Server Error.
+      properties:
+        code:
+          type: string
+          description: Error code identifying the type of error
+          enum:
+            - internal_server_error
+          example: internal_server_error
+        message:
+          type: string
+          description: Human-readable error message
+          example: "We're sorry, but something went wrong. We've been notified about this issue and we'll take a look at it shortly."
+        request_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the request, useful for debugging and support
+          example: 17a835e7-17d0-40f9-8ac3-ff23a45d461e
+      required:
+        - code
+        - message
+        - request_id
+      example:
+        code: internal_server_error
+        message: "We're sorry, but something went wrong. We've been notified about this issue and we'll take a look at it shortly."
+        request_id: 17a835e7-17d0-40f9-8ac3-ff23a45d461e
     ClientRegistrationToken:
       type: object
       description: Client registration token with metadata
@@ -6575,7 +7429,7 @@ components:
             app_name:
               example: Files
             app_type:
-              example: files
+              const: files
         - $ref: '#/components/schemas/app_settings_base'
         - $ref: '#/components/schemas/app_settings_files_specific'
       description: Complete settings for the Files application (includes read-only fields)
@@ -6587,7 +7441,7 @@ components:
             app_name:
               example: Packages
             app_type:
-              example: packages
+              const: packages
         - $ref: '#/components/schemas/app_settings_base'
         - $ref: '#/components/schemas/app_settings_packages_specific'
       description: Complete settings for the Packages application (includes read-only fields)
@@ -6599,7 +7453,7 @@ components:
             app_name:
               example: Activity
             app_type:
-              example: activity
+              const: activity
         - $ref: '#/components/schemas/app_settings_base'
       description: Complete settings for the Activity application (includes read-only fields)
     app_settings_automation:
@@ -6610,7 +7464,7 @@ components:
             app_name:
               example: Automation
             app_type:
-              example: automation
+              const: automation
         - $ref: '#/components/schemas/app_settings_base'
       description: Complete settings for the Automation application (includes read-only fields)
     app_memberships_params:
@@ -6847,6 +7701,9 @@ components:
             - packages
             - activity
             - automation
+      required:
+        - app_name
+        - app_type
     client_access_keys_params:
       type: object
       properties:
@@ -7557,7 +8414,9 @@ components:
             this parameter, draft package contents are deleted. If this parameter is null, it defaults to the workspace
             setting. To set a time-based expiration policy for non-draft packages, see content_retention_duration.
             Units: seconds. POST: Admin or Manager permission required. PUT: Admin or Manager permission required.
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         dropbox_notification_recipients:
@@ -7587,14 +8446,18 @@ components:
           description: >
             Amount of time in seconds it takes for packages in this shared inbox to be deleted once their transfers
             complete. If null, packages will not be deleted on a timer. Read-only.
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         effective_delete_package_content_after_download_duration:
           description: >
             Amount of time in seconds it takes a package in this shared inbox to be deleted once all recipients have
             downloaded the entire package. If null, packages will not be deleted on a timer. Read-only.
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         email_notification_settings:
@@ -7981,7 +8844,9 @@ components:
         ats_storage_type:
           description: |
             For Aspera Transfer Service nodes, this field defines which type of storage is used.
-          type: string
+          type:
+            - string
+            - 'null'
           examples:
             - null
           enum:
@@ -7992,6 +8857,7 @@ components:
             - google-gcs
             - ibm-s3
             - softlayer_swift
+            - null
         capabilities:
           type: array
           items:
@@ -8068,7 +8934,9 @@ components:
         ssh_fingerprint:
           description: |
             If your node has SSH capabilities, used for verifying SSH connections.
-          type: string
+          type:
+            - string
+            - 'null'
           examples:
             - null
         status:
@@ -8830,7 +9698,9 @@ components:
             When a time-based content expiration value is set for this package, the duration to retain packages
             contents. When this duration passes, the packages contents are deleted. Valid values are null - 10 years.
             Units are seconds.
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         contents_file_id:
@@ -8857,7 +9727,9 @@ components:
             which the package contents will be retained even after all recipients have downloaded the package. The timer
             for this setting begins when all recipients have downloaded the package; when the timer expires, the package
             contents are deleted. Valid values are null - 10 years. Units are seconds.
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         deleted:
@@ -10055,22 +10927,6 @@ components:
           type: integer
           examples:
             - 0
-    workspace_query_params:
-      type: object
-      properties:
-        created_at:
-          type: string
-          format: date-time
-        manager:
-          type: boolean
-        name:
-          description: full text search
-          type: string
-        node_id:
-          type: integer
-        updated_at:
-          type: string
-          format: date-time
     workspaces_params:
       type: object
       properties:
@@ -10123,7 +10979,9 @@ components:
             delete_package_content_after_download_duration. Valid values: null - 10 years. Units: seconds. POST: Admin
             permission required. PUT Manager or Admin permission required. RESPONSE User scope. RESPONSE Admin scope
             (org admin).
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         default_ear_setting:
@@ -10149,7 +11007,9 @@ components:
             time-based expiration policy, refer to content_retention_duration. Valid values: null - 10 years. Units:
             seconds. POST: Admin permission required. PUT: Manager or Admin permission required. RESPONSE User scope.
             RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         description:
@@ -10167,7 +11027,9 @@ components:
             deleted based on time. To set a time-based expiration policy for non-draft packages in this workspace, refer
             to content_retention_duration. POST: Admin permission required. PUT Manager or Admin permission required.
             RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         email_footer:
@@ -10175,7 +11037,9 @@ components:
             If 'inherit_email_templates' is set to false, configure the footer for email notifications for this
             workspace. The footer you configure is common to all email notifications for this workspace. POST: Admin
             permission required. PUT: Manager or Admin permission required. RESPONSE Admin scope (org admin).
-          type: string
+          type:
+            - string
+            - 'null'
           examples:
             - null
         email_notification_settings:
@@ -10212,7 +11076,9 @@ components:
             The URI to collect event and activity reports. If this parameter is not null, you can use the
             event_reporting_headers parameter to configure acceptable JSON headers. POST Admin permission required. PUT
             Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
-          type: string
+          type:
+            - string
+            - 'null'
           examples:
             - null
         external_package_authentication_required:
@@ -10405,7 +11271,9 @@ components:
           description: >-
             The file ID of the root folder containing packages for this workspace. POST Admin permission required. PUT
             Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
-          type: string
+          type:
+            - string
+            - 'null'
           examples:
             - null
         spool_file_id:
@@ -10496,7 +11364,9 @@ components:
             delete_package_content_after_download_duration. Valid values (null - 10 years) Units (seconds) POST Admin
             permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE User scope.
             RESPONSE Admin scope (org admin).
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         created_at:
@@ -10528,7 +11398,9 @@ components:
             time-based expiration policy, refer to content_retention_duration. Valid values (null - 10 years) Units
             (seconds) POST Admin permission required. PUT Manager permission required. or PUT Admin permission required.
             RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope (org admin).
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         description:
@@ -10547,7 +11419,9 @@ components:
             to content_retention_duration. POST Admin permission required. PUT Manager permission required or PUT Admin
             permission required. RESPONSE User scope. RESPONSE Admin scope (could be ws manager). RESPONSE Admin scope
             (org admin).
-          type: integer
+          type:
+            - integer
+            - 'null'
           examples:
             - null
         effective_default_ear_setting:
@@ -10566,7 +11440,9 @@ components:
             workspace. The footer you configure is common to all email notifications for this workspace. POST Admin
             permission required. PUT Manager permission required or PUT Admin permission required. RESPONSE Admin scope
             (org admin).
-          type: string
+          type:
+            - string
+            - 'null'
           examples:
             - null
         email_notification_settings:
@@ -10605,7 +11481,9 @@ components:
             The URI to collect event and activity reports. If this parameter is not null, you can use the
             event_reporting_headers parameter to configure acceptable JSON headers. POST Admin permission required. PUT
             Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
-          type: string
+          type:
+            - string
+            - 'null'
           examples:
             - null
         external_package_authentication_required:
@@ -10842,7 +11720,9 @@ components:
           description: >-
             The file ID of the root folder containing packages for this workspace. POST Admin permission required. PUT
             Manager permission required or PUT Admin permission required. RESPONSE Admin scope (org admin).
-          type: string
+          type:
+            - string
+            - 'null'
           examples:
             - null
         spool_file_id:
