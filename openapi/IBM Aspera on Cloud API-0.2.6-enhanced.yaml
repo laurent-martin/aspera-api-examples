@@ -5001,7 +5001,53 @@ paths:
     get:
       operationId: get_short_links
       summary: Get Short Links
-      description: List short links visible to the current caller.
+      description: List short links of a shared resource (shared folder or shared inbox) visible to the current caller.
+      parameters:
+        - name: json_query
+          in: query
+          description: >-
+            JSON-encoded shared resource of the links. Public link: `{"url_token_data":{"data":<resource>,"purpose":<token purpose>}}`
+            (see `short_link_url_token_data`). Private link: `{"node_id":..,"file_id":..,"workspace_id":..}`
+          schema:
+            type: string
+        - name: purpose
+          in: query
+          description: Purpose of the short links (see `short_link_purpose`)
+          schema:
+            type: string
+            enum:
+              - token_auth_redirection
+              - shared_folder_auth_link
+        - name: edit_access
+          in: query
+          description: Check edit access on the shared folder given by `node_id` and `file_id` in `json_query` (shared folder links only, rejected for shared inbox links)
+          schema:
+            type: boolean
+        - name: admin
+          in: query
+          description: Act as organization administrator (sent by the web UI for an administrator)
+          schema:
+            type: boolean
+        - name: embed
+          in: query
+          description: Embed related resources (e.g. `updated_by_user`)
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Sort order (e.g. `-created_at`)
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
       responses:
         '200':
           description: OK
@@ -5016,14 +5062,19 @@ paths:
     post:
       operationId: add_short_link
       summary: Create a Short Link
-      description: Create a short link.
+      description: Create a short link to a shared folder or a shared inbox.
+      parameters:
+        - name: admin
+          in: query
+          description: Act as organization administrator (sent by the web UI for an administrator)
+          schema:
+            type: boolean
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              $ref: '#/components/schemas/short_link_create_params'
       responses:
         '201':
           description: Created
@@ -5037,7 +5088,7 @@ paths:
     put:
       operationId: update_short_link
       summary: Update a Short Link
-      description: Update a short link.
+      description: Update a short link (expiration, password).
       parameters:
         - name: id
           in: path
@@ -5045,13 +5096,17 @@ paths:
           schema:
             type: string
           description: Unique identifier of the resource.
+        - name: admin
+          in: query
+          description: Act as organization administrator (sent by the web UI for an administrator)
+          schema:
+            type: boolean
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              $ref: '#/components/schemas/short_link_update_params'
       responses:
         '200':
           description: OK
@@ -5072,6 +5127,21 @@ paths:
           schema:
             type: string
           description: Unique identifier of the resource.
+        - name: json_query
+          in: query
+          description: JSON-encoded shared folder of the link, with `edit_access` (shared folder links only)
+          schema:
+            type: string
+        - name: edit_access
+          in: query
+          description: Check edit access on the shared folder given by `node_id` and `file_id` in `json_query` (shared folder links only, rejected for shared inbox links)
+          schema:
+            type: boolean
+        - name: admin
+          in: query
+          description: Act as organization administrator (sent by the web UI for an administrator)
+          schema:
+            type: boolean
       responses:
         '204':
           description: No Content
@@ -9169,14 +9239,13 @@ components:
           type: boolean
           description: Whether the short link has expired.
         expires_at:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date-time
-          nullable: true
           description: Expiry date-time, or null if the link does not expire.
         data:
-          type: object
-          description: Arbitrary metadata associated with the short link.
-          additionalProperties: true
+          $ref: '#/components/schemas/short_link_data'
         updated_by_user_id:
           type: string
           description: ID of the user who last updated the short link.
@@ -9188,6 +9257,115 @@ components:
           type: string
           format: date-time
           description: Time at which the short link was last updated.
+    short_link_purpose:
+      type: string
+      description: >-
+        Purpose of a short link: `token_auth_redirection` for a public link (URL token, shared folder or shared inbox),
+        `shared_folder_auth_link` for a private link (authentication required, shared folder only)
+      enum:
+        - token_auth_redirection
+        - shared_folder_auth_link
+    short_link_url_token_data:
+      type: object
+      description: URL token of a public short link
+      properties:
+        data:
+          type: object
+          description: >-
+            Shared resource: shared inbox (`dropbox_id`, `name`) or shared folder (`node_id`, `file_id`), and `workspace_id`
+          properties:
+            workspace_id:
+              type: string
+              description: Workspace of the shared resource
+            dropbox_id:
+              type: string
+              description: Shared inbox (token purpose `send_package_to_dropbox`)
+            name:
+              type: string
+              description: Empty string for a shared inbox
+            node_id:
+              type: string
+              description: Node of the shared folder (token purpose `view_shared_file`)
+            file_id:
+              type: string
+              description: File identifier of the shared folder on the node
+          additionalProperties: true
+        purpose:
+          type: string
+          description: Purpose of the URL token, depends on the shared resource
+          enum:
+            - send_package_to_dropbox
+            - view_shared_file
+        password:
+          type: string
+          description: Password to follow the link (write only, with `password_enabled`)
+        expires_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Expiry date-time of the URL token
+    short_link_data:
+      type: object
+      description: >-
+        Public link (purpose `token_auth_redirection`): `aoc` and `url_token_data`.
+        Private link (purpose `shared_folder_auth_link`): the shared folder (`node_id`, `file_id`, `workspace_id`)
+      properties:
+        aoc:
+          type: boolean
+          description: Link to an Aspera on Cloud resource (public link)
+        url_token_data:
+          $ref: '#/components/schemas/short_link_url_token_data'
+      additionalProperties: true
+    short_link_create_params:
+      type: object
+      description: Short link creation
+      required:
+        - purpose
+        - data
+      properties:
+        purpose:
+          $ref: '#/components/schemas/short_link_purpose'
+        data:
+          $ref: '#/components/schemas/short_link_data'
+        password_enabled:
+          type: boolean
+          description: Password required to follow the link (password in `data.url_token_data.password`)
+        expires_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Expiry date-time, or null if the link does not expire
+        user_selected_name:
+          type:
+            - string
+            - 'null'
+          description: Name of the link chosen by the user
+    short_link_update_params:
+      type: object
+      description: >-
+        Short link modification. Shared inbox link: `data.url_token_data.data` is `{"dropbox_id":..}`.
+        Shared folder link: also `edit_access` and `json_query`
+      properties:
+        password_enabled:
+          type: boolean
+          description: Password required to follow the link (password in `data.url_token_data.password`)
+        expires_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Expiry date-time, or null if the link does not expire
+        data:
+          $ref: '#/components/schemas/short_link_data'
+        edit_access:
+          type: boolean
+          description: Check edit access on the shared folder given in `json_query` (shared folder links only)
+        json_query:
+          type: object
+          description: Shared folder of the link (`node_id`, `file_id`), with `edit_access`
+          additionalProperties: true
     transfer_report_response:
       type: object
       description: >
