@@ -5927,8 +5927,9 @@ components:
           description: Human-readable error description providing additional context about the error
           example: invalid URL token
         state:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           description: >-
             State parameter from the authorization request, if present. Used to maintain state between request and
             callback.
@@ -8658,8 +8659,9 @@ components:
           examples:
             - false
         bcc_recipients:
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           items:
             $ref: '#/components/schemas/senders_recipients_object'
         content_retention_duration:
@@ -8680,8 +8682,9 @@ components:
           examples:
             - 604800
         download_notification_recipients:
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           items:
             $ref: '#/components/schemas/senders_recipients_object'
         draft:
@@ -8727,7 +8730,6 @@ components:
             - false
         recipients:
           type: array
-          nullable: false
           items:
             $ref: '#/components/schemas/senders_recipients_object'
         sent:
@@ -8758,7 +8760,6 @@ components:
             - 3
         upload_notification_recipients:
           type: array
-          nullable: false
           items:
             $ref: '#/components/schemas/senders_recipients_object'
         workspace_id:
@@ -8794,7 +8795,6 @@ components:
             - true
         bcc_recipients:
           type: array
-          nullable: false
           items:
             $ref: '#/components/schemas/senders_recipients_object'
         bytes_transferred:
@@ -9453,8 +9453,9 @@ components:
           type: boolean
           description: Whether Trend Micro antivirus scanning is enabled.
         user_limit:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
           description: Maximum number of users allowed. Null means unlimited.
         watermarking_enabled:
           type: boolean
@@ -9725,33 +9726,39 @@ components:
       properties:
         autofill_shared_inbox_sending:
           description: Whether to automatically fill the shared inbox when sending packages
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
           example: true
         default_aoc_app:
           description: The default Aspera on Cloud application to display on login (e.g., "packages", "files", "activity")
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: packages
         default_language:
           description: The user's preferred language for the UI (e.g., "en-us", "fr-fr", "de-de")
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: en-us
         first_connect_transfer:
           description: Whether this is the user's first time connecting for a transfer (used for onboarding)
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
           example: true
         first_connect_download:
           description: Whether this is the user's first time connecting for a download (used for onboarding)
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
           example: true
         pinned_dropbox_ids:
           description: Array of dropbox IDs that the user has pinned for quick access
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           items:
             type: integer
           example:
@@ -9760,8 +9767,9 @@ components:
             - 3
         pinned_workspace_ids:
           description: Array of workspace IDs that the user has pinned for quick access
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           items:
             type: integer
           example:
@@ -9769,34 +9777,40 @@ components:
             - 20
         auto_workflow_view:
           description: The default view mode for automation workflows
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: ''
         grid_view_workspaces:
           description: The view mode for workspaces display (e.g., "list", "grid")
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: list
         last_read_coming_soon:
           description: Timestamp of the last time the user viewed the "Coming Soon" announcements
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: 03/19/2021_1
         last_read_whats_new:
           description: Timestamp of the last time the user viewed the "What's New" announcements
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: 03/30/2021_1
         recent_transfers:
           description: Object storing information about recent transfers for quick access
-          type: object
-          nullable: true
+          type:
+            - object
+            - 'null'
           additionalProperties: true
           example: {}
         help_recent:
           description: Array of recently accessed help topics for quick reference
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           items:
             type: string
           example:
@@ -9804,8 +9818,9 @@ components:
             - creating_a_new_workspace
         tableDataStore:
           description: JSON string containing table configuration and sizing preferences for various UI tables
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: '[{"id":"files-table"},{"id":"user-list","tableSizing":"{\"displayUserStatus\":198}"}]'
       additionalProperties: true
       example:
@@ -9825,73 +9840,86 @@ components:
       properties:
         autofill_shared_inbox_sending:
           description: Whether to automatically fill the shared inbox when sending packages
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
           example: true
         default_aoc_app:
           description: The default Aspera on Cloud application to display on login
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: packages
         default_language:
           description: The user's preferred language for the UI
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: en-us
         first_connect_transfer:
           description: Whether this is the user's first time connecting for a transfer
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
           example: null
         first_connect_download:
           description: Whether this is the user's first time connecting for a download
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
           example: null
         pinned_dropbox_ids:
           description: Array of pinned dropbox IDs
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           items:
             type: integer
           example: null
         pinned_workspace_ids:
           description: Array of pinned workspace IDs
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           items:
             type: integer
           example: []
         auto_workflow_view:
           description: Default view mode for automation workflows
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: ''
         grid_view_workspaces:
           description: View mode for workspaces display
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: list
         last_read_coming_soon:
           description: Last viewed "Coming Soon" timestamp
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: 03/19/2021_1
         last_read_whats_new:
           description: Last viewed "What's New" timestamp
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: 03/30/2021_1
         recent_transfers:
           description: Recent transfers information
-          type: object
-          nullable: true
+          type:
+            - object
+            - 'null'
           additionalProperties: true
           example: {}
         help_recent:
           description: Recently accessed help topics
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           items:
             type: string
           example:
@@ -9900,8 +9928,9 @@ components:
             - attach_azure_blob_storage
         tableDataStore:
           description: Table configuration and sizing preferences (JSON string)
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           example: '[{"id":"files-table"},{"id":"user-list","tableSizing":"{\"displayUserStatus\":198}"}]'
       additionalProperties: true
       example:
@@ -10914,9 +10943,10 @@ components:
             - true
         aggressiveness:
           description: Transfer aggressiveness factor (0.0 to 1.0). Null means use node default.
-          type: number
+          type:
+            - number
+            - 'null'
           format: float
-          nullable: true
           examples:
             - 0.15
         cipher:
@@ -10930,14 +10960,16 @@ components:
             - aes-128
         content_protection_secret:
           description: Secret used for content protection (server-side encryption at rest). Null if not set.
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           examples:
             - aspera-1
         default_target_rate_kbps:
           description: Default target transfer rate in kbps. Null means no limit.
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
           examples:
             - 150000
         enable_iteration_token_pagination:
@@ -10989,9 +11021,10 @@ components:
             - true
         aggressiveness:
           description: Transfer aggressiveness factor (0.0 to 1.0). Null means use node default.
-          type: number
+          type:
+            - number
+            - 'null'
           format: float
-          nullable: true
           examples:
             - 0.15
         cipher:
@@ -11005,14 +11038,16 @@ components:
             - aes-128
         content_protection_secret:
           description: Secret used for content protection (server-side encryption at rest). Null if not set.
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
           examples:
             - aspera-1
         default_target_rate_kbps:
           description: Default target transfer rate in kbps. Null means no limit.
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
           examples:
             - 150000
         enable_iteration_token_pagination:
