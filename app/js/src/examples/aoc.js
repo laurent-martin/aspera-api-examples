@@ -6,7 +6,7 @@
 import { Configuration, logger } from '../utils/configuration.js';
 import { TransferClient } from '../utils/transfer_client.js';
 import { Rest } from '../utils/rest.js';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 // AoC API base URL
 const AOC_API_V1_BASE_URL = 'https://api.ibmaspera.com/api/v1';
@@ -105,7 +105,7 @@ const tSpec = {
                 file_id: packageInfo.contents_file_id
             },
             usage_id: `aspera.files.workspace.${workspaceInfo.id}`,
-            xfer_id: uuidv4(),
+            xfer_id: randomUUID(),
             xfer_retry: 3600
         }
     },
@@ -128,11 +128,9 @@ if (transferSessions !== 1) {
 config.addSources(tSpec, 'paths');
 
 // Start the transfer using the transfer client
-transferClient.startConnectDaemon(() => {
-    transferClient.startTransferAndWait(tSpec, () => {
-        transferClient.shutdownDaemon(() => {
-            logger.info('Transfer completed!');
-            process.exit(0);
-        });
-    });
-});
+try {
+    await transferClient.startTransferAndWait(tSpec);
+    logger.info('Transfer completed!');
+} finally {
+    await transferClient.shutdown();
+}

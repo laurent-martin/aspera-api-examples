@@ -27,12 +27,30 @@ public class Rest
     public Rest(string url)
     {
         mBaseUrl = url;
-        mHttpClient = new HttpClient
+        mVerify = true;
+        mHttpClient = createHttpClient();
+        mHeaders = new StringDict();
+        mAuthData = null;
+    }
+    /// <summary>
+    /// Disable verification of server certificate with false (development servers with self-signed certificate)
+    /// </summary>
+    public void setVerify(bool verify)
+    {
+        mVerify = verify;
+        mHttpClient = createHttpClient();
+    }
+    private HttpClient createHttpClient()
+    {
+        var handler = new HttpClientHandler();
+        if (!mVerify)
+        {
+            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+        }
+        return new HttpClient(handler)
         {
             BaseAddress = new Uri(mBaseUrl)
         };
-        mHeaders = new StringDict();
-        mAuthData = null;
     }
     public void setAuthBasic(string username, string password)
     {
@@ -65,6 +83,7 @@ public class Rest
                     { "nbf", seconds_since_epoch - Const.JWT_CLIENT_SERVER_OFFSET_SEC},
                     { "iat", seconds_since_epoch - Const.JWT_CLIENT_SERVER_OFFSET_SEC},
                     { "exp", seconds_since_epoch + Const.JWT_VALIDITY_SEC},
+                    { "jti", Guid.NewGuid().ToString()},
                 };
         // if client id starts with "aspera", add key "org" to jwt_payload
         if (mAuthData.ContainsKey("org") && mAuthData["client_id"].StartsWith("aspera"))
@@ -83,6 +102,7 @@ public class Rest
             token_parameters["scope"] = scope;
         }
         Rest oauth_api = new Rest(mAuthData["token_url"]);
+        oauth_api.setVerify(mVerify);
         oauth_api.setAuthBasic(mAuthData["client_id"], mAuthData["client_secret"]);
         //oauth_api.setHeader("Content-Type", Const.MIME_WWW);
         JObject data = (JObject)oauth_api.call(
@@ -150,7 +170,7 @@ public class Rest
         }
         if (body != null)
         {
-            Log.log.Debug($"body {body}");
+            Log.log.Debug(Log.MaskSecrets($"body {body}"));
             if (body_type == "www")
             {
                 request.Content = new FormUrlEncodedContent(body.Properties().ToDictionary(p => p.Name, p => p.Value.ToString()));
@@ -163,14 +183,14 @@ public class Rest
                     Const.MIME_JSON);
             }
         }
-        Log.DumpJObject("req", request);
+        Log.log.Debug(Log.MaskSecrets($"req={request}"));
         if (request.Content != null)
         {
-            Log.log.Debug($"data={request.Content.ReadAsStringAsync().Result}");
+            Log.log.Debug(Log.MaskSecrets($"data={request.Content.ReadAsStringAsync().Result}"));
         }
         var response = mHttpClient.SendAsync(request).Result;
         var resp_str = response.Content.ReadAsStringAsync().Result;
-        Log.log.Debug($"resp={resp_str}");
+        Log.log.Debug(Log.MaskSecrets($"resp={resp_str}"));
         if (!response.IsSuccessStatusCode)
         {
             throw new System.Exception($"ERROR: {response.StatusCode} {response.ReasonPhrase}");
@@ -209,6 +229,7 @@ public class Rest
     private StringDict mAuthData;
     private StringDict mHeaders;
     private HttpClient mHttpClient;
+    private bool mVerify;
 
     /// <summary>
     /// Read RSA private key from PEM file (PKCS#1 `RSA PRIVATE KEY` or PKCS#8 `PRIVATE KEY`).

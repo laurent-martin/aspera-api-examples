@@ -3,7 +3,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import assert from 'assert';
 import os from 'os';
 import winston from 'winston';
@@ -42,7 +42,9 @@ export class Configuration {
 		this.tmpFolder = os.tmpdir();
 		this.paths = Configuration.loadYAML(path.join(this.topFolder, PATHS_FILE_REL));
 		this.config = Configuration.loadYAML(this.getPath('main_config'));
-		logger.level = this.getParam('misc', 'level');
+		// winston uses `warn`
+		const level = this.getParam('misc', 'level');
+		logger.level = level === 'warning' ? 'warn' : level;
 	}
 
 	/** Construct path based on topFolder and paths YAML */
@@ -52,14 +54,19 @@ export class Configuration {
 
 	/**
 	 * Get a parameter from the main configuration file
-	 * @param {*} section section in the config
-	 * @param {*} param parameter in the section
+	 * @param {string} section section in the config
+	 * @param {string} param parameter in the section
+	 * @param {*} defaultValue value if the parameter is not set, else the parameter is mandatory
 	 * @returns the parameter value
 	 */
-	getParam(section, param) {
+	getParam(section, param, defaultValue = undefined) {
 		const sect = this.config[section];
 		if (!sect) {
-			return undefined;
+			throw new Error(`Section not found in configuration file: ${section}`);
+		}
+		if (!(param in sect)) {
+			if (defaultValue !== undefined) return defaultValue;
+			throw new Error(`Parameter not found in configuration file: ${section}.${param}`);
 		}
 		return sect[param];
 	}

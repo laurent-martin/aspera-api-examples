@@ -46,3 +46,17 @@ dotnet add package Grpc.Tools
 dotnet add package Grpc.Net.Client
 dotnet add package Google.Protobuf
 ```
+
+## Package versions
+
+Versions of NuGet packages are defined in [`Directory.Packages.props`](Directory.Packages.props) ([Central Package Management](https://learn.microsoft.com/nuget/consume-packages/central-package-management)): the project file only lists the packages.
+
+Resolved versions, including transitive dependencies, are recorded in `packages.lock.json`.
+After changing a version, run `dotnet restore` to update the lock file, and commit both files.
+
+To check for updates and known vulnerabilities:
+
+```bash
+dotnet list package --outdated
+dotnet list package --vulnerable --include-transitive
+```

@@ -11,7 +11,7 @@ const transferClient = new TransferClient(config);
 
 const node_api = new Rest(config.getParam('node', 'url'));
 node_api.setAuthBasic(config.getParam('node', 'username'), config.getParam('node', 'password'));
-node_api.setVerify(config.getParam('node', 'verify'));
+node_api.setVerify(config.getParam('node', 'verify', true));
 
 logger.info('Generating transfer spec V1 from node');
 
@@ -29,11 +29,9 @@ const tSpec = response.transfer_specs[0].transfer_spec;
 config.addSources(tSpec, 'paths');
 
 // Start the transfer using the transfer client
-transferClient.startConnectDaemon(() => {
-	transferClient.startTransferAndWait(tSpec, () => {
-		transferClient.shutdownDaemon(() => {
-			logger.info('Done!');
-			process.exit(0);
-		});
-	});
-});
+try {
+	await transferClient.startTransferAndWait(tSpec);
+	logger.info('Done!');
+} finally {
+	await transferClient.shutdown();
+}

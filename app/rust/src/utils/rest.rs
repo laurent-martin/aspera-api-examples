@@ -141,7 +141,8 @@ impl Rest {
             data.push(("scope", scope));
         }
         // debug data
-        log::debug!("Bearer data: {:?}", data);
+        // do not log values: the assertion is a credential
+        log::debug!("Bearer data keys: {:?}", data.iter().map(|(key, _)| *key).collect::<Vec<_>>());
         let response = self
             .client
             .post(auth.token_url) // "http://localhost:12345")//
@@ -157,14 +158,14 @@ impl Rest {
         // check response error
         if !response.status().is_success() {
             return Err(
-                anyhow::anyhow!("Failed to get access token: {}", "response.status()").into(),
+                anyhow::anyhow!("Failed to get access token: {}", response.status()).into(),
             );
         }
         let jdata: Value = response.json().await?;
         let token = jdata["access_token"]
             .as_str()
             .ok_or_else(|| anyhow::anyhow!("Failed to get access token from response"))?;
-        log::debug!("Bearer token: {:?}", token);
+        log::debug!("Bearer token received");
         Ok(format!("Bearer {token}"))
     }
 
@@ -204,9 +205,10 @@ impl Rest {
         let response = request_builder.send().await?;
         // check http code and transform to error
         if !response.status().is_success() {
+            let status = response.status();
             log::debug!("response: {:?}", response);
             log::debug!("response.text: {:?}", response.text().await?);
-            return Err(anyhow::anyhow!("Failed to create: {}", "response.status()").into());
+            return Err(anyhow::anyhow!("HTTP request failed: {}", status).into());
         }
         match response.json().await {
             Ok(value) => Ok(Some(value)),

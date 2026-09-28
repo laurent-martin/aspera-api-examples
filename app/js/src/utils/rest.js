@@ -1,13 +1,12 @@
 import ky from 'ky';
 import fs from 'fs';
+import { randomUUID } from 'crypto';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
-import { logger } from './configuration.js';
-/*
-import { URL } from 'url';
-import * as calendar from 'calendar';
-import * as time from 'time';
-*/
+import { Agent } from 'undici';
+import { Configuration, logger } from './configuration.js';
+
+// used when server certificate is not verified (development servers with self-signed certificate)
+const INSECURE_AGENT = new Agent({ connect: { rejectUnauthorized: false } });
 const JWT_CLIENT_SERVER_OFFSET_SEC = 60;
 const JWT_VALIDITY_SEC = 600;
 const MIME_JSON = 'application/json';
@@ -16,13 +15,18 @@ const IETF_GRANT_JWT = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
 
 const DEBUG_HTTP = false;
 
+// hide credentials in debug logs: authorization header, JWT assertion, access token
+const maskSecrets = (text) => text.replace(/("authorization"\s*:\s*"\w+ |assertion=|"(?:assertion|access_token)"\s*:\s*")[^\r\n&"]+/gi, '$1***');
+
 export class Rest {
     constructor(baseUrl) {
-        this.api = Rest.addHttpDebug(ky.extend({
-            prefixUrl: baseUrl,
-        }));
-        this.authData = null;
         this.verify = true;
+        // fetch with or without verification of server certificate, according to `setVerify`
+        const fetchWithVerify = (input, init) => fetch(input, this.verify ? init : { ...init, dispatcher: INSECURE_AGENT });
+        // client without base URL (for token requests), and client for the API
+        this.http = Rest.addHttpDebug(ky.create({ fetch: fetchWithVerify }));
+        this.api = this.http.extend({ prefix: baseUrl });
+        this.authData = null;
         this.headers = {};
     }
 
@@ -33,20 +37,20 @@ export class Rest {
         return the_ky.extend({
             hooks: {
                 beforeRequest: [
-                    (request) => {
+                    ({ request }) => {
                         logger.debug(`Request: ${request.method.toUpperCase()} ${request.url}`);
-                        logger.debug(`Request headers: ${JSON.stringify(request.headers)}`);
+                        logger.debug(maskSecrets(`Request headers: ${JSON.stringify(Object.fromEntries(request.headers))}`));
                         if (request.body) {
-                            logger.debug(`Request body: ${JSON.stringify(request.body)}`);
+                            request.clone().text().then((body) => logger.debug(maskSecrets(`Request body: ${body}`)));
                         }
                     }
                 ],
                 afterResponse: [
-                    (request, options, response) => {
+                    ({ response }) => {
                         logger.debug(`Response: ${response.status} ${response.url}`);
-                        logger.debug(`Response headers: ${JSON.stringify(response.headers)}`);
+                        logger.debug(`Response headers: ${JSON.stringify(Object.fromEntries(response.headers))}`);
                         response.clone().text().then((body) => {
-                            logger.debug(`Response body: ${body}`);
+                            logger.debug(maskSecrets(`Response body: ${body}`));
                         });
                     }
                 ]
@@ -64,7 +68,7 @@ export class Rest {
 
     setAuthBasic(user, password) {
         this.authData = null;
-        this.headers['Authorization'] = 'Basic ' + Buffer.from(`${user}:${password}`).toString('base64');
+        this.headers['Authorization'] = Configuration.basicAuthorization(user, password);
     }
 
     setAuthBearer(authData) {
@@ -92,7 +96,7 @@ export class Rest {
             iat: secondsSinceEpoch - JWT_CLIENT_SERVER_OFFSET_SEC, // issued at
             nbf: secondsSinceEpoch - JWT_CLIENT_SERVER_OFFSET_SEC, // not before
             exp: secondsSinceEpoch + JWT_VALIDITY_SEC, // expiration
-            jti: uuidv4(),
+            jti: randomUUID(),
         };
         if (this.authData.org) {
             jwtPayload.org = this.authData.org;
@@ -105,18 +109,15 @@ export class Rest {
         if (scope) {
             tokenParameters.scope = scope;
         }
-        var data = await Rest.addHttpDebug(ky)
+        // the client authenticates with Basic authentication
+        const data = await this.http
             .post(tokenUrl, {
                 headers: {
                     'Content-Type': MIME_WWW,
                     'Accept': MIME_JSON,
+                    'Authorization': Configuration.basicAuthorization(this.authData.client_id, this.authData.client_secret),
                 },
                 body: new URLSearchParams(tokenParameters).toString(),
-                auth: {
-                    username: this.authData.client_id,
-                    password: this.authData.client_secret,
-                },
-                responseType: 'json',
             }).json();
         return `Bearer ${data.access_token}`;
     }

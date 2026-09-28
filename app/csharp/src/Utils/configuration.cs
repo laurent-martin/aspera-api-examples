@@ -3,6 +3,17 @@ using Newtonsoft.Json.Linq;
 class Log
 {
     public static readonly log4net.ILog log = log4net.LogManager.GetLogger(typeof(Log));
+    /// <summary>
+    /// Hide credentials in debug logs: authorization header, JWT assertion, access token
+    /// </summary>
+    public static string MaskSecrets(string text)
+    {
+        return System.Text.RegularExpressions.Regex.Replace(
+            text,
+            @"(Authorization: \w+ |assertion=|""(?:assertion|access_token)""\s*:\s*"")[^\r\n&""]+",
+            "$1***",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    }
     public static void DumpJObject(string name, Object value)
     {
         log.Debug($"{name}={Newtonsoft.Json.JsonConvert.SerializeObject(value, Newtonsoft.Json.Formatting.Indented)}");
@@ -63,10 +74,18 @@ public class Configuration
         }
         return itemPath;
     }
-    public string GetParam(string section, string key)
+    /// <summary>
+    /// Get parameter from configuration file
+    /// </summary>
+    /// <param name="defaultValue">value if parameter is not set, else the parameter is mandatory</param>
+    public string GetParam(string section, string key, string defaultValue = null)
     {
         if (!_config.ContainsKey(section) || !_config[section].ContainsKey(key))
         {
+            if (defaultValue != null)
+            {
+                return defaultValue;
+            }
             throw new Exception($"ERROR: {section}.{key} not found in configuration file.");
         }
         return _config[section][key];

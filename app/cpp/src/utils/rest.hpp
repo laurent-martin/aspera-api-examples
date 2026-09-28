@@ -8,11 +8,13 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
 #include <boost/json.hpp>
+#include <boost/regex.hpp>
 #include <boost/url.hpp>
 #include <boost/url/encode.hpp>
 #include <boost/url/parse.hpp>
 #include <boost/url/rfc/pchars.hpp>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -30,6 +32,11 @@ inline constexpr const char* const MIME_JSON = "application/json";
 inline constexpr const char* const MIME_WWW = "application/x-www-form-urlencoded";
 inline constexpr const char* const IETF_GRANT_JWT = "urn:ietf:params:oauth:grant-type:jwt-bearer";
 inline const json::object empty_value;
+// CA certificates of the system: macOS, Debian/Ubuntu, RHEL
+inline constexpr const char* SYSTEM_CA_BUNDLES[] = {
+    "/etc/ssl/cert.pem",
+    "/etc/ssl/certs/ca-certificates.crt",
+    "/etc/pki/tls/certs/ca-bundle.crt"};
 
 enum BodyType {
     NONE,
@@ -39,6 +46,22 @@ enum BodyType {
 
 inline std::string attribute_str(json::object& dict, const std::string& key) {
     return dict.at(key).as_string().c_str();
+}
+
+// Hide credentials in debug logs: authorization header, JWT assertion, access token
+inline std::string mask_secrets(const std::string& text) {
+    static const boost::regex secrets(
+        R"re((Authorization: \w+ |assertion=|"(?:assertion|access_token)"\s*:\s*")[^\r\n&"]+)re",
+        boost::regex::icase);
+    return boost::regex_replace(text, secrets, "$1***");
+}
+
+// Hide credentials in debug logs of a value
+template <typename T>
+inline std::string mask_secrets_of(const T& value) {
+    std::ostringstream stream;
+    stream << value;
+    return mask_secrets(stream.str());
 }
 
 // simple REST client using boost
@@ -112,7 +135,7 @@ class Rest {
         if (!scope.empty()) {
             token_parameters.insert_or_assign("scope", scope);
         }
-        LOGGER(debug) << "parameters: " << token_parameters;
+        LOGGER(debug) << "parameters: " << mask_secrets_of(token_parameters);
 
         Rest oauth_api(_auth_data.at("token_url"));
         oauth_api.set_verify(_verify);
@@ -174,10 +197,25 @@ class Rest {
         for (const auto& [key, value] : _headers) {
             request.set(key, value);
         }
-        LOGGER(debug) << "Request: " << request;
+        LOGGER(debug) << "Request: " << mask_secrets_of(request);
         boost::asio::io_context io_svc;
         ssl::context ssl_context(ssl::context::tls_client);
-        ssl_context.set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::tlsv13);
+        ssl_context.set_options(ssl::context::default_workarounds);
+        if (_verify) {
+            // trusted CA certificates: env var SSL_CERT_FILE / SSL_CERT_DIR, or OpenSSL default location
+            ssl_context.set_default_verify_paths();
+            // OpenSSL built by conan has no CA certificates: add the ones of the system
+            for (const char* ca_bundle : SYSTEM_CA_BUNDLES) {
+                if (std::filesystem::exists(ca_bundle)) {
+                    ssl_context.load_verify_file(ca_bundle);
+                    break;
+                }
+            }
+            ssl_context.set_verify_mode(ssl::verify_peer);
+            ssl_context.set_verify_callback(ssl::host_name_verification(base_uri.host()));
+        } else {
+            ssl_context.set_verify_mode(ssl::verify_none);
+        }
         ssl::stream<boost::asio::ip::tcp::socket> sock_stream = {io_svc, ssl_context};
         // Set SNI Hostname (many hosts need this to handshake successfully)
         if (!SSL_set_tlsext_host_name(sock_stream.native_handle(), base_uri.host().c_str())) {
@@ -203,10 +241,10 @@ class Rest {
         LOGGER(debug) << "Code: " << response.result_int();
         // check HTTP status is success
         if (response.result_int() >= 300) {
-            LOGGER(debug) << "Response: " << response.body();
+            LOGGER(debug) << "Response: " << mask_secrets(response.body());
             throw std::runtime_error("HTTP error: " + std::to_string(response.result_int()));
         }
-        LOGGER(debug) << "Result: " << response.body();
+        LOGGER(debug) << "Result: " << mask_secrets(response.body());
         if (result_json) {
             return json::parse(response.body());
         }

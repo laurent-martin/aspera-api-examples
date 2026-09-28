@@ -20,7 +20,7 @@ Order of work:
 
 - [x] JS: `startConnectDaemon` only logs errors (`app/js/src/utils/transfer_client.js`)
 - [x] JS: `throw` inside stream callbacks is uncaught (now: `fail()` stops the daemon and exits with code 1)
-- [ ] JS: move `TransferClient` to a Promise/async API
+- [x] JS: move `TransferClient` to a Promise/async API (`startup`, `startTransferAndWait`, `shutdown`; no `process.exit` in the library)
 - [x] JS: `aoc.js` logs "Transfer completed!" before the transfer starts
 - [x] Go: `faspex5.go`, `server.go` ignore errors; `Log.Fatalf` skips `defer Shutdown()` (now: `run() error`)
 - [x] Java: `session_wait_for_completion` breaks on `FAILED` without throwing
@@ -70,7 +70,9 @@ Port 0 requires `trsdk.level` `info` or more verbose.
 
 - [x] `configuration.js`: parameter `path` of `addSources` shadows the `path` module (`path.basename` fails)
 - [x] `faspex5.js`: reads `transfer.sessions`, a section absent from the config template
-- [ ] `configuration.js`: `getParam` returns `undefined` for a missing parameter instead of failing
+- [x] `configuration.js`: `getParam` returns `undefined` for a missing parameter instead of failing (now optional default value, like Python)
+- [x] `rest.js`: token request uses `auth` and `responseType`, which are not `ky` options: client credentials (Basic) never sent
+- [x] `rest.js`: `setVerify(false)` has no effect (now: undici agent without certificate verification)
 
 ### Go
 
@@ -125,13 +127,19 @@ Port 0 requires `trsdk.level` `info` or more verbose.
 - [x] Go: `dgrijalva/jwt-go` archived (CVE-2020-26160), use `golang-jwt/jwt/v5`
 - [x] Go: `twinj/uuid` unmaintained, use `google/uuid`; `x/crypto` v0.26.0 has SSH CVEs (govulncheck: 10 reachable vulnerabilities in x/crypto and grpc, now 0; `go` directive 1.26 required by grpc 1.84)
 - [ ] Go: GO-2026-6443 (grpc server transport, not reachable from the client samples): fixed only in grpc 1.85.0-dev, update when released
-- [ ] Debug logs contain credentials: HTTP traces with `Authorization` headers, bearer tokens, JWT assertions (JS, C++, C#, Rust): mask them
+- [x] Debug logs contain credentials: HTTP traces with `Authorization` headers, bearer tokens, JWT assertions (JS, C++, C#, Rust): now masked (`***`). Note: transfer specs (with transfer tokens) are still logged at debug level, to show them
+- [x] C++: REST client never verified the server certificate (`verify` flag stored but not applied; `ssl::context` defaults to `verify_none`); now CA from OpenSSL defaults, `SSL_CERT_FILE`, or system bundle (OpenSSL built by conan has none), and host name verification
+- [x] C++: `ssl::context::tlsv13` (a method) passed as option
+- [x] C#: `verify: false` not supported (now `setVerify`, used by the Faspex 5 sample); JWT without `jti`
+- [x] Rust: HTTP error messages print the literal text `response.status()` instead of the status
+- [x] JS: `ky` 2 hooks receive a state object: HTTP debug traces failed
 - [x] Go: `grpc.WithInsecure` deprecated
 - [x] C#: `net7.0` end of life, move to `net10.0` (current .NET SDK has no 7.0 runtime: samples do not start); `Grpc.Core` deprecated (`Grpc.Net.Client` is enough)
-- [x] C#: known vulnerabilities reported by NuGet in `BouncyCastle.Cryptography` 2.2.1 (unused: removed) and `log4net` 2.0.15 (now 3.4.0); other packages updated; obsolete `packages.config` removed
+- [x] C#: known vulnerabilities reported by NuGet in `BouncyCastle.Cryptography` 2.2.1 (unused: removed) and `log4net` 2.0.15 (now 3.4.0); other packages updated; obsolete `packages.config` renamed to `Directory.Packages.props` (central package management, history kept), lock file `packages.lock.json`
+- [ ] C#: `Nullable` is `disable`: enabling it gives about 48 warnings to fix (annotations of nullable types)
 - [x] C#: private key file only accepted in PKCS#1 format (`BEGIN RSA PRIVATE KEY`), OpenSSL 3 generates PKCS#8 by default (now `RSA.ImportFromPem`)
 - [ ] Rust: update tonic 0.9, prost 0.11, reqwest 0.11, jsonwebtoken 8; `from_i32` deprecated
-- [ ] JS: `@grpc/proto-loader ^0.5.4` very old; runtime deps declared in `devDependencies`
+- [x] JS: `@grpc/proto-loader ^0.5.4` very old; runtime deps declared in `devDependencies` (all updated: ky 2, js-yaml 5, proto-loader 0.8; `uuid` replaced by `crypto.randomUUID`; `npm audit`: 0 vulnerability)
 - [ ] Python: pin versions; remove `PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python` workaround; `yaml.safe_load`; `timeout=` on `requests`
 - [ ] Commit lock files (`clean`/`clobber` delete `package-lock.json`, `Cargo.lock`, `Gemfile.lock`)
 
@@ -141,6 +149,7 @@ Reference contract:
 
 - [x] Readiness: wait-for-ready or retry with timeout instead of fixed `sleep` (see phase 2, "All languages")
 - [ ] Failure: raise/return error and exit with non-zero code
+- [ ] Failure message: `error` is empty in `SESSION_ERROR` events, the cause is in `sessionInfo.errorDesc` / `transferInfo.errorDescription` (done in JS; other languages print an empty message)
 - [ ] `startup` / `shutdown` idempotent
 - [ ] Shutdown: SIGTERM, then kill after timeout; wait for process; close channel
 - [ ] README: matrix of available samples per language (`TEST_CASES` differ)
@@ -155,7 +164,7 @@ Reference contract:
 - [x] `app/java/build.gradle`: default `proto_file` is `transfer.proto`
 - [ ] `app/java/build.gradle`: `mainClass` without package
 - [ ] French comments in Rust sources (Go done)
-- [ ] `misc.level: warning` is not a valid winston level (`warn`)
+- [x] `misc.level: warning` is not a valid winston level (`warn`)
 
 ## 6. Tooling
 

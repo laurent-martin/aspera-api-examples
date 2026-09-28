@@ -26,11 +26,9 @@ const transferSpecV2 = {
 
 config.addSources(transferSpecV2, 'assets.paths')
 
-transferClient.startConnectDaemon(() => {
-	transferClient.startTransferAndWait(transferSpecV2, () => {
-		transferClient.shutdownDaemon(() => {
-			logger.info('Done!')
-			process.exit(0)
-		})
-	})
-})
+try {
+	await transferClient.startTransferAndWait(transferSpecV2);
+	logger.info('Done!');
+} finally {
+	await transferClient.shutdown();
+}

@@ -17,7 +17,7 @@ const transferClient = new TransferClient(config);
 
 // Initialize Faspex 5 API client
 const f5Api = new Rest(`${config.getParam('faspex5', 'url')}${F5_API_PATH_V5}`);
-f5Api.setVerify(config.getParam('faspex5', 'verify'));
+f5Api.setVerify(config.getParam('faspex5', 'verify', true));
 f5Api.setAuthBearer({
     token_url: `${config.getParam('faspex5', 'url')}${F5_API_PATH_TOKEN}`,
     key_pem_path: config.getParam('faspex5', 'private_key'),
@@ -56,12 +56,10 @@ if (transferSessions !== 1) {
 config.addSources(tSpec, 'paths');
 
 // Start the transfer using the transfer client
-transferClient.startConnectDaemon(() => {
-    transferClient.startTransferAndWait(tSpec, () => {
-        transferClient.shutdownDaemon(() => {
-            logger.info('Transfer completed!');
-            process.exit(0);
-        });
-    });
-});
+try {
+    await transferClient.startTransferAndWait(tSpec);
+    logger.info('Transfer completed!');
+} finally {
+    await transferClient.shutdown();
+}
 

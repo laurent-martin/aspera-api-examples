@@ -18,6 +18,7 @@ class Faspex5 : SampleInterface
         try
         {
             var f5_api = new Rest($"{config.GetParam("faspex5", "url")}{F5_API_PATH_V5}");
+            f5_api.setVerify(bool.Parse(config.GetParam("faspex5", "verify", "true")));
             f5_api.setAuthBearer(new StringDict{
                 {"token_url",$"{config.GetParam("faspex5", "url")}{F5_API_PATH_TOKEN}"},
                 {"key_pem_path",config.GetParam("faspex5","private_key")},
