@@ -64,6 +64,24 @@ In `app`, you'll find one folder per programming language and, in each of them :
 - `src/examples` : sample programs
 - `src/utils` : helper classes, especially using `transferd`
 
+### Available samples
+
+| Use case | Python | JS | Go | Java | Ruby | Rust | C++ | C# |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| HSTS, SSH credentials | `server` | `server` `server_v2` | `server` | `ServerFileUploadV1Example` `ServerFileDownloadV2Example` | `server` | `server` | `server` | `server` |
+| HSTS, persistent session | | | | `PersistentUploadExample` | | | | |
+| HSTS, remote commands (`ascmd`) | | *server_cmd* | `server_cmd` | | | `server_cmd` | | |
+| HSTS Node API, transfer spec v1 | `node` | `node` | | `Node` | `node` | | | |
+| HSTS Node API, transfer spec v2 | `node_v2` | `node_v2` | | | `node_v2` | | `node_v2` | |
+| Shares | `shares` *shares_v2* | | | | | | `shares` | |
+| Faspex 5 | `faspex5` | `faspex5` | `faspex5` | `Faspex5Send` | `faspex5` | `faspex5` | `faspex5` | `faspex5` |
+| Faspex 4 | *faspex* | | | | *faspex4* | | | |
+| Aspera on Cloud | `aoc` | `aoc` | | `Aoc` | `aoc` | `aoc` | `aoc` | `aoc` |
+| IBM Cloud Object Storage | *cos* *cos_v2* *cos_node_api* | `cos` | | *COSFileUploadExample* | | | | |
+
+Sample name in `code`: run by `make` (listed in `TEST_CASES` of the `Makefile` of the language), for example `make .tested/faspex5`.
+Sample name in *italics*: present in `src/examples`, but not run by `make`.
+
 Sample programs use addresses and credentials from a common YAML configuration file.
 Once the configuration file is created, see below on how to run them.
 
