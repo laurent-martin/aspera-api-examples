@@ -211,33 +211,15 @@ public class Rest
     private HttpClient mHttpClient;
 
     /// <summary>
-    /// Read RSA private key from file.
+    /// Read RSA private key from PEM file (PKCS#1 `RSA PRIVATE KEY` or PKCS#8 `PRIVATE KEY`).
     /// </summary>
     /// <param name="filename"></param>
     /// <returns>RSA key</returns>
-    /// <exception cref="InvalidOperationException"></exception>
+    /// <exception cref="ArgumentException">if no supported key is found in file</exception>
     private static RSA readKeyFromFile(string filename)
     {
-        string pemContents = System.IO.File.ReadAllText(filename);
-        const string RsaPrivateKeyHeader = "-----BEGIN RSA PRIVATE KEY-----";
-        const string RsaPrivateKeyFooter = "-----END RSA PRIVATE KEY-----";
-
-        if (!pemContents.StartsWith(RsaPrivateKeyHeader))
-        {
-            throw new InvalidOperationException();
-        }
-        int endIdx = pemContents.IndexOf(
-            RsaPrivateKeyFooter,
-            RsaPrivateKeyHeader.Length,
-            StringComparison.Ordinal);
-
-        string base64 = pemContents.Substring(
-            RsaPrivateKeyHeader.Length,
-            endIdx - RsaPrivateKeyHeader.Length);
-
-        byte[] der = Convert.FromBase64String(base64);
         RSA rsa = RSA.Create();
-        rsa.ImportRSAPrivateKey(der, out _);
+        rsa.ImportFromPem(System.IO.File.ReadAllText(filename));
         return rsa;
     }
 }

@@ -123,8 +123,9 @@ Port 0 requires `trsdk.level` `info` or more verbose.
 - [ ] Go: `dgrijalva/jwt-go` archived (CVE-2020-26160), use `golang-jwt/jwt/v5`
 - [ ] Go: `twinj/uuid` unmaintained, use `google/uuid`; `x/crypto` v0.26.0 has SSH CVEs
 - [x] Go: `grpc.WithInsecure` deprecated
-- [ ] C#: `net7.0` end of life, move to `net10.0` (current .NET SDK has no 7.0 runtime: samples do not start); `Grpc.Core` deprecated (`Grpc.Net.Client` is enough)
-- [ ] C#: known vulnerabilities reported by NuGet in `BouncyCastle.Cryptography` 2.2.1 and `log4net` 2.0.15
+- [x] C#: `net7.0` end of life, move to `net10.0` (current .NET SDK has no 7.0 runtime: samples do not start); `Grpc.Core` deprecated (`Grpc.Net.Client` is enough)
+- [x] C#: known vulnerabilities reported by NuGet in `BouncyCastle.Cryptography` 2.2.1 (unused: removed) and `log4net` 2.0.15 (now 3.4.0); other packages updated; obsolete `packages.config` removed
+- [x] C#: private key file only accepted in PKCS#1 format (`BEGIN RSA PRIVATE KEY`), OpenSSL 3 generates PKCS#8 by default (now `RSA.ImportFromPem`)
 - [ ] Rust: update tonic 0.9, prost 0.11, reqwest 0.11, jsonwebtoken 8; `from_i32` deprecated
 - [ ] JS: `@grpc/proto-loader ^0.5.4` very old; runtime deps declared in `devDependencies`
 - [ ] Python: pin versions; remove `PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python` workaround; `yaml.safe_load`; `timeout=` on `requests`
@@ -146,7 +147,7 @@ Reference contract:
 - [ ] `config/config.tmpl`: personal path in `local.file`
 - [ ] `app/python/README.md`: `transfer_pb2.py`, `utils.tools`, `TransferClient()`, `CONFIG`, `make stop` are outdated
 - [ ] `app/python/src/examples/node.py`: comment mentions FASP Manager
-- [ ] `app/csharp/README.md`: `transfer.proto` and generated stubs path outdated
+- [x] `app/csharp/README.md`: `transfer.proto` and generated stubs path outdated
 - [ ] `app/java/build.gradle`: default `proto_file` is `transfer.proto`; `mainClass` without package
 - [ ] French comments in Rust sources (Go done)
 - [ ] `misc.level: warning` is not a valid winston level (`warn`)
