@@ -33,7 +33,7 @@ try:
     node_api.addHeaders(cos_node_info['headers'])
 
     # call Node API with one transfer request to get one transfer spec
-    response_data = node_api.post('files/upload_setup', {
+    response_data = node_api.create('files/upload_setup', {
         'transfer_requests': [
             {'transfer_request': {'paths': [{'destination': destination_folder}]}}
         ]

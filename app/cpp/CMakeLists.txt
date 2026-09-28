@@ -8,7 +8,8 @@ cmake_minimum_required(VERSION 3.28)
 
 project(LaurentSamples LANGUAGES C CXX)
 
-set(CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Boost CONFIG REQUIRED json beast asio uuid)
 message(STATUS "Using Boost ${Boost_VERSION}")
@@ -34,7 +35,7 @@ include(${CMAKE_SOURCE_DIR}/BuildGrpc.cmake)
 
 # if variable sdk_cpp_dir is set, use the sources provided in the SDK source directory
 # otherwise, generate the sources
-if(${sdk_cpp_dir})
+if(sdk_cpp_dir)
   message(STATUS "Using sources provided in ${sdk_cpp_dir}")
   get_grpc_file_lists(sdk "${aspera_proto_file}" "${sdk_cpp_dir}")
   # Copy the sources from the SDK source directory

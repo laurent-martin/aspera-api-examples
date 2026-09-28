@@ -49,7 +49,7 @@ $(CPP_BUILD_DIR)/Makefile: CMakeLists.txt $(CONAN_HOME)/profiles/default
 # Generate a default compilation profile
 $(CONAN_HOME)/profiles/default:
 	@for c in conan cmake protoc;do \
-		if ! command -v $$c &>/dev/null; then \
+		if ! command -v $$c >/dev/null 2>&1; then \
 			echo "$$c is not installed"; \
 			exit 1; \
 		fi; \

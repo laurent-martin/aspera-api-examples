@@ -68,17 +68,14 @@ func (r *Rest) SetDefaultScope(scope string) {
 
 func (r *Rest) SetBearer(bearerData map[string]string) {
 	r.AuthData = bearerData
-	log.Printf("Bearer data: %v", r.AuthData)
 }
 
 func (r *Rest) getBearer(scope string) string {
 	log.Println("Getting API authorization")
-	log.Printf("Bearer data: %v", r.AuthData)
 	privateKeyPem, err := os.ReadFile(r.AuthData["key_pem_path"])
 	if err != nil {
 		log.Fatalf("Failed to read private key: %v", err)
 	}
-	log.Printf("file content: %s", privateKeyPem)
 
 	secondsSinceEpoch := time.Now().Unix()
 

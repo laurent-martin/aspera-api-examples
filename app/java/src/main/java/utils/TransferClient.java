@@ -13,6 +13,9 @@ import java.io.InputStream;
 import java.io.FileWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.net.URI;
 import java.util.Iterator;
@@ -30,6 +33,16 @@ public class TransferClient {
 
     private static final Logger LOGGER = Logger.getLogger(TransferClient.class.getName());
     private static final String ASCP_LOG_FILE = "aspera-scp-transfer.log";
+    // default port of transferd if not specified in URL
+    private static final int TRANSFERD_DEFAULT_PORT = 55002;
+    // max wait time for the daemon to log its listening port
+    private static final int STARTUP_TIMEOUT_SEC = 10;
+    // max wait time for the connection to the daemon
+    private static final int CONNECT_TIMEOUT_SEC = 5;
+    // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on
+    // 127.0.0.1:55002 ...`
+    private static final Pattern LISTENING_PORT_REGEX =
+            Pattern.compile("API Server: Listening on [^\\s\"]+:(\\d+)");
     // configuration parameters from the configuration file
     public final Configuration config;
     private final String serverAddress;
@@ -51,7 +64,7 @@ public class TransferClient {
         try {
             final URI grpcURL = new URI(config.getParamStr("trsdk", "url"));
             serverAddress = grpcURL.getHost();
-            serverPort = grpcURL.getPort();
+            serverPort = grpcURL.getPort() == -1 ? TRANSFERD_DEFAULT_PORT : grpcURL.getPort();
         } catch (final Exception e) {
             throw new Error("invalid grpc url: " + e.getMessage());
         }
@@ -110,53 +123,105 @@ public class TransferClient {
         }
     }
 
+    /**
+     * Start the daemon, if not already started
+     */
     public void daemon_startup() {
-        Process started_process = null;
+        if (daemonProcess != null && daemonProcess.isAlive()) {
+            return;
+        }
         // Define the paths
         final String file_base = config.getLogFolder() + File.separator + daemonName;
         String sdk_conf_path = file_base + ".conf";
+        final String out_file = file_base + ".out";
+        final String err_file = file_base + ".err";
         createConfFile(sdk_conf_path);
+        // the log file may contain lines of previous executions: only read new lines
+        final long logOffset = new File(daemonLog).length();
         try {
             String[] command = new String[] {config.getPath("sdk_daemon"), "-c", sdk_conf_path};
-            // LOGGER.log(Level.INFO, "{0} {1}","daemon out", out_file);
-            // LOGGER.log(Level.INFO, "{0} {1}","daemon err", err_file);
+            LOGGER.log(Level.INFO, "daemon out: {0}", out_file);
+            LOGGER.log(Level.INFO, "daemon err: {0}", err_file);
             LOGGER.log(Level.INFO, "daemon log: {0}", daemonLog);
             LOGGER.log(Level.INFO, "ascp log: {0}",
                     config.getLogFolder() + File.separator + ASCP_LOG_FILE);
             LOGGER.log(Level.INFO, "command: {0} {1} {2}", command);
-            started_process = Runtime.getRuntime().exec(command);
-            // wait for the daemon to start
-            final boolean hasTerminated =
-                    started_process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS);
-            if (hasTerminated) {
-                LOGGER.log(Level.SEVERE, "new daemon terminated unexpectedly");
-                LOGGER.log(Level.SEVERE, Configuration.lastFileLine(daemonLog));
-                throw new Error("new daemon terminated unexpectedly");
-            }
-            if (serverPort == 0) {
-                String lastLine = Configuration.lastFileLine(daemonLog);
-                JSONObject logInfo = new JSONObject(lastLine);
-                String msg = logInfo.getString("msg");
-                Pattern pattern = Pattern.compile(":(\\d+)");
-                Matcher matcher = pattern.matcher(msg);
-                if (!matcher.find()) {
-                    throw new RuntimeException("Could not read listening port from log file");
-                }
-                serverPort = Integer.parseInt(matcher.group(1));
-                LOGGER.log(Level.INFO, "Allocated server port: {0}", serverPort);
-            }
+            // redirect output to files, else the daemon may block when the pipe buffer is full
+            daemonProcess = new ProcessBuilder(command) //
+                    .redirectOutput(new File(out_file)) //
+                    .redirectError(new File(err_file)) //
+                    .start();
+            waitDaemonListening(logOffset);
         } catch (final IOException e) {
             LOGGER.log(Level.SEVERE, "cannot start daemon: {0}", e.getMessage());
             throw new Error(e.getMessage());
         } catch (final InterruptedException e) {
             throw new Error(e.getMessage());
         }
-        daemonProcess = started_process;
     }
 
+    /**
+     * Wait for the daemon to listen, and get the port if dynamically allocated (port 0). The port
+     * is read from the daemon log: requires log level `info` or more verbose.
+     *
+     * @param logOffset only read the log after this offset
+     */
+    private void waitDaemonListening(final long logOffset)
+            throws IOException, InterruptedException {
+        final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(STARTUP_TIMEOUT_SEC);
+        while (true) {
+            if (!daemonProcess.isAlive()) {
+                LOGGER.log(Level.SEVERE, "new daemon terminated unexpectedly, exit code: {0}",
+                        daemonProcess.exitValue());
+                LOGGER.log(Level.SEVERE, "check daemon log: {0}", daemonLog);
+                daemonProcess = null;
+                throw new RuntimeException("daemon startup failed");
+            }
+            // fixed port: readiness is checked on connection
+            if (serverPort != 0) {
+                return;
+            }
+            final Integer port = findListeningPort(daemonLog, logOffset);
+            if (port != null) {
+                serverPort = port;
+                LOGGER.log(Level.INFO, "Allocated server port: {0}", Integer.toString(serverPort));
+                return;
+            }
+            if (System.nanoTime() > deadline) {
+                throw new RuntimeException("Listening port not found in daemon log after "
+                        + STARTUP_TIMEOUT_SEC + "s: " + daemonLog);
+            }
+            Thread.sleep(200);
+        }
+    }
+
+    /**
+     * Find the API listening port in the daemon log, after the given offset.
+     *
+     * @return the port, or null if not found (yet)
+     */
+    private static Integer findListeningPort(final String logFile, long offset)
+            throws IOException {
+        final Path logPath = Paths.get(logFile);
+        if (!Files.exists(logPath)) {
+            return null;
+        }
+        final byte[] content = Files.readAllBytes(logPath);
+        // log file was truncated
+        if (content.length < offset) {
+            offset = 0;
+        }
+        final Matcher matcher = LISTENING_PORT_REGEX.matcher(new String(content, (int) offset,
+                content.length - (int) offset, StandardCharsets.UTF_8));
+        return matcher.find() ? Integer.valueOf(matcher.group(1)) : null;
+    }
+
+    /**
+     * Connect to the daemon, if not already connected
+     */
     public void daemon_connect() {
         if (transferService != null) {
-            throw new Error("already connected to daemon");
+            return;
         }
         LOGGER.log(Level.INFO, "L: Connecting to daemon");
         // comm channel for grpc
@@ -164,15 +229,23 @@ public class TransferClient {
         // Create a connection to the Transfer Daemon
         // Note that this is a synchronous client here
         // async is also possible
-        transferService = TransferServiceGrpc.newBlockingStub(channel);
+        final TransferServiceGrpc.TransferServiceBlockingStub service =
+                TransferServiceGrpc.newBlockingStub(channel);
         LOGGER.log(Level.INFO, "Checking gRPC connection");
-        // make a simple api call to check communication is ok
-        Transferd.InstanceInfoResponse infoResponse =
-                transferService.getInfo(Transferd.InstanceInfoRequest.newBuilder().build());
+        // make a simple api call to check communication is ok (wait until the daemon listens)
+        Transferd.InstanceInfoResponse infoResponse = service.withWaitForReady()
+                .withDeadlineAfter(CONNECT_TIMEOUT_SEC, TimeUnit.SECONDS)
+                .getInfo(Transferd.InstanceInfoRequest.newBuilder().build());
+        transferService = service;
         LOGGER.log(Level.INFO, "OK: Daemon is here, API v = {0}", infoResponse.getApiVersion());
     }
 
     public void shutdown() {
+        transferService = null;
+        if (channel != null) {
+            channel.shutdownNow();
+            channel = null;
+        }
         if (daemonProcess != null) {
             LOGGER.log(Level.INFO, "L: Shutting down daemon");
             daemonProcess.destroy();
@@ -213,9 +286,15 @@ public class TransferClient {
                         .setTransferType(aTransferType)
                         .setConfig(Transferd.TransferConfig.newBuilder().build())
                         .setTransferSpec(transferSpec.toString()).build());
+        final Transferd.TransferStatus status = transferResponse.getStatus();
+        if (status == Transferd.TransferStatus.FAILED
+                || status == Transferd.TransferStatus.UNKNOWN_STATUS) {
+            throw new RuntimeException(
+                    "transfer start failed: " + transferResponse.getError().getDescription());
+        }
         transferId = transferResponse.getTransferId();
         LOGGER.log(Level.FINE, "transfer session started with id {0} / {1}",
-                new Object[] {transferId, transferResponse.getStatus().getNumber()});
+                new Object[] {transferId, status.getNumber()});
     }
 
     /**
@@ -283,7 +362,8 @@ public class TransferClient {
 
                     @Override
                     public void onError(final Throwable t) {
-                        LOGGER.log(Level.FINE, "write stream error: {0}", t.getMessage());
+                        LOGGER.log(Level.SEVERE, "write stream error: {0}", t.getMessage());
+                        chunkLatch.countDown();
                     }
 
                     @Override
@@ -313,12 +393,13 @@ public class TransferClient {
             } catch (IOException e) {
                 throw new Error("Error reading file: " + e.getMessage());
             }
-            writeStreamObserver.onCompleted();
-            try {
-                chunkLatch.await(60, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                throw new Error("failed to wait for transfer to complete");
-            }
+        }
+        // end of client stream (all files sent), then wait for the single response
+        writeStreamObserver.onCompleted();
+        try {
+            chunkLatch.await(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new Error("failed to wait for transfer to complete");
         }
     }
 
@@ -344,13 +425,18 @@ public class TransferClient {
             if (response.hasError()) {
                 LOGGER.log(Level.FINE, "L: err: {0}", response.getError());
             }
-            if (status == Transferd.TransferStatus.FAILED
-                    || status == Transferd.TransferStatus.COMPLETED) {
-                // || response.getTransferEvent() == Transferd.TransferEvent.FILE_STOP) {
+            if (status == Transferd.TransferStatus.FAILED) {
+                LOGGER.log(Level.SEVERE, "L: transfer failed: {0}",
+                        response.getError().getDescription());
+                throw new RuntimeException(
+                        "transfer failed: " + response.getError().getDescription());
+            }
+            if (status == Transferd.TransferStatus.COMPLETED) {
                 LOGGER.log(Level.INFO, "L: upload finished, received: {0}", status);
-                break;
+                LOGGER.log(Level.FINE, "L: Finished monitoring loop");
+                return;
             }
         }
-        LOGGER.log(Level.FINE, "L: Finished monitoring loop");
+        throw new RuntimeException("transfer monitoring ended before transfer completion");
     }
 }

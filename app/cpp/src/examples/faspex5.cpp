@@ -33,23 +33,23 @@ int main(const int argc, const char* const argv[]) {
         f5_api.set_default_scope("");
 
         // Create a new package with Faspex 5 API
-        LOG(info) << "Creating package: " << package_name;
+        LOGGER(info) << "Creating package: " << package_name;
         json::object package_info = f5_api.create(
             "packages",
             {{"title", package_name},
              {"recipients", json::array{
                                 json::object{
                                     {"name", config.param_str({"faspex5", "username"})}}}}}).as_object();
-        LOG(debug) << package_info;
+        LOGGER(debug) << package_info;
 
         // Build payload to specify files to send
         json::object upload_request = json::object{};
         config.add_sources(upload_request, "paths");
 
-        LOG(info) << "Getting transfer spec";
+        LOGGER(info) << "Getting transfer spec";
         std::ostringstream endpoint;
         endpoint << "packages/" << package_info.at("id").as_string().c_str() << "/transfer_spec/upload";
-        LOG(info) << ">>>>>>" << endpoint.str();
+        LOGGER(info) << ">>>>>>" << endpoint.str();
         json::object t_spec = f5_api.create(endpoint.str(), upload_request, {{"transfer_type", "connect"}}).as_object();
 
         // Optional: Multi session

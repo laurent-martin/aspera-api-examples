@@ -9,6 +9,8 @@ import { Rest } from '../utils/rest.js';
 // Faspex 5 API base path
 const F5_API_PATH_V5 = '/api/v5';
 const F5_API_PATH_TOKEN = '/auth/token';
+// number of parallel transfer sessions (typically, 1)
+const transferSessions = 1;
 
 const config = new Configuration();
 const transferClient = new TransferClient(config);
@@ -45,8 +47,8 @@ config.addSources(uploadRequest, 'paths');
 const tSpec = await f5Api.create(`packages/${packageInfo.id}/transfer_spec/upload?transfer_type=connect`, uploadRequest);
 
 // Optional: multi-session support
-if (config.getParam('transfer', 'sessions') !== 1) {
-    tSpec.multi_session = config.getParam('transfer', 'sessions');
+if (transferSessions !== 1) {
+    tSpec.multi_session = transferSessions;
     tSpec.multi_session_threshold = 500000;
 }
 

@@ -41,11 +41,11 @@ int main(int argc, char* argv[]) {
 
         // Get user information
         json::object user_info = aoc_api.read("self").as_object();
-        LOG(debug) << user_info;
+        LOGGER(debug) << user_info;
 
         // Get workspace information
         std::string workspace_name = config.param_str({"aoc", "workspace"});
-        LOG(info) << "Getting workspace information for " << workspace_name;
+        LOGGER(info) << "Getting workspace information for " << workspace_name;
         json::array response_data = aoc_api.read("workspaces", {{"q", workspace_name}}).as_array();
         if (response_data.size() != 1) {
             throw std::runtime_error("Found multiple or no workspaces for " + workspace_name);
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
 
         // Get dropbox (shared inbox) information
         std::string shared_inbox_name = config.param_str({"aoc", "shared_inbox"});
-        LOG(info) << "Getting shared inbox information";
+        LOGGER(info) << "Getting shared inbox information";
         response_data = aoc_api.read("dropboxes", {{"current_workspace_id", workspace_info["id"].as_string()}, {"q", shared_inbox_name}}).as_array();
         if (response_data.size() != 1) {
             throw std::runtime_error("Found multiple or no dropboxes for " + shared_inbox_name);
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
         json::object dropbox_info = response_data[0].as_object();
 
         // Create a new package
-        LOG(info) << "Creating package";
+        LOGGER(info) << "Creating package";
         json::object package_info = aoc_api.create(
                                                "packages",
                                                {{"workspace_id", workspace_info["id"]},
@@ -70,19 +70,19 @@ int main(int argc, char* argv[]) {
                                                 {"name", package_name},
                                                 {"note", "My package note"}})
                                         .as_object();
-        LOG(debug) << package_info;
+        LOGGER(debug) << package_info;
 
         // Get node information
-        LOG(info) << "Getting node information";
+        LOGGER(info) << "Getting node information";
         json::object node_info = aoc_api.read("nodes/" + utils::attribute_str(package_info, "node_id")).as_object();
-        LOG(debug) << node_info;
+        LOGGER(debug) << node_info;
 
         // Set transfer expectations
-        LOG(info) << "Setting expected transfers";
+        LOGGER(info) << "Setting expected transfers";
         aoc_api.update("packages/" + utils::attribute_str(package_info, "id"), {{"sent", true}, {"transfers_expected", transfer_sessions}});
 
         // Generate transfer spec
-        LOG(info) << "Generating transfer spec";
+        LOGGER(info) << "Generating transfer spec";
         json::object t_spec = {
             {"direction", "send"},
             {"token", aoc_api.get_bearer_token(node_scope(utils::attribute_str(node_info, "access_key"), "user:all"))},

@@ -112,7 +112,7 @@ class Rest {
         if (!scope.empty()) {
             token_parameters.insert_or_assign("scope", scope);
         }
-        LOG(debug) << "parameters: " << token_parameters;
+        LOGGER(debug) << "parameters: " << token_parameters;
 
         Rest oauth_api(_auth_data.at("token_url"));
         oauth_api.set_verify(_verify);
@@ -128,7 +128,7 @@ class Rest {
         BodyType body_type = BodyType::NONE,
         const json::object& query = empty_value  //
     ) {
-        LOG(debug) << "Calling: " << method << " on " << endpoint;
+        LOGGER(debug) << "Calling: " << method << " on " << endpoint;
         const auto base_uri = boost::urls::parse_uri(_base_url).value();
         std::string port = base_uri.port();
         if (port.empty()) {
@@ -174,7 +174,7 @@ class Rest {
         for (const auto& [key, value] : _headers) {
             request.set(key, value);
         }
-        LOG(debug) << "Request: " << request;
+        LOGGER(debug) << "Request: " << request;
         boost::asio::io_context io_svc;
         ssl::context ssl_context(ssl::context::tls_client);
         ssl_context.set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::tlsv13);
@@ -200,13 +200,13 @@ class Rest {
         }
         if (ec)
             throw boost::system::system_error{ec};
-        LOG(debug) << "Code: " << response.result_int();
+        LOGGER(debug) << "Code: " << response.result_int();
         // check HTTP status is success
         if (response.result_int() >= 300) {
-            LOG(debug) << "Response: " << response.body();
+            LOGGER(debug) << "Response: " << response.body();
             throw std::runtime_error("HTTP error: " + std::to_string(response.result_int()));
         }
-        LOG(debug) << "Result: " << response.body();
+        LOGGER(debug) << "Result: " << response.body();
         if (result_json) {
             return json::parse(response.body());
         }

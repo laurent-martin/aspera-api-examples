@@ -4,6 +4,7 @@ package utils
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -17,20 +18,33 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
 	ASCP_LOG_FILE = "aspera-scp-transfer.log"
+	// default port of transferd if not specified in URL
+	TRANSFERD_DEFAULT_PORT = 55002
+	// max wait time for the connection to the daemon
+	CONNECT_TIMEOUT = 5 * time.Second
+	// max wait time for the daemon to log its listening port
+	STARTUP_TIMEOUT = 10 * time.Second
 )
+
+// API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
+var listeningPortRegex = regexp.MustCompile(`API Server: Listening on [^\s"]+:(\d+)`)
 
 type TransferClient struct {
 	config             *Configuration
 	serverAddress      string
 	serverPort         int
 	transferDaemonProc *exec.Cmd
-	transferService    pb.TransferServiceClient
-	daemonName         string
-	daemonLog          string
+	// receives the result of Wait() when the daemon exits
+	daemonExited    chan error
+	channel         *grpc.ClientConn
+	transferService pb.TransferServiceClient
+	daemonName      string
+	daemonLog       string
 }
 
 func NewTransferClient(config *Configuration) *TransferClient {
@@ -43,7 +57,7 @@ func NewTransferClient(config *Configuration) *TransferClient {
 		daemonName:    filepath.Base(config.GetPath("sdk_daemon")),
 		daemonLog:     filepath.Join(config.LogFolder, filepath.Base(config.GetPath("sdk_daemon"))+".log"),
 		serverAddress: sdkURL.Hostname(),
-		serverPort:    GetPortOrDefault(sdkURL, 33001),
+		serverPort:    GetPortOrDefault(sdkURL, TRANSFERD_DEFAULT_PORT),
 	}
 }
 
@@ -93,67 +107,128 @@ func (tc *TransferClient) StartDaemon() error {
 		"--config", confFile,
 	)
 
-	tc.CreateConfigFile(confFile)
+	if err := tc.CreateConfigFile(confFile); err != nil {
+		return fmt.Errorf("failed to create daemon configuration file: %w", err)
+	}
 
 	tc.config.Log.Info("Starting daemon...", zap.String("command", cmd.String()))
 
-	// Redirection des logs
-	cmd.Stdout = tc.openFile(outFile)
-	cmd.Stderr = tc.openFile(errFile)
+	// the log file may contain lines of previous executions: only read new lines
+	logOffset := fileSize(tc.daemonLog)
 
-	if err := cmd.Start(); err != nil {
+	// Redirect daemon output to files
+	stdout := tc.openFile(outFile)
+	stderr := tc.openFile(errFile)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+
+	err := cmd.Start()
+	// the child process has its own copy of the file descriptors
+	stdout.Close()
+	stderr.Close()
+	if err != nil {
 		return fmt.Errorf("failed to start daemon: %w", err)
 	}
 
 	tc.transferDaemonProc = cmd
-	time.Sleep(2 * time.Second)
+	tc.daemonExited = make(chan error, 1)
+	go func() { tc.daemonExited <- cmd.Wait() }()
 
-	if err := tc.checkDaemonStartup(); err != nil {
-		return err
-	}
-
-	return nil
+	return tc.waitDaemonListening(logOffset)
 }
 
-func (tc *TransferClient) checkDaemonStartup() error {
-	if tc.transferDaemonProc.ProcessState != nil && tc.transferDaemonProc.ProcessState.Exited() {
-		tc.config.Log.Error("Daemon not started", zap.Error(fmt.Errorf("exit status: %v", tc.transferDaemonProc.ProcessState.ExitCode())))
-		return fmt.Errorf("daemon startup failed")
-	}
-
-	if tc.serverPort == 0 {
-		logLine, err := LastFileLine(tc.daemonLog)
+// Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
+// The port is read from the daemon log: requires log level `info` or more verbose.
+func (tc *TransferClient) waitDaemonListening(logOffset int64) error {
+	deadline := time.Now().Add(STARTUP_TIMEOUT)
+	for {
+		if err := tc.checkDaemonRunning(); err != nil {
+			return err
+		}
+		// fixed port: readiness is checked on connection
+		if tc.serverPort != 0 {
+			return nil
+		}
+		port, err := findListeningPort(tc.daemonLog, logOffset)
 		if err != nil {
 			return err
 		}
-		tc.config.Log.Debugf("Last log line: %s", logLine)
-		re := regexp.MustCompile(`:(\d+)`)
-		match := re.FindStringSubmatch(logLine)
-		if match == nil {
-			return fmt.Errorf("could not read listening port from log file")
+		if port != 0 {
+			tc.serverPort = port
+			tc.config.Log.Infof("Allocated server port : %d", tc.serverPort)
+			return nil
 		}
-		port, err := strconv.Atoi(match[1])
-		if err != nil {
-			return fmt.Errorf("could not parse port number: %w", err)
+		if time.Now().After(deadline) {
+			return fmt.Errorf("listening port not found in daemon log after %v: %s", STARTUP_TIMEOUT, tc.daemonLog)
 		}
-
-		tc.serverPort = port
-		tc.config.Log.Infof("Allocated server port : %d", tc.serverPort)
+		time.Sleep(200 * time.Millisecond)
 	}
+}
 
-	return nil
+// Return an error if the daemon process has exited
+func (tc *TransferClient) checkDaemonRunning() error {
+	select {
+	case err := <-tc.daemonExited:
+		tc.transferDaemonProc = nil
+		tc.config.Log.Errorf("Check daemon log: %s", tc.daemonLog)
+		return fmt.Errorf("daemon exited: %v", err)
+	default:
+		return nil
+	}
+}
+
+// Find the API listening port in the daemon log, after the given offset.
+// Returns 0 if not found (yet).
+func findListeningPort(logFile string, offset int64) (int, error) {
+	content, err := os.ReadFile(logFile)
+	if os.IsNotExist(err) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	// log file was truncated
+	if int64(len(content)) < offset {
+		offset = 0
+	}
+	match := listeningPortRegex.FindSubmatch(content[offset:])
+	if match == nil {
+		return 0, nil
+	}
+	return strconv.Atoi(string(match[1]))
+}
+
+// Size of file, or 0 if it does not exist
+func fileSize(path string) int64 {
+	if info, err := os.Stat(path); err == nil {
+		return info.Size()
+	}
+	return 0
 }
 
 func (tc *TransferClient) ConnectToDaemon() error {
 	address := fmt.Sprintf("%s:%d", tc.serverAddress, tc.serverPort)
 	tc.config.Log.Info("Connecting to transfer daemon...", zap.String("address", address))
 
-	channel, err := grpc.NewClient(address, grpc.WithInsecure())
+	channel, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return fmt.Errorf("failed to connect: %w", err)
 	}
 
-	tc.transferService = pb.NewTransferServiceClient(channel)
+	transferService := pb.NewTransferServiceClient(channel)
+	// the channel connects on first call: check that the daemon answers (wait until it listens)
+	ctx, cancel := context.WithTimeout(context.Background(), CONNECT_TIMEOUT)
+	defer cancel()
+	if _, err := transferService.GetInfo(ctx, &pb.InstanceInfoRequest{}, grpc.WaitForReady(true)); err != nil {
+		channel.Close()
+		if exitErr := tc.checkDaemonRunning(); exitErr != nil {
+			return exitErr
+		}
+		return fmt.Errorf("failed to connect: %w", err)
+	}
+
+	tc.channel = channel
+	tc.transferService = transferService
 	tc.config.Log.Info("Connected!")
 	return nil
 }
@@ -171,10 +246,20 @@ func (tc *TransferClient) Startup() error {
 }
 
 func (tc *TransferClient) Shutdown() error {
-	if tc.transferDaemonProc != nil {
-		tc.config.Log.Info("Shutting down daemon...")
-		return tc.transferDaemonProc.Process.Kill()
+	tc.transferService = nil
+	if tc.channel != nil {
+		tc.channel.Close()
+		tc.channel = nil
 	}
+	if tc.transferDaemonProc == nil {
+		return nil
+	}
+	tc.config.Log.Info("Shutting down daemon...")
+	if err := tc.transferDaemonProc.Process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+		return err
+	}
+	<-tc.daemonExited
+	tc.transferDaemonProc = nil
 	return nil
 }
 
@@ -249,19 +334,19 @@ func (tc *TransferClient) StartTransferAndWait(transferSpec map[string]interface
 	return tc.WaitTransfer(transferID)
 }
 
-func (tc *TransferClient) throwOnError(status pb.TransferStatus, error *pb.Error) error {
+func (tc *TransferClient) throwOnError(status pb.TransferStatus, trError *pb.Error) error {
 	switch status {
 	case pb.TransferStatus_FAILED:
-		tc.config.Log.Errorf("Transfer failed: %s", error.Description)
-		return fmt.Errorf("transfer failed: %s", error.Description)
+		tc.config.Log.Errorf("Transfer failed: %s", trError.GetDescription())
+		return fmt.Errorf("transfer failed: %s", trError.GetDescription())
 	case pb.TransferStatus_UNKNOWN_STATUS:
-		return fmt.Errorf("unknown transfer status: %s", error.Description)
+		return fmt.Errorf("unknown transfer status: %s", trError.GetDescription())
 	default:
 		return nil
 	}
 }
 
-// Utilitaire pour ouvrir les fichiers de log
+// Open a log file for the daemon output
 func (tc *TransferClient) openFile(filename string) *os.File {
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {

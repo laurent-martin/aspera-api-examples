@@ -2,13 +2,22 @@ package main
 
 import (
 	"aspera_examples/src/utils"
+	"fmt"
+	"log"
 	"net/url"
 )
 
+// errors are returned to main so that deferred calls are executed before exit
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	config, err := utils.NewConfiguration()
 	if err != nil {
-		config.Log.Fatalf("Error loading configuration: %v", err)
+		return fmt.Errorf("error loading configuration: %w", err)
 	}
 	transferClient := utils.NewTransferClient(config)
 	defer transferClient.Shutdown()
@@ -17,10 +26,10 @@ func main() {
 	config.Log.Debugf("Server URL: %s", serverURL)
 	serverURI, err := url.Parse(serverURL)
 	if err != nil {
-		config.Log.Fatalf("Error parsing server URL: %v", err)
+		return fmt.Errorf("error parsing server URL: %w", err)
 	}
 	if serverURI.Scheme != "ssh" {
-		config.Log.Fatalf("Expected SSH scheme, got: %s", serverURI.Scheme)
+		return fmt.Errorf("expected SSH scheme, got: %s", serverURI.Scheme)
 	}
 	transferSpec := map[string]interface{}{
 		"title":       "test with transfer spec V2",
@@ -38,14 +47,13 @@ func main() {
 			"paths":            []map[string]string{}, // To be filled later
 		},
 	}
-	err = config.AddSources(transferSpec, "assets.paths")
-	if err != nil {
-		config.Log.Fatalf("Error adding files to transfer spec: %v", err)
+	if err := config.AddSources(transferSpec, "assets.paths"); err != nil {
+		return fmt.Errorf("error adding files to transfer spec: %w", err)
 	}
 	// Start the transfer and wait
-	err = transferClient.StartTransferAndWait(transferSpec)
-	if err != nil {
-		config.Log.Fatalf("Error during transfer: %v", err)
+	if err := transferClient.StartTransferAndWait(transferSpec); err != nil {
+		return fmt.Errorf("error during transfer: %w", err)
 	}
 	config.Log.Info("Transfer completed successfully")
+	return nil
 }

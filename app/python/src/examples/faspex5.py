@@ -17,9 +17,11 @@ F5_API_PATH_TOKEN = '/auth/token'
 RECIPIENT_TYPES = ['user', 'external_user', 'shared_inbox', 'workgroup', 'distribution_list']
 # validation of email format
 EMAIL_REGEX = r"^[A-Za-z0-9\.\-_%+]+@[A-Za-z0-9\.\-]+\.[A-Za-z]{2,}$"
+# max wait time for server-to-server transfer
+REMOTE_TRANSFER_TIMEOUT_SEC = 600
 
 
-def lookup_entity(api, path, value, prop='name', query=[]):
+def lookup_entity(api, path, value, prop='name', query=None):
     """
     Call lookup request on entity and find exact match
     :param api: The Rest object
@@ -28,6 +30,7 @@ def lookup_entity(api, path, value, prop='name', query=[]):
     :param value: the value to search
     :param query: additional query parameters (list of 2-tuple)
     """
+    query = list(query or [])
     query.append(('q', value))
     matching_items = api.read(path, query)
     # in Faspex, results are in the same key as request
@@ -171,13 +174,16 @@ try:
     log.info(f'id: {transfer_info}')
 
     # wait for remote transfer to complete
+    deadline = time.monotonic() + REMOTE_TRANSFER_TIMEOUT_SEC
     while True:
         transfer_info = f5_api.read(f'packages/{package_info["id"]}/upload_details')
         log.info(f'status: {transfer_info["upload_status"]}')
         if transfer_info['upload_status'] == 'completed':
             break
         elif transfer_info['upload_status'] == 'failed':
-            raise "Remote transfer failed"
+            raise Exception('Remote transfer failed')
+        if time.monotonic() > deadline:
+            raise TimeoutError(f'Remote transfer not completed after {REMOTE_TRANSFER_TIMEOUT_SEC} seconds')
         time.sleep(1)
 
 finally:

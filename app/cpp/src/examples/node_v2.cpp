@@ -7,7 +7,7 @@ int main(const int argc, const char* const argv[]) {
     utils::TransferClient transfer_client(config);
     try {
         const std::string node_api_url = config.param_str({"node", "url"});
-        LOG(info) << LOG_ITEM("Node URL") << node_api_url;
+        LOGGER(info) << LOG_ITEM("Node URL") << node_api_url;
         const std::string header_authorization = utils::Rest::basic_auth_header(config.param_str({"node", "username"}), config.param_str({"node", "password"}));
         json::object transfer_spec_v2 = {
             {"title", "send using Node API and ts v2"},

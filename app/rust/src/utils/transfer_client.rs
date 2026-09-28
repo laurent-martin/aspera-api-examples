@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Arc;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tonic::transport::Channel;
 
 pub mod transfer {
@@ -25,8 +25,14 @@ use transfer::TransferStatus;
 use transfer::TransferType;
 
 const ASCP_LOG_FILE: &str = "aspera-scp-transfer.log";
-//const MAX_CONNECTION_WAIT_SEC: u64 = 10;
-const PORT_REGEX: &str = r":([0-9]+) ";
+/// default port of transferd if not specified in URL
+const TRANSFERD_DEFAULT_PORT: u16 = 55002;
+/// max wait time for the daemon to log its listening port
+const STARTUP_TIMEOUT: Duration = Duration::from_secs(10);
+/// max wait time for the connection to the daemon
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+/// API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
+const PORT_REGEX: &str = r#"API Server: Listening on [^\s"]+:([0-9]+)"#;
 
 /// Simplified interface for the Aspera Transfer SDK
 pub struct TransferClient {
@@ -44,7 +50,7 @@ impl TransferClient {
         let sdk_url = config.param_str("trsdk", "url").expect("Invalid trsdk url");
         let sdk_uri = url::Url::parse(&sdk_url).expect("Failed to parse SDK URL");
         let server_address = sdk_uri.host().expect("No host found").to_string();
-        let server_port = sdk_uri.port().unwrap_or(33001);
+        let server_port = sdk_uri.port().unwrap_or(TRANSFERD_DEFAULT_PORT);
         let daemon_name = config.get_path("sdk_daemon").unwrap_or_default().file_name().unwrap_or_default().to_string_lossy().to_string();
         let daemon_log = config.log_folder_path().join(format!("{}.log",daemon_name));
         TransferClient {
@@ -112,56 +118,75 @@ impl TransferClient {
         log::debug!("ascp log: {ascp_log_path:?}");
         log::debug!("starting: {} {}", daemon_path.display(), args.join(" "));
 
+        // the log file may contain lines of previous executions: only read new lines
+        let log_offset = std::fs::metadata(&self.daemon_log)
+            .map(|m| m.len())
+            .unwrap_or(0);
         // Start the subprocess in the background
-        let mut daemon_process: Child = Command::new(daemon_path)
+        let daemon_process: Child = Command::new(daemon_path)
             .args(&args)
             .stdout(Stdio::from(stdout_file))
             .stderr(Stdio::from(stderr_file))
             .spawn()?;
         log::debug!("Started process with PID: {}", daemon_process.id());
-        thread::sleep(Duration::from_secs(1));
-        match daemon_process.try_wait() {
-            Ok(Some(status)) => {
-                return Err(format!("Daemon has finished with exit status: {:?}", status).into());
-            }
-            Ok(None) => {
-                log::debug!("Daemon is running.");
-            }
-            Err(e) => {
-                return Err(format!("Error checking process status: {}", e).into());
-            }
-        }
         self.daemon_process = Some(daemon_process);
-        // if port zero is specified, then the daemon selects the port
-        if self.server_port == 0 {
-            let re: Regex = Regex::new(PORT_REGEX)?;
-            let msg = self.last_log_message()?;
-            if let Some(captures) = re.captures(msg.as_str()) {
-                if let Some(port_match) = captures.get(1) {
-                    self.server_port = port_match
-                        .as_str()
-                        .parse::<u16>()
-                        .ok()
-                        .expect("port is not integer?");
-                    log::debug!("port from logs: {}", self.server_port);
+        self.wait_daemon_listening(log_offset)
+    }
+    /// Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
+    /// The port is read from the daemon log: requires log level `info` or more verbose.
+    fn wait_daemon_listening(&mut self, log_offset: u64) -> Result<(), Box<dyn Error>> {
+        let re: Regex = Regex::new(PORT_REGEX)?;
+        let deadline = Instant::now() + STARTUP_TIMEOUT;
+        loop {
+            if let Some(daemon_process) = self.daemon_process.as_mut() {
+                if let Some(status) = daemon_process.try_wait()? {
+                    self.daemon_process = None;
+                    log::error!("Check daemon log: {:?}", self.daemon_log);
+                    return Err(format!("Daemon has finished with exit status: {:?}", status).into());
                 }
             }
-            if self.server_port == 0 {
-                return Err("Could not read port from log file".into());
+            // fixed port: readiness is checked on connection
+            if self.server_port != 0 {
+                return Ok(());
             }
+            if let Some(port) = Self::find_listening_port(&re, &self.daemon_log, log_offset)? {
+                self.server_port = port;
+                log::info!("Allocated server port: {}", self.server_port);
+                return Ok(());
+            }
+            if Instant::now() > deadline {
+                return Err(format!(
+                    "Listening port not found in daemon log after {:?}: {:?}",
+                    STARTUP_TIMEOUT, self.daemon_log
+                )
+                .into());
+            }
+            thread::sleep(Duration::from_millis(200));
         }
-        Ok(())
     }
-    /// Get last log message of transfer daemon.
-    fn last_log_message(&self) -> Result<String, Box<dyn Error>> {
-        let json_str = Configuration::last_file_line(&self.daemon_log)?;
-        //log::debug!("last line: {json_str}");
-        let parsed: serde_json::Value = serde_json::from_str(json_str.as_str())?;
-        let msg = parsed
-            .get("msg")
-            .and_then(|v| v.as_str()) // S'assure que "msg" est une chaîne
-            .ok_or("Field 'msg' not found or invalid")?;
-        Ok(msg.to_string())
+    /// Find the API listening port in the daemon log, after the given offset.
+    /// Returns None if not found (yet).
+    fn find_listening_port(
+        re: &Regex,
+        log_file: &PathBuf,
+        log_offset: u64,
+    ) -> Result<Option<u16>, Box<dyn Error>> {
+        let content = match std::fs::read(log_file) {
+            Ok(content) => content,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(e) => return Err(e.into()),
+        };
+        // log file was truncated
+        let offset = if (content.len() as u64) < log_offset {
+            0
+        } else {
+            log_offset as usize
+        };
+        let text = String::from_utf8_lossy(&content[offset..]);
+        match re.captures(&text) {
+            Some(captures) => Ok(Some(captures[1].parse::<u16>()?)),
+            None => Ok(None),
+        }
     }
     /// start daemon and connect to it
     pub async fn daemon_startup(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -184,7 +209,18 @@ impl TransferClient {
     /// Connect to the daemon
     pub async fn daemon_connect(&mut self) -> Result<(), Box<dyn Error>> {
         let channel_address = format!("http://{}:{}", self.server_address, self.server_port);
-        let mut client = TransferServiceClient::connect(channel_address).await?;
+        // retry until the daemon listens
+        let deadline = Instant::now() + CONNECT_TIMEOUT;
+        let mut client = loop {
+            match TransferServiceClient::connect(channel_address.clone()).await {
+                Ok(client) => break client,
+                Err(e) if Instant::now() < deadline => {
+                    log::debug!("waiting for daemon: {e}");
+                    tokio::time::sleep(Duration::from_millis(200)).await;
+                }
+                Err(e) => return Err(e.into()),
+            }
+        };
         self.transfer_service = Some(Box::new(client.clone()));
         let _instance_info_response = client.get_info(InstanceInfoRequest {}).await?;
         log::debug!("Connected to daemon.");
@@ -212,9 +248,17 @@ impl TransferClient {
             config: None,
         };
         // get the actual transfer_service from the Option, and return Error if it's None
-        let response = self.get_transfer_service()?.start_transfer(request).await?;
-        // return field .transfer_id from response
-        Ok(response.into_inner().transfer_id)
+        let response = self
+            .get_transfer_service()?
+            .start_transfer(request)
+            .await?
+            .into_inner();
+        let status = TransferStatus::from_i32(response.status).unwrap_or(TransferStatus::UnknownStatus);
+        if status == TransferStatus::Failed || status == TransferStatus::UnknownStatus {
+            let description = response.error.map(|e| e.description).unwrap_or_default();
+            return Err(format!("transfer start failed: {}: {}", status.as_str_name(), description).into());
+        }
+        Ok(response.transfer_id)
     }
     /// Start a transfer and wait for it to complete
     pub async fn transfer_start_and_wait(
@@ -253,11 +297,13 @@ impl TransferClient {
         }
         Ok(())
     }
-    /// Shutdown the daemon (kill)
+    /// Shutdown the daemon (kill) and wait for its termination
     pub fn daemon_shutdown(&mut self) -> Result<(), String> {
-        if let Some(ref mut daemon_process) = self.daemon_process {
+        self.transfer_service = None;
+        if let Some(mut daemon_process) = self.daemon_process.take() {
             log::debug!("Shutting down daemon...");
             daemon_process.kill().map_err(|e| e.to_string())?;
+            daemon_process.wait().map_err(|e| e.to_string())?;
         }
         Ok(())
     }

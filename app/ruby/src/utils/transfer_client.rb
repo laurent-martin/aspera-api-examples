@@ -13,11 +13,19 @@ module Utils
   class TransferClient
     ASCP_LOG_FILE = 'aspera-scp-transfer.log'
     DEBUG_HTTP = false
+    # default port of transferd if not specified in URL
+    TRANSFERD_DEFAULT_PORT = 55_002
+    # max wait time for the daemon to log its listening port
+    STARTUP_TIMEOUT_SEC = 10
+    # max wait time for the connection to the daemon
+    CONNECT_TIMEOUT_SEC = 5
+    # API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
+    LISTENING_PORT_REGEX = /API Server: Listening on [^\s"]+:(\d+)/
     def initialize(config)
       @config = config
       sdk_url = URI.parse(@config.param('trsdk', 'url'))
       @server_address = sdk_url.host
-      @server_port = sdk_url.port
+      @server_port = sdk_url.port || TRANSFERD_DEFAULT_PORT
       @transfer_daemon_process = nil
       @transfer_service = nil
       @daemon_name = File.basename(@config.get_path('sdk_daemon'))
@@ -60,55 +68,92 @@ module Utils
       @logger.debug("command: #{command.join(' ')}")
 
       create_config_file(conf_file)
+      # the log file may contain lines of previous executions: only read new lines
+      log_offset = File.exist?(@daemon_log) ? File.size(@daemon_log) : 0
       @logger.info('Starting daemon...')
 
       @transfer_daemon_process = Process.spawn(*command,
                                                out: out_file,
                                                err: err_file)
-      sleep 2
-
-      _, status = Process.wait2(@transfer_daemon_process, Process::WNOHANG)
-      if status
-        @logger.error("Daemon not started, exit code=#{status.exitstatus}")
-        @logger.error("Check daemon log: #{@daemon_log}")
-        raise 'daemon startup failed'
-      end
-
+      wait_daemon_listening(log_offset)
       @logger.info("Daemon started: #{@transfer_daemon_process}")
+    end
 
-      return unless @server_port.zero?
+    # Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
+    # The port is read from the daemon log: requires log level `info` or more verbose.
+    # @param log_offset [Integer] only read the log after this offset
+    def wait_daemon_listening(log_offset)
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + STARTUP_TIMEOUT_SEC
+      loop do
+        _, status = Process.wait2(@transfer_daemon_process, Process::WNOHANG)
+        if status
+          @transfer_daemon_process = nil
+          @logger.error("Daemon not started, exit code=#{status.exitstatus}")
+          @logger.error("Check daemon log: #{@daemon_log}")
+          raise 'daemon startup failed'
+        end
+        # fixed port: readiness is checked on connection
+        return unless @server_port.zero?
 
-      last_line = File.readlines(@daemon_log).last
-      log_info = JSON.parse(last_line)
-      port_match = log_info['msg'].match(/:(\d+)/)
-      raise 'Could not read listening port from log file' unless port_match
+        port = find_listening_port(log_offset)
+        if port
+          @server_port = port
+          @logger.info("Allocated server port: #{@server_port}")
+          return
+        end
+        if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+          raise "Listening port not found in daemon log after #{STARTUP_TIMEOUT_SEC}s: #{@daemon_log}"
+        end
 
-      @server_port = port_match[1]
-      @logger.info("Allocated server port: #{@server_port}")
+        sleep 0.2
+      end
+    end
+
+    # Find the API listening port in the daemon log, after the given offset.
+    # @return [Integer, nil] the port, or nil if not found (yet)
+    def find_listening_port(log_offset)
+      return nil unless File.exist?(@daemon_log)
+
+      content = File.binread(@daemon_log)
+      # log file was truncated
+      log_offset = 0 if content.bytesize < log_offset
+      match = content.byteslice(log_offset..).match(LISTENING_PORT_REGEX)
+      match && match[1].to_i
     end
 
     def connect_to_daemon
       channel_address = "#{@server_address}:#{@server_port}"
       @logger.info("Connecting to #{@daemon_name} on: #{channel_address} ...")
 
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + CONNECT_TIMEOUT_SEC
+      transfer_service = ::Transferd::Api::TransferService::Stub.new(channel_address, :this_channel_is_insecure)
       begin
-        # GRPC::Core::Channel.new(channel_address, nil, :this_channel_is_insecure)
-        @transfer_service = ::Transferd::Api::TransferService::Stub.new(channel_address, :this_channel_is_insecure)
-        # Initiate actual connection
-        get_info_response = @transfer_service.get_info(::Transferd::Api::InstanceInfoRequest.new)
+        # Initiate actual connection (retry until the daemon listens)
+        get_info_response = transfer_service.get_info(::Transferd::Api::InstanceInfoRequest.new)
         @logger.debug("Daemon info: #{get_info_response}")
       rescue GRPC::BadStatus => e
+        if e.is_a?(GRPC::Unavailable) && Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+          sleep 0.2
+          retry
+        end
         @logger.error("Failed to connect: #{e}")
         raise 'failed to connect.'
       end
 
+      @transfer_service = transfer_service
       @logger.info('Connected!')
     end
 
     def startup
       if @transfer_service.nil?
-        start_daemon
-        connect_to_daemon
+        begin
+          start_daemon
+          connect_to_daemon
+        rescue StandardError
+          # do not leave the daemon running
+          shutdown
+          raise
+        end
       end
       self
     end
@@ -147,7 +192,7 @@ module Utils
         status = transfer_response.status
         # @logger.info("transfer: #{::Transferd::Api::TransferStatus.constants[status]}")
         @logger.info("transfer: #{status}")
-        throw_on_error(status, transfer_response.transferInfo)
+        throw_on_error(status, transfer_response.error)
         break if status == :COMPLETED
       end
       @logger.info("Transfer #{transfer_id} completed successfully.")
@@ -158,11 +203,13 @@ module Utils
       wait_transfer(start_transfer(t_spec))
     end
 
-    def throw_on_error(status, info)
+    # @param status [Symbol] transfer status
+    # @param error [Transferd::Api::Error, nil] error information
+    def throw_on_error(status, error)
       if status == :FAILED
-        raise "transfer failed: #{info.errorDescription}"
+        raise "transfer failed: #{error&.description}"
       elsif status == :UNKNOWN_STATUS
-        raise "unknown transfer id: #{info.errorDescription}"
+        raise "unknown transfer id: #{error&.description}"
       end
     end
 

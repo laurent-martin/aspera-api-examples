@@ -31,7 +31,7 @@ inline constexpr const char* PATHS_FILE_REL = "config/paths.yaml";
 inline constexpr const int ITEM_WIDTH = 12;
 // logger
 inline boost::log::sources::severity_logger<boost::log::trivial::severity_level> global_logger;
-#define LOG(level) BOOST_LOG_SEV(utils::global_logger, boost::log::trivial::level)
+#define LOGGER(level) BOOST_LOG_SEV(utils::global_logger, boost::log::trivial::level)
 #define LOG_ITEM(item) std::setw(utils::ITEM_WIDTH) << item << ": "
 
 // Provide a common environment for tests, including:
@@ -58,12 +58,12 @@ class Configuration {
         }
         boost::log::core::get()->set_filter(boost::log::trivial::severity >= opt_level.value());
         if (_file_list.empty()) {
-            LOG(error) << "No file(s) to transfer provided.";
+            LOGGER(error) << "No file(s) to transfer provided.";
             throw std::runtime_error("ERROR");
         }
-        LOG(debug) << LOG_ITEM("top_folder") << _top_folder_path.string();
+        LOGGER(debug) << LOG_ITEM("top_folder") << _top_folder_path.string();
         for (const auto& one_file : _file_list) {
-            LOG(debug) << LOG_ITEM("file") << one_file;
+            LOGGER(debug) << LOG_ITEM("file") << one_file;
         }
     }
 
@@ -108,10 +108,10 @@ class Configuration {
 
     // get the path of the item in the test environment
     std::filesystem::path get_path(const std::string& name) {
-        // LOG(debug) << "get_path" << ": " << name;
+        // LOGGER(debug) << "get_path" << ": " << name;
         std::filesystem::path item_path = _top_folder_path / _paths[name].as<std::string>();
         if (!std::filesystem::exists(item_path)) {
-            LOG(error) << item_path.string() << " not found.\nPlease check: SDK installed in " << _paths["sdk_runtime"].as<std::string>() << ", configuration file: " << _paths["main_config"].as<std::string>();
+            LOGGER(error) << item_path.string() << " not found.\nPlease check: SDK installed in " << _paths["sdk_runtime"].as<std::string>() << ", configuration file: " << _paths["main_config"].as<std::string>();
             throw std::runtime_error("ERROR");
         }
         return item_path;
@@ -160,7 +160,7 @@ class Configuration {
     const YAML::Node _config;
 
     YAML::Node load_yaml(const char* const name, const std::filesystem::path& path) {
-        LOG(debug) << std::setw(ITEM_WIDTH) << name << ": " << path.string();
+        LOGGER(debug) << std::setw(ITEM_WIDTH) << name << ": " << path.string();
         return YAML::LoadFile(path.string());
     }
 

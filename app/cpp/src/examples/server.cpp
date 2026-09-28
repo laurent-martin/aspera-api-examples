@@ -6,9 +6,11 @@ int main(int argc, char* argv[]) {
     utils::TransferClient transfer_client(config);
     try {
         std::string server_url = config.param_str({"server", "url"});
-        LOG(info) << LOG_ITEM("Server URL") << server_url;
+        LOGGER(info) << LOG_ITEM("Server URL") << server_url;
         auto server_uri = boost::urls::parse_uri(server_url).value();
-        assert(server_uri.scheme == "ssh");
+        if (server_uri.scheme() != "ssh") {
+            throw std::runtime_error("expecting SSH scheme for server URL");
+        }
         // create V2 transfer spec
         json::object transfer_spec = {
             {"title", "test with transfer spec V2"},

@@ -110,6 +110,14 @@ func NewConfiguration() (*Configuration, error) {
 	// Set logging level based on config
 	logLevel := c.ParamStr("misc", "level")
 	logger.Debugf("log level: %s", logLevel)
+	if logLevel == "warning" {
+		logLevel = "warn"
+	}
+	if level, err := zapcore.ParseLevel(logLevel); err == nil {
+		atomicLevel.SetLevel(level)
+	} else {
+		logger.Warnf("invalid log level: %s", logLevel)
+	}
 
 	if len(c.FileList) == 0 {
 		c.Log.Error("No files provided")
@@ -191,7 +199,7 @@ func LastFileLine(filename string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if buf[0] == '\n' && offset != stat.Size()-1 { // On saute le dernier \n
+		if buf[0] == '\n' && offset != stat.Size()-1 { // skip the trailing newline
 			break
 		}
 		lastLine = append([]byte{buf[0]}, lastLine...)
@@ -217,7 +225,8 @@ func loadYAML(filePath string) (map[string]interface{}, error) {
 	return obj, nil
 }
 
-// Add files provided on command line to the transfer specification.
+// Set files provided on command line as sources in the transfer specification.
+// The list of paths at `dotPath` is replaced.
 //
 // Parameters:
 //   - dotPath: path in map of transfer spec
@@ -237,16 +246,14 @@ func (c *Configuration) AddSources(transferSpec map[string]interface{}, dotPath 
 			return fmt.Errorf("key %s not found in map", key)
 		}
 	}
-	if pathsArray, ok := m[lastKey].([]map[string]string); ok {
-		for _, filePath := range c.FileList {
-			pathsArray = append(pathsArray, map[string]string{
-				"source": filePath,
-			})
-		}
-		m[lastKey] = pathsArray
-	} else {
-		return fmt.Errorf("%s is not a valid array", lastKey)
+	// value may be absent or of any slice type (e.g. []interface{} when decoded from JSON)
+	pathsArray := make([]map[string]string, 0, len(c.FileList))
+	for _, filePath := range c.FileList {
+		pathsArray = append(pathsArray, map[string]string{
+			"source": filePath,
+		})
 	}
+	m[lastKey] = pathsArray
 	return nil
 }
 

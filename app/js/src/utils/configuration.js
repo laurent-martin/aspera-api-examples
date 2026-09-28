@@ -68,11 +68,11 @@ export class Configuration {
 	 * Add sources to a transfer spec
 	 * 
 	 * @param {object} tSpec Transfer spec
-	 * @param {string} path Path to the sources in the transfer spec
+	 * @param {string} dotPath Path to the sources in the transfer spec, e.g. `paths` or `assets.paths`
 	 * @param {string} destination Destination path for the sources
 	 * */
-	addSources(tSpec, path, destination = null) {
-		const keys = path.split('.');
+	addSources(tSpec, dotPath, destination = null) {
+		const keys = dotPath.split('.');
 		let currentNode = tSpec;
 		for (let i = 0; i < keys.length - 1; i++) {
 			const key = keys[i];

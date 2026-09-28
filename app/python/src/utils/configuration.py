@@ -89,7 +89,7 @@ class Configuration:
         for f in self._file_list:
             source = {'source': f}
             if destination is not None:
-                source['destination'] = f.split('/')[-1]
+                source['destination'] = os.path.basename(f)
             paths.append(source)
 
 

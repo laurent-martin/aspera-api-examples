@@ -3,6 +3,7 @@ package main
 import (
 	"aspera_examples/src/utils"
 	"fmt"
+	"log"
 )
 
 const (
@@ -12,10 +13,17 @@ const (
 	transferSessions = 1
 )
 
+// errors are returned to main so that deferred calls are executed before exit
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	config, err := utils.NewConfiguration()
 	if err != nil {
-		config.Log.Fatalf("Error loading configuration: %v", err)
+		return fmt.Errorf("error loading configuration: %w", err)
 	}
 	transferClient := utils.NewTransferClient(config)
 	defer transferClient.Shutdown()
@@ -40,18 +48,20 @@ func main() {
 		"recipients": []map[string]string{{"name": config.ParamStr("faspex5", "username")}},
 	})
 	if err != nil {
-		config.Log.Fatalf("Failed to create package: %v", err)
+		return fmt.Errorf("failed to create package: %w", err)
 	}
 	config.Log.Debugf("Package info: %+v", packageResp)
 
 	// Build payload to specify files to send
-	filesToSend := map[string]interface{}{"paths": []map[string]string{}}
-	config.AddSources(filesToSend, "paths")
+	filesToSend := map[string]interface{}{}
+	if err := config.AddSources(filesToSend, "paths"); err != nil {
+		return err
+	}
 
 	config.Log.Debugf("Getting transfer spec")
 	tSpec, err := f5API.Create(fmt.Sprintf("packages/%v/transfer_spec/upload?transfer_type=connect", packageResp["id"]), filesToSend)
 	if err != nil {
-		config.Log.Fatalf("Failed to get transfer spec: %v", err)
+		return fmt.Errorf("failed to get transfer spec: %w", err)
 	}
 
 	// Optional: multi-session
@@ -61,12 +71,17 @@ func main() {
 	}
 
 	// Add file list in transfer spec
-	tSpec["paths"] = []map[string]string{}
-	config.AddSources(tSpec, "paths")
+	if err := config.AddSources(tSpec, "paths"); err != nil {
+		return err
+	}
 
 	// Remove authentication (not used in transfer sdk)
 	delete(tSpec, "authentication")
 
 	// Finally send files to package folder on server
-	transferClient.StartTransferAndWait(tSpec)
+	if err := transferClient.StartTransferAndWait(tSpec); err != nil {
+		return fmt.Errorf("error during transfer: %w", err)
+	}
+	config.Log.Info("Transfer completed successfully")
+	return nil
 }

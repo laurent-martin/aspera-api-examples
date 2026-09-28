@@ -16,7 +16,6 @@ public class Configuration
         // init logger
         log4net.Config.BasicConfigurator.Configure();
         // get project root folder
-        mTopFolder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".."));
         mTopFolder = Environment.GetEnvironmentVariable("DIR_TOP");
         if (string.IsNullOrEmpty(mTopFolder))
         {
@@ -80,33 +79,25 @@ public class Configuration
             ((JArray)aSpecObj[where]).Add(new JObject { { "source", f } });
         }
     }
+    /// <summary>
+    /// Get the last non-empty line of a file (log files are small, so read it all)
+    /// </summary>
     public static string LastFileLine(string filename)
     {
-        // Open the file in binary mode and seek to the end
+        // the file may still be written by the daemon
         using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        using (var reader = new StreamReader(file))
         {
-            if (file.Length == 0)
+            string lastLine = null;
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (line.Length != 0)
+                    lastLine = line;
+            }
+            if (lastLine == null)
                 throw new InvalidOperationException("File is empty");
-
-            file.Seek(-1, SeekOrigin.End);
-            var lastLine = new System.Text.StringBuilder();
-            int byteRead;
-
-            // Read bytes in reverse until we encounter a newline or reach the start of the file
-            while (file.Position > 0 && (byteRead = file.ReadByte()) != '\n')
-            {
-                file.Seek(-2, SeekOrigin.Current);
-                lastLine.Insert(0, (char)byteRead);
-            }
-
-            // Read the last line in case we are already at the start of the file
-            if (file.Position == 0)
-            {
-                file.Seek(0, SeekOrigin.Begin);
-                lastLine.Insert(0, (char)file.ReadByte());
-            }
-
-            return lastLine.ToString();
+            return lastLine;
         }
     }
 

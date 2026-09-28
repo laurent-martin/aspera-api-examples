@@ -17,6 +17,14 @@ using System.Text.RegularExpressions;
 public class TransferClient
 {
     private const string ASCP_LOG_FILE = "aspera-scp-transfer.log";
+    // default port of transferd if not specified in URL
+    private const int TRANSFERD_DEFAULT_PORT = 55002;
+    // max wait time for the daemon to log its listening port
+    private static readonly TimeSpan STARTUP_TIMEOUT = TimeSpan.FromSeconds(10);
+    // max wait time for the connection to the daemon
+    private static readonly TimeSpan CONNECT_TIMEOUT = TimeSpan.FromSeconds(5);
+    // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
+    private static readonly Regex LISTENING_PORT_REGEX = new Regex(@"API Server: Listening on [^\s""]+:(\d+)");
     private Configuration _config;
     private string _serverAddress;
     private int _serverPort;
@@ -32,7 +40,7 @@ public class TransferClient
         _config = config;
         var confUrl = new Uri(_config.GetParam("trsdk", "url"));
         _serverAddress = confUrl.Host;
-        _serverPort = confUrl.Port;
+        _serverPort = confUrl.Port == -1 ? TRANSFERD_DEFAULT_PORT : confUrl.Port;
         _daemonName = Path.GetFileName(_config.GetPath("sdk_daemon"));
         _daemonLog = Path.Combine(_config.LogFolder(), _daemonName + ".log");
     }
@@ -64,7 +72,6 @@ public class TransferClient
     /// <exception cref="Exception"></exception>
     public void StartDaemon()
     {
-        Log.log.Info("ERROR: Failed to connect\nStarting daemon...");
         var daemonPath = _config.GetPath("sdk_daemon");
         var fileBase = Path.Combine(_config.LogFolder(), _daemonName);
         var confFile = fileBase + ".conf";
@@ -78,6 +85,8 @@ public class TransferClient
         Log.log.Debug($"ascp log: {Path.Combine(_config.LogFolder(), ASCP_LOG_FILE)}");
         Log.log.Debug($"command: {command}");
         CreateConfigFile(confFile);
+        // the log file may contain lines of previous executions: only read new lines
+        long logOffset = File.Exists(_daemonLog) ? new FileInfo(_daemonLog).Length : 0;
         Log.log.Info("Starting daemon...");
         _daemonProcess = new System.Diagnostics.Process
         {
@@ -95,43 +104,99 @@ public class TransferClient
         _daemonProcess.OutputDataReceived += captureStream(outFile);
         _daemonProcess.ErrorDataReceived += captureStream(errFile);
         _daemonProcess.Start();
-        // wait for daemon to be ready
-        Thread.Sleep(2000);
-        if (_daemonProcess.HasExited)
-        {
-            Log.log.Error($"Daemon not started.");
-            Log.log.Error($"Exited with code: {_daemonProcess.ExitCode}");
-            Log.log.Error($"Check daemon log: {_daemonLog}");
-            _daemonProcess.WaitForExit();
-            _daemonProcess = null;
-            //logging.error(utils.configuration.last_file_line(self._daemon_log));
-            throw new Exception("daemon startup failed");
-        }
         _daemonProcess.BeginOutputReadLine();
         _daemonProcess.BeginErrorReadLine();
+        WaitDaemonListening(logOffset);
+    }
 
-        if (_serverPort == 0)
+    /// <summary>
+    /// Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
+    /// The port is read from the daemon log: requires log level `info` or more verbose.
+    /// </summary>
+    /// <param name="logOffset">only read the log after this offset</param>
+    private void WaitDaemonListening(long logOffset)
+    {
+        var deadline = DateTime.UtcNow + STARTUP_TIMEOUT;
+        while (true)
         {
-            string lastLine = File.ReadLines(_daemonLog).Last();
-            JObject logInfo = JObject.Parse(lastLine);
-            Match portMatch = Regex.Match(logInfo["msg"]?.ToString() ?? "", @":(\d+)");
-
-            if (!portMatch.Success)
+            if (_daemonProcess.HasExited)
             {
-                throw new Exception("Could not read listening port from log file");
+                Log.log.Error($"Daemon not started.");
+                Log.log.Error($"Exited with code: {_daemonProcess.ExitCode}");
+                Log.log.Error($"Check daemon log: {_daemonLog}");
+                _daemonProcess.WaitForExit();
+                _daemonProcess = null;
+                throw new Exception("daemon startup failed");
             }
-
-            _serverPort = int.Parse(portMatch.Groups[1].Value);
-            Log.log.Debug($"Allocated server port: {_serverPort}");
+            // fixed port: readiness is checked on connection
+            if (_serverPort != 0)
+            {
+                return;
+            }
+            int? port = FindListeningPort(_daemonLog, logOffset);
+            if (port.HasValue)
+            {
+                _serverPort = port.Value;
+                Log.log.Info($"Allocated server port: {_serverPort}");
+                return;
+            }
+            if (DateTime.UtcNow > deadline)
+            {
+                throw new Exception($"Listening port not found in daemon log after {STARTUP_TIMEOUT.TotalSeconds}s: {_daemonLog}");
+            }
+            Thread.Sleep(200);
         }
     }
+
+    /// <summary>
+    /// Find the API listening port in the daemon log, after the given offset.
+    /// </summary>
+    /// <returns>the port, or null if not found (yet)</returns>
+    private static int? FindListeningPort(string logFile, long offset)
+    {
+        if (!File.Exists(logFile))
+        {
+            return null;
+        }
+        byte[] content;
+        // the file is written by the daemon
+        using (var file = new FileStream(logFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        using (var memory = new MemoryStream())
+        {
+            file.CopyTo(memory);
+            content = memory.ToArray();
+        }
+        // log file was truncated
+        if (content.Length < offset)
+        {
+            offset = 0;
+        }
+        var text = System.Text.Encoding.UTF8.GetString(content, (int)offset, content.Length - (int)offset);
+        Match portMatch = LISTENING_PORT_REGEX.Match(text);
+        return portMatch.Success ? int.Parse(portMatch.Groups[1].Value) : null;
+    }
+
     public void ConnectToDaemon()
     {
         AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
         var grpcUrl = new Uri($"http://{_serverAddress}:{_serverPort}");
         Log.log.Info($"Connecting to {_daemonName} on {grpcUrl} ...");
-        _daemonService = new Transferd.Api.TransferService.TransferServiceClient(GrpcChannel.ForAddress(grpcUrl));
-        _daemonService.GetAPIVersion(new Transferd.Api.APIVersionRequest());
+        var daemonService = new Transferd.Api.TransferService.TransferServiceClient(GrpcChannel.ForAddress(grpcUrl));
+        // retry until the daemon listens
+        var deadline = DateTime.UtcNow + CONNECT_TIMEOUT;
+        while (true)
+        {
+            try
+            {
+                daemonService.GetAPIVersion(new Transferd.Api.APIVersionRequest());
+                break;
+            }
+            catch (Grpc.Core.RpcException e) when (e.StatusCode == Grpc.Core.StatusCode.Unavailable && DateTime.UtcNow < deadline)
+            {
+                Thread.Sleep(200);
+            }
+        }
+        _daemonService = daemonService;
         Log.log.Info("Connected !");
     }
     public void Startup()
@@ -181,10 +246,11 @@ public class TransferClient
 
         var transferResponse = _daemonService.StartTransfer(transferRequest);
 
-        if (transferResponse.Status == Transferd.Api.TransferStatus.Failed)
+        if (transferResponse.Status == Transferd.Api.TransferStatus.Failed
+            || transferResponse.Status == Transferd.Api.TransferStatus.UnknownStatus)
         {
-            Log.log.Info($"ERROR: {transferResponse.Error.Description}");
-            Environment.Exit(1);
+            // exception: the caller shuts down the daemon
+            throw new Exception($"transfer start failed: {transferResponse.Error?.Description}");
         }
 
         return transferResponse.TransferId;
@@ -204,7 +270,11 @@ public class TransferClient
 
             // check transfer status in response, and exit if it's done
             Transferd.Api.TransferStatus status = queryTransferResponse.Status;
-            if (status == Transferd.Api.TransferStatus.Failed || status == Transferd.Api.TransferStatus.Completed)
+            if (status == Transferd.Api.TransferStatus.Failed)
+            {
+                throw new Exception($"transfer failed: {queryTransferResponse.Error?.Description}");
+            }
+            if (status == Transferd.Api.TransferStatus.Completed)
             {
                 Console.Out.WriteLine("finished " + status);
                 break;

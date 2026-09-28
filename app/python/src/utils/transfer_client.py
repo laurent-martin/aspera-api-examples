@@ -26,6 +26,12 @@ import transferd_pb2 as transfer_manager  # noqa: E4
 
 ASCP_LOG_FILE = "aspera-scp-transfer.log"
 DEBUG_HTTP = False
+# default port of transferd if not specified in URL
+TRANSFERD_DEFAULT_PORT = 55002
+# max wait time for the daemon to log its listening port
+STARTUP_TIMEOUT_SEC = 10
+# API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
+LISTENING_PORT_REGEX = re.compile(r'API Server: Listening on [^\s"]+:(\d+)')
 
 
 class TransferClient:
@@ -35,8 +41,9 @@ class TransferClient:
         self._config = config
         sdk_url = urlparse(self._config.param('trsdk', 'url'))
         self._server_address = sdk_url.hostname
-        self._server_port = sdk_url.port
+        self._server_port = sdk_url.port if sdk_url.port is not None else TRANSFERD_DEFAULT_PORT
         self._transfer_daemon_process = None
+        self._channel = None
         self._transfer_service = None
         self._daemon_name = os.path.basename(self._config.get_path('sdk_daemon'))
         self._daemon_log = os.path.join(self._config._log_folder, f"{self._daemon_name}.log")
@@ -73,44 +80,52 @@ class TransferClient:
         conf_file = f'{file_base}.conf'
         out_file = f'{file_base}.out'
         err_file = f'{file_base}.err'
-        command = ' '.join([
+        command = [
             self._config.get_path('sdk_daemon'),
             '--config',
             conf_file,
-        ])
+        ]
         logging.debug('daemon out: %s', out_file)
         logging.debug('daemon err: %s', err_file)
         logging.debug('daemon log: %s', self._daemon_log)
         logging.debug('ascp log: %s', os.path.join(
             self._config._log_folder, ASCP_LOG_FILE))
-        logging.debug('command: %s', command)
+        logging.debug('command: %s', ' '.join(command))
         self.create_config_file(conf_file)
+        # the log file may contain lines of previous executions: only read new lines
+        log_offset = os.path.getsize(self._daemon_log) if os.path.exists(self._daemon_log) else 0
         logging.info('Starting daemon...')
-        self._transfer_daemon_process = subprocess.Popen(
-            command,
-            shell=True,
-            stdout=open(out_file, 'w'),
-            stderr=open(err_file, 'w'),
-        )
-        # give time for startup
-        time.sleep(2)
-        exit_status = self._transfer_daemon_process.poll()
-        if exit_status is not None:
-            logging.error('Daemon not started.')
-            logging.error('Exited with code: %s', exit_status)
-            logging.error('Check daemon log: %s', self._daemon_log)
-            logging.error(utils.configuration.last_file_line(self._daemon_log))
-            raise Exception('daemon startup failed')
+        # the child process has its own copy of the file descriptors
+        with open(out_file, 'w') as out, open(err_file, 'w') as err:
+            self._transfer_daemon_process = subprocess.Popen(command, stdout=out, stderr=err)
+        self.wait_daemon_listening(log_offset)
         logging.info('Daemon started: %s', self._transfer_daemon_process.pid)
-        # port zero means: listen on any available port, but we need to know the real port
-        if self._server_port == 0:
-            last_line = utils.configuration.last_file_line(self._daemon_log)
-            log_info = json.loads(last_line)
-            port_match = re.search(r":(\d+)", log_info["msg"])
-            if not port_match:
-                raise Exception('Could not read listening port from log file')
-            self._server_port = port_match.group(1)
-            logging.info('Allocated server port: %s', self._server_port)
+
+    def wait_daemon_listening(self, log_offset):
+        '''
+        Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
+        The port is read from the daemon log: requires log level `info` or more verbose.
+        '''
+        deadline = time.monotonic() + STARTUP_TIMEOUT_SEC
+        while True:
+            exit_status = self._transfer_daemon_process.poll()
+            if exit_status is not None:
+                self._transfer_daemon_process = None
+                logging.error('Daemon not started.')
+                logging.error('Exited with code: %s', exit_status)
+                logging.error('Check daemon log: %s', self._daemon_log)
+                raise Exception('daemon startup failed')
+            # fixed port: readiness is checked on connection
+            if self._server_port != 0:
+                return
+            port = find_listening_port(self._daemon_log, log_offset)
+            if port is not None:
+                self._server_port = port
+                logging.info('Allocated server port: %s', self._server_port)
+                return
+            if time.monotonic() > deadline:
+                raise Exception(f'Listening port not found in daemon log after {STARTUP_TIMEOUT_SEC}s: {self._daemon_log}')
+            time.sleep(0.2)
 
     def connect_to_daemon(self):
         '''Connect to transfer manager daemon'''
@@ -122,22 +137,31 @@ class TransferClient:
             grpc.channel_ready_future(channel).result(timeout=5)
         except grpc.FutureTimeoutError:
             logging.error('Failed to connect')
+            channel.close()
             raise Exception('failed to connect.')
         # channel is ok, let's get the stub
+        self._channel = channel
         self._transfer_service = transfer_manager_grpc.TransferServiceStub(channel)
         logging.info('Connected !')
 
     def startup(self):
         '''Start and connect to transfer manager daemon'''
         if self._transfer_service is None:
-            self.start_daemon()
-            self.connect_to_daemon()
+            try:
+                self.start_daemon()
+                self.connect_to_daemon()
+            except Exception:
+                # do not leave the daemon running
+                self.shutdown()
+                raise
         return self
 
     def shutdown(self):
         '''Shutdown transfer manager daemon, if needed'''
-        if self._transfer_service is None:
-            self._transfer_service = None
+        self._transfer_service = None
+        if self._channel is not None:
+            self._channel.close()
+            self._channel = None
         if self._transfer_daemon_process is not None:
             logging.info('Shutting down daemon...')
             # self._transfer_daemon_process.send_signal(signal.CTRL_C_EVENT)
@@ -192,6 +216,20 @@ class TransferClient:
             raise Exception("transfer failed: " + error.description)
         if status == transfer_manager.TransferStatus.UNKNOWN_STATUS:
             raise Exception("unknown transfer id: " + error.description)
+
+
+def find_listening_port(log_file, offset):
+    '''Find the API listening port in the daemon log, after the given offset. Returns None if not found (yet).'''
+    try:
+        with open(log_file, 'rb') as file:
+            content = file.read()
+    except FileNotFoundError:
+        return None
+    # log file was truncated
+    if len(content) < offset:
+        offset = 0
+    match = LISTENING_PORT_REGEX.search(content[offset:].decode('utf-8', errors='replace'))
+    return int(match.group(1)) if match else None
 
 
 def ascp_level(level_string):

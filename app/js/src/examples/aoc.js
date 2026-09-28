@@ -136,7 +136,3 @@ transferClient.startConnectDaemon(() => {
         });
     });
 });
-
-logger.info('Transfer completed!');
-
-

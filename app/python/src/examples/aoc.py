@@ -33,7 +33,7 @@ def generate_cookie(app: str, user_name: str, user_id: str) -> str:
 try:
     aoc_api = utils.rest.Rest(AOC_API_V1_BASE_URL)
     aoc_api.setAuthBearer({
-        'token_url': f'{AOC_API_V1_BASE_URL}/oauth2/{config.param('aoc', 'org')}/token',
+        'token_url': f'{AOC_API_V1_BASE_URL}/oauth2/{config.param("aoc", "org")}/token',
         'key_pem_path': config.param('aoc', 'private_key'),
         'client_id': config.param('aoc', 'client_id'),
         'client_secret': config.param('aoc', 'client_secret'),
