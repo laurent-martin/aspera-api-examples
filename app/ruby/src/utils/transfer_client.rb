@@ -23,7 +23,7 @@ module Utils
     # max wait time for the daemon to stop gracefully
     SHUTDOWN_TIMEOUT_SEC = 10
     # API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
-    LISTENING_PORT_REGEX = /API Server: Listening on [^\s"]+:(\d+)/
+    LISTENING_PORT_REGEX = /API Server: Listening on [^\s"]+:(\d+)/.freeze
 
     # Create a transfer client.
     # @param config [Configuration] configuration of the samples

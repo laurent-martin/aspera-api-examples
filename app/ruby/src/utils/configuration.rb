@@ -21,7 +21,7 @@ module Utils
     DIR_TOP_VAR    = 'DIR_TOP'
     DEBUG_HTTP     = false
     # secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
-    SECRETS_REGEX = /("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+/
+    SECRETS_REGEX = /("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+/.freeze
     class << self
       # @return [Boolean] true to show secrets in logs, set from configuration file (misc.show_secrets)
       attr_accessor :show_secrets
