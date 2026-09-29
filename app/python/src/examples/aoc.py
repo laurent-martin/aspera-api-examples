@@ -89,7 +89,10 @@ try:
     node_info = aoc_api.read(f'nodes/{package_info["node_id"]}')
 
     # Note: generate a bearer token for the node on which package was created
-    # (not all tags are mandatory, but some are, like 'node')
+    # tags of the transfer spec:
+    # - `node`: mandatory, HSTS authorizes the bearer token for this access key and folder
+    # - `app`, `files`: mandatory, AoC links the transfer to the package
+    # - `usage_id`, `xfer_retry`: optional
     t_spec = {
         'direction': 'send',
         'token': aoc_api.getBearerTokenAuthorization(f"node.{node_info['access_key']}:user:all"),

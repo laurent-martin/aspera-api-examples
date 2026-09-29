@@ -78,7 +78,10 @@ class Aoc : SampleInterface
                 { "transfers_expected",0}
             });
             // Note: generate a bearer token for the node on which package was created
-            // (all tags are not mandatory, but some are, like 'node')
+            // tags of the transfer spec:
+            // - `node`: mandatory, HSTS authorizes the bearer token for this access key and folder
+            // - `app`, `files`: mandatory, AoC links the transfer to the package
+            // - `usage_id`, `xfer_retry`: optional
             var t_spec = new JObject{
                 {"direction", "send"},
                 {"paths", new JArray()},

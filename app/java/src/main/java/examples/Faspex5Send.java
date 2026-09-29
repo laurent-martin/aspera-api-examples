@@ -60,9 +60,11 @@ public class Faspex5Send {
             LOGGER.log(Level.INFO, "Getting transfer spec");
             final JSONObject uploadRequest = new JSONObject();
             config.addSources(uploadRequest, "paths", null);
+            // transfer_type=connect: transfer spec for a web client, also usable by the Transfer SDK
             final JSONObject transfer_spec = (JSONObject) f5API.create(
                     "packages/" + package_info.getString("id") + "/transfer_spec/upload",
                     uploadRequest, Map.of("transfer_type", "connect"));
+            // Remove `authentication`: not used by the Transfer SDK
             transfer_spec.remove("authentication");
             config.addSources(transfer_spec, "paths", null);
             // API: Transfer SDK: transfer files into package

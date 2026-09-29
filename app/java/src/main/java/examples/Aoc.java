@@ -118,6 +118,10 @@ public class Aoc {
             final String cookie = generateCookie("packages", userInfo.getString("name"),
                     userInfo.getString("email"));
 
+            // Tags of the transfer spec:
+            // - `node`: mandatory, HSTS authorizes the bearer token for this access key and folder
+            // - `app`, `files`: mandatory, AoC links the transfer to the package
+            // - `usage_id`, `xfer_retry`: optional
             final JSONObject transferSpec =
                     new JSONObject().put("direction", "send").put("token", token)
                             .put("remote_host", nodeInfo.getString("host"))

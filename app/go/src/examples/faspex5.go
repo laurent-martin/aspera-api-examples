@@ -62,6 +62,7 @@ func run() error {
 	}
 
 	config.Log.Info("Getting transfer spec")
+	// transfer_type=connect: transfer spec for a web client, also usable by the Transfer SDK
 	tSpec, err := f5API.Create(fmt.Sprintf("packages/%v/transfer_spec/upload?transfer_type=connect", packageResp["id"]), filesToSend)
 	if err != nil {
 		return err
@@ -78,7 +79,7 @@ func run() error {
 		return err
 	}
 
-	// Remove authentication (not used in transfer sdk)
+	// Remove `authentication`: not used by the Transfer SDK
 	delete(tSpec, "authentication")
 
 	// Finally send files to package folder on server

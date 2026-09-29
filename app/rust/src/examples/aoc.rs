@@ -105,6 +105,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
 
     // Generate the transfer spec
+    // Tags of the transfer spec:
+    // - `node`: mandatory, HSTS authorizes the bearer token for this access key and folder
+    // - `app`, `files`: mandatory, AoC links the transfer to the package
+    // - `usage_id`, `xfer_retry`: optional
     let mut transfer_spec = json!({
         "direction": "send",
         "token": aoc_api.get_bearer_token(Some(format!("node.{}:user:all", node_info["access_key"].as_str().unwrap()))).await?,

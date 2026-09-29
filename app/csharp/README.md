@@ -2,13 +2,21 @@
 
 ## Get started
 
-To run a sample manually (samples are `server`, `faspex5` and `aoc`):
+Execute `make` to run all samples, or `make .tested/server` to run a single sample.
+
+## Run a sample manually
+
+To run a sample without `make`, for example in a debugger,
+first run it once with `make` (for example `make .tested/faspex5`):
+this downloads the SDK, installs the dependencies, and generates the gRPC stub code.
+Then, in this folder:
 
 ```bash
-dotnet run -p:Proto_File=/path/to/transferd.proto server 'faux:///test1?1k'
+DIR_TOP=$PWD/../.. dotnet run -p:Proto_File=$PWD/../../tmp/transfer_sdk/api/transferd.proto faspex5 /path/to/file
 ```
 
-Execute `make` to run all samples, or `make .tested/server` to run a single sample.
+`DIR_TOP` is the main folder of the repository.
+The first argument is the name of the sample (`server`, `faspex5` or `aoc`), the next ones are the files to transfer.
 
 > [!NOTE]
 > The `proto` file is specified with tag `<Protobuf>`

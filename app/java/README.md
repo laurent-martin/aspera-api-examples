@@ -6,6 +6,20 @@ Requirements: Gradle 9 and a JDK 25 or newer.
 
 Samples log to the terminal.
 
+## Run a sample manually
+
+To run a sample without `make`, for example in a debugger,
+first run it once with `make` (for example `make .tested/Faspex5Send`):
+this downloads the SDK, installs the dependencies, and generates the gRPC stub code.
+Then, in this folder:
+
+```bash
+java -cp build/libs/java_samples-*-all.jar -Ddir_top=$PWD/../.. \
+  -Djava.util.logging.config.file=logging.properties examples.Faspex5Send /path/to/file
+```
+
+The system property `dir_top` is the main folder of the repository. Arguments are the files to transfer.
+
 ## Using `maven` to build the project
 
 The toolchain here uses `gradle`, but `maven` can also be used:

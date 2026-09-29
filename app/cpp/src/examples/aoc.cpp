@@ -89,6 +89,10 @@ int main(int argc, char* argv[]) {
         aoc_api.update("packages/" + utils::attribute_str(package_info, "id"), {{"sent", true}, {"transfers_expected", transfer_sessions}});
 
         // Generate transfer spec
+        // Tags of the transfer spec:
+        // - `node`: mandatory, HSTS authorizes the bearer token for this access key and folder
+        // - `app`, `files`: mandatory, AoC links the transfer to the package
+        // - `usage_id`, `xfer_retry`: optional
         json::object t_spec = {
             {"direction", "send"},
             {"token", aoc_api.get_bearer_token(node_scope(utils::attribute_str(node_info, "access_key"), "user:all"))},

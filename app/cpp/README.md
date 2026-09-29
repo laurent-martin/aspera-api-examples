@@ -56,6 +56,22 @@ ubuntu$ sudo apt-get install protobuf-compiler
 make
 ```
 
+## Run a sample manually
+
+To run a sample without `make`, for example in a debugger,
+first run it once with `make` (for example `make .tested/faspex5`):
+this downloads the SDK, installs the dependencies, and generates the gRPC stub code.
+Then, in this folder:
+
+```bash
+cmake --build build --target faspex5
+DIR_TOP=$PWD/../.. build/faspex5 /path/to/file
+```
+
+`DIR_TOP` is the main folder of the repository. Arguments are the files to transfer.
+
+`cmake --build` rebuilds the sample after a change of the source code.
+
 ## Known issues
 
 On macOS:

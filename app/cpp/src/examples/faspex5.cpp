@@ -46,6 +46,7 @@ int main(const int argc, const char* const argv[]) {
         config.add_sources(upload_request, "paths");
 
         LOGGER(info) << "Getting transfer spec";
+        // transfer_type=connect: transfer spec for a web client, also usable by the Transfer SDK
         std::ostringstream endpoint;
         endpoint << "packages/" << package_info.at("id").as_string().c_str() << "/transfer_spec/upload";
         json::object t_spec = f5_api.create(endpoint.str(), upload_request, {{"transfer_type", "connect"}}).as_object();
@@ -59,7 +60,7 @@ int main(const int argc, const char* const argv[]) {
         // Add file list in transfer spec
         config.add_sources(t_spec, "paths");
 
-        // Not used in transfer sdk
+        // Remove `authentication`: not used by the Transfer SDK
         t_spec.erase("authentication");
 
         // Finally, send files to package folder on server

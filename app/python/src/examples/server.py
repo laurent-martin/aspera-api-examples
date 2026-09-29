@@ -24,8 +24,6 @@ try:
     remote_user = config.param('server', 'username')
     remote_pass = config.param('server', 'password')
 
-    transfer_client._shutdown_after_transfer = False
-
     # Example 1: download
     # Instead of using the soon deprecated FaspManager1 Python lib, let's use the transfer spec
     # direction is relative to us, client, i.e. receive = download

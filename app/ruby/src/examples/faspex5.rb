@@ -43,6 +43,7 @@ begin
   package = api_v5.create('packages', package_create_params)
   ts_paths = config.add_sources({}, 'paths')
   log.info('Getting transfer spec')
+  # transfer_type=connect: transfer spec for a web client, also usable by the Transfer SDK
   transfer_spec = api_v5.call(
     'POST',
     endpoint: "packages/#{package['id']}/transfer_spec/upload",
@@ -50,6 +51,7 @@ begin
     query: { transfer_type: 'connect' },
     body: ts_paths
   )
+  # remove `authentication`: not used by the Transfer SDK
   transfer_spec.delete('authentication')
   transfer_spec.merge!(ts_paths)
 

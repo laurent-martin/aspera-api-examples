@@ -51,6 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut upload_request = json!({});
     config.add_files_to_ts("paths", &mut upload_request)?;
     log::info!("Getting transfer spec");
+    // transfer_type=connect: transfer spec for a web client, also usable by the Transfer SDK
     let mut transfer_spec: Value = f5_api
         .create(
             &format!("packages/{package_id}/transfer_spec/upload"),
@@ -58,7 +59,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             Some(&[("transfer_type", "connect")]),
         )
         .await?;
-    // remove key "authentication" from transfer spec
+    // remove `authentication`: not used by the Transfer SDK
     transfer_spec
         .as_object_mut()
         .unwrap()

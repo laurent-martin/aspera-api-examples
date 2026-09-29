@@ -132,6 +132,7 @@ try:
     config.add_sources(upload_request, 'paths')
 
     log.info('Getting transfer spec')
+    # transfer_type=connect: transfer spec for a web client, also usable by the Transfer SDK
     t_spec = f5_api.create(f'packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect', upload_request)
 
     # optional: multi session
@@ -142,7 +143,7 @@ try:
     # add file list in transfer spec
     config.add_sources(t_spec, 'paths')
 
-    # not used in transfer sdk
+    # remove `authentication`: not used by the Transfer SDK
     del t_spec['authentication']
 
     # Send local files to package folder on server and wait for completion

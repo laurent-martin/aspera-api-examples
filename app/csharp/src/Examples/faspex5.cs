@@ -52,6 +52,7 @@ class Faspex5 : SampleInterface
             // add file list in transfer spec
             config.AddSources(files_to_send, "paths");
             Log.log.Info("Getting transfer spec");
+            // transfer_type=connect: transfer spec for a web client, also usable by the Transfer SDK
             var t_spec = f5_api.create($"packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect", files_to_send);
             // optional: multi session
             if (transfer_sessions != 1)
@@ -61,6 +62,8 @@ class Faspex5 : SampleInterface
             }
             // add file list in transfer spec
             t_spec["paths"] = files_to_send["paths"];
+            // remove `authentication`: not used by the Transfer SDK
+            ((JObject)t_spec).Remove("authentication");
             // Finally send files to package folder on server
             Log.log.Info("Uploading files");
             transfer_client.StartTransferAndWait((JObject)t_spec);

@@ -10,6 +10,10 @@ Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 
 ![Component APIs](doc/api_components.png)
 
+> [!TIP]
+> New to Aspera APIs? Start with the [integration guide](doc/README.md):
+> concepts, transfer spec, authentication and authorization, integration scenarios.
+
 Samples are provided in several programming languages.
 
 > [!NOTE]
@@ -156,6 +160,12 @@ and some tools to compile the proto file.
 See [Transfer Daemon](#transfer-daemon).
 
 For details, refer to the recipe in the `Makefile` of each language.
+
+To run a sample without `make`, for example in a debugger or on Windows,
+refer to the section **Run a sample manually** in the `README.md` of the language.
+Samples require the environment variable `DIR_TOP`, set to the main folder of this repository
+(Windows: `set DIR_TOP=...` in `cmd`, or `$env:DIR_TOP = "..."` in PowerShell),
+and the files to transfer as arguments.
 
 ## Configuration file
 

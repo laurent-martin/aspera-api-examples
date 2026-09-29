@@ -49,6 +49,22 @@ make .tested/node
 By default, the gRPC client source files `transferd_pb2.py` and `transferd_pb2_grpc.py` are generated from `transferd.proto`.
 Alternatively, it is possible to use those files from the SDK: edit the `Makefile` and comment out the line `PY_GRPC_SDK_DIR=`.
 
+## Run a sample manually
+
+To run a sample without `make`, for example in a debugger,
+first run it once with `make` (for example `make .tested/faspex5`):
+this downloads the SDK, installs the dependencies, and generates the gRPC stub code.
+Then, in this folder:
+
+```bash
+source .venv/bin/activate
+DIR_TOP=$PWD/../.. PYTHONPATH=.venv/grpc_aspera:src python3 src/examples/faspex5.py /path/to/file
+```
+
+`DIR_TOP` is the main folder of the repository. Arguments are the files to transfer.
+
+In VS Code, the file [`.env`](../../.env) of the main folder sets the same variables.
+
 ## Required external components
 
 When `make` is invoked (see [Quick start](#quick-start)), it creates a Python virtual environment in `.venv`

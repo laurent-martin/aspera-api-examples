@@ -42,6 +42,7 @@ config.addSources(uploadRequest, 'paths');
 
 // Get transfer spec
 logger.info('Getting transfer spec');
+// transfer_type=connect: transfer spec for a web client, also usable by the Transfer SDK
 const tSpec = await f5Api.create(`packages/${packageInfo.id}/transfer_spec/upload?transfer_type=connect`, uploadRequest);
 
 // Optional: multi-session support
@@ -52,6 +53,9 @@ if (transferSessions !== 1) {
 
 // Add file list in transfer spec
 config.addSources(tSpec, 'paths');
+
+// Remove `authentication`: not used by the Transfer SDK
+delete tSpec.authentication;
 
 // Start the transfer using the transfer client
 try {

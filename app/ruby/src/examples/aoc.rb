@@ -62,6 +62,10 @@ def gen4_base_spec(
     'create_dir' => true,
     'target_rate_kbps' => 300_000,
     'token' => aoc_api.bearer_token_authorization("node.#{node_info['access_key']}:user:all"),
+    # tags of the transfer spec:
+    # - `node`: mandatory, HSTS authorizes the bearer token for this access key and folder
+    # - `app`, `files`: mandatory, AoC links the transfer to the package or folder
+    # - `usage_id`, `xfer_retry`: optional
     'tags' => {
       'aspera' => {
         'app' => app,
