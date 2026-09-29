@@ -5,6 +5,9 @@ private/
 .vscode/
 .idea/
 .tested/
-.DS_Store
 .checked_env
+# macOS
+.DS_Store
 *.sln
+# Drawio backup file
+.$*.bkp

@@ -23,7 +23,7 @@ The client component is either one of Aspera's client applications, a server,
 or a custom application built using Aspera's client libraries.
 The server component is always the IBM Aspera High-Speed Transfer Server (HSTS).
 
-![Aspera Transfer](images/api-1.png)
+![Aspera Transfer](images/api-1.svg)
 
 ### Base rules for a transfer
 
@@ -361,7 +361,7 @@ Scenarios contain a typical mix of client SDK and transfer authorization type.
 
 ### S1- The simplest integration: start a transfer with a script and `ascp`
 
-![script](images/api-3.png)
+![script](images/api-3.svg)
 
 Scenarios:
 
@@ -409,7 +409,7 @@ asession @json:'{"spec":{"remote_host":"hsts1.example.com","remote_user":"my_hst
 
 ### S2- Start a transfer with Transfer SDK and listen for events
 
-![transfer daemon](images/api-4.png)
+![transfer daemon](images/api-4.svg)
 
 Scenarios:
 
@@ -478,7 +478,7 @@ Lots of debug information: look for the transfer spec in the logs.
 
 ### S3- Start a transfer in a web browser
 
-![web client](images/api-5.png)
+![web client](images/api-5.svg)
 
 Scenarios:
 
@@ -511,7 +511,7 @@ Aspera for Desktop is almost exclusively used in a web context: `ascli` is used 
 
 ### S4- Start a Server-Server transfer with Node API and SSH credentials
 
-![transfer daemon](images/api-6.png)
+![transfer daemon](images/api-6.svg)
 
 Scenarios:
 
@@ -544,7 +544,7 @@ In this example, the remote server `hsts2.example.com` is used (as client) to do
 
 ### S5- Start a transfer with Token Authorization
 
-![transfer daemon](images/api-7.png)
+![transfer daemon](images/api-7.svg)
 
 Scenarios:
 
@@ -589,7 +589,7 @@ The "AsperaClient" uses one of the SDKs for transfer:
 
 ### S6- Start a Server-Server transfer with Node API and Transfer token
 
-![transfer daemon](images/api-8.png)
+![transfer daemon](images/api-8.svg)
 
 Scenarios:
 
@@ -887,7 +887,7 @@ Broker application, e.g. Web-based control:
 
 #### A2: Scenario
 
-![transfer daemon](images/api-a2-scen.png)
+![transfer daemon](images/api-a2-scen.svg)
 
 1. The user is authenticated in the application (web, API, etc.)
 2. The user calls the app's API with whatever security mechanism (OAuth token, cookie, etc.)
@@ -979,7 +979,7 @@ and then change the token in it with the bearer token.
 
 #### A3: Scenario
 
-![transfer daemon](images/api-a3-scen.png)
+![transfer daemon](images/api-a3-scen.svg)
 
 1. The user gets a transfer bearer token for a specific HSTS after authentication to the app.
 2. The user uses that bearer token to start transfers. There is no need to re-generate a token for each transfer.
