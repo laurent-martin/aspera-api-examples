@@ -13,6 +13,10 @@ const openApiSpecs = [
     { filename: "IBM Aspera Node API-4.4.1.yaml", specVersion: "Swagger 2.0" },
     { filename: "IBM Aspera Node API-4.4.6.yaml", specVersion: "OpenAPI 3.0" },
     {
+        filename: "IBM Aspera Orchestrator API-v1.yaml",
+        specVersion: "OpenAPI 3.0",
+    },
+    {
         filename: "IBM Aspera faspio Gateway API-1.0.0.json",
         specVersion: "OpenAPI 3.0",
     },

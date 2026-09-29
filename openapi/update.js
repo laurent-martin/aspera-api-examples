@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * Script to automatically update menu.html with OpenAPI/Swagger specifications
- * 
+ * Script to automatically update docs/index.js with OpenAPI/Swagger specifications
+ *
  * This script:
  * 1. Scans the current directory for .yaml and .json files
  * 2. Reads each file to determine if it's OpenAPI or Swagger and which version
- * 3. Updates the openApiSpecs array in menu.html
+ * 3. Updates the openApiSpecs array in docs/index.js
  * 
  * Usage: node update.js
  */
@@ -15,8 +15,10 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 
-const MENU_FILE = 'menu.html';
 const CURRENT_DIR = __dirname;
+const LIST_FILE = path.join(CURRENT_DIR, '..', 'docs', 'index.js');
+const LIST_FILE_NAME = path.relative(path.join(CURRENT_DIR, '..'), LIST_FILE);
+const MAX_LINE_LENGTH = 80;
 
 /**
  * Get all YAML and JSON files in the current directory
@@ -81,38 +83,47 @@ function parseSpecFile(filename) {
 }
 
 /**
- * Update the menu.html file with the new specs array
+ * Format one entry of the specs array, on one line if it fits, like Prettier
  */
-function updateMenuHtml(specs) {
-    const menuPath = path.join(CURRENT_DIR, MENU_FILE);
+function formatSpecEntry(spec) {
+    const filename = JSON.stringify(spec.filename);
+    const specVersion = JSON.stringify(spec.specVersion);
+    const oneLine = `    { filename: ${filename}, specVersion: ${specVersion} },`;
+    if (oneLine.length <= MAX_LINE_LENGTH) {
+        return oneLine;
+    }
+    return `    {\n        filename: ${filename},\n        specVersion: ${specVersion},\n    },`;
+}
 
-    if (!fs.existsSync(menuPath)) {
-        console.error(`Error: ${MENU_FILE} not found`);
+/**
+ * Update the docs/index.js file with the new specs array
+ */
+function updateSpecList(specs) {
+    if (!fs.existsSync(LIST_FILE)) {
+        console.error(`Error: ${LIST_FILE_NAME} not found`);
         process.exit(1);
     }
 
-    let content = fs.readFileSync(menuPath, 'utf8');
+    let content = fs.readFileSync(LIST_FILE, 'utf8');
 
     // Generate the new specs array as a formatted string
-    const specsArray = specs.map(spec =>
-        `            { filename: '${spec.filename}', specVersion: '${spec.specVersion}' }`
-    ).join(',\n');
+    const specsArray = specs.map(formatSpecEntry).join('\n');
 
-    const newSpecsBlock = `        // List of OpenAPI files with their spec versions
-        const openApiSpecs = [
+    const newSpecsBlock = `// List of OpenAPI files with their spec versions
+const openApiSpecs = [
 ${specsArray}
-        ];`;
+];`;
 
     // Replace the existing openApiSpecs array
     const regex = /\/\/ List of OpenAPI files with their spec versions\s+const openApiSpecs = \[[^\]]*\];/s;
 
     if (regex.test(content)) {
-        content = content.replace(regex, newSpecsBlock);
-        fs.writeFileSync(menuPath, content, 'utf8');
-        console.log(`✅ Successfully updated ${MENU_FILE} with ${specs.length} specifications`);
+        content = content.replace(regex, () => newSpecsBlock);
+        fs.writeFileSync(LIST_FILE, content, 'utf8');
+        console.log(`✅ Successfully updated ${LIST_FILE_NAME} with ${specs.length} specifications`);
         return true;
     } else {
-        console.error(`Error: Could not find openApiSpecs array in ${MENU_FILE}`);
+        console.error(`Error: Could not find openApiSpecs array in ${LIST_FILE_NAME}`);
         return false;
     }
 }
@@ -141,12 +152,12 @@ function main() {
         console.log(`     Version: ${spec.specVersion}\n`);
     }
 
-    console.log('📝 Updating menu.html...\n');
+    console.log(`📝 Updating ${LIST_FILE_NAME}...\n`);
 
-    if (updateMenuHtml(specs)) {
-        console.log('\n✨ Done! The menu has been updated successfully.');
+    if (updateSpecList(specs)) {
+        console.log('\n✨ Done! The API list has been updated successfully.');
     } else {
-        console.log('\n❌ Failed to update menu.html');
+        console.log(`\n❌ Failed to update ${LIST_FILE_NAME}`);
         process.exit(1);
     }
 }

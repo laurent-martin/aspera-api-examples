@@ -1,7 +1,7 @@
 {
   "name": "openapi-menu-updater",
   "version": "1.0.0",
-  "description": "Automatically update the OpenAPI menu with spec files",
+  "description": "Automatically update the OpenAPI list in docs/index.js with spec files",
   "main": "update.js",
   "scripts": {
     "update": "node update.js"
