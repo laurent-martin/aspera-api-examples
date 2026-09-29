@@ -8,10 +8,22 @@ const openApiSpecs = [
         filename: "IBM Aspera Faspex API-5.0-enhanced.yaml",
         specVersion: "OpenAPI 3.1",
     },
-    { filename: "IBM Aspera Faspex API-5.0.json", specVersion: "OpenAPI 3.0" },
-    { filename: "IBM Aspera Node API-4.4.1.json", specVersion: "Swagger 2.0" },
-    { filename: "IBM Aspera Node API-4.4.1.yaml", specVersion: "Swagger 2.0" },
-    { filename: "IBM Aspera Node API-4.4.6.yaml", specVersion: "OpenAPI 3.0" },
+    {
+        filename: "IBM Aspera Faspex API-5.0.json",
+        specVersion: "OpenAPI 3.0",
+    },
+    {
+        filename: "IBM Aspera Node API-4.4.1.json",
+        specVersion: "Swagger 2.0",
+    },
+    {
+        filename: "IBM Aspera Node API-4.4.1.yaml",
+        specVersion: "Swagger 2.0",
+    },
+    {
+        filename: "IBM Aspera Node API-4.4.6.yaml",
+        specVersion: "OpenAPI 3.0",
+    },
     {
         filename: "IBM Aspera Orchestrator API-v1.yaml",
         specVersion: "OpenAPI 3.0",
@@ -44,7 +56,10 @@ const openApiSpecs = [
         filename: "IBM Aspera on Cloud Automation API-1.0.5.yaml",
         specVersion: "OpenAPI 3.0",
     },
-    { filename: "IBM_Aspera_Shares.yaml", specVersion: "OpenAPI 3.0" },
+    {
+        filename: "IBM_Aspera_Shares.yaml",
+        specVersion: "OpenAPI 3.0",
+    },
 ];
 
 // Function to extract information from spec object

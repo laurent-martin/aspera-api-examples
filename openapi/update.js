@@ -18,7 +18,6 @@ const yaml = require('js-yaml');
 const CURRENT_DIR = __dirname;
 const LIST_FILE = path.join(CURRENT_DIR, '..', 'docs', 'index.js');
 const LIST_FILE_NAME = path.relative(path.join(CURRENT_DIR, '..'), LIST_FILE);
-const MAX_LINE_LENGTH = 80;
 
 /**
  * Get all YAML and JSON files in the current directory
@@ -88,10 +87,6 @@ function parseSpecFile(filename) {
 function formatSpecEntry(spec) {
     const filename = JSON.stringify(spec.filename);
     const specVersion = JSON.stringify(spec.specVersion);
-    const oneLine = `    { filename: ${filename}, specVersion: ${specVersion} },`;
-    if (oneLine.length <= MAX_LINE_LENGTH) {
-        return oneLine;
-    }
     return `    {\n        filename: ${filename},\n        specVersion: ${specVersion},\n    },`;
 }
 
