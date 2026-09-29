@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"os/exec"
@@ -17,7 +18,6 @@ import (
 
 	pb "aspera_examples/build/grpc_aspera"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -31,12 +31,13 @@ const (
 	// max wait time for the daemon to log its listening port
 	STARTUP_TIMEOUT = 10 * time.Second
 	// max wait time for the daemon to stop gracefully
-	SHUTDOWN_TIMEOUT = 5 * time.Second
+	SHUTDOWN_TIMEOUT = 10 * time.Second
 )
 
 // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
 var listeningPortRegex = regexp.MustCompile(`API Server: Listening on [^\s"]+:(\d+)`)
 
+// TransferClient is a client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
 type TransferClient struct {
 	config             *Configuration
 	serverAddress      string
@@ -50,10 +51,16 @@ type TransferClient struct {
 	daemonLog       string
 }
 
+// NewTransferClient creates a transfer client.
+//
+// Parameters:
+//   - config: configuration of the samples
+//
+// Returns: transfer client
 func NewTransferClient(config *Configuration) *TransferClient {
 	sdkURL, err := url.Parse(config.ParamStr("trsdk", "url"))
 	if err != nil {
-		config.Log.Fatalf("Error parsing server URL: %v", err)
+		config.Log.Fatalf("Invalid URL: %s", config.ParamStr("trsdk", "url"))
 	}
 	return &TransferClient{
 		config:        config,
@@ -64,6 +71,11 @@ func NewTransferClient(config *Configuration) *TransferClient {
 	}
 }
 
+// CreateConfigFile creates the configuration file of the daemon.
+// See: https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
+//
+// Parameters:
+//   - confFile: path of the configuration file
 func (tc *TransferClient) CreateConfigFile(confFile string) error {
 	ascpLevel := tc.config.ParamStr("trsdk", "ascp_level")
 	var ascpIntLevel int
@@ -75,7 +87,7 @@ func (tc *TransferClient) CreateConfigFile(confFile string) error {
 	case "trace":
 		ascpIntLevel = 2
 	default:
-		return fmt.Errorf("invalid ascp_level: %s", ascpLevel)
+		return fmt.Errorf("Invalid ascp_level: %s", ascpLevel)
 	}
 
 	configInfo := map[string]interface{}{
@@ -97,10 +109,10 @@ func (tc *TransferClient) CreateConfigFile(confFile string) error {
 		return err
 	}
 
-	tc.config.Log.Debugf("config: %s", string(configData))
 	return os.WriteFile(confFile, configData, 0644)
 }
 
+// StartDaemon starts the daemon, with output and logs in the log folder.
 func (tc *TransferClient) StartDaemon() error {
 	confFile := filepath.Join(tc.config.LogFolder, tc.daemonName+".conf")
 	outFile := filepath.Join(tc.config.LogFolder, tc.daemonName+".out")
@@ -111,10 +123,15 @@ func (tc *TransferClient) StartDaemon() error {
 	)
 
 	if err := tc.CreateConfigFile(confFile); err != nil {
-		return fmt.Errorf("failed to create daemon configuration file: %w", err)
+		return err
 	}
 
-	tc.config.Log.Info("Starting daemon...", zap.String("command", cmd.String()))
+	LogDump("Daemon command", cmd.String())
+	LogDump("Daemon out", outFile)
+	LogDump("Daemon err", errFile)
+	LogDump("Daemon log", tc.daemonLog)
+	LogDump("Ascp log", filepath.Join(tc.config.LogFolder, ASCP_LOG_FILE))
+	tc.config.Log.Info("Starting daemon")
 
 	// the log file may contain lines of previous executions: only read new lines
 	logOffset := fileSize(tc.daemonLog)
@@ -130,7 +147,7 @@ func (tc *TransferClient) StartDaemon() error {
 	stdout.Close()
 	stderr.Close()
 	if err != nil {
-		return fmt.Errorf("failed to start daemon: %w", err)
+		return fmt.Errorf("Failed to start daemon: %w", err)
 	}
 
 	tc.transferDaemonProc = cmd
@@ -140,8 +157,11 @@ func (tc *TransferClient) StartDaemon() error {
 	return tc.waitDaemonListening(logOffset)
 }
 
-// Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
+// waitDaemonListening waits for the daemon to listen, and gets the port if dynamically allocated (port 0).
 // The port is read from the daemon log: requires log level `info` or more verbose.
+//
+// Parameters:
+//   - logOffset: only read the daemon log after this offset
 func (tc *TransferClient) waitDaemonListening(logOffset int64) error {
 	deadline := time.Now().Add(STARTUP_TIMEOUT)
 	for {
@@ -158,30 +178,36 @@ func (tc *TransferClient) waitDaemonListening(logOffset int64) error {
 		}
 		if port != 0 {
 			tc.serverPort = port
-			tc.config.Log.Infof("Allocated server port : %d", tc.serverPort)
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf("listening port not found in daemon log after %v: %s", STARTUP_TIMEOUT, tc.daemonLog)
+			return fmt.Errorf("Listening port not found in daemon log: %s", tc.daemonLog)
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
 }
 
-// Return an error if the daemon process has exited
+// checkDaemonRunning checks that the daemon is running.
+//
+// Returns: an error if the daemon has exited
 func (tc *TransferClient) checkDaemonRunning() error {
 	select {
-	case err := <-tc.daemonExited:
+	case <-tc.daemonExited:
+		exitCode := tc.transferDaemonProc.ProcessState.ExitCode()
 		tc.transferDaemonProc = nil
-		tc.config.Log.Errorf("Check daemon log: %s", tc.daemonLog)
-		return fmt.Errorf("daemon exited: %v", err)
+		return fmt.Errorf("Daemon exited with code %d, see log: %s", exitCode, tc.daemonLog)
 	default:
 		return nil
 	}
 }
 
-// Find the API listening port in the daemon log, after the given offset.
-// Returns 0 if not found (yet).
+// findListeningPort finds the API listening port in the daemon log, after the given offset.
+//
+// Parameters:
+//   - logFile: path of the daemon log
+//   - offset: only read the daemon log after this offset
+//
+// Returns: port, or 0 if not found (yet)
 func findListeningPort(logFile string, offset int64) (int, error) {
 	content, err := os.ReadFile(logFile)
 	if os.IsNotExist(err) {
@@ -201,7 +227,12 @@ func findListeningPort(logFile string, offset int64) (int, error) {
 	return strconv.Atoi(string(match[1]))
 }
 
-// Size of file, or 0 if it does not exist
+// fileSize gets the size of a file.
+//
+// Parameters:
+//   - path: path of the file
+//
+// Returns: size of the file, or 0 if it does not exist
 func fileSize(path string) int64 {
 	if info, err := os.Stat(path); err == nil {
 		return info.Size()
@@ -209,13 +240,12 @@ func fileSize(path string) int64 {
 	return 0
 }
 
+// ConnectToDaemon connects to the daemon.
 func (tc *TransferClient) ConnectToDaemon() error {
 	address := fmt.Sprintf("%s:%d", tc.serverAddress, tc.serverPort)
-	tc.config.Log.Info("Connecting to transfer daemon...", zap.String("address", address))
-
 	channel, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return fmt.Errorf("failed to connect: %w", err)
+		return fmt.Errorf("Failed to connect to daemon: %s", address)
 	}
 
 	transferService := pb.NewTransferServiceClient(channel)
@@ -227,15 +257,16 @@ func (tc *TransferClient) ConnectToDaemon() error {
 		if exitErr := tc.checkDaemonRunning(); exitErr != nil {
 			return exitErr
 		}
-		return fmt.Errorf("failed to connect: %w", err)
+		return fmt.Errorf("Failed to connect to daemon: %s", address)
 	}
 
 	tc.channel = channel
 	tc.transferService = transferService
-	tc.config.Log.Info("Connected!")
+	tc.config.Log.Infof("Connected to daemon: %s", address)
 	return nil
 }
 
+// Startup starts the daemon and connects to it, if not already done.
 func (tc *TransferClient) Startup() error {
 	if tc.transferService == nil {
 		if err := tc.StartDaemon(); err != nil {
@@ -248,6 +279,9 @@ func (tc *TransferClient) Startup() error {
 	return nil
 }
 
+// Shutdown stops the daemon, if it was started: sends SIGINT, and kills it if it does not stop in time.
+// transferd stops cleanly on SIGINT (not on SIGTERM).
+// Windows has no SIGINT for child processes: the process is terminated.
 func (tc *TransferClient) Shutdown() error {
 	tc.transferService = nil
 	if tc.channel != nil {
@@ -257,7 +291,7 @@ func (tc *TransferClient) Shutdown() error {
 	if tc.transferDaemonProc == nil {
 		return nil
 	}
-	tc.config.Log.Info("Shutting down daemon...")
+	tc.config.Log.Info("Stopping daemon")
 	// transferd stops cleanly on SIGINT (not on SIGTERM); not supported on Windows: kill
 	if err := tc.transferDaemonProc.Process.Signal(os.Interrupt); err != nil && !errors.Is(err, os.ErrProcessDone) {
 		tc.transferDaemonProc.Process.Kill()
@@ -275,13 +309,19 @@ func (tc *TransferClient) Shutdown() error {
 	return nil
 }
 
+// StartTransfer starts a transfer.
+//
+// Parameters:
+//   - transferSpec: transfer spec
+//
+// Returns: transfer id
 func (tc *TransferClient) StartTransfer(transferSpec map[string]interface{}) (string, error) {
 	tsJSON, err := json.Marshal(transferSpec)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal transfer spec: %w", err)
+		return "", fmt.Errorf("Failed to marshal transfer spec: %w", err)
 	}
 
-	tc.config.Log.Debugf("Transfer spec: %s", string(tsJSON))
+	LogDump("Transfer spec", string(tsJSON))
 
 	req := &pb.TransferRequest{
 		TransferType: pb.TransferType_FILE_REGULAR,
@@ -291,7 +331,7 @@ func (tc *TransferClient) StartTransfer(transferSpec map[string]interface{}) (st
 
 	resp, err := tc.transferService.StartTransfer(context.TODO(), req)
 	if err != nil {
-		return "", fmt.Errorf("failed to start transfer: %w", err)
+		return "", fmt.Errorf("Failed to start transfer: %w", err)
 	}
 
 	if err := tc.throwOnError(resp.Status, errorDescription(resp.GetError().GetDescription())); err != nil {
@@ -301,6 +341,10 @@ func (tc *TransferClient) StartTransfer(transferSpec map[string]interface{}) (st
 	return resp.TransferId, nil
 }
 
+// WaitTransfer waits for the end of a transfer, and logs its status.
+//
+// Parameters:
+//   - transferID: transfer id
 func (tc *TransferClient) WaitTransfer(transferID string) error {
 	req := &pb.RegistrationRequest{
 		Filters: []*pb.RegistrationFilter{
@@ -310,16 +354,19 @@ func (tc *TransferClient) WaitTransfer(transferID string) error {
 
 	stream, err := tc.transferService.MonitorTransfers(context.Background(), req)
 	if err != nil {
-		return fmt.Errorf("failed to monitor transfer: %w", err)
+		return fmt.Errorf("Failed to monitor transfer: %w", err)
 	}
 
 	for {
 		info, err := stream.Recv()
+		if err == io.EOF {
+			return errors.New("Transfer monitoring ended before transfer completion")
+		}
 		if err != nil {
-			return fmt.Errorf("failed to receive transfer info: %w", err)
+			return fmt.Errorf("Transfer monitoring failed: %w", err)
 		}
 
-		tc.config.Log.Info("Transfer status", zap.String("status", pb.TransferStatus_name[int32(info.Status)]))
+		tc.logStatus(info.Status, info.GetTransferInfo().GetAverageRateKbps())
 
 		// `error` is empty on session errors: the cause is in session or transfer information
 		description := errorDescription(info.GetError().GetDescription(), info.GetSessionInfo().GetErrorDesc(), info.GetTransferInfo().GetErrorDescription())
@@ -335,6 +382,10 @@ func (tc *TransferClient) WaitTransfer(transferID string) error {
 	return nil
 }
 
+// StartTransferAndWait starts the daemon if needed, starts a transfer, and waits for its end.
+//
+// Parameters:
+//   - transferSpec: transfer spec
 func (tc *TransferClient) StartTransferAndWait(transferSpec map[string]interface{}) error {
 	if err := tc.Startup(); err != nil {
 		return err
@@ -348,19 +399,41 @@ func (tc *TransferClient) StartTransferAndWait(transferSpec map[string]interface
 	return tc.WaitTransfer(transferID)
 }
 
+// throwOnError returns an error if the transfer status is failed or unknown.
+//
+// Parameters:
+//   - status: transfer status
+//   - description: error description
 func (tc *TransferClient) throwOnError(status pb.TransferStatus, description string) error {
 	switch status {
 	case pb.TransferStatus_FAILED:
-		tc.config.Log.Errorf("Transfer failed: %s", description)
-		return fmt.Errorf("transfer failed: %s", description)
+		return fmt.Errorf("Transfer failed: %s", description)
 	case pb.TransferStatus_UNKNOWN_STATUS:
-		return fmt.Errorf("unknown transfer status: %s", description)
+		return fmt.Errorf("Unknown transfer id: %s", description)
 	default:
 		return nil
 	}
 }
 
-// First non-empty error description
+// logStatus logs the transfer status, and the rate when running.
+//
+// Parameters:
+//   - status: transfer status
+//   - averageRateKbps: average rate in kilobits per second
+func (tc *TransferClient) logStatus(status pb.TransferStatus, averageRateKbps int64) {
+	if status == pb.TransferStatus_RUNNING {
+		tc.config.Log.Infof("Transfer: %s %.1f Mbps", status, float64(averageRateKbps)/1000)
+	} else {
+		tc.config.Log.Infof("Transfer: %s", status)
+	}
+}
+
+// errorDescription gets the first non-empty error description.
+//
+// Parameters:
+//   - texts: error descriptions
+//
+// Returns: error description, or `unknown error`
 func errorDescription(texts ...string) string {
 	for _, text := range texts {
 		if text = strings.TrimSpace(text); text != "" {
@@ -370,11 +443,16 @@ func errorDescription(texts ...string) string {
 	return "unknown error"
 }
 
-// Open a log file for the daemon output
+// openFile creates a file for the output of the daemon.
+//
+// Parameters:
+//   - filename: path of the file
+//
+// Returns: opened file
 func (tc *TransferClient) openFile(filename string) *os.File {
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		tc.config.Log.Fatalf("Failed to open log file: %s: %s", filename, err)
+		tc.config.Log.Fatalf("Failed to open file: %s: %s", filename, err)
 	}
 	return file
 }

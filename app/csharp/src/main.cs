@@ -1,17 +1,28 @@
 /// <summary>
-/// Interface for sample classes
+/// Interface of the samples.
 /// </summary>
 interface SampleInterface
 {
+    /// <summary>
+    /// Execute the sample.
+    /// </summary>
+    /// <param name="files">files to transfer</param>
     void start(string[] files);
 }
+/// <summary>
+/// Execute a sample, by name.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Execute a sample, by name.
+    /// </summary>
+    /// <param name="args">name of the sample, e.g. <c>faspex5</c>, and files to transfer</param>
     static void Main(string[] args)
     {
         if (args.Length <= 1)
         {
-            throw new Exception($"ERROR: Usage: Prog <test name> <files to send>");
+            throw new Exception("Missing arguments: sample name and files to transfer");
         }
         var capitalized_name = new System.Text.StringBuilder();
         foreach (string word in args[0].Split('_'))

@@ -1,18 +1,11 @@
 using Grpc.Net.Client;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 /// <summary>
-/// Provides the following services:
-/// <list type="bullet">
-/// <item>
-/// <description>daemon conf file generation, startup and shutdown of transferd</description>
-/// </item>
-/// <item>
-/// <description>transfer of files and monitoring</description>
-/// </item>
-/// </list>
+/// Client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
 /// </summary>
 public class TransferClient
 {
@@ -24,9 +17,14 @@ public class TransferClient
     // max wait time for the connection to the daemon
     private static readonly TimeSpan CONNECT_TIMEOUT = TimeSpan.FromSeconds(5);
     // max wait time for the daemon to stop gracefully
-    private static readonly TimeSpan SHUTDOWN_TIMEOUT = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan SHUTDOWN_TIMEOUT = TimeSpan.FromSeconds(10);
     private const int SIGINT = 2;
-    // .NET has no API to send SIGINT to a process
+    /// <summary>
+    /// Send a signal to a process: .NET has no API to send SIGINT.
+    /// </summary>
+    /// <param name="pid">process id</param>
+    /// <param name="sig">signal number</param>
+    /// <returns>0 on success</returns>
     [System.Runtime.InteropServices.DllImport("libc", SetLastError = true)]
     private static extern int kill(int pid, int sig);
     // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
@@ -41,6 +39,10 @@ public class TransferClient
     private string _daemonLog;
 
 
+    /// <summary>
+    /// Create a transfer client.
+    /// </summary>
+    /// <param name="config">configuration of the samples</param>
     public TransferClient(Configuration config)
     {
         _config = config;
@@ -51,6 +53,11 @@ public class TransferClient
         _daemonLog = Path.Combine(_config.LogFolder(), _daemonName + ".log");
     }
 
+    /// <summary>
+    /// Create the configuration file of the daemon.
+    /// See: https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
+    /// </summary>
+    /// <param name="confFile">path of the configuration file</param>
     public void CreateConfigFile(string confFile)
     {
         var configInfo = new
@@ -73,9 +80,8 @@ public class TransferClient
     }
 
     /// <summary>
-    /// Start transfer manager daemon if not already running and return gRPC client
+    /// Start the daemon, with output and logs in the log folder.
     /// </summary>
-    /// <exception cref="Exception"></exception>
     public void StartDaemon()
     {
         var daemonPath = _config.GetPath("sdk_daemon");
@@ -84,16 +90,15 @@ public class TransferClient
         var outFile = fileBase + ".out";
         var errFile = fileBase + ".err";
         var exec_args = $"--config {confFile}";
-        var command = $"{daemonPath} {exec_args}";
-        Log.log.Debug($"daemon out: {outFile}");
-        Log.log.Debug($"daemon err: {errFile}");
-        Log.log.Debug($"daemon log: {_daemonLog}");
-        Log.log.Debug($"ascp log: {Path.Combine(_config.LogFolder(), ASCP_LOG_FILE)}");
-        Log.log.Debug($"command: {command}");
+        Log.Dump("Daemon command", $"{daemonPath} {exec_args}");
+        Log.Dump("Daemon out", outFile);
+        Log.Dump("Daemon err", errFile);
+        Log.Dump("Daemon log", _daemonLog);
+        Log.Dump("Ascp log", Path.Combine(_config.LogFolder(), ASCP_LOG_FILE));
         CreateConfigFile(confFile);
         // the log file may contain lines of previous executions: only read new lines
         long logOffset = File.Exists(_daemonLog) ? new FileInfo(_daemonLog).Length : 0;
-        Log.log.Info("Starting daemon...");
+        Log.log.Info("Starting daemon");
         _daemonProcess = new System.Diagnostics.Process
         {
             StartInfo = new System.Diagnostics.ProcessStartInfo
@@ -117,23 +122,20 @@ public class TransferClient
 
     /// <summary>
     /// Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
-    /// The port is read from the daemon log: requires log level `info` or more verbose.
+    /// The port is read from the daemon log: requires log level <c>info</c> or more verbose.
     /// </summary>
-    /// <param name="logOffset">only read the log after this offset</param>
+    /// <param name="logOffset">only read the daemon log after this offset</param>
     private void WaitDaemonListening(long logOffset)
     {
-        var daemonProcess = _daemonProcess ?? throw new InvalidOperationException("daemon not started");
+        var daemonProcess = _daemonProcess ?? throw new InvalidOperationException("Daemon not started");
         var deadline = DateTime.UtcNow + STARTUP_TIMEOUT;
         while (true)
         {
             if (daemonProcess.HasExited)
             {
-                Log.log.Error($"Daemon not started.");
-                Log.log.Error($"Exited with code: {daemonProcess.ExitCode}");
-                Log.log.Error($"Check daemon log: {_daemonLog}");
                 daemonProcess.WaitForExit();
                 _daemonProcess = null;
-                throw new Exception("daemon startup failed");
+                throw new Exception($"Daemon exited with code {daemonProcess.ExitCode}, see log: {_daemonLog}");
             }
             // fixed port: readiness is checked on connection
             if (_serverPort != 0)
@@ -144,12 +146,11 @@ public class TransferClient
             if (port.HasValue)
             {
                 _serverPort = port.Value;
-                Log.log.Info($"Allocated server port: {_serverPort}");
                 return;
             }
             if (DateTime.UtcNow > deadline)
             {
-                throw new Exception($"Listening port not found in daemon log after {STARTUP_TIMEOUT.TotalSeconds}s: {_daemonLog}");
+                throw new Exception($"Listening port not found in daemon log: {_daemonLog}");
             }
             Thread.Sleep(200);
         }
@@ -158,7 +159,9 @@ public class TransferClient
     /// <summary>
     /// Find the API listening port in the daemon log, after the given offset.
     /// </summary>
-    /// <returns>the port, or null if not found (yet)</returns>
+    /// <param name="logFile">path of the daemon log</param>
+    /// <param name="offset">only read the daemon log after this offset</param>
+    /// <returns>port, or null if not found (yet)</returns>
     private static int? FindListeningPort(string logFile, long offset)
     {
         if (!File.Exists(logFile))
@@ -183,12 +186,14 @@ public class TransferClient
         return portMatch.Success ? int.Parse(portMatch.Groups[1].Value) : null;
     }
 
+    /// <summary>
+    /// Connect to the daemon.
+    /// </summary>
     public void ConnectToDaemon()
     {
         AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
-        var grpcUrl = new Uri($"http://{_serverAddress}:{_serverPort}");
-        Log.log.Info($"Connecting to {_daemonName} on {grpcUrl} ...");
-        var daemonService = new Transferd.Api.TransferService.TransferServiceClient(GrpcChannel.ForAddress(grpcUrl));
+        var address = $"{_serverAddress}:{_serverPort}";
+        var daemonService = new Transferd.Api.TransferService.TransferServiceClient(GrpcChannel.ForAddress($"http://{address}"));
         // retry until the daemon listens
         var deadline = DateTime.UtcNow + CONNECT_TIMEOUT;
         while (true)
@@ -198,21 +203,29 @@ public class TransferClient
                 daemonService.GetAPIVersion(new Transferd.Api.APIVersionRequest());
                 break;
             }
-            catch (Grpc.Core.RpcException e) when (e.StatusCode == Grpc.Core.StatusCode.Unavailable && DateTime.UtcNow < deadline)
+            catch (Grpc.Core.RpcException e) when (e.StatusCode == Grpc.Core.StatusCode.Unavailable)
             {
+                if (DateTime.UtcNow > deadline)
+                {
+                    throw new Exception($"Failed to connect to daemon: {address}");
+                }
                 Thread.Sleep(200);
             }
         }
         _daemonService = daemonService;
-        Log.log.Info("Connected !");
+        Log.log.Info($"Connected to daemon: {address}");
     }
     /// <summary>
-    /// Client of the daemon API, once connected
+    /// Get the client of the daemon API, once connected.
     /// </summary>
+    /// <returns>client of the daemon API</returns>
     private Transferd.Api.TransferService.TransferServiceClient DaemonService()
     {
-        return _daemonService ?? throw new InvalidOperationException("not connected to daemon");
+        return _daemonService ?? throw new InvalidOperationException("Not connected to daemon");
     }
+    /// <summary>
+    /// Start the daemon and connect to it, if not already done.
+    /// </summary>
     public void Startup()
     {
         if (_daemonService == null)
@@ -222,7 +235,9 @@ public class TransferClient
         }
     }
     /// <summary>
-    /// Shutdown transfer manager daemon, if needed
+    /// Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+    /// transferd stops cleanly on SIGINT (not on SIGTERM).
+    /// Windows has no SIGINT for child processes: the process is terminated.
     /// </summary>
     public void Shutdown()
     {
@@ -230,7 +245,7 @@ public class TransferClient
         // Shutdown transfer manager daemon, if needed
         if (_daemonProcess != null)
         {
-            Log.log.Info("Stopping Transfer daemon...");
+            Log.log.Info("Stopping daemon");
             // transferd stops cleanly on SIGINT (not on SIGTERM); Windows has no SIGINT for child processes
             if (OperatingSystem.IsWindows())
             {
@@ -247,7 +262,6 @@ public class TransferClient
                 _daemonProcess.WaitForExit();
             }
             _daemonProcess = null;
-            Log.log.Info("Transfer daemon has been terminated.");
             foreach (var stream in _daemonStreams)
             {
                 stream.Close();
@@ -256,57 +270,44 @@ public class TransferClient
     }
 
     /// <summary>
-    /// Start the specified transfer
+    /// Start a transfer.
     /// </summary>
-    /// <param name="aSpecObj">transfer specification (JSON Object)</param>
+    /// <param name="aSpecObj">transfer spec</param>
     /// <returns>transfer id</returns>
     public string StartTransfer(JObject aSpecObj)
     {
-        Log.log.Info(aSpecObj);
+        var tsJson = Newtonsoft.Json.JsonConvert.SerializeObject(aSpecObj);
+        Log.Dump("Transfer spec", tsJson);
         // Start a transfer and return transfer id
         var transferRequest = new Transferd.Api.TransferRequest
         {
             TransferType = Transferd.Api.TransferType.FileRegular,
             Config = new Transferd.Api.TransferConfig { LogLevel = 2 },
-            TransferSpec = Newtonsoft.Json.JsonConvert.SerializeObject(aSpecObj),
+            TransferSpec = tsJson,
         };
-
         var transferResponse = DaemonService().StartTransfer(transferRequest);
-
-        if (transferResponse.Status == Transferd.Api.TransferStatus.Failed
-            || transferResponse.Status == Transferd.Api.TransferStatus.UnknownStatus)
-        {
-            // exception: the caller shuts down the daemon
-            throw new Exception($"transfer start failed: {transferResponse.Error?.Description}");
-        }
-
+        // exception: the caller shuts down the daemon
+        ThrowOnError(transferResponse.Status, transferResponse.Error?.Description);
         return transferResponse.TransferId;
     }
 
     /// <summary>
-    /// wait until the specified transfer is finished (completed or failed)
+    /// Wait for the end of a transfer, and log its status.
     /// </summary>
-    /// <param name="aTransferId"></param>
+    /// <param name="aTransferId">transfer id</param>
     void WaitTransfer(string aTransferId)
     {
         while (true)
         {
             // check the current state of the transfer
             var queryTransferResponse = DaemonService().QueryTransfer(new Transferd.Api.TransferInfoRequest() { TransferId = aTransferId });
-            Console.Out.WriteLine("transfer info " + queryTransferResponse);
-
             // check transfer status in response, and exit if it's done
             Transferd.Api.TransferStatus status = queryTransferResponse.Status;
-            if (status == Transferd.Api.TransferStatus.Failed)
-            {
-                // `error` is empty on session errors: the cause is in transfer information
-                var description = new[] { queryTransferResponse.Error?.Description, queryTransferResponse.TransferInfo?.ErrorDescription }
-                    .Select(text => text?.Trim()).FirstOrDefault(text => !string.IsNullOrEmpty(text)) ?? "unknown error";
-                throw new Exception($"transfer failed: {description}");
-            }
+            LogStatus(status, queryTransferResponse.TransferInfo?.AverageRateKbps ?? 0);
+            // `error` is empty on session errors: the cause is in transfer information
+            ThrowOnError(status, queryTransferResponse.Error?.Description, queryTransferResponse.TransferInfo?.ErrorDescription);
             if (status == Transferd.Api.TransferStatus.Completed)
             {
-                Console.Out.WriteLine("finished " + status);
                 break;
             }
             // wait a second before checking again
@@ -316,19 +317,56 @@ public class TransferClient
 
 
     /// <summary>
-    /// One-call simplified procedure to start daemon, transfer, and wait for it to finish
+    /// Log the transfer status, and the rate when running.
     /// </summary>
-    /// <param name="aSpecObj">transfer specification (JSON Object)</param>
+    /// <param name="status">transfer status</param>
+    /// <param name="averageRateKbps">average rate in kilobits per second</param>
+    private static void LogStatus(Transferd.Api.TransferStatus status, long averageRateKbps)
+    {
+        // same name as in proto file, e.g. RUNNING
+        var name = status.ToString().ToUpperInvariant();
+        if (status == Transferd.Api.TransferStatus.Running)
+        {
+            Log.log.Info($"Transfer: {name} {(averageRateKbps / 1000.0).ToString("F1", CultureInfo.InvariantCulture)} Mbps");
+        }
+        else
+        {
+            Log.log.Info($"Transfer: {name}");
+        }
+    }
+
+    /// <summary>
+    /// Throw an exception if the transfer status is failed or unknown.
+    /// </summary>
+    /// <param name="status">transfer status</param>
+    /// <param name="descriptions">error descriptions: the first non-empty one is used</param>
+    private static void ThrowOnError(Transferd.Api.TransferStatus status, params string?[] descriptions)
+    {
+        var description = descriptions.Select(text => text?.Trim()).FirstOrDefault(text => !string.IsNullOrEmpty(text)) ?? "unknown error";
+        if (status == Transferd.Api.TransferStatus.Failed)
+        {
+            throw new Exception($"Transfer failed: {description}");
+        }
+        if (status == Transferd.Api.TransferStatus.UnknownStatus)
+        {
+            throw new Exception($"Unknown transfer id: {description}");
+        }
+    }
+
+    /// <summary>
+    /// Start the daemon if needed, start a transfer, and wait for its end.
+    /// </summary>
+    /// <param name="aSpecObj">transfer spec</param>
     public void StartTransferAndWait(JObject aSpecObj)
     {
         Startup();
         WaitTransfer(StartTransfer(aSpecObj));
     }
     /// <summary>
-    /// Capture stdout or stderr for the started process (transferd)
+    /// Capture an output of the daemon to a file.
     /// </summary>
-    /// <param name="logFile"></param>
-    /// <returns></returns>
+    /// <param name="logFile">path of the file</param>
+    /// <returns>handler of the output</returns>
     public System.Diagnostics.DataReceivedEventHandler captureStream(string logFile)
     {
         var logStream = new StreamWriter(new FileStream(logFile, FileMode.Append, FileAccess.Write));
@@ -343,11 +381,10 @@ public class TransferClient
             });
     }
     /// <summary>
-    /// translates string log level to numerical
+    /// Convert the log level of ascp from name to number.
     /// </summary>
-    /// <param name="level">text level</param>
-    /// <returns>numerical value</returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <param name="level"><c>info</c>, <c>debug</c> or <c>trace</c></param>
+    /// <returns>0, 1 or 2</returns>
     private static int AscpLevel(string level)
     {
         if (level == "info")

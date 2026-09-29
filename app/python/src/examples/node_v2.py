@@ -3,6 +3,7 @@
 # Upload files using node API and transfer spec v2
 import utils.configuration
 import utils.transfer_client
+import logging as log
 
 config = utils.configuration.Configuration()
 transfer_client = utils.transfer_client.TransferClient(config).startup()
@@ -30,6 +31,7 @@ try:
     config.add_sources(t_spec, 'assets.paths')
 
     # start transfer, using Transfer SDK
+    log.info('Uploading files')
     transfer_client.start_transfer_and_wait(t_spec)
 finally:
     transfer_client.shutdown()

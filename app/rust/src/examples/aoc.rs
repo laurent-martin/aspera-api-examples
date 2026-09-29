@@ -41,24 +41,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Get workspace information
     let workspace_name = config.param_str("aoc", "workspace")?;
-    info!("Getting workspace information for {}", workspace_name);
+    info!("Getting workspace: {workspace_name}");
 
     let workspace_response = aoc_api
         .read("workspaces", Some(&[("q", &workspace_name)]))
         .await?;
     let workspace_list = workspace_response.as_array().unwrap();
     if workspace_list.len() != 1 {
-        return Err(Box::from(format!(
-            "Found {} workspaces for {}",
-            workspace_list.len(),
-            workspace_name
-        )));
+        return Err(format!("Found {} workspaces for {workspace_name}", workspace_list.len()).into());
     }
     let workspace_info = &workspace_list[0];
 
     // Get shared inbox (dropbox) information
     let shared_inbox_name = config.param_str("aoc", "shared_inbox")?;
-    info!("Getting shared inbox information");
+    info!("Getting shared inbox: {shared_inbox_name}");
     let dropbox_response = aoc_api
         .read(
             "dropboxes",
@@ -70,11 +66,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
     let dropbox_list = dropbox_response.as_array().unwrap();
     if dropbox_list.len() != 1 {
-        return Err(Box::from(format!(
-            "Found {} dropboxes for {}",
-            dropbox_list.len(),
-            shared_inbox_name
-        )));
+        return Err(format!("Found {} shared inboxes for {shared_inbox_name}", dropbox_list.len()).into());
     }
     let dropbox_info = &dropbox_list[0];
 
@@ -93,14 +85,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         )
         .await?;
     let package_info = package_response.as_object().unwrap();
-    info!("Package created: {:?}", package_info);
 
     // Get node information for the package
     let node_id = package_info["node_id"].as_str().unwrap();
-    info!("Getting node information for {node_id}");
+    info!("Getting node information");
     let node_response = aoc_api.read(&format!("nodes/{node_id}"), None).await?;
     let node_info = node_response.as_object().unwrap();
-    info!("Node information: {:?}", node_info);
 
     // Set expected transfers for the package
     info!("Setting expected transfers");
@@ -114,7 +104,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         )
         .await?;
 
-    info!("Creating Transfer spec");
     // Generate the transfer spec
     let mut transfer_spec = json!({
         "direction": "send",
@@ -153,6 +142,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     config.add_files_to_ts("paths", &mut transfer_spec)?;
 
     // Upload files to package folder on server
+    info!("Uploading files");
     transfer_client
         .transfer_start_and_wait(&transfer_spec)
         .await?;

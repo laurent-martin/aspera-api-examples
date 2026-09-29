@@ -6,24 +6,32 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
+/// <summary>
+/// Constants of the REST client.
+/// </summary>
 public static class Const
 {
-    // take come time back to account for time offset between client and server
+    /// <summary>Time offset between client and server, in seconds: taken back from the start of validity of the JWT.</summary>
     public const int JWT_CLIENT_SERVER_OFFSET_SEC = 60;
-    // take some validity for the JWT
+    /// <summary>Validity of the JWT, in seconds.</summary>
     public const int JWT_VALIDITY_SEC = 600;
+    /// <summary>MIME type of JSON.</summary>
     public const string MIME_JSON = "application/json";
+    /// <summary>MIME type of form data.</summary>
     public const string MIME_WWW = "application/x-www-form-urlencoded";
+    /// <summary>OAuth grant type of JWT Bearer.</summary>
     public const string IETF_GRANT_JWT = "urn:ietf:params:oauth:grant-type:jwt-bearer";
 }
 
 /// <summary>
-/// Generic REST client with basic and oauth.
-/// Replace with your best REST client object
-/// or use openapi generator to generate stubs.
+/// Simple REST client, with Basic or OAuth 2 JWT Bearer authentication.
 /// </summary>
 public class Rest
 {
+    /// <summary>
+    /// Create a REST client.
+    /// </summary>
+    /// <param name="url">base URL of the API</param>
     public Rest(string url)
     {
         mBaseUrl = url;
@@ -32,13 +40,18 @@ public class Rest
         mHeaders = new StringDict();
     }
     /// <summary>
-    /// Disable verification of server certificate with false (development servers with self-signed certificate)
+    /// Enable or disable the verification of the server certificate.
     /// </summary>
+    /// <param name="verify">false for development servers with a self-signed certificate</param>
     public void setVerify(bool verify)
     {
         mVerify = verify;
         mHttpClient = createHttpClient();
     }
+    /// <summary>
+    /// Create the HTTP client, with or without verification of the server certificate.
+    /// </summary>
+    /// <returns>HTTP client</returns>
     private HttpClient createHttpClient()
     {
         var handler = new HttpClientHandler();
@@ -51,6 +64,11 @@ public class Rest
             BaseAddress = new Uri(mBaseUrl)
         };
     }
+    /// <summary>
+    /// Use Basic authentication.
+    /// </summary>
+    /// <param name="username">user name</param>
+    /// <param name="password">password</param>
     public void setAuthBasic(string username, string password)
     {
         mHeaders.Add("Authorization", "Basic " + Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(username + ":" + password)));
@@ -58,22 +76,42 @@ public class Rest
         //request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encoded);
     }
 
+    /// <summary>
+    /// Use OAuth 2 Bearer authentication, with a JWT signed with a private key.
+    /// </summary>
+    /// <param name="auth"><c>token_url</c>, <c>key_pem_path</c>, <c>client_id</c>, <c>client_secret</c>, <c>iss</c>, <c>aud</c>, <c>sub</c>, and optionally <c>org</c></param>
     public void setAuthBearer(StringDict auth)
     {
         // shallow copy sufficient here
         mAuthData = auth.ToDictionary(entry => entry.Key, entry => entry.Value);
     }
+    /// <summary>
+    /// Generate a bearer token, and use it for all subsequent requests.
+    /// A new token is generated for each execution of the sample.
+    /// In real code, the token should be reused until it expires.
+    /// </summary>
+    /// <param name="scope">OAuth scope of the token, or none</param>
     public void setDefaultScope(string? scope)
     {
         mHeaders.Add("Authorization", get_bearer_token(scope));
     }
+    /// <summary>
+    /// Add a header to all subsequent requests.
+    /// </summary>
+    /// <param name="name">header name</param>
+    /// <param name="value">header value</param>
     public void setHeader(string name, string value)
     {
         mHeaders.Add(name, value);
     }
+    /// <summary>
+    /// Generate a bearer token, with the JWT Bearer grant.
+    /// </summary>
+    /// <param name="scope">OAuth scope of the token, or none</param>
+    /// <returns>value of the Authorization header: <c>Bearer &lt;token&gt;</c></returns>
     public string get_bearer_token(string? scope)
     {
-        var authData = mAuthData ?? throw new InvalidOperationException("setAuthBearer must be called first");
+        var authData = mAuthData ?? throw new InvalidOperationException("Auth data not set");
         RSA private_key = readKeyFromFile(authData["key_pem_path"]);
         long seconds_since_epoch = System.DateTimeOffset.Now.ToUnixTimeSeconds();
         var jwt_payload = new JObject{
@@ -90,7 +128,6 @@ public class Rest
         {
             jwt_payload["org"] = authData["org"];
         }
-        Log.DumpJObject("jwt_payload", jwt_payload);
         string assertion = Jose.JWT.Encode(JsonConvert.SerializeObject(jwt_payload), private_key, Jose.JwsAlgorithm.RS256, extraHeaders: new Dictionary<string, object> { { "typ", "JWT" } });
         var token_parameters = new JObject{
             {"client_id",authData["client_id"]},
@@ -109,18 +146,18 @@ public class Rest
             method: HttpMethod.Post,
             body: token_parameters,
             body_type: "www");
-        return "Bearer " + ((string?)data["access_token"] ?? throw new Exception("no access_token in token response"));
+        return "Bearer " + ((string?)data["access_token"] ?? throw new Exception("No access_token in token response"));
     }
     /// <summary>
-    /// Call REST API.
+    /// Call the API: send a request, and get the response data.
     /// </summary>
-    /// <param name="method">GET, ...</param>
-    /// <param name="endpoint">endpoint</param>
-    /// <param name="body"></param>
-    /// <param name="query"></param>
-    /// <param name="headers"></param>
-    /// <returns></returns>
-    /// <exception cref="System.Exception"></exception>
+    /// <param name="method">HTTP method</param>
+    /// <param name="endpoint">path of the endpoint, relative to the base URL</param>
+    /// <param name="body">request data</param>
+    /// <param name="body_type">format of the request data: <c>json</c> or <c>www</c> (form)</param>
+    /// <param name="query">query parameters</param>
+    /// <param name="headers">additional headers</param>
+    /// <returns>response data, or an empty object if the response is empty</returns>
     public JContainer call(
         HttpMethod method,
         string? endpoint = null,
@@ -170,7 +207,6 @@ public class Rest
         }
         if (body != null)
         {
-            Log.log.Debug(Log.MaskSecrets($"body {body}"));
             if (body_type == "www")
             {
                 request.Content = new FormUrlEncodedContent(body.Properties().ToDictionary(p => p.Name, p => p.Value.ToString()));
@@ -183,17 +219,20 @@ public class Rest
                     Const.MIME_JSON);
             }
         }
-        Log.log.Debug(Log.MaskSecrets($"req={request}"));
+        Log.log.Debug($"HTTP {method.Method} {uri_string}");
         if (request.Content != null)
         {
-            Log.log.Debug(Log.MaskSecrets($"data={request.Content.ReadAsStringAsync().Result}"));
+            Log.Dump("Request body", request.Content.ReadAsStringAsync().Result);
         }
         var response = mHttpClient.SendAsync(request).Result;
         var resp_str = response.Content.ReadAsStringAsync().Result;
-        Log.log.Debug(Log.MaskSecrets($"resp={resp_str}"));
         if (!response.IsSuccessStatusCode)
         {
-            throw new System.Exception($"ERROR: {response.StatusCode} {response.ReasonPhrase}");
+            throw new Exception($"HTTP {(int)response.StatusCode} for {method.Method} {uri_string}: {resp_str}");
+        }
+        if (resp_str.Length != 0)
+        {
+            Log.Dump("Response body", resp_str);
         }
         // empty response (e.g. PUT, DELETE): empty object
         JContainer result = new JObject();
@@ -210,18 +249,41 @@ public class Rest
         }
         return result;
     }
+    /// <summary>
+    /// Create a resource (HTTP POST).
+    /// </summary>
+    /// <param name="endpoint">path of the endpoint, relative to the base URL</param>
+    /// <param name="body">request data, sent in JSON</param>
+    /// <returns>response data</returns>
     public JContainer create(string endpoint, JObject body)
     {
         return call(method: HttpMethod.Post, endpoint: endpoint, body: body);
     }
+    /// <summary>
+    /// Read a resource (HTTP GET).
+    /// </summary>
+    /// <param name="endpoint">path of the endpoint, relative to the base URL</param>
+    /// <param name="query">query parameters</param>
+    /// <returns>response data</returns>
     public JContainer read(string endpoint, JObject? query = null)
     {
         return call(method: HttpMethod.Get, endpoint: endpoint, query: query);
     }
+    /// <summary>
+    /// Update a resource (HTTP PUT).
+    /// </summary>
+    /// <param name="endpoint">path of the endpoint, relative to the base URL</param>
+    /// <param name="body">request data, sent in JSON</param>
+    /// <returns>response data</returns>
     public JContainer update(string endpoint, JObject body)
     {
         return call(method: HttpMethod.Put, endpoint: endpoint, body: body);
     }
+    /// <summary>
+    /// Delete a resource (HTTP DELETE).
+    /// </summary>
+    /// <param name="endpoint">path of the endpoint, relative to the base URL</param>
+    /// <returns>response data</returns>
     public JContainer delete(string endpoint)
     {
         return call(method: HttpMethod.Delete, endpoint: endpoint);
@@ -234,11 +296,10 @@ public class Rest
     private bool mVerify;
 
     /// <summary>
-    /// Read RSA private key from PEM file (PKCS#1 `RSA PRIVATE KEY` or PKCS#8 `PRIVATE KEY`).
+    /// Read a RSA private key from a PEM file: PKCS#1 <c>RSA PRIVATE KEY</c> or PKCS#8 <c>PRIVATE KEY</c>.
     /// </summary>
-    /// <param name="filename"></param>
-    /// <returns>RSA key</returns>
-    /// <exception cref="ArgumentException">if no supported key is found in file</exception>
+    /// <param name="filename">path of the key file</param>
+    /// <returns>private key</returns>
     private static RSA readKeyFromFile(string filename)
     {
         RSA rsa = RSA.Create();

@@ -27,6 +27,7 @@ begin
     'paths' => [{ 'source' => config.param('server', 'file_download') }]
   }
   # Start transfer
+  config.logger.info('Downloading file')
   transfer_client.start_transfer_and_wait(transfer_spec)
 ensure
   transfer_client.shutdown

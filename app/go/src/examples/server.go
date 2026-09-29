@@ -7,29 +7,27 @@ import (
 	"net/url"
 )
 
-// errors are returned to main so that deferred calls are executed before exit
+// main runs the sample, and exits on error.
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
 }
 
+// run runs the sample.
+// Errors are returned to main, so that deferred calls are executed before exit.
 func run() error {
 	config, err := utils.NewConfiguration()
 	if err != nil {
-		return fmt.Errorf("error loading configuration: %w", err)
+		return err
 	}
 	transferClient := utils.NewTransferClient(config)
 	defer transferClient.Shutdown()
 
 	serverURL := config.ParamStr("server", "url")
-	config.Log.Debugf("Server URL: %s", serverURL)
 	serverURI, err := url.Parse(serverURL)
-	if err != nil {
-		return fmt.Errorf("error parsing server URL: %w", err)
-	}
-	if serverURI.Scheme != "ssh" {
-		return fmt.Errorf("expected SSH scheme, got: %s", serverURI.Scheme)
+	if err != nil || serverURI.Scheme != "ssh" {
+		return fmt.Errorf("Expecting SSH URL: %s", serverURL)
 	}
 	transferSpec := map[string]interface{}{
 		"title":       "test with transfer spec V2",
@@ -48,12 +46,9 @@ func run() error {
 		},
 	}
 	if err := config.AddSources(transferSpec, "assets.paths"); err != nil {
-		return fmt.Errorf("error adding files to transfer spec: %w", err)
+		return err
 	}
 	// Start the transfer and wait
-	if err := transferClient.StartTransferAndWait(transferSpec); err != nil {
-		return fmt.Errorf("error during transfer: %w", err)
-	}
-	config.Log.Info("Transfer completed successfully")
-	return nil
+	config.Log.Info("Uploading files")
+	return transferClient.StartTransferAndWait(transferSpec)
 }

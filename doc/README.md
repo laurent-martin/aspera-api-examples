@@ -10,14 +10,17 @@ PANDOC_DEFAULTS_END
 
 ## Introduction
 
-This document examines the various methods for integrating with IBM Aspera APIs to harness its high-performance file transfer capabilities.
+This document examines the various methods for integrating
+with IBM Aspera APIs to harness its high-performance file transfer capabilities.
 
-IBM Aspera data transfer technology is delivered through a suite of products, each comprising components that expose APIs for integration.
+IBM Aspera data transfer technology is delivered through a suite of products,
+each comprising components that expose APIs for integration.
 
 Ultimately, most integrations aim to leverage the IBM Aspera FASP protocol to achieve maximum transfer speeds.
 
 All Aspera transfers involve a client connecting to a server to either push or pull files.
-The client component is based on either one of Aspera's client applications, a server, or a custom application built using Aspera's client libraries.
+The client component is based on either one of Aspera's client applications, a server,
+or a custom application built using Aspera's client libraries.
 The server component is always the IBM Aspera High-Speed Transfer Server (HSTS).
 
 ![Aspera Transfer](images/api-1.png)
@@ -28,15 +31,19 @@ The server component is always the IBM Aspera High-Speed Transfer Server (HSTS).
 
 - A `ascp` process started in client mode connecting to a transfer server (SSH or WSS)
 - Upon successful connection: a `ascp` process in server mode is started and listens on UDP.
-- The connection is direct between client and server using the IP protocol (there can be Aspera proxies in the middle (reverse, forward)), with one TCP connection per transfer session (`ascp` process), and one UDP session.
+- The connection is direct between client and server using the IP protocol
+  (there can be Aspera proxies in the middle (reverse, forward)),
+  with one TCP connection per transfer session (`ascp` process), and one UDP session.
 - Some sort of authorization is required (either just SSH credentials, or a transfer token)
 - If client sends the files, then it is an upload. If client receives the files, it is a download.
-- In all the cases a transfer session is initialized using a "transfer specification", a JSON structure (except direct execution of `ascp` which uses command line options).
+- In all the cases a transfer session is initialized using a "transfer specification", a JSON structure
+  (except direct execution of `ascp` which uses command line options).
 
 ### The basics
 
 When using Aspera to transfer data between two storage systems, a few fundamental concepts always apply.
-These concepts are independent of the specific API, SDK, or product being used (`ascp`, `ascli`, `transferd`, **Node API**, server REST API, etc.).
+These concepts are independent of the specific API, SDK, or product being used
+(`ascp`, `ascli`, `transferd`, **Node API**, server REST API, etc.).
 
 #### Client and server roles
 
@@ -46,7 +53,8 @@ An Aspera transfer always involves two distinct roles:
 
 - Server: the side that accepts the transfer.
 
-The client may either send data to the server (upload) or retrieve data from it (download), but the direction of the data flow does not change the roles: the initiator is always the client.
+The client may either send data to the server (upload) or retrieve data from it (download),
+but the direction of the data flow does not change the roles: the initiator is always the client.
 
 #### Server-side storage access (docroot / storage root)
 
@@ -186,9 +194,11 @@ Two types of transfer authorizations are supported (see later):
 - SSH authentication/authorization: This is the legacy mode used with Desktop Client or Server-Server transfers
 - Token authorization: This is the mode used for example when a web application manages users
 
-Other parameters are required when starting a transfer, such as transfer direction, or others are optional, such as target speed.
+Other parameters are required when starting a transfer, such as transfer direction,
+or others are optional, such as target speed.
 
-This document will show session parameters using the standardized JSON format "transfer specification" and refer to session parameters as **transfer spec**.
+This document will show session parameters using the standardized JSON format "transfer specification"
+and refer to session parameters as **transfer spec**.
 This is the native format in used in Web SDKs, `transferd`, Node API and `ascli`.
 Only `ascp` still does not support transfer spec and still uses regular command line options.
 
@@ -267,7 +277,7 @@ ascp -DDL-
 
 ### Sample optional config file for client `ascp`
 
-On Client-side, optionally, it is possible to create a configuration file: `aspera.conf` (in same folder as `ascp`, or `../etc`, see [README.configuration-files.md](README.configuration-files.md)).
+On Client-side, optionally, it is possible to create a configuration file: `aspera.conf` (in same folder as `ascp`, or `../etc`).
 
 Example of configuration file: `aspera.conf`, on client side (optional):
 
@@ -292,7 +302,8 @@ Smallest configuration file:
 
 > [!NOTE]
 > This file is mandatory on server side.
-> Modification of this file is facilitated on Transfer servers with the command `asconfigurator`, not available in client applications and SDK.
+> Modification of this file is facilitated on Transfer servers with the command `asconfigurator`,
+> not available in client applications and SDK.
 
 ### CLI
 
@@ -322,7 +333,8 @@ Get the `ascp` binary from transfer SDK or one of the free clients, together wit
 See `transferd` package earlier mentioned, or `ascli`.
 Execute command line transfers with `ascp` to the demo server using SSH credentials.
 Do the same with the client method chosen (`transferd` + gRPC).
-If you send to an Aspera application (Faspex, AoC) : use the REST API to create a **transfer spec** using the application API (and get token authorization).
+If you send to an Aspera application (Faspex, AoC) :
+use the REST API to create a **transfer spec** using the application API (and get token authorization).
 
 - Do you need to receive files on your Aspera Server ?
 - Install an Aspera Transfer Server to test with (Evaluation license ? Dev license?)
@@ -359,7 +371,8 @@ Scenarios:
 |--------|--------------|--------------|
 | script | command line | SSH          |
 
-The simplest and low-level integration consists in starting an Aspera transfer as a transfer client with a Transfer Server (upload or download).
+The simplest and low-level integration consists in starting an Aspera transfer as a transfer client
+with a Transfer Server (upload or download).
 This consists eventually in starting the `ascp` executable in client mode, locally.
 Credentials required: SSH credentials provided by the admin of the HSTS server.
 This can be done easily in a script.
@@ -400,13 +413,15 @@ asession @json:'{"spec":{"remote_host":"hsts1.example.com","remote_user":"my_hst
 Scenarios:
 
 - I need to transfer files at high speed from my home-grown application to a central place using basic OS credentials
-- I am provided with bare Aspera Transfer credentials, and I need to transfer to that server using my application written in java, C++, .NET, python, etc...
+- I am provided with bare Aspera Transfer credentials,
+  and I need to transfer to that server using my application written in java, C++, .NET, python, etc...
 
 | Client                    | API                  | Authorization|
 |---------------------------|----------------------|--------------|
 | Custom Client Application | Transfer Daemon gRPC | SSH          |
 
-If the integration to start a simple transfer job is made in an application written in one of the languages: C, C++, C#, Java, Python, Go, Rust, etc...
+If the integration to start a simple transfer job is made in an application
+written in one of the languages: C, C++, C#, Java, Python, Go, Rust, etc...
 Then the best option is to use the newer **Transfer Daemon**.
 This component can be freely downloaded here: [Transfer SDK].
 It is basically a wrapper around the `ascp` executable and daemon `transferd` and comes with examples.
@@ -465,7 +480,8 @@ Lots of debug information, look for transfer spec in logs.
 
 Scenarios:
 
-- I need to transfer files at high using a web browser and being authorized by some web Application (Custom, Faspex, Shares, AoC, ...)
+- I need to transfer files at high using a web browser and being authorized by some web Application
+  (Custom, Faspex, Shares, AoC, ...)
 
 Typically, authentication/authorization is performed in the web app, and a transfer token is used to authorize transfers.
 
@@ -473,8 +489,10 @@ Typically, authentication/authorization is performed in the web app, and a trans
 |-------------|--------------|--------------|
 | Web Browser | web SDK      | Token        |
 
-If the transfer must be started by a user in the context of a web browser, then the **IBM Aspera JavaScript SDK** can be used (for Aspera for Desktop and HTTP GW).
-It consists in a JavaScript library used similarly to the "Transfer SDK" (build session parameters, start transfer, monitor progress).
+If the transfer must be started by a user in the context of a web browser,
+then the **IBM Aspera JavaScript SDK** can be used (for Aspera for Desktop and HTTP GW).
+It consists in a JavaScript library used similarly to the "Transfer SDK"
+(build session parameters, start transfer, monitor progress).
 
 Reference (includes sample code): [Aspera API Hub] &rarr; IBM Aspera JavaScript SDK :
 <https://developer.ibm.com/apis/catalog/aspera--ibm-aspera-sdk/Introduction>
@@ -507,7 +525,8 @@ This is the method used for automated server to server transfers.
 A transfer can be started remotely (using its REST API) on a server to another remote server.
 2 servers here, but one starts the transfer as client, and connects to a remote server
 The managing application uses the "Node API" to control the client side of the transfer.
-Basically: `POST /ops/transfers` with a JSON payload containing session parameters: transfer spec with SSH credentials of the remote server.
+Basically: `POST /ops/transfers` with a JSON payload containing session parameters:
+transfer spec with SSH credentials of the remote server.
 
 Example of use with `ascli`: (for demonstration of use of API)
 
@@ -532,10 +551,14 @@ Scenarios:
 |---------------------------|----------------------|---------------|
 | Custom Client Application | Transfer SDK(client app)<br/>Node API (server app) | Token |
 
-In previous examples, transfers were started using SSH credentials and no token, using various client application types: command line, Transfer SDK, browser, server (node) or even mobile.
-Using SSH credentials, the authentication and transfer authorization is provided by the bare Aspera Server and its host operating system.
-In fact, in many integration cases, a custom (e.g. web) application server takes care of user authentication and transfer authorization (e.g. RBAC).
-In this case, once the server application has authenticated and authorized a transfer, it will convey this transfer authorization by generating a "transfer authorization token".
+In previous examples, transfers were started using SSH credentials and no token, using various client application types:
+command line, Transfer SDK, browser, server (node) or even mobile.
+Using SSH credentials, the authentication and transfer authorization is provided by the bare Aspera Server
+and its host operating system.
+In fact, in many integration cases,
+a custom (e.g. web) application server takes care of user authentication and transfer authorization (e.g. RBAC).
+In this case, once the server application has authenticated and authorized a transfer,
+it will convey this transfer authorization by generating a "transfer authorization token".
 Then, the transfer client provides this token to the Aspera server to get authorized to transfer to it.
 Several types are supported:
 
@@ -544,10 +567,15 @@ Several types are supported:
 - Bearer Token
 
 Token generation is detailed in next section.
-The Aspera token type is a simple choice, as no previous authorization is required in advance, and the server application generates it on the fly after it has checked that the application-level user effectively has rights.
-Aspera tokens are encrypted (using the secret token_encryption_key, or a dynamic key) and contains transfer username, transfer direction, file information, validity period.
-This token is generated by calling the node API. Validity is specified in `aspera.conf` and is valid for 1 day by default (`token_life_seconds`).
-Basic and Bearer tokens are used in specific cases (e.g. AoC uses "access keys", where Bearer tokens can be used and validated by a private/public key pair)
+The Aspera token type is a simple choice, as no previous authorization is required in advance,
+and the server application generates it on the fly
+after it has checked that the application-level user effectively has rights.
+Aspera tokens are encrypted (using the secret token_encryption_key, or a dynamic key)
+and contains transfer username, transfer direction, file information, validity period.
+This token is generated by calling the node API.
+Validity is specified in `aspera.conf` and is valid for 1 day by default (`token_life_seconds`).
+Basic and Bearer tokens are used in specific cases
+(e.g. AoC uses "access keys", where Bearer tokens can be used and validated by a private/public key pair)
 
 The "AsperaClient" is using one of the SDKs for transfer:
 
@@ -561,7 +589,8 @@ The "AsperaClient" is using one of the SDKs for transfer:
 ![transfer daemon](images/api-8.png)
 
 Scenarios:
-I own both systems used for the transfer (both are HSTS) and I use node API to get transfer authorization on destination, and node API to initiate the transfer on the source system.
+I own both systems used for the transfer (both are HSTS) and I use node API to get transfer authorization on destination,
+and node API to initiate the transfer on the source system.
 Machine-to-machine transfer
 
 | Client                    | API                  | Authorization |
@@ -569,14 +598,17 @@ Machine-to-machine transfer
 | Custom Client Application | Transfer SDK(client app)<br/>Node API (server app) | Token |
 
 This is the method used for automated server to server transfers if one owns both servers and token-based transfer is preferred.
-First the managing application must retrieve a transfer authorization (as well as transfer details, such as server address) using the Node API on the **server side of the transfer**:
+First the managing application must retrieve a transfer authorization
+(as well as transfer details, such as server address) using the Node API on the **server side of the transfer**:
 `POST /files/upload_setup` with transfer request, which generates a transfer spec.
 Then, the managing application uses the Node API to control the **client side of the transfer**.
 Basically: `POST /ops/transfers` with transfer spec generated previously.
 
 A common mistake is to call both APIs on the same server: client side.
-Incidentally, this could work if the transfer username is the same on both sides, and if the `token_encryption_key` the same on both sides for that transfer user.
-But in general, it will fail, either because the transfer user is different, or the token cannot be decrypted (different encryption key).
+Incidentally, this could work if the transfer username is the same on both sides,
+and if the `token_encryption_key` the same on both sides for that transfer user.
+But in general, it will fail, either because the transfer user is different,
+or the token cannot be decrypted (different encryption key).
 So, really, authorization shall be first generated on the server side, and transfer shall be initiated on the client side.
 
 Example of use with `ascli`: (for demonstration of use of API)
@@ -591,7 +623,9 @@ ascli --url=https://hsts1.example.com:9092 --username=my_hsts1_node_user --passw
 
 ### S7- Polling on transfer status on Node API
 
-The Node API endpoint: [`GET /ops/transfers`](https://developer.ibm.com/apis/catalog/aspera--aspera-node-api/api/API--aspera--ibm-aspera-node-api-4-4#get511225093) allows getting information on past and current transfers.
+The Node API endpoint:
+[`GET /ops/transfers`](https://developer.ibm.com/apis/catalog/aspera--aspera-node-api/api/API--aspera--ibm-aspera-node-api-4-4#get511225093)
+allows getting information on past and current transfers.
 Such information is stored on HSTS in the Redis database.
 
 Retention and activation is controlled by `aspera.conf` parameters:
@@ -615,7 +649,8 @@ Link: <https://hsts.example.com:9092/ops/transfers?iteration_token=1440571>; rel
 ```
 
 Calling the URL specified in `Link` will return subsequent results, and so on...
-To get all information, repeat with the response' Link URL until response is an empty array and the `iteration_token` does not change.
+To get all information, repeat with the response' Link URL until response is an empty array
+and the `iteration_token` does not change.
 When new information is available, a new call will return data and a new `iteration_token`.
 A number of query parameters allow filtering only necessary information, for example: `active_only=true`.
 Using query `view=id` will return only transfer ids, and specific information can be retrieved using `GET /ops/transfers/<id>`.
@@ -648,11 +683,14 @@ end
 
 ## Transfer authentication and authorization
 
-Initiating a transfer session in Aspera requires a valid transfer specification (**transfer spec**), which encapsulates all necessary parameters for the transfer, including **authentication and authorization** details.
+Initiating a transfer session in Aspera requires a valid transfer specification (**transfer spec**),
+which encapsulates all necessary parameters for the transfer, including **authentication and authorization** details.
 This applies universally, regardless of the method used to start the session.
 
 All transfers are executed on the server under a designated **transfer user**.
-The method of authorization is decoupled from the session initiation mechanism, meaning any supported authorization method can be used with any startup interface—whether via script, Transfer SDK, Node API, HTTPGW, mobile, or web applications.
+The method of authorization is decoupled from the session initiation mechanism,
+meaning any supported authorization method can be used with any startup interface—whether via script,
+Transfer SDK, Node API, HTTPGW, mobile, or web applications.
 
 Aspera supports multiple authorization mechanisms:
 
@@ -682,7 +720,8 @@ There are three types of tokens:
   - Permissions are enforced via the Node API (`/permissions`).
 
 If a token is provided and SSH is used for transport, the transfer user must have Aspera SSH public key authentication enabled.
-In this case, SSH authentication relies on public keys, while the corresponding private keys are embedded in the SDK or client applications.
+In this case, SSH authentication relies on public keys,
+while the corresponding private keys are embedded in the SDK or client applications.
 
 ### Choosing the Right Token Type
 
@@ -703,14 +742,16 @@ Choosing the wrong one is a common source of integration failures.
 
 #### ATx Token — Web app as broker
 
-This is the recommended pattern when a **custom web application** (or an Aspera application such as Faspex or Shares) sits between the end user and the HSTS.
+This is the recommended pattern when a **custom web application**
+(or an Aspera application such as Faspex or Shares) sits between the end user and the HSTS.
 
 The client application **never calls the Node API directly**.
 Instead:
 
 1. The client authenticates with the web app using whatever mechanism the app supports (SSO, OAuth, cookie, etc.).
 2. The client requests a transfer through the web app's own API.
-3. The web app enforces its own access control logic, then calls the Node API (`POST /files/upload_setup` or `POST /files/download_setup`) to generate a transfer spec containing a signed ATx token.
+3. The web app enforces its own access control logic, then calls the Node API
+   (`POST /files/upload_setup` or `POST /files/download_setup`) to generate a transfer spec containing a signed ATx token.
 4. The web app returns that transfer spec to the client.
 5. The client passes the transfer spec directly to the transfer engine (`transferd`, Web SDK, etc.) to execute the transfer.
 
@@ -719,7 +760,7 @@ Access control is entirely the web app's responsibility.
 
 This works with both **Node API Users** and **Access Keys** on the HSTS side.
 
-```
+```text
 Client App                          Server App                                HSTS
     │──────── app API call ────────────>│                                       │
     │                                   │ checks own ACL                        │
@@ -736,19 +777,22 @@ Client App                          Server App                                HS
 
 #### Bearer Token — Access control delegated to HSTS
 
-This is the more advanced pattern, used when access control should be managed **directly inside the HSTS** rather than in a broker application.
+This is the more advanced pattern,
+used when access control should be managed **directly inside the HSTS** rather than in a broker application.
 It is required for **Aspera on Cloud (AoC)** integration and any integration using the Gen4 file ID API.
 
 Key characteristics:
 
 - Files are addressed by **file ID**, not by path.
   The client must first resolve paths to IDs via `GET /files/{id}/files` before transferring.
-- **Permissions are set in advance** on the HSTS using `POST /permissions`, associating user identifiers (and optional group identifiers) with specific file IDs and access levels.
+- **Permissions are set in advance** on the HSTS using `POST /permissions`,
+  associating user identifiers (and optional group identifiers) with specific file IDs and access levels.
 - The client generates a **JWT Bearer token** signed with a private key.
   The HSTS validates it using the corresponding public key configured in advance.
-- A single token can be generated **once** and reused for its entire validity period — the client does not need to call the Node API per transfer.
+- A single token can be generated **once** and reused for its entire validity period
+  — the client does not need to call the Node API per transfer.
 
-```
+```text
                                   Application                           HSTS
                                       │───── PUT /access_keys/:id ──────>│
                                          (insert app public key in AK) 
@@ -774,7 +818,8 @@ Client App                        Application                           HSTS
                                                       checks permissions │
 ```
 
-The added complexity is the trade-off for eliminating the broker intermediary and gaining a richer, ID-stable permission model suitable for multi-tenant or cloud storage environments.
+The added complexity is the trade-off for eliminating the broker intermediary and gaining a richer,
+ID-stable permission model suitable for multi-tenant or cloud storage environments.
 
 #### Decision guide
 
@@ -794,26 +839,31 @@ The added complexity is the trade-off for eliminating the broker intermediary an
 
 **Use Basic Token** when:
 
-- You have programmatic access to an Access Key and need a lightweight token without calling `*_setup` or generating bearer tokens.
+- You have programmatic access to an Access Key and need a lightweight token without calling `*_setup`
+  or generating bearer tokens.
 - You are in a controlled environment where the Access Key itself provides sufficient access scoping.
 
 ### A1- SSH Authentication
 
-For simple transfer initiation in client-server or server-server case, no previous application provided authorization is required.
+For simple transfer initiation in client-server or server-server case,
+no previous application provided authorization is required.
 The username / pass or key has been pre-arranged between the server provider and client.
 See the transfer spec example earlier.
-This is often used in machine-to-machine transfers where authentication is based on a technical operating system user n server side and SSH.
+This is often used in machine-to-machine transfers
+where authentication is based on a technical operating system user n server side and SSH.
 Transfer authorization is based on a top level **docroot** specified in `aspera.conf` on server.
 See transfer spec earlier.
 
 Typical End-user usage: Simple Client-Server.
 This is the legacy mode of authentication / authorization, like `scp` or `sftp`.
-In this mode, authentication/authorization is done directly during the transfer session: the transfer server provides the authentication (with the local SSH server) and access control (with `aspera.conf`).
+In this mode, authentication/authorization is done directly during the transfer session:
+the transfer server provides the authentication (with the local SSH server) and access control (with `aspera.conf`).
 No external web application controls user authentication or file access rights.
 The authentication uses the SSH server (with username + password or SSH private key).
 File transfers are limited to the user's "docroot" (`aspera.conf`) and access rights on storage.
 Only sessions started with SSH supports this mode (Not Web Socket Session/HTTPS, or HTTPGW).
-Once SSH authentication is done, typically the user can transfer any file with possible limits in `aspera.conf` and file system rights.
+Once SSH authentication is done,
+typically the user can transfer any file with possible limits in `aspera.conf` and file system rights.
 
 ### A2- Aspera Transfer Token Authorization
 
@@ -821,9 +871,12 @@ Once SSH authentication is done, typically the user can transfer any file with p
 
 Broker application, e.g. Web-based control:
 
-- An external (to transfer server) application (Aspera or custom web app) first authenticates a user in web context (possibly with an external auth system, like SSO) and authorizes a transfer (based on the application access right management).
+- An external (to transfer server) application (Aspera or custom web app) first authenticates a user in web context
+  (possibly with an external auth system, like SSO) and authorizes a transfer
+  (based on the application access right management).
 - The application generates a **transfer spec** with an **authorization token** for every transfer requested.
-- Transfer authorization tokens is generated before starting the transfer on the transfer server using the node API: `POST /files/<upload|download|sync>_setup`
+- Transfer authorization tokens is generated before starting the transfer on the transfer server using the node API:
+  `POST /files/<upload|download|sync>_setup`
 
 #### A2: Scenario
 
@@ -832,11 +885,13 @@ Broker application, e.g. Web-based control:
 1. User is authenticated in Application (web, API, etc...)
 2. User calls the app's API with whatever security mechanism (OAuth token, cookie, etc...)
 3. The app checks the user's rights based on own logic and then calls the node API to generate a transfer spec with token
-4. Transfer spec is transmitted to the client side (e.g. web browser) which transmits it to the local Aspera client, which eventually connects to the transfer server where it is authorized for transfer.
+4. Transfer spec is transmitted to the client side (e.g. web browser) which transmits it to the local Aspera client,
+   which eventually connects to the transfer server where it is authorized for transfer.
 
 #### Token generation
 
-When the user authentication and authorization is managed by a third-party application, then the application needs to provide the client side with a secure "token" that will carry the transfer authorization.
+When the user authentication and authorization is managed by a third-party application,
+then the application needs to provide the client side with a secure "token" that will carry the transfer authorization.
 The application uses node API end points:
 
 - `/files/upload_setup`
@@ -879,7 +934,8 @@ Aspera Transfer tokens start with `AT` and end with `TA`.
 They are generated using the **gen3** Node API (`/files/*_setup`).
 They can also be generated using utility: `astokengen`, but this shall be avoided(legacy).
 
-Generation of Aspera Transfer tokens require the use of a token encryption key (symmetric) which is either configured statically in `aspera.conf` (`token_encryption_key`) or uses `askms` (dynamic keys).
+Generation of Aspera Transfer tokens require the use of a token encryption key (symmetric)
+which is either configured statically in `aspera.conf` (`token_encryption_key`) or uses `askms` (dynamic keys).
 This type of token is simply binary metadata encrypted (and then decrypted) with that key and includes:
 
 - Transfer direction (send/receive, as see from server)
@@ -887,8 +943,10 @@ This type of token is simply binary metadata encrypted (and then decrypted) with
 - Date validity
 - Hash of authorized file list
 
-When a transfer is initiated with a server and contains such token, that server will check each of these elements are valid, else transfer is refused.
-This means that: in order to be authorized to transfer with a transfer server using such token, the token (and transfer spec) must be generated on that same server (or cluster) using the node API.
+When a transfer is initiated with a server and contains such token,
+that server will check each of these elements are valid, else transfer is refused.
+This means that: in order to be authorized to transfer with a transfer server using such token,
+the token (and transfer spec) must be generated on that same server (or cluster) using the node API.
 
 ### A3- Aspera Bearer Token Authorization
 
@@ -896,15 +954,20 @@ This means that: in order to be authorized to transfer with a transfer server us
 
 Complex application using OAuth2
 
-- An external (to transfer server) application (Aspera or custom web app) authenticates users and grant access to its OAuth API in web or API context (possibly with an external auth system, like SSO).
-- A private key is used in the application to sign bearer tokens, and the public key is placed on the HSTS in the "access key" to be able to check signatures (and authenticity).
+- An external (to transfer server) application (Aspera or custom web app) authenticates users
+  and grant access to its OAuth API in web or API context (possibly with an external auth system, like SSO).
+- A private key is used in the application to sign bearer tokens,
+  and the public key is placed on the HSTS in the "access key" to be able to check signatures (and authenticity).
 - The Bearer token contains information about the user's identification and group membership.
 - The application sets permissions on access to folders on HSTS based on user ID or group ID.
 - The user gets a single bearer token from the app which grants access to any transfer.
 
-When a transfer starts on HSTS it will check if the resource (folder/file) is granted access to the user and group IDs found in the provided bearer token.
+When a transfer starts on HSTS it will check if the resource (folder/file) is granted access
+to the user and group IDs found in the provided bearer token.
 
-There is no API to generate a full transfer spec directly, but one can use the gen3 API to generate a base transfer spec on the HSTS, and then change the token in it with the bearer token.
+There is no API to generate a full transfer spec directly,
+but one can use the gen3 API to generate a base transfer spec on the HSTS,
+and then change the token in it with the bearer token.
 
 #### A3: Scenario
 
@@ -926,7 +989,8 @@ The scenario to prepare is:
 
 ## Integration of Aspera Products: Aspera WEB applications
 
-For integration with IBM Aspera applications: use their embedded authentication/authorization and APIs, those, in turn, will provide the transfer spec (with token) necessary to initiate a transfer.
+For integration with IBM Aspera applications: use their embedded authentication/authorization and APIs,
+those, in turn, will provide the transfer spec (with token) necessary to initiate a transfer.
 
 For more details refer to [Aspera API Hub]
 
@@ -945,12 +1009,14 @@ For automated operations, the bearer token shall be generated using JWT (JSON We
 The first step for a client application is to get a client ID and secret from Faspex 5.
 This is done in the Faspex 5 web interface, in the "API Clients" section.
 
-This client ID and secret together with the private key are used to generate a JWT token by calling the Faspex 5 API endpoint: `/token`.
+This client ID and secret together with the private key are used to generate a JWT token
+by calling the Faspex 5 API endpoint: `/token`.
 Refer to the [Faspex 5 documentation](https://www.ibm.com/docs/en/aspera-faspex/5.0) for details or examples in GitHub.
 
 A user generates, once, a private key and a public key pair.
 The public key is configured in Faspex 5 in the user's profile or in the API client configuration.
-The private key is used to sign the JWT token, which is then sent to the Faspex 5 API endpoint `/token` to obtain a bearer token.
+The private key is used to sign the JWT token,
+which is then sent to the Faspex 5 API endpoint `/token` to obtain a bearer token.
 Refer to examples in GitHub.
 
 Once the bearer token is generated, it can be used to call the Faspex 5 REST API endpoints.
@@ -960,15 +1026,18 @@ Once the bearer token is generated, it can be used to call the Faspex 5 REST API
 Faspex 5 provides a REST API to manage transfers, including sending and receiving packages.
 
 The first step is to create a transfer spec using the Faspex 5 API.
-This transfer spec is either for sending a new package, in that case one must first create a package, or for receiving an existing package, identified by a unique ID.
+This transfer spec is either for sending a new package, in that case one must first create a package,
+or for receiving an existing package, identified by a unique ID.
 A user can list received packages, and then select one to download.
 The Faspex 5 API provides endpoints to create a transfer spec for sending or receiving packages.
 
-The second step is to use the transfer spec to start the transfer using one of Aspera transfer agents (Transfer Daemon, Node API, ...).
+The second step is to use the transfer spec to start the transfer using one of Aspera transfer agents
+(Transfer Daemon, Node API, ...).
 
 ### IBM Aspera on Cloud
 
-Similar to Faspex 5, AoC uses OAuth 2.0 for authentication and authorization, using API client ID and secret and `/token` with JWT and private key.
+Similar to Faspex 5, AoC uses OAuth 2.0 for authentication and authorization,
+using API client ID and secret and `/token` with JWT and private key.
 
 There is no endpoint to create a transfer spec directly, but a transfer spec can be built relatively easily, refer to GitHub.
 
@@ -996,7 +1065,8 @@ A node user is always associated (at creation, see `asnodeadmin`) to a transfer 
 A transfer user can be assigned with either (exclusive):
 
 - A single "docroot", and the node API can be used "as-is", but access keys cannot be created with it
-- Or a list of file restrictions, in this case the node user can be used to create access keys, whose "storage_root" must match one of the restrictions.
+- Or a list of file restrictions, in this case the node user can be used to create access keys,
+  whose "storage_root" must match one of the restrictions.
 
 Refer to HSTS manual sections: "Docroot vs. File Restriction"
 In both cases, node API calls and transfers are "jailed" either in the docroot, or in the storage_root of the access key.
@@ -1043,9 +1113,12 @@ Example in various languages are provided as part of the `transferd` SDK, as wel
 ### Overview
 
 The **IBM Aspera Node API** is a RESTful web service that runs directly on an Aspera server (referred to as a *node*).
-It provides full programmatic control over the Aspera transfer server environment, enabling developers to manage files, control transfers, configure access, and monitor activity — all over a standard HTTP/HTTPS interface with a JSON-encoded API.
+It provides full programmatic control over the Aspera transfer server environment,
+enabling developers to manage files, control transfers, configure access, and monitor activity
+— all over a standard HTTP/HTTPS interface with a JSON-encoded API.
 
-The Node API is part of **IBM Aspera High-Speed Transfer Server and EndPoint** and acts as a daemon process that exposes endpoints for:
+The Node API is part of **IBM Aspera High-Speed Transfer Server and EndPoint**
+and acts as a daemon process that exposes endpoints for:
 
 - Remote file operations (browse, create, delete, rename, search)
 - Initiating and managing high-speed uploads and downloads (via FASP protocol or HTTP fallback)
@@ -1146,12 +1219,14 @@ There is usually a single Master Node User, but there can be more if necessary, 
 The Master Node User is usually associated with the transfer (OS) user: `xfer`, but is it not mandatory.
 
 > [!CAUTION]
-> If Access Keys created with this Master Node User are to be used with Aspera on Cloud, or Aspera Enterprise Web Apps, then it is mandatory to name the transfer user as `xfer`.
+> If Access Keys created with this Master Node User are to be used with Aspera on Cloud, or Aspera Enterprise Web Apps,
+> then it is mandatory to name the transfer user as `xfer`.
 
 #### Access Keys
 
 Created and managed through the Node API.
-A storage root is associated to it, and must comply to the file restriction associated with the Master Node User used to create it.
+A storage root is associated to it,
+and must comply to the file restriction associated with the Master Node User used to create it.
 
 #### Primary Access Keys
 
@@ -1173,7 +1248,8 @@ Bearer tokens are always generated associated with an Access Key.
 Use of the newer `/files/{id}` endpoint group is required.
 Bearer token contain a user "identifier", managed by the upper level managing application, as well as optional group identifiers.
 
-Access to file resources is granted on the Access Key with the `/permissions` endpoint by providing user and group identifiers and access levels.
+Access to file resources is granted on the Access Key with the `/permissions` endpoint
+by providing user and group identifiers and access levels.
 
 ### API Endpoint Reference
 
@@ -1195,7 +1271,8 @@ Sometimes referred to as Gen4.
 
 This requires the use of an Access Key.
 
-File IDs are automatically managed by the node daemon providing the node API, and are stored in a Redis Database together with permissions.
+File IDs are automatically managed by the node daemon providing the node API,
+and are stored in a Redis Database together with permissions.
 
 **Advantages:**
 
@@ -1287,7 +1364,8 @@ When a request fails, the server returns a structured JSON error object:
 #### Developer Notes
 
 - Always check the returned JSON for an `error` field when the HTTP status code is not `2xx`.
-- Some known errors may cause the API to return an **empty JSON object** `{}` instead of an error body — your client code should handle this case explicitly.
+- Some known errors may cause the API to return an **empty JSON object** `{}` instead of an error body
+  — your client code should handle this case explicitly.
 - Do not rely solely on the HTTP status code for error detection.
 
 ```javascript
@@ -1340,7 +1418,7 @@ POST /files/rename          → rename a file
 
 Initiate transfers between nodes or stream data.
 
-```
+```text
 POST /ops/transfers         → start a transfer
 GET  /ops/transfers/{id}    → monitor transfer progress
 GET  /ops/transfers/bandwidth → monitor bandwidth usage
@@ -1348,7 +1426,7 @@ GET  /ops/transfers/bandwidth → monitor bandwidth usage
 
 #### Monitoring & Reporting
 
-```
+```text
 GET /events       → node events (transfer start, file creation, permission changes)
 GET /usage        → transfer volume
 GET /space        → available disk space (HSTS only)

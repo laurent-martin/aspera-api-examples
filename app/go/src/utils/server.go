@@ -17,15 +17,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 )
-
-var logger *zap.SugaredLogger
-
-func SetLogger(lg *zap.SugaredLogger) {
-	logger = lg
-}
 
 const (
 	// Sizes of TLV components
@@ -38,13 +31,13 @@ const (
 	ASCMDCommand = "ascmd"
 )
 
-// TagValue represents a TLV (Tag-Length-Value) structure
+// TagValue is a TLV (Tag-Length-Value) item of the ascmd protocol.
 type TagValue struct {
 	Tag   uint8
 	Value []byte
 }
 
-// Info holds platform information
+// Info is the information about the platform.
 type Info struct {
 	Platform   string
 	Version    string
@@ -60,9 +53,13 @@ type Info struct {
 	Protocol   uint64
 }
 
-// newInfo decodes a byte array into an Info structure
+// newInfo decodes the information about the platform.
+//
+// Parameters:
+//   - data: TLV data
+//
+// Returns: information about the platform
 func newInfo(data []byte) (*Info, error) {
-	logger.Debugf("decoding info: %v", data)
 	info := &Info{
 		Dev: make([]string, 0),
 	}
@@ -123,12 +120,12 @@ func newInfo(data []byte) (*Info, error) {
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf("unknown TLV type: %d", tlv.Tag)
+			return nil, fmt.Errorf("Unknown TLV type: %d", tlv.Tag)
 		}
 	}
 }
 
-// Mnt holds drive information
+// Mnt is the information about one drive.
 type Mnt struct {
 	Fs     string
 	Dir    string
@@ -141,14 +138,18 @@ type Mnt struct {
 	Errstr string
 }
 
-// Mounts holds a list of Mnt structures
+// Mounts is the information about available drives.
 type Mounts struct {
 	Mounts []Mnt
 }
 
-// newMounts decodes a byte array into a Mounts structure
+// newMounts decodes the information about available drives.
+//
+// Parameters:
+//   - data: TLV data
+//
+// Returns: information about available drives
 func newMounts(data []byte) (*Mounts, error) {
-	logger.Debugf("decoding mounts: %v", data)
 	mounts := &Mounts{
 		Mounts: make([]Mnt, 0),
 	}
@@ -206,12 +207,12 @@ func newMounts(data []byte) (*Mounts, error) {
 				return mounts, err
 			}
 		default:
-			return nil, fmt.Errorf("unknown TLV type: %d", tlv.Tag)
+			return nil, fmt.Errorf("Unknown TLV type: %d", tlv.Tag)
 		}
 	}
 }
 
-// Stat holds the information about a file or directory
+// Stat is the information about a file or folder.
 type Stat struct {
 	Name    string
 	Size    uint64
@@ -232,9 +233,13 @@ type Stat struct {
 	Errstr  string
 }
 
-// newStat decodes the TLV data into a Stat structure
+// newStat decodes the information about a file or folder.
+//
+// Parameters:
+//   - data: TLV data
+//
+// Returns: information about a file or folder
 func newStat(data []byte) (*Stat, error) {
-	logger.Debugf("decoding stat: %v", data)
 	stat := &Stat{
 		Name:    "",
 		Size:    0,
@@ -332,12 +337,12 @@ func newStat(data []byte) (*Stat, error) {
 				return stat, err
 			}
 		default:
-			return nil, fmt.Errorf("unknown TLV tag: %d", tlv.Tag)
+			return nil, fmt.Errorf("Unknown TLV tag: %d", tlv.Tag)
 		}
 	}
 }
 
-// Size holds the information about the size of a file or directory
+// Size is the size information about a file or folder.
 type Size struct {
 	Size         uint64
 	Fcount       uint32
@@ -346,9 +351,13 @@ type Size struct {
 	FailedDcount uint32
 }
 
-// newSize decodes the TLV data into a Size structure
+// newSize decodes the size information about a file or folder.
+//
+// Parameters:
+//   - data: TLV data
+//
+// Returns: size information
 func newSize(data []byte) (*Size, error) {
-	logger.Debugf("decoding size: %v", data)
 	size := &Size{
 		Size:         0,
 		Fcount:       0,
@@ -386,19 +395,24 @@ func newSize(data []byte) (*Size, error) {
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf("unknown TLV tag: %d", tlv.Tag)
+			return nil, fmt.Errorf("Unknown TLV tag: %d", tlv.Tag)
 		}
 	}
 }
 
+// CommandError is the error returned by a command.
 type CommandError struct {
 	Errno  uint32
 	Errstr string
 }
 
-// newCommandError decodes the TLV data into a CommandError structure
+// newCommandError decodes the error returned by a command.
+//
+// Parameters:
+//   - data: TLV data
+//
+// Returns: error of the command
 func newCommandError(data []byte) (*CommandError, error) {
-	logger.Debugf("decoding error: %v", data)
 	error := &CommandError{
 		Errno:  0,
 		Errstr: "",
@@ -421,18 +435,23 @@ func newCommandError(data []byte) (*CommandError, error) {
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf("unknown TLV tag: %d", tlv.Tag)
+			return nil, fmt.Errorf("Unknown TLV tag: %d", tlv.Tag)
 		}
 	}
 }
 
+// Md5sum is the MD5 checksum of a file.
 type Md5sum struct {
 	Md5sum string
 }
 
-// newMd5sum decodes the TLV data into an Md5sum structure
+// newMd5sum decodes the MD5 checksum of a file.
+//
+// Parameters:
+//   - data: TLV data
+//
+// Returns: MD5 checksum
 func newMd5sum(data []byte) (*Md5sum, error) {
-	logger.Debugf("decoding md5sum: %v", data)
 	md5sum := &Md5sum{
 		Md5sum: "",
 	}
@@ -450,32 +469,42 @@ func newMd5sum(data []byte) (*Md5sum, error) {
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf("unknown TLV tag: %d", tlv.Tag)
+			return nil, fmt.Errorf("Unknown TLV tag: %d", tlv.Tag)
 		}
 	}
 }
 
+// CommandSuccess is the success of a command.
 type CommandSuccess struct {
 }
 
+// CommandExit is the end of the ascmd session.
 type CommandExit struct {
 }
 
-// CommandResult represents the top-level result of a command
+// CommandResult is the result of a command.
 type CommandResult struct {
 	Result interface{}
 }
 
+// String gets the text of the result.
+//
+// Returns: text of the result
 func (c CommandResult) String() string {
 	// Customize this to show meaningful data
 	return fmt.Sprintf("%+v", c.Result)
 }
 
-// newCommandResult decodes the TagValue into a CommandResult
+// newCommandResult decodes the result of a command.
+//
+// Parameters:
+//   - typeValue: TLV item
+//
+// Returns: result of the command
 func newCommandResult(typeValue *TagValue) (*CommandResult, error) {
 	switch typeValue.Tag {
 	case END_OF_BUFFER:
-		return nil, fmt.Errorf("buffer is empty")
+		return nil, fmt.Errorf("Buffer is empty")
 	case 1:
 		stat, err := newStat(typeValue.Value)
 		if err != nil {
@@ -497,7 +526,7 @@ func newCommandResult(typeValue *TagValue) (*CommandResult, error) {
 				return nil, err
 			}
 			if tlv.Tag != 1 {
-				return nil, fmt.Errorf("expected tag 1, got %d", tlv.Tag)
+				return nil, fmt.Errorf("Expected tag 1, got %d", tlv.Tag)
 			}
 			stat, err := newStat(tlv.Value)
 			if err != nil {
@@ -545,11 +574,16 @@ func newCommandResult(typeValue *TagValue) (*CommandResult, error) {
 		}
 		return &CommandResult{Result: md5sum}, nil
 	default:
-		return nil, fmt.Errorf("unknown TLV tag: %d", typeValue.Tag)
+		return nil, fmt.Errorf("Unknown TLV tag: %d", typeValue.Tag)
 	}
 }
 
-// readTLV reads a TLV structure from a reader
+// readTLV reads a TLV item.
+//
+// Parameters:
+//   - reader: reader of the ascmd output
+//
+// Returns: TLV item
 func readTLV(reader *bufio.Reader) (*TagValue, error) {
 	t := make([]byte, TagSize)
 	if _, err := io.ReadFull(reader, t); err != nil {
@@ -570,20 +604,28 @@ func readTLV(reader *bufio.Reader) (*TagValue, error) {
 	return &TagValue{Tag: t[0], Value: value}, nil
 }
 
-// AsCmd is a struct that represents a command execution environment
+// AsCmd is a client of the `ascmd` protocol: file operations on Aspera HSTS.
 type AsCmd struct {
 	stdin   io.Writer
 	stdout  io.Reader
 	version uint32
 }
 
-// NewAsCmd creates a new AsCmd instance
+// NewAsCmd creates an ascmd client, and starts the protocol.
+//
+// Parameters:
+//   - stdin: channel to which commands are written
+//   - stdout: channel from which TLV items are read
+//   - host: address of the server, to traverse a proxy
+//   - version: protocol version: 1 or 2
+//
+// Returns: ascmd client
 func NewAsCmd(stdin io.Writer, stdout io.Reader, host string, version uint32) (*AsCmd, error) {
 	if stdin == nil {
-		panic("stdin is nil")
+		panic("Stdin is nil")
 	}
 	if stdout == nil {
-		panic("stdout is nil")
+		panic("Stdout is nil")
 	}
 
 	ascmd := &AsCmd{
@@ -603,7 +645,7 @@ func NewAsCmd(stdin io.Writer, stdout io.Reader, host string, version uint32) (*
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("unsupported ascmd version: %d", version)
+		return nil, fmt.Errorf("Unsupported ascmd version: %d", version)
 	}
 	// Read the first TLV response
 	initialReader := bufio.NewReader(ascmd.stdout)
@@ -612,22 +654,20 @@ func NewAsCmd(stdin io.Writer, stdout io.Reader, host string, version uint32) (*
 		return nil, err
 	}
 	if data.Tag != 5 {
-		return nil, fmt.Errorf("expected tag 5, got: %d", data.Tag)
+		return nil, fmt.Errorf("Expected tag 5, got: %d", data.Tag)
 	}
-	info, err := newInfo(data.Value)
-	if err != nil {
+	if _, err := newInfo(data.Value); err != nil {
 		return nil, err
 	}
-	logger.Debugf("initial info: %v", info)
 	return ascmd, nil
 }
 
-// Sends a command to ascmd
+// sendCommand sends a command to ascmd.
 //
 // Parameters:
-//   - command: the command to send, without leading "as_" and trailing "\n"
+//   - command: command, without `as_` prefix
 func (a *AsCmd) sendCommand(command string) error {
-	logger.Debugf("sending command: as_%s", command)
+	logger.Debugf("Sending command: as_%s", command)
 	command = fmt.Sprintf("as_%s\n", command)
 	_, err := a.stdin.Write([]byte(command))
 	if err != nil {
@@ -636,11 +676,13 @@ func (a *AsCmd) sendCommand(command string) error {
 	return nil
 }
 
-// Executes a command and returns the result and error status
+// executeCommandRes executes a command, and gets the result.
 //
 // Parameters:
-//   - command: the command to execute.
-//   - args: the arguments to the command.
+//   - command: command, without `as_` prefix
+//   - args: arguments of the command
+//
+// Returns: result of the command
 func (a *AsCmd) executeCommandRes(command string, args ...string) (CommandResult, error) {
 	full_command := command
 	if len(args) > 0 {
@@ -650,12 +692,10 @@ func (a *AsCmd) executeCommandRes(command string, args ...string) (CommandResult
 		}
 		full_command += " " + strings.Join(quotedArgs, " ")
 	}
-	logger.Debugf("executing command: %s", command)
 	if err := a.sendCommand(full_command); err != nil {
 		return CommandResult{}, err
 	}
 	resultReader := bufio.NewReader(a.stdout)
-	logger.Debugf("reading result for command: %s", command)
 	typeValue, err := readTLV(resultReader) // Assuming readTLV is defined elsewhere
 	if err != nil {
 		return CommandResult{}, err
@@ -667,11 +707,11 @@ func (a *AsCmd) executeCommandRes(command string, args ...string) (CommandResult
 	return *result, nil
 }
 
-// Executes a command and returns only error status
+// executeCommandNoRes executes a command that returns only success or error.
 //
 // Parameters:
-//   - command: the command to execute.
-//   - args: the arguments to the command.
+//   - command: command, without `as_` prefix
+//   - args: arguments of the command
 func (a *AsCmd) executeCommandNoRes(command string, args ...string) error {
 	result, err := a.executeCommandRes(command, args...)
 	if err != nil {
@@ -681,49 +721,66 @@ func (a *AsCmd) executeCommandNoRes(command string, args ...string) error {
 	case *CommandSuccess:
 		return nil
 	case *CommandError:
-		return fmt.Errorf("error: %s", res.Errstr)
+		return fmt.Errorf("Ascmd error: %s", res.Errstr)
 	default:
-		return fmt.Errorf("unexpected result: %s: %v", reflect.TypeOf(result.Result), result.Result)
+		return fmt.Errorf("Unexpected result: %s: %v", reflect.TypeOf(result.Result), result.Result)
 	}
 }
 
-// Decodes a zero terminated string
+// decodeZstr decodes a zero-terminated string.
+//
+// Parameters:
+//   - name: name of the field, for errors
+//   - buf: data
+//
+// Returns: string
 func decodeZstr(name string, buf []byte) (string, error) {
 	// Check if the last byte is zero
 	if len(buf) == 0 || buf[len(buf)-1] != 0 {
-		return "", fmt.Errorf("expected zero-terminated buffer in decodeZstr(%s): %v", name, buf)
+		return "", fmt.Errorf("Expected zero-terminated buffer in decodeZstr(%s): %v", name, buf)
 	}
 	// Remove the last zero byte and convert the rest to a string
 	decodedString := string(buf[:len(buf)-1])
 	// Check for invalid UTF-8 characters
 	if !utf8.ValidString(decodedString) {
-		return "", errors.New("invalid UTF-8 sequence")
+		return "", errors.New("Invalid UTF-8 sequence")
 	}
-	logger.Debugf("decoded string: %s: %v", name, decodedString)
 	return decodedString, nil
 }
 
-// Decodes a 64-bit unsigned integer from a byte slice
+// decodeU64 decodes a 64-bit unsigned integer.
+//
+// Parameters:
+//   - fieldName: name of the field, for errors
+//   - data: data
+//
+// Returns: integer
 func decodeU64(fieldName string, data []byte) (uint64, error) {
 	if len(data) != U64Size {
-		return 0, fmt.Errorf("invalid length for %s: expected %d, got %d", fieldName, U64Size, len(data))
+		return 0, fmt.Errorf("Invalid length for %s: expected %d, got %d", fieldName, U64Size, len(data))
 	}
 	result := binary.BigEndian.Uint64(data)
-	logger.Debugf("decoded u64: %s: %v", fieldName, result)
 	return result, nil
 }
 
-// Decodes a 32-bit unsigned integer from a byte slice
+// decodeU32 decodes a 32-bit unsigned integer.
+//
+// Parameters:
+//   - fieldName: name of the field, for errors
+//   - data: data
+//
+// Returns: integer
 func decodeU32(fieldName string, data []byte) (uint32, error) {
 	if len(data) != U32Size {
-		return 0, fmt.Errorf("invalid length for %s: expected %d, got %d", fieldName, U32Size, len(data))
+		return 0, fmt.Errorf("Invalid length for %s: expected %d, got %d", fieldName, U32Size, len(data))
 	}
 	result := binary.BigEndian.Uint32(data)
-	logger.Debugf("decoded u32: %s: %v", fieldName, result)
 	return result, nil
 }
 
-// Retrieves information about the platform
+// Info gets the information about the platform.
+//
+// Returns: information about the platform
 func (a *AsCmd) Info() (Info, error) {
 	command := "info"
 	result, err := a.executeCommandRes(command)
@@ -734,13 +791,18 @@ func (a *AsCmd) Info() (Info, error) {
 	case Info:
 		return res, nil
 	case *CommandError:
-		return Info{}, fmt.Errorf("error: %s", res.Errstr)
+		return Info{}, fmt.Errorf("Ascmd error: %s", res.Errstr)
 	default:
-		return Info{}, fmt.Errorf("unexpected result: %s: %s: %v", command, reflect.TypeOf(result.Result), result.Result)
+		return Info{}, fmt.Errorf("Unexpected result: %s: %s: %v", command, reflect.TypeOf(result.Result), result.Result)
 	}
 }
 
-// Retrieves information about a file or directory
+// Ls gets the information about a file, or about the files in a folder.
+//
+// Parameters:
+//   - path: path of the file or folder
+//
+// Returns: information about the files
 func (a *AsCmd) Ls(path string) ([]Stat, error) {
 	command := "ls"
 	result, err := a.executeCommandRes(command, path)
@@ -753,18 +815,26 @@ func (a *AsCmd) Ls(path string) ([]Stat, error) {
 	case *Stat:
 		return []Stat{*res}, nil
 	case *CommandError:
-		return nil, fmt.Errorf("error: %s", res.Errstr)
+		return nil, fmt.Errorf("Ascmd error: %s", res.Errstr)
 	default:
-		return nil, fmt.Errorf("unexpected result: %s: %s: %v", command, reflect.TypeOf(result.Result), result.Result)
+		return nil, fmt.Errorf("Unexpected result: %s: %s: %v", command, reflect.TypeOf(result.Result), result.Result)
 	}
 }
 
-// Deletes a file or directory
+// Rm deletes a file or folder.
+//
+// Parameters:
+//   - path: path of the file or folder
 func (a *AsCmd) Rm(path string) error {
 	return a.executeCommandNoRes("rm", path)
 }
 
-// Retrieves size information about a file or directory
+// Du gets the size information about a file or folder.
+//
+// Parameters:
+//   - path: path of the file or folder
+//
+// Returns: size information
 func (a *AsCmd) Du(path string) (Size, error) {
 	command := "du"
 	result, err := a.executeCommandRes(command, path)
@@ -775,28 +845,41 @@ func (a *AsCmd) Du(path string) (Size, error) {
 	case *Size:
 		return *res, nil
 	case *CommandError:
-		return Size{}, fmt.Errorf("error: %s", res.Errstr)
+		return Size{}, fmt.Errorf("Ascmd error: %s", res.Errstr)
 	default:
-		return Size{}, fmt.Errorf("unexpected result: %s: %s: %v", command, reflect.TypeOf(result.Result), result.Result)
+		return Size{}, fmt.Errorf("Unexpected result: %s: %s: %v", command, reflect.TypeOf(result.Result), result.Result)
 	}
 }
 
-// Creates a directory
+// Mkdir creates a folder.
+//
+// Parameters:
+//   - path: path of the folder
 func (a *AsCmd) Mkdir(path string) error {
 	return a.executeCommandNoRes("mkdir", path)
 }
 
-// Copies a file
+// Cp copies a file or folder.
+//
+// Parameters:
+//   - source: path of the source
+//   - destination: path of the destination
 func (a *AsCmd) Cp(source, destination string) error {
 	return a.executeCommandNoRes("cp", source, destination)
 }
 
-// Moves a file
+// Mv moves a file or folder.
+//
+// Parameters:
+//   - source: path of the source
+//   - destination: path of the destination
 func (a *AsCmd) Mv(source, destination string) error {
 	return a.executeCommandNoRes("mv", source, destination)
 }
 
-// Retrieves information on drives in the system
+// Df gets the information about available drives.
+//
+// Returns: information about available drives
 func (a *AsCmd) Df() (Mounts, error) {
 	command := "df"
 	result, err := a.executeCommandRes(command)
@@ -807,13 +890,18 @@ func (a *AsCmd) Df() (Mounts, error) {
 	case *Mounts:
 		return *res, nil
 	case *CommandError:
-		return Mounts{}, fmt.Errorf("error: %s", res.Errstr)
+		return Mounts{}, fmt.Errorf("Ascmd error: %s", res.Errstr)
 	default:
-		return Mounts{}, fmt.Errorf("unexpected result: %s: %s: %v", command, reflect.TypeOf(result.Result), result.Result)
+		return Mounts{}, fmt.Errorf("Unexpected result: %s: %s: %v", command, reflect.TypeOf(result.Result), result.Result)
 	}
 }
 
-// Retrieves the MD5 checksum of a file
+// Md5sum gets the MD5 checksum of a file.
+//
+// Parameters:
+//   - path: path of the file
+//
+// Returns: MD5 checksum
 func (a *AsCmd) Md5sum(path string) (string, error) {
 	command := "md5sum"
 	result, err := a.executeCommandRes(command, path)
@@ -824,45 +912,52 @@ func (a *AsCmd) Md5sum(path string) (string, error) {
 	case *Md5sum:
 		return res.Md5sum, nil
 	case *CommandError:
-		return "", fmt.Errorf("error: %s", res.Errstr)
+		return "", fmt.Errorf("Ascmd error: %s", res.Errstr)
 	default:
-		return "", fmt.Errorf("unexpected result: %s: %s: %v", command, reflect.TypeOf(result.Result), result.Result)
+		return "", fmt.Errorf("Unexpected result: %s: %s: %v", command, reflect.TypeOf(result.Result), result.Result)
 	}
 }
 
-// Terminate sends the "as_exit" command to terminate the ascmd agent
+// Terminate terminates the ascmd session with the `as_exit` command.
 func (a *AsCmd) Terminate() error {
 	return a.sendCommand("exit")
 }
 
 //===============================================
 
+// AsCmdLocal is ascmd executed locally, for tests.
 type AsCmdLocal struct {
 	*AsCmd
 	cmd *exec.Cmd
 }
 
+// NewAsCmdLocal starts ascmd locally, for tests.
+//
+// Parameters:
+//   - protocol: protocol version: 1 or 2
+//
+// Returns: ascmd client
 func NewAsCmdLocal(protocol uint32) (*AsCmdLocal, error) {
 	cmd := exec.Command(ASCMDCommand)
 	cmd.Env = append(os.Environ(), "SSH_CLIENT=")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to open stdin: %w", err)
+		return nil, fmt.Errorf("Failed to open stdin: %w", err)
 	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to open stdout: %w", err)
+		return nil, fmt.Errorf("Failed to open stdout: %w", err)
 	}
 	if protocol != 1 {
 		cmd.Args = append(cmd.Args, fmt.Sprintf("-V%d", protocol))
 	}
 	err = cmd.Start()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start ascmd: %w", err)
+		return nil, fmt.Errorf("Failed to start ascmd: %w", err)
 	}
 	ascmdAgent, err := NewAsCmd(stdin, stdout, "", uint32(protocol))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create ascmd agent: %w", err)
+		return nil, fmt.Errorf("Failed to create ascmd agent: %w", err)
 	}
 	return &AsCmdLocal{
 		AsCmd: ascmdAgent,
@@ -870,27 +965,39 @@ func NewAsCmdLocal(protocol uint32) (*AsCmdLocal, error) {
 	}, nil
 }
 
+// Terminate terminates the ascmd session, and waits for the end of ascmd.
 func (self *AsCmdLocal) Terminate() error {
 	err := self.cmd.Wait()
 	if err != nil {
-		return fmt.Errorf("ascmd exited with error: %w", err)
+		return fmt.Errorf("Ascmd exited with code %d", self.cmd.ProcessState.ExitCode())
 	}
-	logger.Infof("ascmd exited successfully")
+	logger.Debug("Ascmd exited with code 0")
 	return nil
 }
 
+// AsCmdRemote is ascmd executed on the server through SSH.
 type AsCmdRemote struct {
 	*AsCmd
 	client  *ssh.Client
 	session *ssh.Session
 }
 
+// NewAsCmdRemote starts ascmd on the server through SSH.
+//
+// Parameters:
+//   - host: address of the server
+//   - port: SSH port
+//   - username: transfer user
+//   - password: password of the user
+//   - protocol: protocol version: 1 or 2
+//
+// Returns: ascmd client
 func NewAsCmdRemote(host string, port string, username string, password string, protocol uint32) (*AsCmdRemote, error) {
 	// Initialize SSH connection
 	address := net.JoinHostPort(host, port)
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to server: %w", err)
+		return nil, fmt.Errorf("Failed to connect to server: %w", err)
 	}
 	sshConfig := &ssh.ClientConfig{
 		User: username,
@@ -907,7 +1014,7 @@ func NewAsCmdRemote(host string, port string, username string, password string, 
 
 	session, err := client.NewSession()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create SSH session: %w", err)
+		return nil, fmt.Errorf("Failed to create SSH session: %w", err)
 	}
 
 	ascmdCommand := ASCMDCommand
@@ -919,19 +1026,19 @@ func NewAsCmdRemote(host string, port string, username string, password string, 
 	}
 	stdinPipe, err := session.StdinPipe()
 	if err != nil {
-		return nil, fmt.Errorf("unable to set up stdin pipe: %w", err)
+		return nil, fmt.Errorf("Unable to set up stdin pipe: %w", err)
 	}
 	stdoutPipe, err := session.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("unable to set up stdout pipe: %w", err)
+		return nil, fmt.Errorf("Unable to set up stdout pipe: %w", err)
 	}
 	if err := session.Start(command); err != nil {
-		return nil, fmt.Errorf("failed to start command: %w", err)
+		return nil, fmt.Errorf("Failed to start command: %w", err)
 	}
 	// Initialize AsCmd agent
 	ascmdAgent, err := NewAsCmd(stdinPipe, stdoutPipe, host, uint32(protocol))
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize AsCmd agent: %w", err)
+		return nil, fmt.Errorf("Failed to initialize AsCmd agent: %w", err)
 	}
 	return &AsCmdRemote{
 		AsCmd:   ascmdAgent,
@@ -939,13 +1046,15 @@ func NewAsCmdRemote(host string, port string, username string, password string, 
 		session: session,
 	}, nil
 }
+
+// Terminate terminates the ascmd session, and closes the SSH connection.
 func (self *AsCmdRemote) Terminate() error {
 	// Wait for session to close
 	if err := self.session.Wait(); err != nil {
-		return fmt.Errorf("command exited with error: %w", err)
+		return fmt.Errorf("Ascmd exited with error: %w", err)
 	}
 	self.session.Close()
 	self.client.Close()
-	logger.Infof("Command exited successfully")
+	logger.Debug("Ascmd exited with code 0")
 	return nil
 }

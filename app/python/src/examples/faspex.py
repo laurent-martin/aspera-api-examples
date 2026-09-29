@@ -23,7 +23,6 @@ try:
             'sources': [{'paths': config.file_list()}],
         }
     })
-    log.debug('resp=%s', response_data)
 
     if 'error' in response_data:
         raise Exception(response_data['error']['internal_message'])
@@ -35,6 +34,7 @@ try:
     config.add_sources(t_spec, 'paths')
 
     # send files into package
+    log.info('Uploading files')
     transfer_client.start_transfer_and_wait(t_spec)
 finally:
     transfer_client.shutdown()

@@ -1,4 +1,6 @@
 // cspell:ignore reqwest jsonwebtoken
+use super::configuration::log_dump;
+use log::Level::Debug;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::error::Error;
@@ -13,7 +15,7 @@ const MIME_WWW: &str = "application/x-www-form-urlencoded";
 const IETF_GRANT_JWT: &str = "urn:ietf:params:oauth:grant-type:jwt-bearer";
 
 
-/// Information needed to generate a bearer token
+/// Parameters of OAuth 2 Bearer authentication, with a JWT signed with a private key.
 #[derive(Clone)]
 pub struct BearerData {
     pub token_url: String,
@@ -25,18 +27,18 @@ pub struct BearerData {
     pub sub: String,
     pub org: Option<String>,
 }
-/// Information needed to generate a basic token
+/// Parameters of Basic authentication.
 pub struct BasicData {
     pub username: String,
     pub password: String,
 }
-/// Enum to store the authentication data
+/// Authentication of the REST client.
 pub enum AuthData {
     Bearer(BearerData),
     Basic(BasicData),
     None,
 }
-/// JWT Claims structure
+/// Claims of the JWT.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct Claims {
     iss: String,
@@ -48,7 +50,7 @@ struct Claims {
     jti: String,
     org: Option<String>,
 }
-/// REST API client
+/// Simple REST client, with Basic or OAuth 2 JWT Bearer authentication.
 pub struct Rest {
     base_url: String,
     auth: AuthData,
@@ -56,11 +58,14 @@ pub struct Rest {
     client: reqwest::Client,
 }
 impl Rest {
-    /// Create a new REST API client
+    /// Create a REST client.
     ///
-    /// ### Arguments
-    /// * `url` - The base URL for the API
-    /// * `verify` - Whether to verify SSL certificates
+    /// # Arguments
+    /// * `url` - base URL of the API
+    /// * `verify` - false for development servers with a self-signed certificate
+    ///
+    /// # Returns
+    /// REST client
     pub fn new(url: &str, verify: bool) -> Result<Self, Box<dyn Error>> {
         let mut client_builder = reqwest::Client::builder();
         if !verify {
@@ -73,39 +78,45 @@ impl Rest {
             client: client_builder.build()?,
         })
     }
-    /// API is authenticated using basic auth.
+    /// Use Basic authentication.
     ///
-    /// ### Arguments
-    /// * `username` - The username
-    /// * `password` - The password
+    /// # Arguments
+    /// * `username` - user name
+    /// * `password` - password
     pub fn set_basic(&mut self, username: &str, password: &str) {
         self.auth = AuthData::Basic(BasicData {
             username: username.to_owned(),
             password: password.to_owned(),
         });
     }
-    /// API is authenticated using a bearer token.
+    /// Use OAuth 2 Bearer authentication, with a JWT signed with a private key.
     ///
-    /// ### Arguments
-    /// * `auth_data` - Information for JWT generation
+    /// # Arguments
+    /// * `auth_data` - parameters of Bearer authentication
     pub fn set_bearer(&mut self, auth_data: BearerData) {
         self.auth = AuthData::Bearer(auth_data);
     }
 
-    /// Set the default scope for the bearer token and update the headers
+    /// Generate a bearer token, and use it for all subsequent requests.
     ///
-    /// ### Arguments
-    /// * `scope` - The scope to set
+    /// A new token is generated for each execution of the sample.
+    /// In real code, the token should be reused until it expires.
+    ///
+    /// # Arguments
+    /// * `scope` - OAuth scope of the token, or none
     pub async fn set_default_scope(&mut self, scope: Option<String>) -> Result<(), Box<dyn Error>> {
         let token = self.get_bearer_token(scope).await?;
         self.headers.insert("Authorization".to_string(), token);
         Ok(())
     }
 
-    /// Get a bearer token from the server
+    /// Generate a bearer token, with the JWT Bearer grant.
     ///
-    /// ### Arguments
-    /// * `scope` - The scope to set
+    /// # Arguments
+    /// * `scope` - OAuth scope of the token, or none
+    ///
+    /// # Returns
+    /// Value of the Authorization header: `Bearer <token>`
     pub async fn get_bearer_token(
         &mut self,
         scope: Option<String>,
@@ -114,7 +125,7 @@ impl Rest {
         // get copy of self.auth as BearerData, else return error
         let auth = match &self.auth {
             AuthData::Bearer(auth) => auth.clone(),
-            _ => return Err(anyhow::anyhow!("Bearer").into()),
+            _ => return Err("Auth data not set".into()),
         };
         let claims = Claims {
             iss: auth.iss.to_owned(),
@@ -140,10 +151,7 @@ impl Rest {
         if let Some(scope) = scope {
             data.push(("scope", scope));
         }
-        // debug data
-        // do not log values: the assertion is a credential
-        log::debug!("Bearer data keys: {:?}", data.iter().map(|(key, _)| *key).collect::<Vec<_>>());
-        let response = self
+        let request_builder = self
             .client
             .post(auth.token_url) // "http://localhost:12345")//
             .basic_auth(
@@ -152,29 +160,24 @@ impl Rest {
             )
             .header("Accept", MIME_JSON)
             .header("Content-Type", MIME_WWW)
-            .form(&data)
-            .send()
-            .await?;
-        // check response error
-        if !response.status().is_success() {
-            return Err(
-                anyhow::anyhow!("Failed to get access token: {}", response.status()).into(),
-            );
-        }
-        let jdata: Value = response.json().await?;
+            .form(&data);
+        let jdata: Value = serde_json::from_str(&self.send(request_builder).await?)?;
         let token = jdata["access_token"]
             .as_str()
-            .ok_or_else(|| anyhow::anyhow!("Failed to get access token from response"))?;
-        log::debug!("Bearer token received");
+            .ok_or("No access_token in token response")?;
         Ok(format!("Bearer {token}"))
     }
 
-    /// CRUD: Create
+    /// Call the API: send a request, and get the response data.
     ///
-    /// ### Arguments
-    /// * `endpoint` - The endpoint to the API endpoint
-    /// * `value` - The JSON value to send
-    /// * `query` - Optional query parameters
+    /// # Arguments
+    /// * `method` - HTTP method
+    /// * `endpoint` - path of the endpoint, relative to the base URL
+    /// * `body` - request data, sent in JSON
+    /// * `query` - query parameters
+    ///
+    /// # Returns
+    /// Response data, or none if the response is empty
     pub async fn call(
         &self,
         method: reqwest::Method,
@@ -202,19 +205,45 @@ impl Rest {
         if let Some(value) = body {
             request_builder = request_builder.json(value);
         }
-        let response = request_builder.send().await?;
-        // check http code and transform to error
-        if !response.status().is_success() {
-            let status = response.status();
-            log::debug!("response: {:?}", response);
-            log::debug!("response.text: {:?}", response.text().await?);
-            return Err(anyhow::anyhow!("HTTP request failed: {}", status).into());
-        }
-        match response.json().await {
-            Ok(value) => Ok(Some(value)),
-            Err(_) => Ok(None),
-        }
+        let body = self.send(request_builder).await?;
+        Ok(serde_json::from_str(&body).ok())
     }
+    /// Send an HTTP request, log request and response bodies, and return an error on failure.
+    ///
+    /// # Arguments
+    /// * `request_builder` - HTTP request
+    ///
+    /// # Returns
+    /// Response body
+    async fn send(&self, request_builder: reqwest::RequestBuilder) -> Result<String, Box<dyn Error>> {
+        let request = request_builder.build()?;
+        let method = request.method().clone();
+        let mut url = request.url().clone();
+        url.set_query(None);
+        log::debug!("HTTP {method} {url}");
+        if let Some(body) = request.body().and_then(|body| body.as_bytes()) {
+            log_dump("Request body", String::from_utf8_lossy(body), Debug);
+        }
+        let response = self.client.execute(request).await?;
+        let status = response.status();
+        let body = response.text().await?;
+        if !status.is_success() {
+            return Err(format!("HTTP {} for {method} {url}: {body}", status.as_u16()).into());
+        }
+        if !body.is_empty() {
+            log_dump("Response body", &body, Debug);
+        }
+        Ok(body)
+    }
+    /// Create a resource (HTTP POST).
+    ///
+    /// # Arguments
+    /// * `endpoint` - path of the endpoint, relative to the base URL
+    /// * `value` - request data, sent in JSON
+    /// * `query` - query parameters
+    ///
+    /// # Returns
+    /// Response data
     pub async fn create(
         &self,
         endpoint: &str,
@@ -226,6 +255,14 @@ impl Rest {
             .await?
             .unwrap())
     }
+    /// Read a resource (HTTP GET).
+    ///
+    /// # Arguments
+    /// * `endpoint` - path of the endpoint, relative to the base URL
+    /// * `query` - query parameters
+    ///
+    /// # Returns
+    /// Response data
     pub async fn read(
         &self,
         endpoint: &str,
@@ -236,12 +273,21 @@ impl Rest {
             .await?
             .unwrap())
     }
+    /// Update a resource (HTTP PUT).
+    ///
+    /// # Arguments
+    /// * `endpoint` - path of the endpoint, relative to the base URL
+    /// * `value` - request data, sent in JSON
     pub async fn update(&self, endpoint: &str, value: &Value) -> Result<(), Box<dyn Error>> {
         let _ = self
             .call(reqwest::Method::PUT, endpoint, Some(value), None)
             .await?;
         Ok(())
     }
+    /// Delete a resource (HTTP DELETE).
+    ///
+    /// # Arguments
+    /// * `endpoint` - path of the endpoint, relative to the base URL
     pub async fn delete(&self, endpoint: &str) -> Result<(), Box<dyn Error>> {
         let _ = self.call(reqwest::Method::DELETE, endpoint, None, None).await?;
         Ok(())

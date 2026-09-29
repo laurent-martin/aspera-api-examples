@@ -8,7 +8,8 @@ Samples show logs on terminal.
 
 ## Using `maven` to build the project
 
-The toolchain here uses `gradle`, but `maven` can also be used, refer to [Github GRPC for java](https://github.com/grpc/grpc-java) for sample maven configuration.
+The toolchain here uses `gradle`, but `maven` can also be used,
+refer to [Github GRPC for java](https://github.com/grpc/grpc-java) for sample maven configuration.
 
 ## Java
 
@@ -56,4 +57,5 @@ The compilation of the `.proto` requires the use of:
 
 It is important that a compatible version of `protoc` and `grpc-java` is used.
 
-One way to check the compatibility is to read the README.md from the branch of the `grpc-java` repository that you are using, e.g. : [gRPC java 1.43.x](https://github.com/grpc/grpc-java/tree/v1.43.x)
+One way to check the compatibility is to read the README.md from the branch of the `grpc-java` repository
+that you are using, e.g. : [gRPC java 1.43.x](https://github.com/grpc/grpc-java/tree/v1.43.x)

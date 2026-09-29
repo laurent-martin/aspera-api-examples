@@ -15,10 +15,19 @@ const std::string AOC_OAUTH_AUDIENCE = "https://api.asperafiles.com/api/v1/oauth
 const std::string package_name = "sample package C++";
 const int transfer_sessions = 1;
 
+/// @brief Generate the transfer cookie of AoC, that identifies the application and the user.
+/// @param app AoC application, e.g. `packages`
+/// @param user_name name of the user
+/// @param user_id identifier of the user: email
+/// @return cookie
 std::string generate_cookie(const std::string& app, const std::string& user_name, const std::string& user_id) {
     return "aspera.aoc:" + utils::base64_encode(app) + ":" + utils::base64_encode(user_name) + ":" + utils::base64_encode(user_id);
 }
 
+/// @brief Get the OAuth scope to access a node.
+/// @param access_key access key of the node
+/// @param scope scope on the node, e.g. `user:all`
+/// @return OAuth scope
 std::string node_scope(const std::string& access_key, const std::string& scope) {
     return std::string("node.") + access_key + ":" + scope;
 }
@@ -40,24 +49,24 @@ int main(int argc, char* argv[]) {
         aoc_api.set_default_scope("user:all");
 
         // Get user information
+        LOGGER(info) << "Getting user information";
         json::object user_info = aoc_api.read("self").as_object();
-        LOGGER(debug) << user_info;
 
         // Get workspace information
         std::string workspace_name = config.param_str({"aoc", "workspace"});
-        LOGGER(info) << "Getting workspace information for " << workspace_name;
+        LOGGER(info) << "Getting workspace: " << workspace_name;
         json::array response_data = aoc_api.read("workspaces", {{"q", workspace_name}}).as_array();
         if (response_data.size() != 1) {
-            throw std::runtime_error("Found multiple or no workspaces for " + workspace_name);
+            throw std::runtime_error("Found " + std::to_string(response_data.size()) + " workspaces for " + workspace_name);
         }
         json::object workspace_info = response_data[0].as_object();
 
         // Get dropbox (shared inbox) information
         std::string shared_inbox_name = config.param_str({"aoc", "shared_inbox"});
-        LOGGER(info) << "Getting shared inbox information";
+        LOGGER(info) << "Getting shared inbox: " << shared_inbox_name;
         response_data = aoc_api.read("dropboxes", {{"current_workspace_id", workspace_info["id"].as_string()}, {"q", shared_inbox_name}}).as_array();
         if (response_data.size() != 1) {
-            throw std::runtime_error("Found multiple or no dropboxes for " + shared_inbox_name);
+            throw std::runtime_error("Found " + std::to_string(response_data.size()) + " shared inboxes for " + shared_inbox_name);
         }
         json::object dropbox_info = response_data[0].as_object();
 
@@ -70,19 +79,16 @@ int main(int argc, char* argv[]) {
                                                 {"name", package_name},
                                                 {"note", "My package note"}})
                                         .as_object();
-        LOGGER(debug) << package_info;
 
         // Get node information
         LOGGER(info) << "Getting node information";
         json::object node_info = aoc_api.read("nodes/" + utils::attribute_str(package_info, "node_id")).as_object();
-        LOGGER(debug) << node_info;
 
         // Set transfer expectations
         LOGGER(info) << "Setting expected transfers";
         aoc_api.update("packages/" + utils::attribute_str(package_info, "id"), {{"sent", true}, {"transfers_expected", transfer_sessions}});
 
         // Generate transfer spec
-        LOGGER(info) << "Generating transfer spec";
         json::object t_spec = {
             {"direction", "send"},
             {"token", aoc_api.get_bearer_token(node_scope(utils::attribute_str(node_info, "access_key"), "user:all"))},
@@ -119,9 +125,10 @@ int main(int argc, char* argv[]) {
         config.add_sources(t_spec, "paths");
 
         // Start the transfer
+        LOGGER(info) << "Uploading files";
         transfer_client.transfer_start_and_wait(t_spec);
     } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+        LOGGER(error) << e.what();
         return 1;
     }
     return 0;

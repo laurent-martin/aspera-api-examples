@@ -5,7 +5,7 @@
 import xml.dom.minidom
 import requests
 import json
-import logging
+import utils.rest
 
 IBM_CLOUD_OAUTH_URL = 'https://iam.cloud.ibm.com/identity/token'
 # max time to wait for a server response
@@ -14,20 +14,14 @@ HTTP_TIMEOUT_SEC = 60
 
 def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
     '''
-    Return Aspera Transfer Service node information for given bucket
+    Get the node information of Aspera Transfer Service for a bucket.
 
-    Parameters:
-    bucket     : Name of bucket
-    endpoint   : Storage endpoint ('https://...')
-    key        : API Key
-    crn        : Resource instance id
-    auth       : Token endpoint
-
-    Returns:
-    Aspera Transfer Service node information
-
-    Raises:
-    Exception: in case of problem
+    :param bucket: name of the bucket
+    :param endpoint: storage endpoint: `https://...`
+    :param key: API key
+    :param crn: resource instance id
+    :param auth: token endpoint
+    :return: node information: `url`, `auth`, `headers`, `tspec`
     '''
     # Get bearer token to access COS S3 API
     # payload to generate auth token
@@ -42,10 +36,8 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
         headers={'Content-type': 'application/x-www-form-urlencoded'},
         timeout=HTTP_TIMEOUT_SEC,
     )
-    if response.status_code != 200:
-        raise Exception('error')
+    utils.rest.check_response(response)
     bearer_token_info = response.json()
-    logging.debug(bearer_token_info)
 
     # Get Aspera connection information for the bucket
     header_auth = {
@@ -59,9 +51,7 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
         params={'faspConnectionInfo': True},
         timeout=HTTP_TIMEOUT_SEC,
     )
-    if response.status_code != 200:
-        raise Exception('error accessing endpoint')
-    logging.debug(response.content)
+    utils.rest.check_response(response)
     ats_info_root = xml.dom.minidom.parseString(response.content.decode('utf-8'))
     ats_ak = ats_info_root.getElementsByTagName('AccessKey')[0]
     ats_url = ats_info_root.getElementsByTagName('ATSEndpoint')[0].firstChild.nodeValue
@@ -77,11 +67,9 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
         headers={'Content-type': 'application/x-www-form-urlencoded'},
         timeout=HTTP_TIMEOUT_SEC,
     )
-    if response.status_code != 200:
-        raise Exception('error when generating token')
+    utils.rest.check_response(response)
     delegated_token_info = response.json()
     aspera_storage_credentials = {'type': 'token', 'token': delegated_token_info}
-    logging.debug(aspera_storage_credentials)
 
     return {
         'url': ats_url,
@@ -99,27 +87,22 @@ def node(*, bucket, endpoint, key, crn, auth=IBM_CLOUD_OAUTH_URL):
 
 def from_service_credentials(*, credentials, region):
     '''
-    Return parameters suitable for node given service credential information
+    Get the parameters of `node` from service credentials.
 
-    Parameters:
-    credentials : The structure for 'service credentials' (from json.load(file))
-    region      : The region of bucket
-
-    Returns:
-    hash with keys 'endpoint', 'key', 'crn'
+    :param credentials: service credentials, from JSON
+    :param region: region of the bucket
+    :return: parameters: `endpoint`, `key`, `crn`
     '''
     # read and check format of service credentials
     if not isinstance(credentials, dict):
-        raise Exception('service creds must be a dict')
+        raise Exception('Invalid service credentials: expecting a dict')
     for k in ['apikey', 'endpoints', 'resource_instance_id']:
         if not k in credentials:
-            raise Exception(f'missing key: {k}')
-    logging.debug(credentials)
+            raise Exception(f'Missing key in service credentials: {k}')
 
     # read endpoints from url in service credentials
     response = requests.get(credentials['endpoints'], timeout=HTTP_TIMEOUT_SEC)
-    if response.status_code != 200:
-        raise Exception('error')
+    utils.rest.check_response(response)
 
     # return parameters
     return {

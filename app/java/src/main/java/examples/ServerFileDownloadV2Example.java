@@ -3,12 +3,23 @@ package examples;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import java.net.URI;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import utils.TransferClient;
 import utils.Configuration;
 
-// Receive one file from demo server using ssh credentials and transferspec v2
+/**
+ * Sample: download one file from HSTS with SSH credentials, with a transfer spec V2.
+ */
 public class ServerFileDownloadV2Example {
+    private static final Logger LOGGER =
+            Logger.getLogger(ServerFileDownloadV2Example.class.getName());
 
+    /**
+     * Execute the sample.
+     *
+     * @param args command line arguments: files to transfer
+     */
     public static void main(String... args) {
         final Configuration config = new Configuration(args);
         final TransferClient transferClient = new TransferClient(config);
@@ -33,6 +44,7 @@ public class ServerFileDownloadV2Example {
                                                     config.getParamStr("server", "file_download"))//
                                             .put("destination", "downloaded_file"))));
             // execute transfer
+            LOGGER.log(Level.INFO, "Downloading file");
             transferClient.start_transfer_and_wait(transferSpecV2);
         } catch (Exception e) {
             throw new Error(e);

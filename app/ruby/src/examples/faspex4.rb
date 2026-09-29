@@ -25,10 +25,6 @@ begin
     config.param('faspex', 'password')
   )
 
-  # very simple api call
-  me = api_v3.read('me')
-  log.info("me: #{me}")
-
   # 2: send a package
   #---------------
 
@@ -38,12 +34,14 @@ begin
     'recipients' => ['aspera.user1@gmail.com'],
     'sources' => [{ 'paths' => config.files }]
   } }
+  log.info('Creating package')
   pkg_created = api_v3.create('send', package_create_params)
   # get transfer specification (normally: only one)
   transfer_spec = pkg_created['xfer_sessions'].first
   # set paths of files to send
   transfer_spec['paths'] = config.files.map { |p| { 'source' => p } }
   # Start transfer
+  log.info('Uploading files')
   transfer_client.start_transfer_and_wait(transfer_spec)
 ensure
   transfer_client.shutdown

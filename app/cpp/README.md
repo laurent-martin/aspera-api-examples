@@ -49,8 +49,6 @@ redhat$ sudo dnf install -y protobuf-compiler protobuf-devel
 ubuntu$ sudo apt-get install protobuf-compiler
 ```
 
-
-
 ## Build and Run
 
 ```bash

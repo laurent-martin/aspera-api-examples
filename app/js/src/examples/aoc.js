@@ -19,6 +19,13 @@ const transferSessions = 1;
 const config = new Configuration();
 const transferClient = new TransferClient(config);
 
+/**
+ * Generate the transfer cookie of AoC, that identifies the application and the user.
+ * @param {string} app AoC application, e.g. `packages`
+ * @param {string} userName name of the user
+ * @param {string} userId identifier of the user: email
+ * @returns {string} cookie
+ */
 function generateCookie(app, userName, userId) {
     const encodedApp = Buffer.from(app).toString('base64');
     const encodedUserName = Buffer.from(userName).toString('base64');
@@ -40,26 +47,24 @@ aocApi.setAuthBearer({
 await aocApi.setDefaultScope('user:all');
 
 // Get user info
+logger.info('Getting user information');
 const userInfo = await aocApi.read('self');
-logger.debug(userInfo);
 
 // Get workspace info
 const workspaceName = config.getParam('aoc', 'workspace');
-logger.info(`Getting workspace information for ${workspaceName}`);
+logger.info(`Getting workspace: ${workspaceName}`);
 let responseData = await aocApi.read('workspaces', { q: workspaceName });
-logger.debug(responseData);
 if (responseData.length !== 1) throw new Error(`Found ${responseData.length} workspaces for ${workspaceName}`);
 const workspaceInfo = responseData[0];
 
 // Get shared inbox info
 const sharedInboxName = config.getParam('aoc', 'shared_inbox');
-logger.info('Getting shared inbox information');
+logger.info(`Getting shared inbox: ${sharedInboxName}`);
 responseData = await aocApi.read('dropboxes', {
     current_workspace_id: workspaceInfo.id,
     q: sharedInboxName
 });
-logger.debug(responseData);
-if (responseData.length !== 1) throw new Error(`Found ${responseData.length} dropboxes for ${sharedInboxName}`);
+if (responseData.length !== 1) throw new Error(`Found ${responseData.length} shared inboxes for ${sharedInboxName}`);
 const dropboxInfo = responseData[0];
 
 // Create a new package
@@ -70,12 +75,10 @@ const packageInfo = await aocApi.create('packages', {
     name: packageName,
     note: 'My package note',
 });
-logger.debug(packageInfo);
 
 // Get node information
 logger.info('Getting node information');
 const nodeInfo = await aocApi.read(`nodes/${packageInfo.node_id}`);
-logger.debug(nodeInfo);
 
 // Set expected transfers
 logger.info('Setting expected transfers');
@@ -129,8 +132,8 @@ config.addSources(tSpec, 'paths');
 
 // Start the transfer using the transfer client
 try {
+    logger.info('Uploading files');
     await transferClient.startTransferAndWait(tSpec);
-    logger.info('Transfer completed!');
 } finally {
     await transferClient.shutdown();
 }

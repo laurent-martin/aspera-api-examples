@@ -8,10 +8,19 @@ import utils.TransferClient;
 import utils.Configuration;
 import utils.Rest;
 
+/**
+ * Sample: upload files with the Node API, with a transfer spec V1.
+ */
 public class Node {
 
     private static final Logger LOGGER = Logger.getLogger(Node.class.getName());
 
+    /**
+     * Execute the sample.
+     *
+     * @param args command line arguments: files to transfer
+     * @throws Exception on error
+     */
     public static void main(String... args) throws Exception {
         final Configuration config = new Configuration(args);
         final TransferClient transferClient = new TransferClient(config);
@@ -20,7 +29,6 @@ public class Node {
             /*
              * Create Node API object
              */
-            LOGGER.log(Level.INFO, "Creating Node API object");
             final String nodeBaseUrl = config.getParamStr("node", "url");
             final var nodeAPI = new Rest(nodeBaseUrl);
             nodeAPI.setVerify(config.getParamBool("node", "verify"));
@@ -30,7 +38,7 @@ public class Node {
             /*
              * Generate transfer spec using upload_setup
              */
-            LOGGER.log(Level.INFO, "Generating transfer spec");
+            LOGGER.log(Level.INFO, "Getting transfer spec");
             final JSONObject uploadSetupRequest = new JSONObject().put("transfer_requests",
                     new org.json.JSONArray().put(new JSONObject().put("transfer_request",
                             new JSONObject().put("paths",
@@ -50,7 +58,7 @@ public class Node {
             /*
              * Start transfer
              */
-            LOGGER.log(Level.INFO, "Starting transfer");
+            LOGGER.log(Level.INFO, "Uploading files");
             transferClient.start_transfer_and_wait(transferSpec);
 
         } finally {

@@ -11,6 +11,9 @@ import utils.Configuration;
 import utils.Rest;
 import java.util.Base64;
 
+/**
+ * Sample: upload files to a shared inbox of Aspera on Cloud.
+ */
 public class Aoc {
 
     private static final Logger LOGGER = Logger.getLogger(Aoc.class.getName());
@@ -18,6 +21,12 @@ public class Aoc {
     private static final String AOC_OAUTH_AUDIENCE =
             "https://api.asperafiles.com/api/v1/oauth2/token";
 
+    /**
+     * Execute the sample.
+     *
+     * @param args command line arguments: files to transfer
+     * @throws Exception on error
+     */
     public static void main(String... args) throws Exception {
         final Configuration config = new Configuration(args);
         final TransferClient transferClient = new TransferClient(config);
@@ -26,7 +35,6 @@ public class Aoc {
             /*
              * Generic part: create API object
              */
-            LOGGER.log(Level.INFO, "Creating AoC API object");
             final var aocAPI = new Rest(AOC_API_V1_BASE_URL);
             aocAPI.setAuthBearer(Map.ofEntries(
                     Map.entry("token_url",
@@ -44,19 +52,19 @@ public class Aoc {
             /*
              * Get user info
              */
-            LOGGER.log(Level.INFO, "Getting user info");
+            LOGGER.log(Level.INFO, "Getting user information");
             final JSONObject userInfo = (JSONObject) aocAPI.read("self");
 
             /*
              * Get workspace info
              */
             final String workspaceName = config.getParamStr("aoc", "workspace");
-            LOGGER.log(Level.INFO, "Looking up workspace: " + workspaceName);
+            LOGGER.log(Level.INFO, "Getting workspace: {0}", workspaceName);
             final JSONArray workspaces =
                     (JSONArray) aocAPI.read("workspaces", Map.of("q", workspaceName));
             if (workspaces.length() != 1) {
                 throw new Exception(
-                        "Found " + workspaces.length() + " workspaces for name: " + workspaceName);
+                        "Found " + workspaces.length() + " workspaces for " + workspaceName);
             }
             final JSONObject workspaceInfo = workspaces.getJSONObject(0);
 
@@ -64,13 +72,13 @@ public class Aoc {
              * Get shared inbox (dropbox) info
              */
             final String sharedInboxName = config.getParamStr("aoc", "shared_inbox");
-            LOGGER.log(Level.INFO, "Looking up shared inbox: " + sharedInboxName);
+            LOGGER.log(Level.INFO, "Getting shared inbox: {0}", sharedInboxName);
             final JSONArray dropboxes =
                     (JSONArray) aocAPI.read("dropboxes", Map.of("current_workspace_id",
                             workspaceInfo.getString("id"), "q", sharedInboxName));
             if (dropboxes.length() != 1) {
-                throw new Exception(
-                        "Found " + dropboxes.length() + " dropboxes for name: " + sharedInboxName);
+                throw new Exception("Found " + dropboxes.length() + " shared inboxes for "
+                        + sharedInboxName);
             }
             final JSONObject dropboxInfo = dropboxes.getJSONObject(0);
 
@@ -98,14 +106,13 @@ public class Aoc {
             /*
              * Get node info
              */
-            LOGGER.log(Level.INFO, "Getting node info");
+            LOGGER.log(Level.INFO, "Getting node information");
             final JSONObject nodeInfo =
                     (JSONObject) aocAPI.read("nodes/" + packageInfo.getString("node_id"));
 
             /*
              * Generate transfer spec
              */
-            LOGGER.log(Level.INFO, "Generating transfer spec");
             final String token = aocAPI.getBearerToken(
                     Optional.of("node." + nodeInfo.getString("access_key") + ":user:all"));
             final String cookie = generateCookie("packages", userInfo.getString("name"),
@@ -149,7 +156,7 @@ public class Aoc {
             /*
              * Start transfer
              */
-            LOGGER.log(Level.INFO, "Starting transfer");
+            LOGGER.log(Level.INFO, "Uploading files");
             transferClient.start_transfer_and_wait(transferSpec);
 
         } finally {
@@ -157,6 +164,14 @@ public class Aoc {
         }
     }
 
+    /**
+     * Generate the transfer cookie of AoC, that identifies the application and the user.
+     *
+     * @param app AoC application, e.g. {@code packages}
+     * @param userName name of the user
+     * @param userId identifier of the user: email
+     * @return cookie
+     */
     private static String generateCookie(String app, String userName, String userId) {
         String encodedApp = Base64.getEncoder().encodeToString(app.getBytes());
         String encodedUserName = Base64.getEncoder().encodeToString(userName.getBytes());

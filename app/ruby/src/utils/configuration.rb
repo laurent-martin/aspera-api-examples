@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'yaml'
+require 'json'
 require 'logger'
 require 'tmpdir'
 require 'base64'
@@ -8,7 +9,9 @@ require 'uri'
 require 'net/http'
 require 'singleton'
 
+# Utilities of the samples: configuration, REST client, and transfer client.
 module Utils
+  # Configuration of the samples: parameters from the configuration file, files to transfer from the command line, and logging.
   class Configuration
     include Singleton
 
@@ -16,54 +19,69 @@ module Utils
     PATHS_FILE_REL = 'config/paths.yaml'
     DIR_TOP_VAR    = 'DIR_TOP'
     DEBUG_HTTP     = false
+    # secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
+    SECRETS_REGEX = /("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+/
     class << self
+      # @return [Boolean] true to show secrets in logs, set from configuration file (misc.show_secrets)
+      attr_accessor :show_secrets
+      # @return [Logger] logger of the samples, set on initialization
+      attr_accessor :logger
+
+      # Hide secrets in text for logs, unless configured to show them.
+      # @param text [String] text that may contain secrets
+      # @return [String] text with hidden secrets
+      def mask_secrets(text)
+        return text if show_secrets
+
+        text.gsub(SECRETS_REGEX, '\1\2***')
+      end
+
+      # Log a named value: objects are displayed in JSON, and secrets are hidden.
+      # @param name [String] name of the value
+      # @param value [String, Object] value to log: a string, or an object displayed in JSON
+      # @param level [Integer] log level, debug by default
+      # @return [void]
+      def log_dump(name, value, level: Logger::DEBUG)
+        return if level < logger.level
+
+        value = value.to_json unless value.is_a?(String)
+        logger.add(level, "#{name}: #{mask_secrets(value)}")
+      end
+
+      # Create the value of an HTTP Basic Authorization header.
+      # @param username [String] user name
+      # @param password [String] password
+      # @return [String] header value: `Basic <base64>`
       def basic_authorization(username, password)
         "Basic #{Base64.strict_encode64("#{username}:#{password}")}"
       end
 
+      # Create an HTTP Basic Authorization header for a transfer spec V2.
+      # @param username [String] user name
+      # @param password [String] password
+      # @return [Hash] header as `key` and `value`
       def basic_auth_header_key_value(username, password)
         {
           'key' => 'Authorization',
           'value' => basic_authorization(username, password)
         }
       end
-
-      def last_file_line(filename)
-        # Efficiently read the last line without loading entire file
-        File.open(filename, 'rb') do |f|
-          return '' if f.size.zero?
-
-          pos = -1
-          buf = +''
-          loop do
-            f.seek(pos, IO::SEEK_END)
-            char = f.read(1)
-            # Stop once we've collected a line and hit a newline (skip trailing newline-only cases)
-            break if char == "\n" && !buf.empty?
-
-            buf.prepend(char)
-            pos -= 1
-            break if f.pos <= 1 # reached start
-          end
-          buf.encode('UTF-8', invalid: :replace, undef: :replace)
-        end
-      end
     end
-    # Expose a few internals to stay close to Python version
-    attr_reader :log_folder, :logger
+    # @return [String] folder for log files
+    attr_reader :log_folder
+    # @return [Logger] logger of the samples
+    attr_reader :logger
 
+    # Read the configuration file, and set up logging.
     def initialize
       @file_list = ARGV.dup
-      raise ArgumentError, "ERROR: Usage: #{$PROGRAM_NAME} <files to send>" if @file_list.empty?
+      raise ArgumentError, 'Missing arguments: files to transfer' if @file_list.empty?
 
       @top_folder = ENV[DIR_TOP_VAR]
-      raise EnvironmentError, "Environment variable #{DIR_TOP_VAR} is not set." if @top_folder.nil?
+      raise "Environment variable #{DIR_TOP_VAR} is not set" if @top_folder.nil?
 
       @top_folder = File.expand_path(@top_folder)
-      unless File.directory?(@top_folder)
-        raise NotADirectoryError,
-              "The folder specified by #{DIR_TOP_VAR} does not exist or is not a directory: #{@top_folder}"
-      end
+      raise "Folder not found: #{@top_folder}" unless File.directory?(@top_folder)
 
       @log_folder = Dir.tmpdir
 
@@ -76,55 +94,64 @@ module Utils
       @config = YAML.safe_load(File.read(main_cfg_path), aliases: true)
 
       # logging level
-      level_name = param('misc', 'level', 'WARN').to_s.upcase
-      level_const = begin
-        Logger.const_get(level_name)
-      rescue StandardError
-        Logger::WARN
-      end
+      level_name = param('misc', 'level')
+      log_levels = { 'debug' => Logger::DEBUG, 'info' => Logger::INFO, 'warning' => Logger::WARN, 'error' => Logger::ERROR }
+      raise "Invalid log level: #{level_name}" unless log_levels.key?(level_name)
+
       @logger = Logger.new($stdout)
-      @logger.tap { |l| l.level = level_const } # initialize root logger formatting if needed
+      @logger.level = log_levels[level_name]
       @logger.formatter = proc do |severity, _datetime, _progname, msg|
         format("%-8s %s\n", severity, msg)
       end
+      self.class.logger = @logger
       Rest.logger(@logger, http: DEBUG_HTTP) if defined?(Rest)
+      self.class.show_secrets = param('misc', 'show_secrets', false)
     end
 
+    # Get a parameter from the configuration file.
+    # @param section [String] section in the configuration file
+    # @param key [String] name of the parameter in the section
+    # @param default [Object, nil] value if the parameter is not set, else the parameter is mandatory
+    # @return [Object] value of the parameter
     def param(section, key, default = nil)
-      sect = @config[section] || @config[section.to_s]
-      raise KeyError, "Section not found: #{section}" if sect.nil?
-
-      val = sect[key] || sect[key.to_s]
+      sect = @config[section.to_s] || {}
+      val = sect[key.to_s]
       return val unless val.nil?
 
       return default unless default.nil?
 
-      raise KeyError, "Param not found: #{key}"
+      raise KeyError, "Configuration parameter not found: #{section}.#{key}"
     end
 
-    # Get configuration sub-path in project's root folder
+    # Get the path of an item of the project, from the paths file.
+    # @param name [String] name of the item in the paths file
+    # @return [String] absolute path of the item, that must exist
     def get_path(name)
       rel = @paths[name] || @paths[name.to_s]
-      raise KeyError, "Path key not found: #{name}" if rel.nil?
+      raise KeyError, "Configuration parameter not found: #{name}" if rel.nil?
 
       item_path = File.join(@top_folder, *rel.to_s.split('/'))
-      raise "ERROR: #{item_path} not found." unless File.exist?(item_path)
+      raise "File not found: #{item_path}" unless File.exist?(item_path)
 
       item_path
     end
 
-    # Get list of files to transfer (from CLI args)
+    # Get the files to transfer, from the command line arguments.
+    # @return [Array<String>] list of files
     attr_reader :file_list
 
-    # Add source file list to transfer spec.
-    # `path` is like 'paths' (V1) or 'assets.paths' (V2).
+    # Add the files to transfer, from the command line arguments, to the transfer spec.
+    # @param t_spec [Hash] transfer spec to modify
+    # @param path [String] path of the file list in the transfer spec: `paths` (V1) or `assets.paths` (V2)
+    # @param destination [Object, nil] if set, add the file name as destination
+    # @return [Hash] the transfer spec
     def add_sources(t_spec, path, destination: nil)
       keys = path.split('.')
       current = t_spec
 
       keys[0..-2].each do |k|
         current = current[k] || current[k.to_s]
-        raise KeyError, "key is not a dict: #{k}" unless current.is_a?(Hash)
+        raise KeyError, "Invalid path in transfer spec: #{path}" unless current.is_a?(Hash)
       end
 
       leaf_key = keys[-1]

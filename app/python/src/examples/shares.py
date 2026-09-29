@@ -17,7 +17,7 @@ try:
     shares_api.setVerify(config.param('shares', 'verify', True))
 
     # call Node API with a single transfer request to get one transfer spec with Aspera token
-    logging.info('Generating transfer spec')
+    logging.info('Getting transfer spec')
     response_data = shares_api.create('files/upload_setup', {
         'transfer_requests': [
             {'transfer_request': {
@@ -36,6 +36,7 @@ try:
     config.add_sources(t_spec, 'paths')
 
     # start transfer, using Transfer SDK
+    logging.info('Uploading files')
     transfer_client.start_transfer_and_wait(t_spec)
 finally:
     transfer_client.shutdown()

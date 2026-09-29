@@ -5,9 +5,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -24,7 +24,7 @@ const (
 	MIME_WWW                     = "application/x-www-form-urlencoded"
 )
 
-// Rest is a client to interact with REST APIs
+// Rest is a simple REST client, with Basic or OAuth 2 JWT Bearer authentication.
 type Rest struct {
 	BaseURL  string
 	Verify   bool
@@ -32,7 +32,12 @@ type Rest struct {
 	AuthData map[string]string
 }
 
-// NewRest creates a new Rest client
+// NewRest creates a REST client.
+//
+// Parameters:
+//   - url: base URL of the API
+//
+// Returns: REST client
 func NewRest(url string) *Rest {
 	return &Rest{
 		BaseURL:  url,
@@ -42,39 +47,79 @@ func NewRest(url string) *Rest {
 	}
 }
 
+// SetVerify enables or disables the verification of the server certificate.
+//
+// Parameters:
+//   - verify: false for development servers with a self-signed certificate
 func (r *Rest) SetVerify(verify bool) {
 	r.Verify = verify
 }
+
+// SetHeaders adds headers to all subsequent requests.
+//
+// Parameters:
+//   - headers: header names and values
 func (r *Rest) SetHeaders(headers map[string]string) {
 	for k, v := range headers {
 		r.Headers[k] = v
 	}
 }
 
-// SetBasic sets the Authorization header with Basic Auth
+// SetBasic uses Basic authentication.
+//
+// Parameters:
+//   - user: user name
+//   - pass: password
 func (r *Rest) SetBasic(user, pass string) {
 	r.Headers["Authorization"] = "Basic " + basicAuthHeader(user, pass)
 }
 
-// Helper function to create Basic Auth header
+// basicAuthHeader creates the credentials of an HTTP Basic Authorization header.
+//
+// Parameters:
+//   - user: user name
+//   - pass: password
+//
+// Returns: credentials in base64
 func basicAuthHeader(user, pass string) string {
 	auth := user + ":" + pass
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
-func (r *Rest) SetDefaultScope(scope string) {
-	r.Headers["Authorization"] = r.getBearer(scope)
+// SetDefaultScope generates a bearer token, and uses it for all subsequent requests.
+//
+// A new token is generated for each execution of the sample.
+// In real code, the token should be reused until it expires.
+//
+// Parameters:
+//   - scope: OAuth scope of the token, or empty
+func (r *Rest) SetDefaultScope(scope string) error {
+	bearer, err := r.getBearer(scope)
+	if err != nil {
+		return err
+	}
+	r.Headers["Authorization"] = bearer
+	return nil
 }
 
+// SetBearer uses OAuth 2 Bearer authentication, with a JWT signed with a private key.
+//
+// Parameters:
+//   - bearerData: `token_url`, `key_pem_path`, `client_id`, `client_secret`, `iss`, `aud`, `sub`, and optionally `org`
 func (r *Rest) SetBearer(bearerData map[string]string) {
 	r.AuthData = bearerData
 }
 
-func (r *Rest) getBearer(scope string) string {
-	log.Println("Getting API authorization")
+// getBearer generates a bearer token, with the JWT Bearer grant.
+//
+// Parameters:
+//   - scope: OAuth scope of the token, or empty
+//
+// Returns: value of the Authorization header: `Bearer <token>`
+func (r *Rest) getBearer(scope string) (string, error) {
 	privateKeyPem, err := os.ReadFile(r.AuthData["key_pem_path"])
 	if err != nil {
-		log.Fatalf("Failed to read private key: %v", err)
+		return "", err
 	}
 
 	secondsSinceEpoch := time.Now().Unix()
@@ -92,11 +137,11 @@ func (r *Rest) getBearer(scope string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwtPayload)
 	signKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKeyPem)
 	if err != nil {
-		log.Fatalf("Failed to parse private key: %v", err)
+		return "", err
 	}
 	signedToken, err := token.SignedString(signKey)
 	if err != nil {
-		log.Fatalf("Failed to sign token: %v", err)
+		return "", err
 	}
 
 	data := map[string]string{
@@ -115,15 +160,26 @@ func (r *Rest) getBearer(scope string) string {
 	})
 	auth_api.SetBasic(r.AuthData["client_id"], r.AuthData["client_secret"])
 	responseData, err := auth_api.Create("", data)
-
 	if err != nil {
-		log.Fatalf("Failed to get bearer token: %v", err)
+		return "", err
 	}
-
-	return fmt.Sprintf("Bearer %s", responseData["access_token"].(string))
+	accessToken, ok := responseData["access_token"].(string)
+	if !ok {
+		return "", errors.New("No access_token in token response")
+	}
+	return fmt.Sprintf("Bearer %s", accessToken), nil
 }
 
-// Call handles generic HTTP requests for GET, POST, PUT, DELETE
+// Call calls the API: sends a request, and gets the response data.
+// Request and response bodies are logged.
+//
+// Parameters:
+//   - method: HTTP method
+//   - endpoint: path of the endpoint, relative to the base URL
+//   - body: request data, sent in JSON
+//   - query: query parameters
+//
+// Returns: response data, or nil if the response is empty
 func (r *Rest) Call(
 	method string,
 	endpoint string,
@@ -152,7 +208,11 @@ func (r *Rest) Call(
 		}
 	}
 
-	req, err := http.NewRequest(method, fmt.Sprintf("%s/%s", r.BaseURL, endpoint), bytes.NewBuffer(bodyBytes))
+	fullURL := r.BaseURL
+	if endpoint != "" {
+		fullURL = fmt.Sprintf("%s/%s", fullURL, endpoint)
+	}
+	req, err := http.NewRequest(method, fullURL, bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -176,25 +236,30 @@ func (r *Rest) Call(
 	}
 
 	// Send the request
+	logger.Debugf("HTTP %s %s", method, fullURL)
+	if len(bodyBytes) != 0 {
+		LogDump("Request body", string(bodyBytes))
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("HTTP request failed with status %d", resp.StatusCode)
-	}
-
 	bodyResp, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("HTTP %d for %s %s: %s", resp.StatusCode, method, fullURL, bodyResp)
 	}
 
 	// If there's no content to return, avoid trying to parse it
 	if len(bodyResp) == 0 {
 		return nil, nil
 	}
+	LogDump("Response body", string(bodyResp))
 
 	var result map[string]interface{}
 	if err := json.Unmarshal(bodyResp, &result); err != nil {
@@ -204,23 +269,44 @@ func (r *Rest) Call(
 	return result, nil
 }
 
-// Post performs a POST request
+// Create creates a resource (HTTP POST).
+//
+// Parameters:
+//   - endpoint: path of the endpoint, relative to the base URL
+//   - data: request data, sent in JSON
+//
+// Returns: response data
 func (r *Rest) Create(endpoint string, data interface{}) (map[string]interface{}, error) {
 	return r.Call(http.MethodPost, endpoint, data, nil)
 }
 
-// Get performs a GET request
+// Read reads a resource (HTTP GET).
+//
+// Parameters:
+//   - endpoint: path of the endpoint, relative to the base URL
+//   - params: query parameters
+//
+// Returns: response data
 func (r *Rest) Read(endpoint string, params map[string]string) (map[string]interface{}, error) {
 	return r.Call(http.MethodGet, endpoint, nil, params)
 }
 
-// Put performs a PUT request
+// Update updates a resource (HTTP PUT).
+//
+// Parameters:
+//   - endpoint: path of the endpoint, relative to the base URL
+//   - data: request data, sent in JSON
 func (r *Rest) Update(endpoint string, data interface{}) error {
 	_, err := r.Call(http.MethodPut, endpoint, data, nil)
 	return err
 }
 
-// Delete performs a DELETE request
+// Delete deletes a resource (HTTP DELETE).
+//
+// Parameters:
+//   - endpoint: path of the endpoint, relative to the base URL
+//
+// Returns: response data
 func (r *Rest) Delete(endpoint string) (map[string]interface{}, error) {
 	return r.Call(http.MethodDelete, endpoint, nil, nil)
 }

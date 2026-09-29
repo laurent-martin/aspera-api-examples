@@ -21,7 +21,11 @@ TRANSFER_SESSIONS   = 1
 config = Utils::Configuration.instance
 transfer_client = Utils::TransferClient.new(config).startup
 
-# Generate a transfer cookie for AoC
+# Generate the transfer cookie of AoC, that identifies the application and the user.
+# @param app [String] AoC application, e.g. `packages`
+# @param user_name [String] name of the user
+# @param user_id [String] identifier of the user: email
+# @return [String] cookie
 def aoc_xfer_cookie(app, user_name, user_id)
   encoded_app       = Base64.strict_encode64(app)
   encoded_user_name = Base64.strict_encode64(user_name)
@@ -29,7 +33,15 @@ def aoc_xfer_cookie(app, user_name, user_id)
   "aspera.aoc:#{encoded_app}:#{encoded_user_name}:#{encoded_user_id}"
 end
 
-# Generate transfer spec for gen4 API, in simplified way
+# Generate the transfer spec for a node of AoC, with a bearer token.
+# @param aoc_api [Utils::Rest] REST client of AoC
+# @param app [String] AoC application, e.g. `packages`
+# @param dir [String] direction: `send` or `receive`
+# @param node_info [Hash] node information
+# @param user_info [Hash] user information
+# @param workspace_info [Hash] workspace information
+# @param app_info [Hash, String] package information for `packages`, or folder id for `files`
+# @return [Hash] transfer spec
 def gen4_base_spec(
   aoc_api,
   app,
@@ -99,15 +111,14 @@ begin
   aoc_api.default_scope('user:all')
 
   # Get my user information
+  logger.info('Getting user information')
   user_info = aoc_api.read('self')
-  logger.debug(user_info)
 
   # Get workspace information
   workspace_name = config.param('aoc', 'workspace')
-  logger.info("getting workspace information for #{workspace_name}")
+  logger.info("Getting workspace: #{workspace_name}")
   response_data = aoc_api.read('workspaces', { 'q' => workspace_name })
-  logger.debug(response_data)
-  raise "Found #{response_data.size} workspace(s) for #{workspace_name}" unless response_data.size == 1
+  raise "Found #{response_data.size} workspaces for #{workspace_name}" unless response_data.size == 1
 
   workspace_info = response_data.first
 
@@ -117,7 +128,7 @@ begin
 
   # Get shared inbox information
   shared_inbox_name = config.param('aoc', 'shared_inbox')
-  logger.info('getting shared inbox information')
+  logger.info("Getting shared inbox: #{shared_inbox_name}")
   response_data = aoc_api.read(
     'dropboxes',
     {
@@ -125,13 +136,12 @@ begin
       'q' => shared_inbox_name
     }
   )
-  logger.debug(response_data)
-  raise "Found #{response_data.size} dropbox for #{shared_inbox_name}" unless response_data.size == 1
+  raise "Found #{response_data.size} shared inboxes for #{shared_inbox_name}" unless response_data.size == 1
 
   dropbox_info = response_data.first
 
   # Create a new package
-  logger.info('creating package')
+  logger.info('Creating package')
   package_info = aoc_api.create(
     'packages', {
       'workspace_id' => workspace_info['id'],
@@ -142,12 +152,10 @@ begin
       'transfers_expected' => TRANSFER_SESSIONS
     }
   )
-  logger.debug(package_info)
 
   # Get node information
-  logger.info('getting node information')
+  logger.info('Getting node information')
   package_node_info = aoc_api.read("nodes/#{package_info['node_id']}")
-  logger.debug(package_node_info)
 
   # Build transfer spec
   t_spec = gen4_base_spec(
@@ -169,14 +177,15 @@ begin
   config.add_sources(t_spec, 'paths')
 
   # Start transfer
+  logger.info('Uploading files')
   transfer_client.start_transfer_and_wait(t_spec)
 
   #---------------
   # Files
   #===============
 
+  logger.info('Getting node information')
   home_node_info = aoc_api.read("nodes/#{workspace_info['home_node_id']}")
-  logger.debug(home_node_info)
 
   # Upload to home in workspace (Files app)
   transfer_spec = gen4_base_spec(
@@ -191,9 +200,9 @@ begin
 
   # Add list of files to upload
   config.add_sources(transfer_spec, 'paths')
-  logger.info("spec: #{transfer_spec}")
 
   # Start transfer
+  logger.info('Uploading files to home folder')
   transfer_client.start_transfer_and_wait(transfer_spec)
 ensure
   transfer_client.shutdown

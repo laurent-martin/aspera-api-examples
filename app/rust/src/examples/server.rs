@@ -10,9 +10,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config = Arc::new(Configuration::new()?);
     let mut transfer_client: TransferClient = TransferClient::new(Arc::clone(&config));
     let server_url = config.param_str("server", "url")?;
-    log::info!("Server URL: {server_url}");
     let server_uri = Url::parse(&server_url)?;
-    assert_eq!(server_uri.scheme(), "ssh");
+    if server_uri.scheme() != "ssh" {
+        return Err(format!("Expecting SSH URL: {server_url}").into());
+    }
     // Create V2 transfer spec
     let mut transfer_spec = json!({
         "title": "test with transfer spec V2",
@@ -31,6 +32,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     });
     config.add_files_to_ts("assets.paths", &mut transfer_spec)?;
+    log::info!("Uploading files");
     transfer_client
         .transfer_start_and_wait(&transfer_spec)
         .await?;

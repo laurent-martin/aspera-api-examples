@@ -19,7 +19,6 @@ reqwest = { version = "0.13.5", features = ["json", "form", "query"] }
 # crypto backend: aws-lc-rs (also used by rustls in reqwest)
 jsonwebtoken = { version = "11.1.0", features = ["aws_lc_rs"] }
 uuid = { version = "1.26.1", features = ["v4"] }
-anyhow = "1.0.104"
 regex = "1.13.1"
 ssh2 = "0.9.6"
 

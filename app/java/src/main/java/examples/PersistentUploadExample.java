@@ -13,9 +13,15 @@ import java.util.logging.Level;
 import utils.Configuration;
 import utils.TransferClient;
 
+/**
+ * Sample: upload files generated over time, in a persistent transfer session.
+ */
 public class PersistentUploadExample {
     private static final Logger LOGGER = Logger.getLogger(PersistentUploadExample.class.getName());
 
+    /**
+     * Recurring task: add a new file to the persistent transfer session, up to a maximum number of files.
+     */
     public static class FileUploadTask extends TimerTask {
         private final TransferClient transferClient;
         private final String transferId;
@@ -23,6 +29,12 @@ public class PersistentUploadExample {
         private final boolean useRealFile;
         private int sequenceIndex;
 
+        /**
+         * Create the task.
+         *
+         * @param transferClient transfer client, with a started persistent session
+         * @param maxFiles number of files to add
+         */
         FileUploadTask(final TransferClient transferClient, final int maxFiles) {
             this.transferClient = transferClient;
             this.transferId = transferClient.getTransferId();
@@ -32,7 +44,9 @@ public class PersistentUploadExample {
             sequenceIndex = 0;
         }
 
-        // this is the recurring task
+        /**
+         * Add a new file to the persistent transfer session, and close the session after the last file.
+         */
         public void run() {
             try {
                 ++sequenceIndex;
@@ -40,9 +54,6 @@ public class PersistentUploadExample {
                     // ignore tasks after last one, not even log
                     return;
                 }
-                LOGGER.log(Level.FINE, "T: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-                LOGGER.log(Level.FINE, "T: Task {0} scheduled ... executing now",
-                        Integer.toString(sequenceIndex));
                 // generate example file to transfer
                 final String fileName = String.format("file%03d", sequenceIndex);
                 String filePath = null;
@@ -63,25 +74,29 @@ public class PersistentUploadExample {
                                 .addTransferPath(Transferd.TransferPath.newBuilder()
                                         .setSource(filePath).setDestination(fileName).build())
                                 .build();
-                LOGGER.log(Level.FINE, "T: adding transfer path");
+                LOGGER.log(Level.INFO, "Adding file: {0}", fileName);
                 // this will add to the transfer queue
                 transferClient.transferService.addTransferPaths(transferPathRequest);
-                LOGGER.log(Level.FINE, "T: end task");
                 if (sequenceIndex == maxFiles) {
                     // end the persistent session
-                    LOGGER.log(Level.FINE, "T: Limit reached, locking session. !!!");
+                    LOGGER.log(Level.INFO, "Closing persistent session");
                     transferClient.transferService
                             .lockPersistentTransfer(Transferd.LockPersistentTransferRequest
                                     .newBuilder().setTransferId(transferId).build());
                 }
             } catch (final IOException e) {
-                LOGGER.log(Level.FINE, "T: ERROR: {0}", e.getMessage());
+                LOGGER.log(Level.SEVERE, "Failed to create file: {0}", e.getMessage());
             }
         }
     } // FileUploadTask
 
-    public static void main(String... args)
-            throws Exception, IOException, java.net.URISyntaxException {
+    /**
+     * Execute the sample.
+     *
+     * @param args command line arguments: files to transfer
+     * @throws Exception on error
+     */
+    public static void main(String... args) throws Exception {
         final Configuration config = new Configuration(args);
         final TransferClient transferClient = new TransferClient(config);
         try {
@@ -97,6 +112,7 @@ public class PersistentUploadExample {
             transferClient.daemon_startup();
             transferClient.daemon_connect();
             // start persistent transfer session
+            LOGGER.log(Level.INFO, "Starting persistent session");
             transferClient.session_start(transferSpec, Transferd.TransferType.FILE_PERSISTENT);
             final TimerTask timerTask =
                     new FileUploadTask(transferClient, config.getParamInt("server", "persist_max"));
@@ -107,6 +123,5 @@ public class PersistentUploadExample {
         } finally {
             transferClient.shutdown();
         }
-        LOGGER.log(Level.FINE, "L: exiting program");
     }
 }

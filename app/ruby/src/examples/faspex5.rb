@@ -31,9 +31,6 @@ begin
   )
   api_v5.default_scope
 
-  # very simple api call
-  log.debug(api_v5.read('version'))
-
   # 2: send a package
   #---------------
 
@@ -42,8 +39,10 @@ begin
     'title': 'test title',
     'recipients': [{ 'name': config.param('faspex5', 'username') }]
   }
+  log.info('Creating package')
   package = api_v5.create('packages', package_create_params)
   ts_paths = config.add_sources({}, 'paths')
+  log.info('Getting transfer spec')
   transfer_spec = api_v5.call(
     'POST',
     endpoint: "packages/#{package['id']}/transfer_spec/upload",
@@ -54,8 +53,8 @@ begin
   transfer_spec.delete('authentication')
   transfer_spec.merge!(ts_paths)
 
-  log.debug("transfer_spec #{transfer_spec}")
   # Start transfer
+  log.info('Uploading files')
   transfer_client.start_transfer_and_wait(transfer_spec)
 ensure
   transfer_client.shutdown

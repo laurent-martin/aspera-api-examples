@@ -29,7 +29,7 @@ try:
     # filtering options possible.
     transfer_list = node_api.get('ops/transfers')
 
-    log.info('transfers: %s', transfer_list)
+    utils.configuration.log_dump('Transfers', transfer_list, log.INFO)
 
 finally:
     # no need shutdown, as we did not setup a server

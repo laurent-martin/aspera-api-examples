@@ -4,7 +4,9 @@
 # Helper methods to get API environment according to config file
 # Simplified function to start transfer and wait for it to finish
 import os
+import re
 import sys
+import json
 import yaml
 import logging
 import tempfile
@@ -17,20 +19,26 @@ from urllib.parse import urlparse
 PATHS_FILE_REL = 'config/paths.yaml'
 DIR_TOP_VAR = 'DIR_TOP'
 DEBUG_HTTP = False
+# secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
+SECRETS_REGEX = re.compile(r'("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+')
+# set from configuration file (misc.show_secrets)
+show_secrets = False
 
 
 class Configuration:
-    '''Test Environment'''
+    '''Configuration of the samples: parameters from the configuration file, files to transfer from the command line, and logging.'''
 
     def __init__(self):
+        '''Read the configuration file, and set up logging.'''
         self._file_list = sys.argv[1:]
-        assert self._file_list, f'ERROR: Usage: {sys.argv[0]} <files to send>'
+        if not self._file_list:
+            raise Exception('Missing arguments: files to transfer')
         self._top_folder = os.getenv(DIR_TOP_VAR)
         if self._top_folder is None:
-            raise EnvironmentError(f"Environment variable {DIR_TOP_VAR} is not set.")
+            raise EnvironmentError(f'Environment variable {DIR_TOP_VAR} is not set')
         self._top_folder = os.path.abspath(self._top_folder)
         if not os.path.isdir(self._top_folder):
-            raise NotADirectoryError(f"The folder specified by {DIR_TOP_VAR} does not exist or is not a directory: {self._top_folder}")
+            raise NotADirectoryError(f'Folder not found: {self._top_folder}')
         self._log_folder = tempfile.gettempdir()
         # read project's relative paths config file
         with open(os.path.join(self._top_folder, *PATHS_FILE_REL.split('/'))) as paths_file:
@@ -38,7 +46,12 @@ class Configuration:
         # Read configuration from configuration file
         with open(self.get_path('main_config')) as config_file:
             self._config = yaml.safe_load(config_file)
-        log_level = getattr(logging, self.param('misc', 'level').upper(), logging.WARN)
+        level_name = self.param('misc', 'level')
+        log_level = logging.getLevelName(level_name.upper())
+        if not isinstance(log_level, int):
+            raise ValueError(f'Invalid log level: {level_name}')
+        global show_secrets
+        show_secrets = self.param('misc', 'show_secrets', False)
         # set logger for debugging
         logging.basicConfig(format='%(levelname)-8s %(message)s', level=log_level)
         # debug http: see: https://stackoverflow.com/questions/10588644
@@ -49,44 +62,55 @@ class Configuration:
             requests_log.propagate = True
 
     def param(self, section, param, default=None):
-        if section not in self._config:
-            raise KeyError(f"Section not found: {section}")
-        if param not in self._config[section]:
+        '''
+        Get a parameter from the configuration file.
+
+        :param section: section in the configuration file
+        :param param: name of the parameter in the section
+        :param default: value if the parameter is not set, else the parameter is mandatory
+        :return: value of the parameter
+        '''
+        if param not in (self._config.get(section) or {}):
             if default is not None:
                 return default
-            raise KeyError(f"Param not found: {param}")
+            raise KeyError(f'Configuration parameter not found: {section}.{param}')
         return self._config[section][param]
 
     def get_path(self, name):
-        '''Get configuration sub-path in project's root folder'''
+        '''
+        Get the path of an item of the project, from the paths file.
+
+        :param name: name of the item in the paths file
+        :return: absolute path of the item, that must exist
+        '''
         item_path = os.path.join(self._top_folder, *self._paths[name].split('/'))
-        assert os.path.exists(item_path), f'ERROR: {item_path} not found.'
+        if not os.path.exists(item_path):
+            raise FileNotFoundError(f'File not found: {item_path}')
         return item_path
 
     def file_list(self):
         '''
-        Get list of files to transfer.
+        Get the files to transfer, from the command line arguments.
 
-        It comes directly from the sample's command line arguments.
+        :return: list of files
         '''
         return self._file_list
 
     def add_sources(self, t_spec: dict, path: str, destination=None):
-        """
-        Add source file list to transfer spec.
+        '''
+        Add the files to transfer, from the command line arguments, to the transfer spec.
 
-        List of file come directly from command line argument to sample code.
-
-        The `path` is usually either 'paths' for a transfer spec V1,
-        or 'assets.paths' for a transfer spec V2.
-        """
+        :param t_spec: transfer spec to modify
+        :param path: path of the file list in the transfer spec: `paths` (V1) or `assets.paths` (V2)
+        :param destination: if set, add the file name as destination
+        '''
         keys = path.split('.')
         current_node = t_spec
         for key in keys[:-1]:
             if isinstance(current_node, dict):
                 current_node = current_node.get(key)
             else:
-                raise KeyError(f"key is not a dict: {key}")
+                raise KeyError(f'Invalid path in transfer spec: {path}')
         paths = current_node[keys[-1]] = []
         for f in self._file_list:
             source = {'source': f}
@@ -95,34 +119,54 @@ class Configuration:
             paths.append(source)
 
 
+def mask_secrets(text):
+    '''
+    Hide secrets in text for logs, unless configured to show them.
+
+    :param text: text that may contain secrets
+    :return: text with hidden secrets
+    '''
+    if show_secrets:
+        return text
+    return SECRETS_REGEX.sub(r'\1\2***', text)
+
+
+def log_dump(name, value, level=logging.DEBUG):
+    '''
+    Log a named value: objects are displayed in JSON, and secrets are hidden.
+
+    :param name: name of the value
+    :param value: value to log: a string, or an object displayed in JSON
+    :param level: log level, debug by default
+    '''
+    if not logging.getLogger().isEnabledFor(level):
+        return
+    if not isinstance(value, str):
+        value = json.dumps(value)
+    logging.log(level, '%s: %s', name, mask_secrets(value))
+
+
 def basic_authorization(username, password):
-    '''Create basic auth header'''
+    '''
+    Create the value of an HTTP Basic Authorization header.
+
+    :param username: user name
+    :param password: password
+    :return: header value: `Basic <base64>`
+    '''
     return f'Basic {base64.b64encode(f"{username}:{password}".encode()).decode()}'
 
 
 def basic_auth_header_key_value(username, password):
-    '''Create basic auth header key and value for transfer SDK'''
+    '''
+    Create an HTTP Basic Authorization header for a transfer spec V2.
+
+    :param username: user name
+    :param password: password
+    :return: header as `key` and `value`
+    '''
     return {
         'key': 'Authorization',
         'value': basic_authorization(username, password),
     }
 
-
-def last_file_line(filename):
-    with open(filename, 'rb') as file:
-        # Seek to the end of the file
-        file.seek(0, 2)
-        position = file.tell() - 1
-        last_line = b''
-
-        # Read backwards until a newline or beginning of the file
-        while position >= 0:
-            file.seek(position)
-            char = file.read(1)
-            if char == b'\n' and last_line:
-                break
-            last_line = char + last_line
-            position -= 1
-
-        # Decode the binary string to a regular string
-        return last_line.decode('utf-8')

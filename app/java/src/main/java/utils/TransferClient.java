@@ -5,6 +5,7 @@ import com.ibm.software.aspera.transferd.api.TransferServiceGrpc;
 import io.grpc.okhttp.OkHttpChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.ManagedChannel;
+import io.grpc.StatusRuntimeException;
 import com.google.protobuf.ByteString;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -27,7 +28,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Read configuration file and provide interface for transfer
+ * Client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
  */
 public class TransferClient {
 
@@ -40,24 +41,29 @@ public class TransferClient {
     // max wait time for the connection to the daemon
     private static final int CONNECT_TIMEOUT_SEC = 5;
     // max wait time for the daemon to stop gracefully
-    private static final int SHUTDOWN_TIMEOUT_SEC = 5;
+    private static final int SHUTDOWN_TIMEOUT_SEC = 10;
     // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on
     // 127.0.0.1:55002 ...`
     private static final Pattern LISTENING_PORT_REGEX =
             Pattern.compile("API Server: Listening on [^\\s\"]+:(\\d+)");
-    // configuration parameters from the configuration file
+    /** Configuration of the samples. */
     public final Configuration config;
     private final String serverAddress;
     private int serverPort;
     private Process daemonProcess;
     private ManagedChannel channel;
-    // Aspera client API (synchronous)
+    /** Client of the daemon API (synchronous). */
     public TransferServiceGrpc.TransferServiceBlockingStub transferService;
     private final String daemonName;
     private final String daemonLog;
     // several transfer session may be started but for the example we use only one
     private String transferId;
 
+    /**
+     * Create a transfer client.
+     *
+     * @param aConfig configuration of the samples
+     */
     public TransferClient(final Configuration aConfig) {
         config = aConfig;
         daemonProcess = null;
@@ -68,7 +74,7 @@ public class TransferClient {
             serverAddress = grpcURL.getHost();
             serverPort = grpcURL.getPort() == -1 ? TRANSFERD_DEFAULT_PORT : grpcURL.getPort();
         } catch (final Exception e) {
-            throw new Error("invalid grpc url: " + e.getMessage());
+            throw new Error("Invalid URL: " + config.getParamStr("trsdk", "url"));
         }
         daemonName = Paths.get(config.getPath("sdk_daemon")).getFileName().toString();
         daemonLog = config.getLogFolder() + File.separator + daemonName + ".log";
@@ -76,17 +82,22 @@ public class TransferClient {
     }
 
     /**
-     * @return current session transfer id
+     * Get the id of the current transfer.
+     *
+     * @return transfer id
      */
     public String getTransferId() {
         if (transferId == null) {
-            throw new Error("transfer session was not started");
+            throw new Error("Transfer session was not started");
         }
         return transferId;
     }
 
     /**
-     * Create configuration file for the Aspera Transfer Daemon
+     * Create the configuration file of the daemon.
+     * See: https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
+     *
+     * @param confFile path of the configuration file
      */
     private void createConfFile(final String confFile) {
         // Define the configuration JSON object
@@ -105,13 +116,15 @@ public class TransferClient {
         try (final FileWriter fileWriter = new FileWriter(confFile)) {
             fileWriter.write(sdk_config.toString());
         } catch (final IOException e) {
-            e.printStackTrace();
-            throw new Error("problem with SDK configuration file: " + e.getMessage());
+            throw new Error("Failed to write file: " + confFile);
         }
     }
 
     /**
-     * @return first non-empty error description
+     * Get the first non-empty error description.
+     *
+     * @param texts error descriptions
+     * @return error description, or {@code unknown error}
      */
     private static String errorDescription(final String... texts) {
         for (final String text : texts) {
@@ -123,7 +136,10 @@ public class TransferClient {
     }
 
     /**
-     * Convert log level for ascp from string to int
+     * Convert the log level of ascp from name to number.
+     *
+     * @param level {@code info}, {@code debug} or {@code trace}
+     * @return 0, 1 or 2
      */
     private int ascpLevel(String level) {
         if (level.equals("info")) {
@@ -138,7 +154,7 @@ public class TransferClient {
     }
 
     /**
-     * Start the daemon, if not already started
+     * Start the daemon, with output and logs in the log folder, if not already started.
      */
     public void daemon_startup() {
         if (daemonProcess != null && daemonProcess.isAlive()) {
@@ -153,13 +169,14 @@ public class TransferClient {
         // the log file may contain lines of previous executions: only read new lines
         final long logOffset = new File(daemonLog).length();
         try {
-            String[] command = new String[] {config.getPath("sdk_daemon"), "-c", sdk_conf_path};
-            LOGGER.log(Level.INFO, "daemon out: {0}", out_file);
-            LOGGER.log(Level.INFO, "daemon err: {0}", err_file);
-            LOGGER.log(Level.INFO, "daemon log: {0}", daemonLog);
-            LOGGER.log(Level.INFO, "ascp log: {0}",
-                    config.getLogFolder() + File.separator + ASCP_LOG_FILE);
-            LOGGER.log(Level.INFO, "command: {0} {1} {2}", command);
+            String[] command =
+                    new String[] {config.getPath("sdk_daemon"), "--config", sdk_conf_path};
+            Configuration.logDump("Daemon command", String.join(" ", command));
+            Configuration.logDump("Daemon out", out_file);
+            Configuration.logDump("Daemon err", err_file);
+            Configuration.logDump("Daemon log", daemonLog);
+            Configuration.logDump("Ascp log", config.getLogFolder() + File.separator + ASCP_LOG_FILE);
+            LOGGER.log(Level.INFO, "Starting daemon");
             // redirect output to files, else the daemon may block when the pipe buffer is full
             daemonProcess = new ProcessBuilder(command) //
                     .redirectOutput(new File(out_file)) //
@@ -167,29 +184,27 @@ public class TransferClient {
                     .start();
             waitDaemonListening(logOffset);
         } catch (final IOException e) {
-            LOGGER.log(Level.SEVERE, "cannot start daemon: {0}", e.getMessage());
-            throw new Error(e.getMessage());
+            throw new Error("Failed to start daemon: " + e.getMessage());
         } catch (final InterruptedException e) {
             throw new Error(e.getMessage());
         }
     }
 
     /**
-     * Wait for the daemon to listen, and get the port if dynamically allocated (port 0). The port
-     * is read from the daemon log: requires log level `info` or more verbose.
+     * Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
+     * The port is read from the daemon log: requires log level {@code info} or more verbose.
      *
-     * @param logOffset only read the log after this offset
+     * @param logOffset only read the daemon log after this offset
      */
     private void waitDaemonListening(final long logOffset)
             throws IOException, InterruptedException {
         final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(STARTUP_TIMEOUT_SEC);
         while (true) {
             if (!daemonProcess.isAlive()) {
-                LOGGER.log(Level.SEVERE, "new daemon terminated unexpectedly, exit code: {0}",
-                        daemonProcess.exitValue());
-                LOGGER.log(Level.SEVERE, "check daemon log: {0}", daemonLog);
+                final int exitCode = daemonProcess.exitValue();
                 daemonProcess = null;
-                throw new RuntimeException("daemon startup failed");
+                throw new RuntimeException(
+                        "Daemon exited with code " + exitCode + ", see log: " + daemonLog);
             }
             // fixed port: readiness is checked on connection
             if (serverPort != 0) {
@@ -198,12 +213,10 @@ public class TransferClient {
             final Integer port = findListeningPort(daemonLog, logOffset);
             if (port != null) {
                 serverPort = port;
-                LOGGER.log(Level.INFO, "Allocated server port: {0}", Integer.toString(serverPort));
                 return;
             }
             if (System.nanoTime() > deadline) {
-                throw new RuntimeException("Listening port not found in daemon log after "
-                        + STARTUP_TIMEOUT_SEC + "s: " + daemonLog);
+                throw new RuntimeException("Listening port not found in daemon log: " + daemonLog);
             }
             Thread.sleep(200);
         }
@@ -212,7 +225,9 @@ public class TransferClient {
     /**
      * Find the API listening port in the daemon log, after the given offset.
      *
-     * @return the port, or null if not found (yet)
+     * @param logFile path of the daemon log
+     * @param offset only read the daemon log after this offset
+     * @return port, or null if not found (yet)
      */
     private static Integer findListeningPort(final String logFile, long offset)
             throws IOException {
@@ -231,13 +246,13 @@ public class TransferClient {
     }
 
     /**
-     * Connect to the daemon, if not already connected
+     * Connect to the daemon, if not already connected.
      */
     public void daemon_connect() {
         if (transferService != null) {
             return;
         }
-        LOGGER.log(Level.INFO, "L: Connecting to daemon");
+        final String address = serverAddress + ":" + serverPort;
         // comm channel for grpc
         channel = OkHttpChannelBuilder.forAddress(serverAddress, serverPort).usePlaintext().build();
         // Create a connection to the Transfer Daemon
@@ -245,15 +260,20 @@ public class TransferClient {
         // async is also possible
         final TransferServiceGrpc.TransferServiceBlockingStub service =
                 TransferServiceGrpc.newBlockingStub(channel);
-        LOGGER.log(Level.INFO, "Checking gRPC connection");
         // make a simple api call to check communication is ok (wait until the daemon listens)
-        Transferd.InstanceInfoResponse infoResponse = service.withWaitForReady()
-                .withDeadlineAfter(CONNECT_TIMEOUT_SEC, TimeUnit.SECONDS)
-                .getInfo(Transferd.InstanceInfoRequest.newBuilder().build());
+        try {
+            service.withWaitForReady().withDeadlineAfter(CONNECT_TIMEOUT_SEC, TimeUnit.SECONDS)
+                    .getInfo(Transferd.InstanceInfoRequest.newBuilder().build());
+        } catch (final StatusRuntimeException e) {
+            throw new RuntimeException("Failed to connect to daemon: " + address);
+        }
         transferService = service;
-        LOGGER.log(Level.INFO, "OK: Daemon is here, API v = {0}", infoResponse.getApiVersion());
+        LOGGER.log(Level.INFO, "Connected to daemon: {0}", address);
     }
 
+    /**
+     * Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+     */
     public void shutdown() {
         transferService = null;
         if (channel != null) {
@@ -261,17 +281,19 @@ public class TransferClient {
             channel = null;
         }
         if (daemonProcess != null) {
-            LOGGER.log(Level.INFO, "L: Shutting down daemon");
+            LOGGER.log(Level.INFO, "Stopping daemon");
             stopProcess(daemonProcess);
             daemonProcess = null;
         }
     }
 
     /**
-     * Stop the daemon gracefully, or kill it after a timeout.
+     * Stop the daemon: send SIGINT, and kill it if it does not stop in time.
+     * transferd stops cleanly on SIGINT (not on SIGTERM).
+     * Java has no API to send SIGINT: the command {@code kill} is used.
+     * Windows has no SIGINT for child processes: the process is terminated.
      *
-     * transferd stops cleanly on SIGINT (not on SIGTERM). Java has no API to send SIGINT: use
-     * command `kill`. Windows has no SIGINT for child processes: the process is terminated.
+     * @param process daemon process
      */
     private static void stopProcess(final Process process) {
         try {
@@ -281,18 +303,19 @@ public class TransferClient {
                 new ProcessBuilder("kill", "-INT", Long.toString(process.pid())).start().waitFor();
             }
             if (!process.waitFor(SHUTDOWN_TIMEOUT_SEC, TimeUnit.SECONDS)) {
-                LOGGER.log(Level.WARNING, "L: daemon did not stop, killing it");
+                LOGGER.log(Level.WARNING, "Daemon did not stop, killing it");
                 process.destroyForcibly().waitFor();
             }
-            LOGGER.log(Level.INFO, "L: daemon exited with status {0}", process.exitValue());
         } catch (final IOException | InterruptedException e) {
-            LOGGER.log(Level.SEVERE, "L: error stopping daemon: {0}", e.getMessage());
+            LOGGER.log(Level.SEVERE, "Failed to stop daemon: {0}", e.getMessage());
             process.destroyForcibly();
         }
     }
 
     /**
-     * Helper method for simple examples
+     * Start the daemon if needed, start a transfer, and wait for its end.
+     *
+     * @param transferSpec transfer spec
      */
     public void start_transfer_and_wait(final JSONObject transferSpec) {
         daemon_startup();
@@ -306,34 +329,62 @@ public class TransferClient {
     }
 
     /**
-     * Start one transfer session
+     * Start a transfer.
+     *
+     * @param transferSpec transfer spec
+     * @param aTransferType type of transfer
      */
     public void session_start(final JSONObject transferSpec,
             final Transferd.TransferType aTransferType) {
-        LOGGER.log(Level.INFO, "L: ts: {0}", transferSpec.toString());
+        Configuration.logDump("Transfer spec", transferSpec);
         // send start transfer request to transfer sdk daemon
         final Transferd.StartTransferResponse transferResponse = transferService.startTransfer(//
                 Transferd.TransferRequest.newBuilder() //
                         .setTransferType(aTransferType)
                         .setConfig(Transferd.TransferConfig.newBuilder().build())
                         .setTransferSpec(transferSpec.toString()).build());
-        final Transferd.TransferStatus status = transferResponse.getStatus();
-        if (status == Transferd.TransferStatus.FAILED
-                || status == Transferd.TransferStatus.UNKNOWN_STATUS) {
-            throw new RuntimeException("transfer start failed: "
-                    + errorDescription(transferResponse.getError().getDescription()));
-        }
+        throwOnError(transferResponse.getStatus(),
+                errorDescription(transferResponse.getError().getDescription()));
         transferId = transferResponse.getTransferId();
-        LOGGER.log(Level.FINE, "transfer session started with id {0} / {1}",
-                new Object[] {transferId, status.getNumber()});
     }
 
     /**
-     * Start a transfer session in streaming mode
+     * Throw an exception if the transfer status is failed or unknown.
      *
-     * https://www.youtube.com/watch?v=zCXN4wj0uPo&t=3200s
+     * @param status transfer status
+     * @param description error description
+     */
+    private static void throwOnError(final Transferd.TransferStatus status,
+            final String description) {
+        if (status == Transferd.TransferStatus.FAILED) {
+            throw new RuntimeException("Transfer failed: " + description);
+        }
+        if (status == Transferd.TransferStatus.UNKNOWN_STATUS) {
+            throw new RuntimeException("Unknown transfer id: " + description);
+        }
+    }
+
+    /**
+     * Log the transfer status, and the rate when running.
      *
-     * @param transferSpec
+     * @param status transfer status
+     * @param averageRateKbps average rate in kilobits per second
+     */
+    private static void logStatus(final Transferd.TransferStatus status,
+            final long averageRateKbps) {
+        if (status == Transferd.TransferStatus.RUNNING) {
+            LOGGER.log(Level.INFO, String.format("Transfer: %s %.1f Mbps", status,
+                    averageRateKbps / 1000.0));
+        } else {
+            LOGGER.log(Level.INFO, "Transfer: " + status);
+        }
+    }
+
+    /**
+     * Start a transfer in streaming mode: the content of files is sent through the API.
+     * See: https://www.youtube.com/watch?v=zCXN4wj0uPo&t=3200s
+     *
+     * @param transferSpec transfer spec
      */
     private void session_start_streaming(final JSONObject transferSpec) {
         final TransferServiceGrpc.TransferServiceStub client = TransferServiceGrpc.newStub(channel);
@@ -343,24 +394,22 @@ public class TransferClient {
             @Override
             public void onNext(Transferd.StartTransferResponse response) {
                 transferId = response.getTransferId();
-                LOGGER.log(Level.FINE, "transfer started with id {0}", transferId);
                 // once the transfer starts, write data
                 try {
                     writeStreamData(client, paths);
                 } catch (InterruptedException e) {
-                    LOGGER.log(Level.SEVERE, "failed to write data");
+                    LOGGER.log(Level.SEVERE, "Failed to write data");
                 }
             }
 
             @Override
             public void onError(final Throwable t) {
-                LOGGER.log(Level.SEVERE, "responseObserver: onError: {0}", t.getMessage());
+                LOGGER.log(Level.SEVERE, "Transfer stream failed: {0}", t.getMessage());
                 transferLatch.countDown();
             }
 
             @Override
             public void onCompleted() {
-                LOGGER.log(Level.FINE, "responseObserver: onCompleted");
                 transferLatch.countDown();
             }
         };
@@ -371,12 +420,17 @@ public class TransferClient {
         try {
             transferLatch.await(60, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            throw new Error("failed to wait for transfer to complete");
+            throw new Error("Failed to wait for transfer to complete");
         }
-        // Mark the end of requests
-        LOGGER.log(Level.FINE, "end of session_start_streaming");
     }
 
+    /**
+     * Send the content of files to the daemon.
+     *
+     * @param pClient asynchronous client of the daemon API
+     * @param paths files to send, as in transfer spec
+     * @throws InterruptedException if the wait is interrupted
+     */
     public void writeStreamData(TransferServiceGrpc.TransferServiceStub pClient, JSONArray paths)
             throws InterruptedException {
         final CountDownLatch chunkLatch = new CountDownLatch(1);
@@ -384,30 +438,26 @@ public class TransferClient {
                 pClient.writeStream(new StreamObserver<Transferd.WriteStreamResponse>() {
                     @Override
                     public void onNext(final Transferd.WriteStreamResponse value) {
-                        LOGGER.log(Level.FINE, "write stream response: {0}", value.toString());
                         chunkLatch.countDown();
                     }
 
                     @Override
                     public void onError(final Throwable t) {
-                        LOGGER.log(Level.SEVERE, "write stream error: {0}", t.getMessage());
+                        LOGGER.log(Level.SEVERE, "Write stream failed: {0}", t.getMessage());
                         chunkLatch.countDown();
                     }
 
                     @Override
-                    public void onCompleted() {
-                        LOGGER.log(Level.FINE, "write stream completed");
-                    }
+                    public void onCompleted() {}
                 });
         final byte[] buffer = new byte[1024]; // 1KB buffer
         for (var path : paths) {
             var file = new File(((JSONObject) path).getString("source"));
-            LOGGER.log(Level.FINE, "L: file: {0}", file.toString());
+            LOGGER.log(Level.FINE, "Streaming file: {0}", file.toString());
             try (InputStream inputStream = new FileInputStream(file)) {
                 int bytesRead;
                 // Read the file in chunks of 1KB until the end of the file
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    LOGGER.log(Level.FINE, "L: read {0} bytes", bytesRead);
                     ByteString chunk = ByteString.copyFrom(buffer, 0, bytesRead);
                     // Send the chunk to the daemon
                     Transferd.WriteStreamRequest writeStreamRequest =
@@ -419,7 +469,7 @@ public class TransferClient {
                     writeStreamObserver.onNext(writeStreamRequest);
                 }
             } catch (IOException e) {
-                throw new Error("Error reading file: " + e.getMessage());
+                throw new Error("Failed to read file: " + file);
             }
         }
         // end of client stream (all files sent), then wait for the single response
@@ -427,12 +477,14 @@ public class TransferClient {
         try {
             chunkLatch.await(60, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            throw new Error("failed to wait for transfer to complete");
+            throw new Error("Failed to wait for transfer to complete");
         }
     }
 
+    /**
+     * Wait for the end of the current transfer, and log its status.
+     */
     public void session_wait_for_completion() {
-        LOGGER.log(Level.FINE, "L: Wait for session completion");
         final Iterator<Transferd.TransferResponse> monitorTransferResponse =
                 transferService.monitorTransfers(Transferd.RegistrationRequest.newBuilder()
                         .addFilters(Transferd.RegistrationFilter.newBuilder()
@@ -443,30 +495,16 @@ public class TransferClient {
         while (monitorTransferResponse.hasNext()) {
             final Transferd.TransferResponse response = monitorTransferResponse.next();
             final Transferd.TransferStatus status = response.getStatus();
-            LOGGER.log(Level.FINE, "L: transfer event: {0}", response.getTransferEvent());
-            if (response.hasFileInfo()) {
-                LOGGER.log(Level.FINE, "L: file info: {0}",
-                        response.getFileInfo().toString().replaceAll("\\n", ", "));
-            }
-            LOGGER.log(Level.INFO, "L: status: {0}", status.toString());
-            LOGGER.log(Level.FINE, "L: message: {0}", response.getMessage());
-            if (response.hasError()) {
-                LOGGER.log(Level.FINE, "L: err: {0}", response.getError());
-            }
-            if (status == Transferd.TransferStatus.FAILED) {
-                // `error` is empty on session errors: the cause is in session or transfer information
-                final String description = errorDescription(response.getError().getDescription(),
-                        response.getSessionInfo().getErrorDesc(),
-                        response.getTransferInfo().getErrorDescription());
-                LOGGER.log(Level.SEVERE, "L: transfer failed: {0}", description);
-                throw new RuntimeException("transfer failed: " + description);
-            }
+            logStatus(status, response.getTransferInfo().getAverageRateKbps());
+            // `error` is empty on session errors: the cause is in session or transfer information
+            throwOnError(status,
+                    errorDescription(response.getError().getDescription(),
+                            response.getSessionInfo().getErrorDesc(),
+                            response.getTransferInfo().getErrorDescription()));
             if (status == Transferd.TransferStatus.COMPLETED) {
-                LOGGER.log(Level.INFO, "L: upload finished, received: {0}", status);
-                LOGGER.log(Level.FINE, "L: Finished monitoring loop");
                 return;
             }
         }
-        throw new RuntimeException("transfer monitoring ended before transfer completion");
+        throw new RuntimeException("Transfer monitoring ended before transfer completion");
     }
 }

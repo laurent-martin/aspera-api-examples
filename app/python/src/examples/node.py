@@ -15,7 +15,7 @@ try:
     node_api.setVerify(config.param('node', 'verify', True))
 
     # call Node API with a single transfer request to get one transfer spec with Aspera token
-    log.info('Generating transfer spec')
+    log.info('Getting transfer spec')
     response_data = node_api.create('files/upload_setup', {
         'transfer_requests': [
             {'transfer_request': {'paths': [{'destination': config.param('node', 'folder_upload')}]}}
@@ -29,6 +29,7 @@ try:
     config.add_sources(t_spec, 'paths')
 
     # start transfer, using Transfer SDK
+    log.info('Uploading files')
     transfer_client.start_transfer_and_wait(t_spec)
 finally:
     transfer_client.shutdown()

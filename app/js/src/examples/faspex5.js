@@ -29,21 +29,19 @@ f5Api.setAuthBearer({
 });
 await f5Api.setDefaultScope();
 
-logger.info('Creating package and transfer spec');
-
 // Create a new package
+logger.info('Creating package');
 const packageInfo = await f5Api.create('packages', {
     title: "Node.js package example",
     recipients: [{ name: config.getParam('faspex5', 'username') }]  // Send to myself (for test)
 });
-
-logger.debug(packageInfo);
 
 // Build payload to specify files to send
 const uploadRequest = {};
 config.addSources(uploadRequest, 'paths');
 
 // Get transfer spec
+logger.info('Getting transfer spec');
 const tSpec = await f5Api.create(`packages/${packageInfo.id}/transfer_spec/upload?transfer_type=connect`, uploadRequest);
 
 // Optional: multi-session support
@@ -57,8 +55,8 @@ config.addSources(tSpec, 'paths');
 
 // Start the transfer using the transfer client
 try {
+    logger.info('Uploading files');
     await transferClient.startTransferAndWait(tSpec);
-    logger.info('Transfer completed!');
 } finally {
     await transferClient.shutdown();
 }

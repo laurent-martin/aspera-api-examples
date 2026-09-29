@@ -27,8 +27,8 @@ const transferSpecV2 = {
 config.addSources(transferSpecV2, 'assets.paths')
 
 try {
+	logger.info('Uploading files');
 	await transferClient.startTransferAndWait(transferSpecV2);
-	logger.info('Done!');
 } finally {
 	await transferClient.shutdown();
 }

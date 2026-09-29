@@ -5,6 +5,7 @@ import utils.configuration
 import utils.transfer_client
 import utils.helper_aspera_cos
 import utils.rest
+import logging as log
 
 destination_folder = '/'
 
@@ -33,6 +34,7 @@ try:
     node_api.addHeaders(cos_node_info['headers'])
 
     # call Node API with one transfer request to get one transfer spec
+    log.info('Getting transfer spec')
     response_data = node_api.create('files/upload_setup', {
         'transfer_requests': [
             {'transfer_request': {'paths': [{'destination': destination_folder}]}}
@@ -49,6 +51,7 @@ try:
     config.add_sources(t_spec, 'paths')
 
     # start transfer
+    log.info('Uploading files')
     transfer_client.start_transfer_and_wait(t_spec)
 finally:
     transfer_client.shutdown()

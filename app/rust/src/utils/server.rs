@@ -27,14 +27,14 @@ const END_OF_BUFFER: u8 = 0;
 // the executable command
 pub const ASCMD_COMMAND: &str = "ascmd";
 
-/// A TLV (Tag-Length-Value) structure
+/// TLV (Tag-Length-Value) item of the ascmd protocol.
 #[derive(Debug)]
 struct TypeValue {
     t: u8,
     v: Vec<u8>,
 }
 
-/// A structure that holds the information about the platform
+/// Information about the platform.
 #[derive(Debug)]
 pub struct Info {
     platform: String,
@@ -52,8 +52,14 @@ pub struct Info {
 }
 
 impl Info {
+    /// Decode the information about the platform.
+    ///
+    /// # Arguments
+    /// * `data` - TLV data
+    ///
+    /// # Returns
+    /// Information about the platform
     fn new(data: &[u8]) -> Result<Self, Box<dyn Error>> {
-        log::trace!("decoding info: {:?}", data);
         let mut info = Info {
             platform: String::new(),
             version: String::new(),
@@ -91,7 +97,7 @@ impl Info {
     }
 }
 
-/// A structure that holds the information about one "drive"
+/// Information about one drive.
 #[derive(Debug)]
 pub struct Mnt {
     fs: String,
@@ -105,14 +111,20 @@ pub struct Mnt {
     errstr: String,
 }
 
-/// A structure that holds the information about available "drives"
+/// Information about available drives.
 #[derive(Debug)]
 pub struct Mounts {
     mounts: Vec<Mnt>, // A vector of Mnt structs
 }
 impl Mounts {
+    /// Decode the information about available drives.
+    ///
+    /// # Arguments
+    /// * `data` - TLV data
+    ///
+    /// # Returns
+    /// Information about available drives
     fn new(data: &[u8]) -> Result<Self, Box<dyn Error>> {
-        log::debug!("decoding mounts: {:?}", data);
         let mut result = Mounts { mounts: Vec::new() };
         let mut mnt: Option<Mnt> = None;
         let reader: &mut BufReader<&[u8]> = &mut BufReader::new(data);
@@ -157,7 +169,7 @@ impl Mounts {
     }
 }
 
-/// A structure that holds the information about a file or directory
+/// Information about a file or folder.
 #[derive(Debug)]
 pub struct Stat {
     name: String,
@@ -180,8 +192,14 @@ pub struct Stat {
 }
 
 impl Stat {
+    /// Decode the information about a file or folder.
+    ///
+    /// # Arguments
+    /// * `data` - TLV data
+    ///
+    /// # Returns
+    /// Information about a file or folder
     fn new(data: &[u8]) -> Result<Self, Box<dyn Error>> {
-        log::debug!("decoding stat: {:?}", data);
         let mut stat = Stat {
             name: String::new(),
             size: 0,
@@ -229,7 +247,7 @@ impl Stat {
     }
 }
 
-/// A structure that holds the information about the size of a file or directory
+/// Size information about a file or folder.
 #[derive(Debug)]
 pub struct Size {
     size: u64,
@@ -240,8 +258,14 @@ pub struct Size {
 }
 
 impl Size {
+    /// Decode the size information about a file or folder.
+    ///
+    /// # Arguments
+    /// * `data` - TLV data
+    ///
+    /// # Returns
+    /// Size information
     fn new(data: &[u8]) -> Result<Self, Box<dyn Error>> {
-        log::debug!("decoding size: {:?}", data);
         let mut size = Size {
             size: 0,
             fcount: 0,
@@ -265,7 +289,7 @@ impl Size {
     }
 }
 
-/// A structure that holds the information about a command error
+/// Error returned by a command.
 #[derive(Debug)]
 struct CommandError {
     errno: u32,
@@ -273,8 +297,14 @@ struct CommandError {
 }
 
 impl CommandError {
+    /// Decode the error returned by a command.
+    ///
+    /// # Arguments
+    /// * `data` - TLV data
+    ///
+    /// # Returns
+    /// Error of the command
     fn new(data: &[u8]) -> Result<Self, Box<dyn Error>> {
-        log::debug!("decoding error: {:?}", data);
         let mut error = CommandError {
             errno: 0,
             errstr: String::new(),
@@ -292,15 +322,21 @@ impl CommandError {
     }
 }
 
-/// A structure that holds the information about the md5sum of a file
+/// MD5 checksum of a file.
 #[derive(Debug)]
 struct Md5sum {
     md5sum: String,
 }
 
 impl Md5sum {
+    /// Decode the MD5 checksum of a file.
+    ///
+    /// # Arguments
+    /// * `data` - TLV data
+    ///
+    /// # Returns
+    /// MD5 checksum
     fn new(data: &[u8]) -> Result<Self, Box<dyn Error>> {
-        log::debug!("decoding md5sum: {:?}", data);
         let mut md5sum = Md5sum {
             md5sum: String::new(),
         };
@@ -316,7 +352,7 @@ impl Md5sum {
     }
 }
 
-/// Top-level result of a command
+/// Result of a command.
 #[derive(Debug)]
 enum CommandResult {
     File(Stat),
@@ -331,6 +367,13 @@ enum CommandResult {
 }
 
 impl CommandResult {
+    /// Decode the result of a command.
+    ///
+    /// # Arguments
+    /// * `type_value` - TLV item
+    ///
+    /// # Returns
+    /// Result of the command
     fn new(type_value: &TypeValue) -> Result<Self, Box<dyn Error>> {
         match type_value.t {
             1 => Ok(CommandResult::File(Stat::new(&type_value.v)?)),
@@ -357,7 +400,7 @@ impl CommandResult {
         }
     }
 }
-/// Implements the `ascmd` protocol.
+/// Client of the `ascmd` protocol: file operations on Aspera HSTS.
 ///
 /// Typically used like this:
 /// ```rust
@@ -385,12 +428,16 @@ pub struct AsCmd<I: Write, O: Read> {
 }
 
 impl<I: Write, O: Read> AsCmd<I, O> {
-    /// Create a new AsCmd object
-    /// ### Arguments
-    /// * `stdin` - A channel to which commands are written
-    /// * `stdout` - A channel from which TLV are read
-    /// * `host` - The address of the server (to traverse proxy)
-    /// * `version` - The protocol version, 1 or 2
+    /// Create an ascmd client, and start the protocol.
+    ///
+    /// # Arguments
+    /// * `stdin` - channel to which commands are written
+    /// * `stdout` - channel from which TLV items are read
+    /// * `host` - address of the server, to traverse a proxy
+    /// * `version` - protocol version: 1 or 2
+    ///
+    /// # Returns
+    /// Ascmd client
     pub fn new(stdin: I, stdout: O, host: &str, version: u32) -> Result<Self, Box<dyn Error>> {
         let mut ascmd = AsCmd { stdin, stdout };
         match version {
@@ -404,97 +451,101 @@ impl<I: Write, O: Read> AsCmd<I, O> {
                     ascmd.send_command(command)?
                 }
             }
-            _ => return Err("Unsupported ascmd version".into()),
+            _ => return Err(format!("Unsupported ascmd version: {version}").into()),
         }
         let mut initial_reader = BufReader::new(&mut ascmd.stdout);
         // Read the first TLV response
         let data = read_tlv(&mut initial_reader)?;
         if data.t != 5 {
-            return Err("Expected tag 5".into());
+            return Err(format!("Expected tag 5, got: {}", data.t).into());
         }
-        let info = Info::new(&data.v)?;
-        log::debug!("initial info: {:?}", info);
+        Info::new(&data.v)?;
         Ok(ascmd)
     }
 
-    /// Send a command to ascmd
-    /// ### Arguments
-    /// * `command` - the command to send (without "as_" prefix)
+    /// Send a command to ascmd.
+    ///
+    /// # Arguments
+    /// * `command` - command, without `as_` prefix
     fn send_command(&mut self, command: &str) -> Result<(), Box<dyn Error>> {
+        log::debug!("Sending command: as_{command}");
         let command = format!("as_{}\n", command);
         self.stdin.write_all(command.as_bytes())?;
         self.stdin.flush()?;
         Ok(())
     }
-    /// Execute a command and get the result.
-    /// ### Arguments
-    /// * `command` - the command to execute (without "as_" prefix)
-    /// ### Returns
-    /// The result of the command as a `CommandResult` or an `Error`
+    /// Execute a command, and get the result.
+    ///
+    /// # Arguments
+    /// * `command` - command, without `as_` prefix
+    ///
+    /// # Returns
+    /// Result of the command
     fn exec_command_result(&mut self, command: &str) -> Result<CommandResult, Box<dyn Error>> {
         self.send_command(command)?;
         let mut result_reader: BufReader<&mut O> = BufReader::new(&mut self.stdout);
-        log::debug!("reading result for command: {}", command);
         let type_value = read_tlv(&mut result_reader)?;
         CommandResult::new(&type_value)
     }
-    /// Get the information about the platform
-    /// ### Returns
-    /// The information about the platform as an `Info` object or an `Error`
+    /// Get the information about the platform.
+    ///
+    /// # Returns
+    /// Information about the platform
     pub fn info(&mut self) -> Result<Info, Box<dyn Error>> {
         match self.exec_command_result("info")? {
             CommandResult::Info(info) => Ok(info),
-            CommandResult::Error(error) => Err(format!("Error: {}", error.errstr).into()),
+            CommandResult::Error(error) => Err(format!("Ascmd error: {}", error.errstr).into()),
             _ => Err("Unexpected result".into()),
         }
     }
-    /// Get the information about the file or directory
-    /// ### Arguments
-    /// * `path` - the path of the file or directory
-    /// ### Returns
-    /// The information about the file or directory as a `Vec` of `Stat` object or an `Error`
+    /// Get the information about a file, or about the files in a folder.
+    ///
+    /// # Arguments
+    /// * `path` - path of the file or folder
+    ///
+    /// # Returns
+    /// Information about the files
     pub fn ls(&mut self, path: &Path) -> Result<Vec<Stat>, Box<dyn Error>> {
         match self.exec_command_result(&format!("ls {}", path_to_arg(path)))? {
             CommandResult::Dir(dir) => Ok(dir),
             CommandResult::File(file) => Ok(vec![file]),
-            CommandResult::Error(error) => Err(format!("Error: {}", error.errstr).into()),
-            _ => Err("Unexpected result for ls".into()),
-        }
-    }
-    /// Delete a file or directory
-    /// ### Arguments
-    /// * `path` - the path of the file or directory to delete
-    /// ### Returns
-    /// An `Error` if the deletion failed
-    pub fn rm(&mut self, path: &Path) -> Result<(), Box<dyn Error>> {
-        result_success_error(self.exec_command_result(&format!("rm {}", path_to_arg(path)))?)
-    }
-    /// Get size information about a file or directory
-    /// ### Arguments
-    /// * `path` - the path of the file or directory
-    /// ### Returns
-    /// The size information as a `Size` object or an `Error`
-    pub fn du(&mut self, path: &Path) -> Result<Size, Box<dyn Error>> {
-        match self.exec_command_result(&format!("du {}", path_to_arg(path)))? {
-            CommandResult::Size(size) => Ok(size),
-            CommandResult::Error(error) => Err(format!("Error: {}", error.errstr).into()),
+            CommandResult::Error(error) => Err(format!("Ascmd error: {}", error.errstr).into()),
             _ => Err("Unexpected result".into()),
         }
     }
-    /// Create a directory
-    /// ### Arguments
-    /// * `path` - the path of the directory to create
-    /// ### Returns
-    /// An `Error` if the creation failed
+    /// Delete a file or folder.
+    ///
+    /// # Arguments
+    /// * `path` - path of the file or folder
+    pub fn rm(&mut self, path: &Path) -> Result<(), Box<dyn Error>> {
+        result_success_error(self.exec_command_result(&format!("rm {}", path_to_arg(path)))?)
+    }
+    /// Get the size information about a file or folder.
+    ///
+    /// # Arguments
+    /// * `path` - path of the file or folder
+    ///
+    /// # Returns
+    /// Size information
+    pub fn du(&mut self, path: &Path) -> Result<Size, Box<dyn Error>> {
+        match self.exec_command_result(&format!("du {}", path_to_arg(path)))? {
+            CommandResult::Size(size) => Ok(size),
+            CommandResult::Error(error) => Err(format!("Ascmd error: {}", error.errstr).into()),
+            _ => Err("Unexpected result".into()),
+        }
+    }
+    /// Create a folder.
+    ///
+    /// # Arguments
+    /// * `path` - path of the folder
     pub fn mkdir(&mut self, path: &Path) -> Result<(), Box<dyn Error>> {
         result_success_error(self.exec_command_result(&format!("mkdir {}", path_to_arg(path)))?)
     }
-    /// Copy a file
-    /// ### Arguments
-    /// * `source` - the source file or directory path
-    /// * `destination` - the destination file or directory path
-    /// ### Returns
-    /// An `Error` if the copy failed
+    /// Copy a file or folder.
+    ///
+    /// # Arguments
+    /// * `source` - path of the source
+    /// * `destination` - path of the destination
     pub fn cp(&mut self, source: &Path, destination: &Path) -> Result<(), Box<dyn Error>> {
         result_success_error(self.exec_command_result(&format!(
             "cp {} {}",
@@ -502,12 +553,11 @@ impl<I: Write, O: Read> AsCmd<I, O> {
             path_to_arg(destination)
         ))?)
     }
-    /// Move a file
-    /// ### Arguments
-    /// * `source` - the source file or directory path
-    /// * `destination` - the destination file or directory path
-    /// ### Returns
-    /// An `Error` if the move failed
+    /// Move a file or folder.
+    ///
+    /// # Arguments
+    /// * `source` - path of the source
+    /// * `destination` - path of the destination
     pub fn mv(&mut self, source: &Path, destination: &Path) -> Result<(), Box<dyn Error>> {
         result_success_error(self.exec_command_result(&format!(
             "mv {} {}",
@@ -515,50 +565,56 @@ impl<I: Write, O: Read> AsCmd<I, O> {
             path_to_arg(destination)
         ))?)
     }
-    /// Get information on drive in the system
-    /// ### Returns
-    /// The information about the drives as a `Mounts` object or an `Error`
+    /// Get the information about available drives.
+    ///
+    /// # Returns
+    /// Information about available drives
     pub fn df(&mut self) -> Result<Mounts, Box<dyn Error>> {
         match self.exec_command_result("df")? {
             CommandResult::Df(mounts) => Ok(mounts),
-            CommandResult::Error(error) => Err(format!("Error: {}", error.errstr).into()),
+            CommandResult::Error(error) => Err(format!("Ascmd error: {}", error.errstr).into()),
             _ => Err("Unexpected result".into()),
         }
     }
-    /// Get the MD5 checksum of a file
-    /// ### Arguments
-    /// * `path` - the path of the file
-    /// ### Returns
-    /// The MD5 checksum as a `String` or an `Error`
+    /// Get the MD5 checksum of a file.
+    ///
+    /// # Arguments
+    /// * `path` - path of the file
+    ///
+    /// # Returns
+    /// MD5 checksum
     pub fn md5sum(&mut self, path: &Path) -> Result<String, Box<dyn Error>> {
         match self.exec_command_result(&format!("md5sum {}", path_to_arg(path)))? {
             CommandResult::Md5sum(md5sum) => Ok(md5sum.md5sum),
-            CommandResult::Error(error) => Err(format!("Error: {}", error.errstr).into()),
+            CommandResult::Error(error) => Err(format!("Ascmd error: {}", error.errstr).into()),
             _ => Err("Unexpected result".into()),
         }
     }
-    /// Sends the "as_exit" command which will terminate the ascmd agent
-    /// ### Returns
-    /// An `Error` if the termination failed
+    /// Terminate the ascmd session with the `as_exit` command.
     pub fn terminate(&mut self) -> Result<(), Box<dyn Error>> {
         self.send_command("exit")
     }
 }
 
-/// Checks the result of a command that expect only success or error
-/// ### Arguments
-/// * `result` - the result of the previously executed command
+/// Check the result of a command that returns only success or error.
+///
+/// # Arguments
+/// * `result` - result of the command
 fn result_success_error(result: CommandResult) -> Result<(), Box<dyn Error>> {
     match result {
         CommandResult::Success(_) => Ok(()),
-        CommandResult::Error(error) => Err(format!("Error: {}", error.errstr).into()),
+        CommandResult::Error(error) => Err(format!("Ascmd error: {}", error.errstr).into()),
         _ => Err("Unexpected result".into()),
     }
 }
 
-/// transforms a Path into a string argument suitable for execution in the ascmd agent
-/// ### Arguments
-/// * `path` - the path to transform
+/// Quote a path as argument of an ascmd command.
+///
+/// # Arguments
+/// * `path` - path to quote
+///
+/// # Returns
+/// Quoted path
 fn path_to_arg(path: &Path) -> String {
     // another possibility would be to protect individual special characters:
     // " ' \ <sp> <tab>
@@ -571,14 +627,15 @@ fn path_to_arg(path: &Path) -> String {
     )
 }
 
-/// Decodes a zero-terminated string
-/// ### Arguments
-/// * `name` - the name of the string
-/// * `buf` - the buffer to decode
-/// ### Returns
-/// The decoded string or an error
+/// Decode a zero-terminated string.
+///
+/// # Arguments
+/// * `name` - name of the field, for errors
+/// * `buf` - data
+///
+/// # Returns
+/// String
 fn decode_zstr(name: &str, buf: &[u8]) -> Result<String, Box<dyn Error>> {
-    log::debug!("{}: decode string: {:?}", name, buf);
     if buf.last() != Some(&0) {
         return Err(format!(
             "Expected zero-terminated buffer in decode_zstr({}): {:?}",
@@ -588,37 +645,41 @@ fn decode_zstr(name: &str, buf: &[u8]) -> Result<String, Box<dyn Error>> {
     }
     Ok(String::from_utf8_lossy(&buf[..buf.len() - 1]).to_string())
 }
-/// Decodes a 64-bit integer
-/// ### Arguments
-/// * `name` - the name of the integer
-/// * `buf` - the buffer to decode
-/// ### Returns
-/// The decoded integer or an error
+/// Decode a 64-bit unsigned integer.
+///
+/// # Arguments
+/// * `name` - name of the field, for errors
+/// * `buf` - data
+///
+/// # Returns
+/// Integer
 fn decode_u64(name: &str, buf: &Vec<u8>) -> Result<u64, Box<dyn Error>> {
-    log::debug!("{}: decode_u64: {:?}", name, buf);
     if buf.len() != 8 {
         return Err(format!("Expected 8 bytes for u64({}): {:?}", name, buf).into());
     }
     Ok(u64::from_be_bytes(buf.as_slice().try_into().unwrap()))
 }
-/// Decodes a 32-bit integer
-/// ### Arguments
-/// * `name` - the name of the integer
-/// * `buf` - the buffer to decode
-/// ### Returns
-/// The decoded integer or an error
+/// Decode a 32-bit unsigned integer.
+///
+/// # Arguments
+/// * `name` - name of the field, for errors
+/// * `buf` - data
+///
+/// # Returns
+/// Integer
 fn decode_u32(name: &str, buf: &Vec<u8>) -> Result<u32, Box<dyn Error>> {
-    log::debug!("{}: decode_u32: {:?}", name, buf);
     if buf.len() != 4 {
         return Err(format!("Expected 4 bytes for u32({}): {:?}", name, buf).into());
     }
     Ok(u32::from_be_bytes(buf.as_slice().try_into().unwrap()))
 }
-/// Reads a TLV from the buffer
-/// ### Arguments
-/// * `reader` - the buffer reader
-/// ### Returns
-/// The read TLV or an error, TLV type is END_OF_BUFFER if no more bytes available at the beginning
+/// Read a TLV item.
+///
+/// # Arguments
+/// * `reader` - reader of the ascmd output
+///
+/// # Returns
+/// TLV item
 fn read_tlv(reader: &mut BufReader<impl Read>) -> Result<TypeValue, Box<dyn Error>> {
     // Check if the buffer is empty before attempting to read
     if reader.fill_buf()?.is_empty() {
@@ -646,6 +707,5 @@ fn read_tlv(reader: &mut BufReader<impl Read>) -> Result<TypeValue, Box<dyn Erro
         .read_exact(&mut v)
         .map_err(|_| "Failed to read value bytes")?;
     let result = TypeValue { t, v };
-    log::trace!("read_tlv: {:?}", result);
     Ok(result)
 }

@@ -2,12 +2,22 @@ package examples;
 
 import org.json.JSONObject;
 import org.json.JSONArray;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import utils.Configuration;
 import utils.TransferClient;
 
-// Send one file to COS using transfer spec v2
+/**
+ * Sample: upload one file to IBM Cloud Object Storage, with a transfer spec V2.
+ */
 public class COSFileUploadExample {
+    private static final Logger LOGGER = Logger.getLogger(COSFileUploadExample.class.getName());
 
+    /**
+     * Execute the sample.
+     *
+     * @param args command line arguments: files to transfer
+     */
     public static void main(String... args) {
         final Configuration config = new Configuration(args);
         final TransferClient transferClient = new TransferClient(config);
@@ -30,6 +40,7 @@ public class COSFileUploadExample {
                                     .put(new JSONObject()//
                                             .put("source", "faux:///10m?10m"))));
             // execute transfer
+            LOGGER.log(Level.INFO, "Uploading file");
             transferClient.start_transfer_and_wait(transferSpecV2);
         } finally {
             transferClient.shutdown();

@@ -4,6 +4,7 @@
 # Note: Transfer SDK may have a bug that make this work only if the share name is equal to the folder name on node.
 import utils.configuration
 import utils.transfer_client
+import logging as log
 
 ####################
 # IMPORTANT: this does not work well, use shares.py instead
@@ -42,6 +43,7 @@ try:
     config.add_sources(t_spec, 'assets.paths', True)
 
     # start transfer, using Transfer SDK
+    log.info('Uploading files')
     transfer_client.start_transfer_and_wait(t_spec)
 finally:
     transfer_client.shutdown()

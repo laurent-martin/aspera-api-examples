@@ -20,7 +20,8 @@ This sample application shows how to build an Aspera-transfer-enabled web applic
 
 ![Screenshot](doc/screenshot.png)
 
-Starting a transfer consists in building a **transfer spec** and then calling the browser-side JavaScript `startTransfer` API.
+Starting a transfer consists in building a **transfer spec**
+and then calling the browser-side JavaScript `startTransfer` API.
 
 The transfer spec is Aspera's structure that contains all information to start a transfer:
 
@@ -35,7 +36,8 @@ An Aspera transfer is authorized either:
 - using SSH credentials (mostly legacy or server-server transfers)
 
 > [!NOTE]
-> The SSH-based transfer authorization is not recommended for web applications, as users shall be authorized through the web app.
+> The SSH-based transfer authorization is not recommended for web applications,
+> as users shall be authorized through the web app.
 > The legacy Aspera "Connect Server" web app was using SSH auth, but is deprecated.
 
 Web applications shall use the "token" authorization scheme, using one of those types:
@@ -49,7 +51,9 @@ In this example, the transfer spec is build either:
 - Using a broker app (server) which in turn calls the HSTS node API
   - it generates an Aspera Transfer token : this is the recommended way, or
   - it uses a Basic token (for testing purpose only, do not use this in web apps)
-- Using SSH credentials (do not do that: for testing purpose only) : in that case, HSTS node API is not used, but SSH user's credentials must be known, and that transfer user must be authorized on the HSTS server without token. For example this is not possible on AoC/ATS SaaS Aspera transfer servers.
+- Using SSH credentials (do not do that: for testing purpose only) : in that case, HSTS node API is not used,
+  but SSH user's credentials must be known, and that transfer user must be authorized on the HSTS server without token.
+  For example this is not possible on AoC/ATS SaaS Aspera transfer servers.
 
 ![Architecture](doc/web_arch.png)
 
@@ -85,6 +89,8 @@ httpgw:
 > Node credentials can be either a node user, or an access key.
 > As use of SSH credentials is not recommended, you may ignore the `server` section.
 > The `httpgw` can also be ignored if you do not want to use HTTP Gateway.
+
+<!-- separate alerts -->
 
 > [!CAUTION]
 > This sample app shares the full configuration with the client, including credential.

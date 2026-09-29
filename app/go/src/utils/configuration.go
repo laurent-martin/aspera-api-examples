@@ -3,11 +3,13 @@
 package utils
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -16,14 +18,60 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Constants for config file and logging
+// Constants for config file
 const (
 	PathsFileRel = "config/paths.yaml"
-	ItemWidth    = 12
 )
 
-// Configuration provides common environment settings for the application.
-// It includes methods for configuration loading, logging, file utilities, and more.
+// logger of the package, set by NewConfiguration
+var logger *zap.SugaredLogger
+
+// secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
+var secretsRegex = regexp.MustCompile(`("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+`)
+
+// set from configuration file (misc.show_secrets)
+var showSecrets = false
+
+// MaskSecrets hides secrets in text for logs, unless configured to show them.
+//
+// Parameters:
+//   - text: text that may contain secrets
+//
+// Returns: text with hidden secrets
+func MaskSecrets(text string) string {
+	if showSecrets {
+		return text
+	}
+	return secretsRegex.ReplaceAllString(text, "${1}${2}***")
+}
+
+// LogDump logs a named value: objects are displayed in JSON, and secrets are hidden.
+//
+// Parameters:
+//   - name: name of the value
+//   - value: value to log: a string, or an object displayed in JSON
+//   - level: log level, debug by default
+func LogDump(name string, value any, level ...zapcore.Level) {
+	logLevel := zapcore.DebugLevel
+	if len(level) != 0 {
+		logLevel = level[0]
+	}
+	if !logger.Level().Enabled(logLevel) {
+		return
+	}
+	text, isString := value.(string)
+	if !isString {
+		data, err := json.Marshal(value)
+		if err != nil {
+			text = fmt.Sprint(value)
+		} else {
+			text = string(data)
+		}
+	}
+	logger.Logf(logLevel, "%s: %s", name, MaskSecrets(text))
+}
+
+// Configuration is the configuration of the samples: parameters from the configuration file, files to transfer from the command line, and logging.
 type Configuration struct {
 	Log       *zap.SugaredLogger
 	FileList  []string
@@ -33,7 +81,9 @@ type Configuration struct {
 	Config    map[string]interface{}
 }
 
-// Initializes a Configuration instance, loading YAML configuration files and setting up logging.
+// NewConfiguration reads the configuration file, and sets up logging.
+//
+// Returns: configuration of the samples
 func NewConfiguration() (*Configuration, error) {
 	// Create an atomic level that can be dynamically changed
 	atomicLevel := zap.NewAtomicLevelAt(zapcore.DebugLevel)
@@ -57,45 +107,34 @@ func NewConfiguration() (*Configuration, error) {
 	// Build the logger
 	zlogger, _ := zap_config.Build()
 	defer zlogger.Sync() // Flushes buffer, if any
-	logger := zlogger.Sugar()
-	if len(os.Args) < 1 {
-		return nil, errors.New("no files to process")
-	}
+	logger = zlogger.Sugar()
 
 	topFolderPath := os.Getenv("DIR_TOP")
 	if topFolderPath == "" {
-		return nil, fmt.Errorf("environment variable DIR_TOP is not set")
+		return nil, errors.New("Environment variable DIR_TOP is not set")
 	}
 	topFolderPath, err := filepath.Abs(topFolderPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path of DIR_TOP: %v", err)
+		return nil, err
 	}
 	info, err := os.Stat(topFolderPath)
-	if os.IsNotExist(err) || !info.IsDir() {
-		return nil, fmt.Errorf("the folder specified by DIR_TOP does not exist: %s", topFolderPath)
-	} else if err != nil {
-		return nil, fmt.Errorf("error checking DIR_TOP: %v", err)
+	if err != nil || !info.IsDir() {
+		return nil, fmt.Errorf("Folder not found: %s", topFolderPath)
 	}
-	logger.Debugf("top folder path: %s", topFolderPath)
 
-	pathsFile := filepath.Join(topFolderPath, PathsFileRel)
-	paths, err := loadYAML(pathsFile)
+	paths, err := loadYAML(filepath.Join(topFolderPath, PathsFileRel))
 	if err != nil {
-		return nil, fmt.Errorf("failed to load paths YAML: %v", err)
+		return nil, err
 	}
-	logger.Debugf("paths: %v", paths)
 
 	configFileRel, ok := paths["main_config"].(string)
 	if !ok {
-		return nil, fmt.Errorf("invalid config file path")
+		return nil, errors.New("Configuration parameter not found: main_config")
 	}
-	logger.Debugf("config file: %s", configFileRel)
-	configFile := filepath.Join(topFolderPath, configFileRel)
-	logger.Debugf("config file path: %s", configFile)
 
-	config, err := loadYAML(configFile)
+	config, err := loadYAML(filepath.Join(topFolderPath, configFileRel))
 	if err != nil {
-		return nil, fmt.Errorf("failed to load main config: %v", err)
+		return nil, err
 	}
 
 	c := &Configuration{
@@ -109,48 +148,47 @@ func NewConfiguration() (*Configuration, error) {
 
 	// Set logging level based on config
 	logLevel := c.ParamStr("misc", "level")
-	logger.Debugf("log level: %s", logLevel)
-	if logLevel == "warning" {
-		logLevel = "warn"
+	zapLevel := logLevel
+	if zapLevel == "warning" {
+		zapLevel = "warn"
 	}
-	if level, err := zapcore.ParseLevel(logLevel); err == nil {
-		atomicLevel.SetLevel(level)
-	} else {
-		logger.Warnf("invalid log level: %s", logLevel)
+	level, err := zapcore.ParseLevel(zapLevel)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid log level: %s", logLevel)
 	}
+	atomicLevel.SetLevel(level)
+	showSecrets = c.ParamBool("misc", "show_secrets", false)
 
 	if len(c.FileList) == 0 {
-		c.Log.Error("No files provided")
-		return nil, errors.New("no files provided")
-	}
-
-	// Logging paths and files
-	c.Log.Debugf("top_folder: %s", c.TopFolder)
-	for _, file := range c.FileList {
-		c.Log.Debugf("file: %s", file)
+		return nil, errors.New("Missing arguments: files to transfer")
 	}
 
 	return c, nil
 }
 
-// Digs into the config based on a key list and returns the result.
+// param gets a parameter from the configuration file.
 //
 // Parameters:
-//   - key1: first level key in map
-//   - key2: second level key in map
+//   - key1: section in the configuration file
+//   - key2: name of the parameter in the section
+//
+// Returns: value of the parameter, or an error if the parameter is not set
 func (c *Configuration) param(key1 string, key2 string) (interface{}, error) {
-	val1, ok := c.Config[key1]
+	section, _ := c.Config[key1].(map[string]interface{})
+	val, ok := section[key2]
 	if !ok {
-		return nil, fmt.Errorf("key %s not found", key1)
+		return nil, fmt.Errorf("Configuration parameter not found: %s.%s", key1, key2)
 	}
-	val2, ok := val1.(map[string]interface{})[key2]
-	if !ok {
-		return nil, fmt.Errorf("key %s not found", key2)
-	}
-	return val2, nil
+	return val, nil
 }
 
-// Gets a string from the configuration file.
+// ParamStr gets a string parameter from the configuration file.
+//
+// Parameters:
+//   - key1: section in the configuration file
+//   - key2: name of the parameter in the section
+//
+// Returns: value of the parameter, that is mandatory
 func (c *Configuration) ParamStr(key1 string, key2 string) string {
 	val, err := c.param(key1, key2)
 	if err != nil {
@@ -159,6 +197,14 @@ func (c *Configuration) ParamStr(key1 string, key2 string) string {
 	return val.(string)
 }
 
+// ParamBool gets a boolean parameter from the configuration file.
+//
+// Parameters:
+//   - key1: section in the configuration file
+//   - key2: name of the parameter in the section
+//   - def: value if the parameter is not set
+//
+// Returns: value of the parameter
 func (c *Configuration) ParamBool(key1 string, key2 string, def bool) bool {
 	val, err := c.param(key1, key2)
 	if err != nil {
@@ -167,51 +213,26 @@ func (c *Configuration) ParamBool(key1 string, key2 string, def bool) bool {
 	return val.(bool)
 }
 
-// Retrieves the path for a specified key in the test environment.
+// GetPath gets the path of an item of the project, from the paths file.
+//
+// Parameters:
+//   - name: name of the item in the paths file
+//
+// Returns: absolute path of the item, that must exist
 func (c *Configuration) GetPath(name string) string {
 	itemPath := filepath.Join(c.TopFolder, c.Paths[name].(string))
 	if _, err := os.Stat(itemPath); os.IsNotExist(err) {
-		c.Log.Fatalf("%s not found", itemPath)
+		c.Log.Fatalf("File not found: %s", itemPath)
 	}
 	return itemPath
 }
 
-// Gets the last line of a file.
+// loadYAML loads a YAML file.
 //
 // Parameters:
-//   - filename: path to the log file.
-func LastFileLine(filename string) (string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-	stat, err := file.Stat()
-	if err != nil {
-		return "", err
-	}
-	var offset int64 = stat.Size() - 1
-	var lastLine []byte
-	buf := make([]byte, 1)
-	for offset >= 0 {
-		file.Seek(offset, 0)
-		_, err := file.Read(buf)
-		if err != nil {
-			return "", err
-		}
-		if buf[0] == '\n' && offset != stat.Size()-1 { // skip the trailing newline
-			break
-		}
-		lastLine = append([]byte{buf[0]}, lastLine...)
-		offset--
-	}
-	return string(lastLine), nil
-}
-
-// Loads a YAML file and returns its contents as a map.
+//   - filePath: path of the YAML file
 //
-// Parameters:
-//   - filename: path to the yaml file.
+// Returns: content of the file
 func loadYAML(filePath string) (map[string]interface{}, error) {
 	obj := make(map[string]interface{})
 	yamlFile, err := os.ReadFile(filePath)
@@ -225,12 +246,11 @@ func loadYAML(filePath string) (map[string]interface{}, error) {
 	return obj, nil
 }
 
-// Set files provided on command line as sources in the transfer specification.
-// The list of paths at `dotPath` is replaced.
+// AddSources adds the files to transfer, from the command line arguments, to the transfer spec.
 //
 // Parameters:
-//   - dotPath: path in map of transfer spec
-//   - transferSpec: transfer specification map
+//   - transferSpec: transfer spec to modify
+//   - dotPath: path of the file list in the transfer spec: `paths` (V1) or `assets.paths` (V2)
 func (c *Configuration) AddSources(transferSpec map[string]interface{}, dotPath string) error {
 	keys := strings.Split(dotPath, ".")
 	lastKey := keys[len(keys)-1]
@@ -240,10 +260,10 @@ func (c *Configuration) AddSources(transferSpec map[string]interface{}, dotPath 
 			if nestedMap, ok := val.(map[string]interface{}); ok {
 				m = nestedMap
 			} else {
-				return fmt.Errorf("key %s is not a map", key)
+				return fmt.Errorf("Invalid path in transfer spec: %s", dotPath)
 			}
 		} else {
-			return fmt.Errorf("key %s not found in map", key)
+			return fmt.Errorf("Invalid path in transfer spec: %s", dotPath)
 		}
 	}
 	// value may be absent or of any slice type (e.g. []interface{} when decoded from JSON)
@@ -257,11 +277,13 @@ func (c *Configuration) AddSources(transferSpec map[string]interface{}, dotPath 
 	return nil
 }
 
-// Helper function to get the port or default value
+// GetPortOrDefault gets the port of a URL, or a default port.
 //
 // Parameters:
-//   - u: URL object
-//   - defaultPort: default port value
+//   - u: URL
+//   - defaultPort: port if the URL has no port
+//
+// Returns: port
 func GetPortOrDefault(u *url.URL, defaultPort int) int {
 	result := defaultPort
 	if u.Port() != "" {

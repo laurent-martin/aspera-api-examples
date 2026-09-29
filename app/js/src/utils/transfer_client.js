@@ -7,7 +7,7 @@ import path from 'path';
 import grpc from '@grpc/grpc-js';
 import protoLoader from '@grpc/proto-loader';
 import { spawn } from 'child_process';
-import { logger } from './configuration.js';
+import { logger, logDump } from './configuration.js';
 
 const ASCP_LOG_FILE = "aspera-scp-transfer.log";
 // default port of transferd if not specified in URL
@@ -17,16 +17,20 @@ const STARTUP_TIMEOUT_MS = 10000;
 // max wait time for the connection to the daemon
 const CONNECT_TIMEOUT_MS = 5000;
 // max wait time for the daemon to stop gracefully
-const SHUTDOWN_TIMEOUT_MS = 5000;
+const SHUTDOWN_TIMEOUT_MS = 10000;
 // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
 const LISTENING_PORT_REGEX = /API Server: Listening on [^\s"]+:(\d+)/;
 
 /**
- * Transfer client using the Aspera Transfer SDK.
+ * Client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
  *
  * Methods return promises: errors are raised as rejections.
  */
 export class TransferClient {
+	/**
+	 * Create a transfer client.
+	 * @param {import('./configuration.js').Configuration} config configuration of the samples
+	 */
 	constructor(config) {
 		this.config = config;
 		const SDK_URL = new URL(this.config.getParam('trsdk', 'url'));
@@ -47,8 +51,9 @@ export class TransferClient {
 	}
 
 	/**
-	 * Start the transfer daemon and connect to it, if not already done.
+	 * Start the daemon and connect to it, if not already done.
 	 * On failure, the daemon is stopped.
+	 * @returns {Promise<void>}
 	 */
 	async startup() {
 		if (this.transferService) return;
@@ -63,7 +68,8 @@ export class TransferClient {
 	}
 
 	/**
-	 * Start the transfer daemon.
+	 * Start the daemon, with output and logs in the log folder.
+	 * @returns {Promise<void>}
 	 */
 	async startDaemon() {
 		const ASCP_LOG = path.resolve(this.config.logFolder, ASCP_LOG_FILE);
@@ -72,17 +78,16 @@ export class TransferClient {
 		const outFile = `${FILE_BASE}.out`;
 		const errFile = `${FILE_BASE}.err`;
 		const DAEMON_EXE = this.config.getPath('sdk_daemon');
-		const args = ['-c', DAEMON_CONF_FILE];
-		const command = `${DAEMON_EXE} ${args.join(' ')}`;
-		logger.debug(`daemon out: ${outFile}`);
-		logger.debug(`daemon err: ${errFile}`);
-		logger.debug(`daemon log: ${this.daemonLog}`);
-		logger.debug(`  ascp log: ${ASCP_LOG}`);
-		logger.debug(`   command: ${command}`);
+		const args = ['--config', DAEMON_CONF_FILE];
+		logDump('Daemon command', `${DAEMON_EXE} ${args.join(' ')}`);
+		logDump('Daemon out', outFile);
+		logDump('Daemon err', errFile);
+		logDump('Daemon log', this.daemonLog);
+		logDump('Ascp log', ASCP_LOG);
 		this.createConfigFile(DAEMON_CONF_FILE);
 		// the log file may contain lines of previous executions: only read new lines
 		const logOffset = fs.existsSync(this.daemonLog) ? fs.statSync(this.daemonLog).size : 0;
-		logger.debug('Starting daemon...');
+		logger.info('Starting daemon');
 		this.stopping = false;
 		this.daemonError = null;
 		const outFd = fs.openSync(outFile, 'w');
@@ -97,16 +102,14 @@ export class TransferClient {
 		this.daemonExited = new Promise((resolve) => {
 			// `exit` is not emitted if the process could not be started
 			daemon.on('error', (error) => {
-				this.daemonFailed(`Error starting the daemon: ${error.message}`);
+				this.daemonFailed(`Failed to start daemon: ${error.message}`);
 				resolve();
 			});
 			daemon.on('exit', (code, signal) => {
-				logger.debug(`daemon exited (${code ?? signal})`);
-				if (!this.stopping) this.daemonFailed(`daemon exited unexpectedly (${code ?? signal}), check: ${this.daemonLog}`);
+				if (!this.stopping) this.daemonFailed(`Daemon exited with code ${code ?? signal}, see log: ${this.daemonLog}`);
 				resolve();
 			});
 		});
-		logger.debug(`Started ${this.daemonName} with pid ${daemon.pid}`);
 		await this.waitDaemonListening(logOffset);
 	}
 
@@ -122,7 +125,8 @@ export class TransferClient {
 	/**
 	 * Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
 	 * The port is read from the daemon log: requires log level `info` or more verbose.
-	 * @param {number} logOffset only read the log after this offset
+	 * @param {number} logOffset only read the daemon log after this offset
+	 * @returns {Promise<void>}
 	 */
 	async waitDaemonListening(logOffset) {
 		const deadline = Date.now() + STARTUP_TIMEOUT_MS;
@@ -133,19 +137,18 @@ export class TransferClient {
 			const port = TransferClient.findListeningPort(this.daemonLog, logOffset);
 			if (port !== null) {
 				this.serverPort = port;
-				logger.info(`Allocated server port: ${this.serverPort}`);
 				return;
 			}
-			if (Date.now() > deadline) throw new Error(`Listening port not found in daemon log after ${STARTUP_TIMEOUT_MS} ms: ${this.daemonLog}`);
+			if (Date.now() > deadline) throw new Error(`Listening port not found in daemon log: ${this.daemonLog}`);
 			await new Promise(resolve => setTimeout(resolve, 200));
 		}
 	}
 
 	/**
 	 * Find the API listening port in the daemon log, after the given offset.
-	 * @param {string} logFile the daemon log file
-	 * @param {number} offset only read the log after this offset
-	 * @returns {number|null} the port, or null if not found (yet)
+	 * @param {string} logFile path of the daemon log
+	 * @param {number} offset only read the daemon log after this offset
+	 * @returns {number|null} port, or none if not found (yet)
 	 */
 	static findListeningPort(logFile, offset) {
 		if (!fs.existsSync(logFile)) return null;
@@ -157,9 +160,9 @@ export class TransferClient {
 	}
 
 	/**
-	 * Get the integer value of the ascp_level parameter.
-	 * @param {string} ascpLevel The ascp_level
-	 * @returns {number} The integer value of the ascp_level parameter
+	 * Convert the log level of ascp from name to number.
+	 * @param {string} ascpLevel `info`, `debug` or `trace`
+	 * @returns {number} 0, 1 or 2
 	 */
 	static getAscpLogLevel(ascpLevel) {
 		switch (ascpLevel) {
@@ -171,7 +174,9 @@ export class TransferClient {
 	}
 
 	/**
-	 * Build the daemon configuration file
+	 * Create the configuration file of the daemon.
+	 * See: https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
+	 * @param {string} target_file path of the configuration file
 	 */
 	createConfigFile(target_file) {
 		var daemonConf = {
@@ -191,7 +196,8 @@ export class TransferClient {
 	}
 
 	/**
-	 * Connect to the daemon (wait until it listens).
+	 * Connect to the daemon.
+	 * @returns {Promise<void>}
 	 */
 	connectToDaemon() {
 		return new Promise((resolve, reject) => {
@@ -203,24 +209,25 @@ export class TransferClient {
 				oneofs: true,
 			});
 			const trapi = grpc.loadPackageDefinition(packageDefinition).transferd.api;
-			const transferService = new trapi.TransferService(
-				`${this.serverAddress}:${this.serverPort}`,
-				grpc.credentials.createInsecure()
-			);
+			const address = `${this.serverAddress}:${this.serverPort}`;
+			const transferService = new trapi.TransferService(address, grpc.credentials.createInsecure());
 			transferService.waitForReady(Date.now() + CONNECT_TIMEOUT_MS, (error) => {
 				if (error) {
 					transferService.close();
-					return reject(this.daemonError ?? new Error(`Failed to connect to daemon: ${error.message}`));
+					return reject(this.daemonError ?? new Error(`Failed to connect to daemon: ${address}`));
 				}
 				this.transferService = transferService;
-				logger.debug('Connected...');
+				logger.info(`Connected to daemon: ${address}`);
 				resolve();
 			});
 		});
 	}
 
 	/**
-	 * Stop the daemon, if started, and wait for its termination.
+	 * Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+	 * transferd stops cleanly on SIGINT (not on SIGTERM).
+	 * Windows has no SIGINT for child processes: the process is terminated.
+	 * @returns {Promise<void>}
 	 */
 	async shutdown() {
 		this.stopping = true;
@@ -229,7 +236,7 @@ export class TransferClient {
 		const daemon = this.transferDaemonProcess;
 		this.transferDaemonProcess = null;
 		if (daemon && daemon.exitCode === null && daemon.signalCode === null) {
-			logger.debug('Stopping daemon...');
+			logger.info('Stopping daemon');
 			// transferd stops cleanly on SIGINT (not on SIGTERM), kill it if it does not stop in time
 			daemon.kill('SIGINT');
 			const timer = setTimeout(() => {
@@ -244,15 +251,14 @@ export class TransferClient {
 	}
 
 	/**
-	 * Start a transfer and monitor it until completion.
-	 * The daemon is started if needed.
-	 * @param {object} transferSpec the transfer spec
+	 * Start the daemon if needed, start a transfer, and wait for its end.
+	 * @param {object} transferSpec transfer spec
 	 * @returns {Promise<void>} resolved when the transfer is completed, rejected if it fails
 	 */
 	async startTransferAndWait(transferSpec) {
 		await this.startup();
 		const ts = JSON.stringify(transferSpec);
-		logger.debug(`transfer spec: ${ts}`);
+		logDump('Transfer spec', ts);
 
 		const startTransferRequest = {
 			transferType: 'FILE_REGULAR',
@@ -275,21 +281,19 @@ export class TransferClient {
 			this.abortTransfer = finish;
 
 			eventStream.on('data', (data) => {
-				if (data.transferInfo) {
-					const add = data.status === 'RUNNING' ? ` ${data.transferInfo.averageRateKbps / 1000} Mbps` : '';
-					logger.info(`Transfer: ${data.status}${add}`);
-				}
+				const rate = data.status === 'RUNNING' ? ` ${(Number(data.transferInfo?.averageRateKbps ?? 0) / 1000).toFixed(1)} Mbps` : '';
+				logger.info(`Transfer: ${data.status}${rate}`);
 				if (data.status === 'FAILED') {
 					// `error` is empty on session errors: the cause is in transfer or session information
 					const description = [data.error?.description, data.sessionInfo?.errorDesc, data.transferInfo?.errorDescription]
-						.map((text) => text?.trim()).find(Boolean) ?? data.transferEvent;
-					finish(new Error(`transfer failed: ${description}`));
+						.map((text) => text?.trim()).find(Boolean) ?? 'unknown error';
+					finish(new Error(`Transfer failed: ${description}`));
 				} else if (data.transferEvent === 'SESSION_STOP' && data.status === 'COMPLETED') {
 					finish();
 				}
 			});
-			eventStream.on('error', (error) => finish(new Error(`transfer monitoring error: ${error.message}`)));
-			eventStream.on('end', () => finish(new Error('transfer monitoring ended before transfer completion')));
+			eventStream.on('error', (error) => finish(new Error(`Transfer monitoring failed: ${error.message}`)));
+			eventStream.on('end', () => finish(new Error('Transfer monitoring ended before transfer completion')));
 		});
 	}
 }

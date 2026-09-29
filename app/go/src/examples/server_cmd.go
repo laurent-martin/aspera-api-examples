@@ -3,7 +3,6 @@ package main
 
 import (
 	"aspera_examples/src/utils"
-	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -14,81 +13,85 @@ import (
 
 var logger *zap.SugaredLogger
 
-// Take local or remote `AsCmd` object to perform ascmd actions on remote HSTS
+// performTests performs file operations on the server with ascmd.
+//
+// Parameters:
+//   - ascmdAgent: ascmd client
+//   - existingFile: path of a file on the server
+//   - writableFolder: path of a folder on the server, where files are created and deleted
 func performTests(ascmdAgent *utils.AsCmd, existingFile, writableFolder string) error {
 	copyFile := filepath.Join(writableFolder, "copied_file")
 	deleteFile := filepath.Join(writableFolder, "todelete_file")
 	deleteDir := filepath.Join(writableFolder, "todelete_dir")
 	if res, err := ascmdAgent.Info(); err != nil {
-		logger.Errorf("info: %v", err)
+		logger.Errorf("Failed to get server information: %s", err)
 	} else {
-		logger.Infof("info: %v", res)
+		logger.Infof("Server information: %v", res)
 	}
 	if res, err := ascmdAgent.Df(); err != nil {
 		return err
 	} else {
-		logger.Infof("df: %v", res)
+		logger.Infof("Disk space: %v", res)
 	}
 	if res, err := ascmdAgent.Ls(existingFile); err != nil {
 		return err
 	} else {
-		logger.Infof("ls file: %v", res)
+		logger.Infof("File information: %v", res)
 	}
 	if res, err := ascmdAgent.Ls(writableFolder); err != nil {
 		return err
 	} else {
-		logger.Infof("ls dir: %v", res)
+		logger.Infof("Folder content: %v", res)
 	}
 	if res, err := ascmdAgent.Md5sum(existingFile); err != nil {
 		return err
 	} else {
-		logger.Infof("md5sum: %v", res)
+		logger.Infof("File MD5: %v", res)
 	}
 	if res, err := ascmdAgent.Du(existingFile); err != nil {
 		return err
 	} else {
-		logger.Infof("du: %v", res)
+		logger.Infof("Disk usage: %v", res)
 	}
 	if err := ascmdAgent.Cp(existingFile, copyFile); err != nil {
 		return err
 	} else {
-		logger.Infof("cp: %s", "ok")
+		logger.Info("File copied")
 	}
 	if err := ascmdAgent.Mv(copyFile, deleteFile); err != nil {
 		return err
 	} else {
-		logger.Infof("mv: %s", "ok")
+		logger.Info("File moved")
 	}
 	if err := ascmdAgent.Rm(deleteFile); err != nil {
 		return err
 	} else {
-		logger.Infof("rm file: %s", "ok")
+		logger.Info("File deleted")
 	}
 	if err := ascmdAgent.Mkdir(deleteDir); err != nil {
 		return err
 	} else {
-		logger.Infof("mkdir: %s", "ok")
+		logger.Info("Folder created")
 	}
 	if err := ascmdAgent.Rm(deleteDir); err != nil {
 		return err
 	} else {
-		logger.Infof("rmdir: %s", "ok")
+		logger.Info("Folder deleted")
 	}
 	// send "exit"
 	return ascmdAgent.Terminate()
 }
 
-// real stuff : execute remote ascmd
+// testRemote tests ascmd executed on the server through SSH.
+//
+// Parameters:
+//   - config: configuration of the samples
 func testRemote(config *utils.Configuration) error {
-	logger.Infof("== TEST REMOTE =============")
+	logger.Info("Testing remote ascmd")
 	serverURL := config.ParamStr("server", "url")
 	parsedURL, err := url.Parse(serverURL)
-	if err != nil {
-		return fmt.Errorf("invalid server URL: %w", err)
-	}
-	logger.Infof("Server URL: %s", serverURL)
-	if parsedURL.Scheme != "ssh" {
-		return errors.New("invalid URL scheme, expected 'ssh'")
+	if err != nil || parsedURL.Scheme != "ssh" {
+		return fmt.Errorf("Expecting SSH URL: %s", serverURL)
 	}
 	host := parsedURL.Hostname()
 	port := parsedURL.Port()
@@ -106,14 +109,17 @@ func testRemote(config *utils.Configuration) error {
 		filepath.FromSlash(config.ParamStr("server", "file_download")),
 		filepath.FromSlash(config.ParamStr("server", "folder_upload")),
 	); err != nil {
-		return fmt.Errorf("tests failed: %w", err)
+		return err
 	}
 	return ascmdAgent.Terminate()
 }
 
-// execute a local ascmd
+// testLocal tests ascmd executed locally.
+//
+// Parameters:
+//   - config: configuration of the samples
 func testLocal(config *utils.Configuration) error {
-	logger.Infof("== TEST LOCAL =============")
+	logger.Info("Testing local ascmd")
 	ascmdAgent, err := utils.NewAsCmdLocal(1)
 	if err != nil {
 		return err
@@ -125,13 +131,13 @@ func testLocal(config *utils.Configuration) error {
 	return ascmdAgent.Terminate()
 }
 
+// all_tests tests ascmd executed locally, and on the server.
 func all_tests() error {
 	config, err := utils.NewConfiguration()
 	if err != nil {
 		return err
 	}
 	logger = config.Log
-	utils.SetLogger(config.Log)
 	defer logger.Sync()
 
 	err = testLocal(config)
@@ -145,6 +151,7 @@ func all_tests() error {
 	return nil
 }
 
+// main runs the sample, and exits on error.
 func main() {
 	err := all_tests()
 	if err != nil {

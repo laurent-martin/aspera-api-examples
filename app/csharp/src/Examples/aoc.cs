@@ -3,6 +3,9 @@
 using Newtonsoft.Json.Linq;
 using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
+/// <summary>
+/// Sample: upload files with Aspera on Cloud.
+/// </summary>
 class Aoc : SampleInterface
 {
     const string AOC_API_V1_BASE_URL = "https://api.ibmaspera.com/api/v1";
@@ -10,6 +13,10 @@ class Aoc : SampleInterface
     const string package_name = "sample package C#";
     int transfer_sessions = 1;
 
+    /// <summary>
+    /// Execute the sample.
+    /// </summary>
+    /// <param name="args">files to transfer</param>
     public void start(string[] args)
     {
         var config = new Configuration(args);
@@ -29,19 +36,24 @@ class Aoc : SampleInterface
             });
             aoc_api.setDefaultScope("user:all");
             // REST call
+            Log.log.Info("Getting user information");
             var user_info = aoc_api.read("self");
-            Log.DumpJObject("user_info", user_info);
             // we use the default workspace of the user
-            string default_workspace_id = (string?)user_info["default_workspace_id"] ?? throw new Exception("user has no default workspace");
+            string default_workspace_id = (string?)user_info["default_workspace_id"] ?? throw new Exception("User has no default workspace");
+            Log.log.Info("Getting default workspace");
             var workspace_info = aoc_api.read($"workspaces/{default_workspace_id}");
             // this user must be registered, else different code is needed
             string recipient_email = config.GetParam("aoc", "user_email");
             // find recipient information
+            Log.log.Info($"Getting recipient: {recipient_email}");
             JArray user_lookup = (JArray)aoc_api.read("contacts", new JObject{
                 {"current_workspace_id",workspace_info["id"]},
                 {"q",recipient_email},
             });
-            // hopefully we get only one user result
+            if (user_lookup.Count != 1)
+            {
+                throw new Exception($"Found {user_lookup.Count} recipients for {recipient_email}");
+            }
             var recipient_user_id = user_lookup[0];
             // build list of recipient (list of hash)
             var recipient_list = new JArray{new JObject{
@@ -49,6 +61,7 @@ class Aoc : SampleInterface
                 {"type",recipient_user_id["source_type"]},
             }};
             // create package container
+            Log.log.Info("Creating package");
             var package_info = aoc_api.create("packages", new JObject{
                 {"workspace_id",workspace_info["id"]},
                 {"name","my package"},
@@ -56,8 +69,10 @@ class Aoc : SampleInterface
                 {"note","my note"},
                 {"recipients",recipient_list},
             });
+            Log.log.Info("Getting node information");
             var node_info = aoc_api.read($"nodes/{package_info["node_id"]}");
             // validate package once files have been put inside. This triggers email emission
+            Log.log.Info("Setting expected transfers");
             aoc_api.update($"packages/{package_info["id"]}", new JObject{
                 { "sent",true},
                 { "transfers_expected",0}
@@ -101,6 +116,7 @@ class Aoc : SampleInterface
             // add file list in transfer spec
             config.AddSources(t_spec, "paths");
             // Finally send files to package folder on server
+            Log.log.Info("Uploading files");
             transfer_client.StartTransferAndWait(t_spec);
         }
         finally

@@ -1,24 +1,27 @@
 package utils;
 
 import java.util.Map;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import java.nio.file.FileSystems;
-import java.io.RandomAccessFile;
-import java.io.File;
-import java.io.IOException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.yaml.snakeyaml.Yaml;
-import java.util.stream.Stream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-// read configuration file and provide interface for transfer
+/**
+ * Configuration of the samples: parameters from the configuration file, files to transfer from the command line, and logging.
+ */
 public class Configuration {
     private static final Logger LOGGER = Logger.getLogger(Configuration.class.getName());
     private static final String PATHS_FILES = "config/paths.yaml";
+    // secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
+    private static final Pattern SECRETS_REGEX = Pattern.compile(
+            "(\"[^\"]*(?:assertion|authorization|password|private_key|secret|token)\"\\s*:\\s*\")[^\"]+|(assertion=)[^&]+");
+    // set from configuration file (misc.show_secrets)
+    private static boolean showSecrets = false;
 
     // config filer loaded from yaml
     private final String[] fileList;
@@ -27,6 +30,11 @@ public class Configuration {
     private final Map<String, String> paths;
     private Map<String, Map<String, Object>> config;
 
+    /**
+     * Read the configuration file, and set up logging.
+     *
+     * @param args command line arguments: files to transfer
+     */
     public Configuration(String[] args) {
         fileList = args;
         Locale.setDefault(Locale.ENGLISH);
@@ -34,7 +42,7 @@ public class Configuration {
             topFolder = System.getProperty("dir_top");
             logFolder = System.getProperty("java.io.tmpdir");
             if (topFolder == null)
-                throw new Error("mandatory system property not set: dir_top");
+                throw new Error("System property dir_top is not set");
             final String paths_config_file = getPath(null);
             paths = new Yaml().load(new java.io.FileReader(paths_config_file));
             final String config_filepath = getPath("main_config");
@@ -42,96 +50,151 @@ public class Configuration {
         } catch (final java.io.FileNotFoundException e) {
             throw new Error(e.getMessage());
         }
+        setLogLevel(getParamStr("misc", "level"));
+        final var misc = config.get("misc");
+        showSecrets = misc != null && Boolean.TRUE.equals(misc.get("show_secrets"));
     }
 
+    /**
+     * Hide secrets in text for logs, unless configured to show them.
+     *
+     * @param text text that may contain secrets
+     * @return text with hidden secrets
+     */
+    public static String maskSecrets(final String text) {
+        if (showSecrets) {
+            return text;
+        }
+        return SECRETS_REGEX.matcher(text).replaceAll("$1$2***");
+    }
+
+    /**
+     * Log a named value at debug level: objects are displayed in JSON, and secrets are hidden.
+     *
+     * @param name name of the value
+     * @param value value to log: a string, or an object displayed in JSON
+     */
+    public static void logDump(final String name, final Object value) {
+        logDump(name, value, Level.FINE);
+    }
+
+    /**
+     * Log a named value: objects are displayed in JSON, and secrets are hidden.
+     *
+     * @param name name of the value
+     * @param value value to log: a string, or an object displayed in JSON
+     * @param level log level
+     */
+    public static void logDump(final String name, final Object value, final Level level) {
+        if (!LOGGER.isLoggable(level)) {
+            return;
+        }
+        final String text = value instanceof String ? (String) value : String.valueOf(JSONObject.wrap(value));
+        LOGGER.log(level, "{0}: {1}", new Object[] {name, maskSecrets(text)});
+    }
+
+    /**
+     * Set the log level of the root logger and its handlers.
+     *
+     * @param levelName {@code debug}, {@code info}, {@code warning} or {@code error}
+     */
+    private static void setLogLevel(final String levelName) {
+        final Level level = switch (levelName) {
+            case "debug" -> Level.FINE;
+            case "info" -> Level.INFO;
+            case "warning" -> Level.WARNING;
+            case "error" -> Level.SEVERE;
+            default -> throw new Error("Invalid log level: " + levelName);
+        };
+        final Logger rootLogger = Logger.getLogger("");
+        rootLogger.setLevel(level);
+        for (final Handler handler : rootLogger.getHandlers()) {
+            handler.setLevel(level);
+        }
+    }
+
+    /**
+     * Get the folder for log files.
+     *
+     * @return folder for log files
+     */
     public String getLogFolder() {
         return logFolder;
     }
 
+    /**
+     * Get the files to transfer, from the command line arguments.
+     *
+     * @return list of files
+     */
     public String[] getFileList() {
         return fileList;
     }
 
+    /**
+     * Get a parameter from the configuration file.
+     *
+     * @param name section in the configuration file, and name of the parameter in the section
+     * @return value of the parameter, that is mandatory
+     */
     public Object getParam(String... name) {
         if (name.length != 2)
-            throw new Error("invalid configuration parameter name: " + String.join(".", name));
-        final var level1 = config.get(name[0]);
-        if (level1 == null)
-            throw new Error("missing configuration section: " + name[0]);
-        final var level2 = level1.get(name[1]);
-        if (level2 == null)
-            throw new Error("missing configuration parameter: " + name[0] + "." + name[1]);
-        return level2;
+            throw new Error("Invalid configuration parameter name: " + String.join(".", name));
+        final var section = config.get(name[0]);
+        final var value = section == null ? null : section.get(name[1]);
+        if (value == null)
+            throw new Error("Configuration parameter not found: " + name[0] + "." + name[1]);
+        return value;
     }
 
+    /**
+     * Get a string parameter from the configuration file.
+     *
+     * @param name section in the configuration file, and name of the parameter in the section
+     * @return value of the parameter, that is mandatory
+     */
     public String getParamStr(String... name) {
         return getParam(name).toString();
     }
 
+    /**
+     * Get an integer parameter from the configuration file.
+     *
+     * @param name section in the configuration file, and name of the parameter in the section
+     * @return value of the parameter, that is mandatory
+     */
     public int getParamInt(String... name) {
         return (Integer) getParam(name);
     }
 
-    /** @return true if the value is not null and is true */
+    /**
+     * Get a boolean parameter from the configuration file.
+     *
+     * @param name section in the configuration file, and name of the parameter in the section
+     * @return value of the parameter, that is mandatory
+     */
     public Boolean getParamBool(String... name) {
         final Object value = getParam(name);
         return !(value != null && (Boolean) value == false);
     }
 
     /**
-     * Get path from the reference file if name == null, then we use the default path file if a name
-     * is provided, we use the path from the reference file
-     * 
-     * @param name the name of the path in the reference file
-     * @return the path as String
+     * Get the path of an item of the project, from the paths file.
+     *
+     * @param name name of the item in the paths file, or null for the paths file
+     * @return absolute path of the item
      */
     public String getPath(final String name) {
         final String subPath = name == null ? PATHS_FILES : paths.get(name);
         return FileSystems.getDefault().getPath(topFolder, subPath).toString();
     }
 
-    public static String lastFileLine2(Path path) throws IOException {
-        try (Stream<String> lines = Files.lines(path)) {
-            return lines.reduce((first, second) -> second)
-                    .orElseThrow(() -> new IOException("Log file is empty"));
-        }
-    }
-
-    // Get the last line of a file
-    public static String lastFileLine(String filePath) {
-        LOGGER.log(Level.FINE, "Reading last line of file: {0}", filePath);
-        File file = new File(filePath);
-        try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r")) {
-            final long fileLength = randomAccessFile.length();
-            if (fileLength == 0) {
-                return ""; // Empty file case
-            }
-            LOGGER.log(Level.FINE, "length: {0}", fileLength);
-
-            // Start from the end of the file (minus one to skip the last byte)
-            long pointer = fileLength - 2;
-            randomAccessFile.seek(pointer);
-
-            // Read backwards until we find a newline or reach the start of the file
-            int readByte;
-            while (pointer > 0) {
-                readByte = randomAccessFile.readByte();
-                if (readByte == '\n') {
-                    break; // Found the newline
-                }
-                pointer--;
-                randomAccessFile.seek(pointer); // Move back
-            }
-            // Now read the last line (either found newline or start of the file)
-            var result = randomAccessFile.readLine(); // Read the last line
-            return result;
-        } catch (final IOException e) {
-            throw new Error(e.getMessage());
-        }
-    }
-
     /**
-     * Fill the transfer spec with the file paths provided on command line
+     * Add the files to transfer, from the command line arguments, to the transfer spec.
+     *
+     * @param tSpec transfer spec to modify
+     * @param path path of the file list in the transfer spec: {@code paths} (V1) or {@code assets.paths} (V2)
+     * @param destination if not null, add the file name as destination
      */
     public void addSources(JSONObject tSpec, String path, String destination) {
         final String[] keys = path.split("\\.");
@@ -142,10 +205,10 @@ public class Configuration {
                 if (nextNode instanceof JSONObject) {
                     currentNode = (JSONObject) nextNode;
                 } else {
-                    throw new IllegalArgumentException("key is not a JSONObject: " + keys[i]);
+                    throw new IllegalArgumentException("Invalid path in transfer spec: " + path);
                 }
             } else {
-                throw new IllegalArgumentException("No such key: " + keys[i]);
+                throw new IllegalArgumentException("Invalid path in transfer spec: " + path);
             }
         }
         final JSONArray paths = new JSONArray();

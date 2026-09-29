@@ -10,14 +10,21 @@ import utils.TransferClient;
 import utils.Configuration;
 import utils.Rest;
 
-// This sample shows how to generate the bearer token, then use API v5 and finally send the file
-// into package
+/**
+ * Sample: send packages with Faspex 5, with local files, and with files of a shared folder.
+ */
 public class Faspex5Send {
 
     private static final Logger LOGGER = Logger.getLogger(Faspex5Send.class.getName());
     private static final String F5_API_PATH_V5 = "/api/v5";
     private static final String F5_API_PATH_TOKEN = "/auth/token";
 
+    /**
+     * Execute the sample.
+     *
+     * @param args command line arguments: files to transfer
+     * @throws Exception on error
+     */
     public static void main(String... args) throws Exception {
         final Configuration config = new Configuration(args);
         final TransferClient transferClient = new TransferClient(config);
@@ -25,7 +32,6 @@ public class Faspex5Send {
             /*
              * Generic part: create API object
              */
-            LOGGER.log(Level.INFO, "Creating API object");
             final String faspexBaseUrl = config.getParamStr("faspex5", "url");
             final String apiBaseUrl = faspexBaseUrl + F5_API_PATH_V5;
             final var f5API = new Rest(apiBaseUrl);
@@ -44,14 +50,14 @@ public class Faspex5Send {
              * First example: send a package from local files/folders
              */
             // Faspex REST API: Create package (to myself) and get package information
-            LOGGER.log(Level.INFO, "Creating Package container");
+            LOGGER.log(Level.INFO, "Creating package");
             final JSONObject package_info = (JSONObject) f5API.create("packages", new JSONObject()//
                     .put("title", "test title")//
                     .put("recipients", new JSONArray()//
                             .put(new JSONObject()//
                                     .put("name", config.getParamStr("faspex5", "username")))));
             // Faspex REST API: Create transfer spec
-            LOGGER.log(Level.INFO, "Creating transfer specification");
+            LOGGER.log(Level.INFO, "Getting transfer spec");
             final JSONObject uploadRequest = new JSONObject();
             config.addSources(uploadRequest, "paths", null);
             final JSONObject transfer_spec = (JSONObject) f5API.create(
@@ -60,20 +66,19 @@ public class Faspex5Send {
             transfer_spec.remove("authentication");
             config.addSources(transfer_spec, "paths", null);
             // API: Transfer SDK: transfer files into package
-            LOGGER.log(Level.INFO, "Starting transfer");
+            LOGGER.log(Level.INFO, "Uploading files");
             transferClient.start_transfer_and_wait(transfer_spec);
             /*
              * Second example: send a package from files/folders already on HSTS Server
              */
             // Faspex REST API: Create package for remote transfer
-            LOGGER.log(Level.INFO, "Creating Package container for remote transfer");
+            LOGGER.log(Level.INFO, "Creating package");
             final JSONObject remotePackageInfo = (JSONObject) f5API.create("packages",
                     new JSONObject().put("title", "Java remote files").put("recipients",
                             new JSONArray().put(new JSONObject().put("name",
                                     config.getParamStr("faspex5", "username")))));
 
             // Lookup shared folder ID by name
-            LOGGER.log(Level.INFO, "Looking up shared folder ID");
             final JSONArray sharedFolders =
                     ((JSONObject) f5API.read("shared_folders")).getJSONArray("shared_folders");
             final String sharedFolderName = config.getParamStr("faspex5", "shared_folder_name");
@@ -86,23 +91,22 @@ public class Faspex5Send {
                 }
             }
             if (folderId == null) {
-                throw new Exception("No shared folder found with name: " + sharedFolderName);
+                throw new Exception("Shared folder not found: " + sharedFolderName);
             }
             // Trigger remote transfer
-            LOGGER.log(Level.INFO, "Starting remote transfer from shared folder: " + folderId);
+            LOGGER.log(Level.INFO, "Starting remote transfer from shared folder: {0}",
+                    sharedFolderName);
             final JSONObject remoteUploadRequest =
                     new JSONObject().put("shared_folder_id", folderId).put("paths", new JSONArray()
                             .put(config.getParamStr("faspex5", "shared_folder_file")));
-            final JSONObject transferInfo = (JSONObject) f5API.create(
-                    "packages/" + remotePackageInfo.getString("id") + "/remote_transfer",
+            f5API.create("packages/" + remotePackageInfo.getString("id") + "/remote_transfer",
                     remoteUploadRequest);
-            LOGGER.log(Level.INFO, "Remote transfer initiated: " + transferInfo.toString());
             // Poll for remote transfer completion
             while (true) {
                 final JSONObject uploadDetails = (JSONObject) f5API
                         .read("packages/" + remotePackageInfo.getString("id") + "/upload_details");
                 final String status = uploadDetails.getString("upload_status");
-                LOGGER.log(Level.INFO, "Remote transfer status: " + status);
+                LOGGER.log(Level.INFO, "Remote transfer: {0}", status);
                 if ("completed".equals(status)) {
                     break;
                 } else if ("failed".equals(status)) {

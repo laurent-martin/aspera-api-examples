@@ -4,14 +4,27 @@
 import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
-import assert from 'assert';
 import os from 'os';
 import winston from 'winston';
 
 const PATHS_FILE_REL = 'config/paths.yaml';
 /** Environment variable for the top directory */
 const DIR_TOP_VAR = 'DIR_TOP';
+/** secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters */
+const SECRETS_REGEX = /("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+/g;
+/** set from configuration file (misc.show_secrets) */
+let showSecrets = false;
 
+/**
+ * Hide secrets in text for logs, unless configured to show them.
+ * @param {string} text text that may contain secrets
+ * @returns {string} text with hidden secrets
+ */
+export function maskSecrets(text) {
+	return showSecrets ? text : text.replace(SECRETS_REGEX, '$1$2***');
+}
+
+/** Logger of the samples */
 export const logger = winston.createLogger({
 	level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
 	format: winston.format.combine(
@@ -28,15 +41,30 @@ export const logger = winston.createLogger({
 });
 
 /**
- * Parameters from configuration files.
+ * Log a named value: objects are displayed in JSON, and secrets are hidden.
+ * @param {string} name name of the value
+ * @param {*} value value to log: a string, or an object displayed in JSON
+ * @param {string} [level='debug'] log level, debug by default
+ */
+export function logDump(name, value, level = 'debug') {
+	if (!logger.isLevelEnabled(level)) return;
+	const text = typeof value === 'string' ? value : JSON.stringify(value);
+	logger.log(level, `${name}: ${maskSecrets(text)}`);
+}
+
+/**
+ * Configuration of the samples: parameters from the configuration file, files to transfer from the command line, and logging.
  */
 export class Configuration {
+	/**
+	 * Read the configuration file, and set up logging.
+	 */
 	constructor() {
 		const dir = process.env[DIR_TOP_VAR];
-		if (!dir) throw new Error(`Environment variable ${DIR_TOP_VAR} is not set.`);
+		if (!dir) throw new Error(`Environment variable ${DIR_TOP_VAR} is not set`);
 		this.topFolder = path.resolve(dir);
 		if (!fs.existsSync(this.topFolder) || !fs.lstatSync(this.topFolder).isDirectory()) {
-			throw new Error(`The folder specified by ${DIR_TOP_VAR} does not exist or is not a directory: ${this.topFolder}`);
+			throw new Error(`Folder not found: ${this.topFolder}`);
 		}
 		this.logFolder = os.tmpdir();
 		this.tmpFolder = os.tmpdir();
@@ -44,40 +72,44 @@ export class Configuration {
 		this.config = Configuration.loadYAML(this.getPath('main_config'));
 		// winston uses `warn`
 		const level = this.getParam('misc', 'level');
+		if (!['debug', 'info', 'warning', 'error'].includes(level)) throw new Error(`Invalid log level: ${level}`);
 		logger.level = level === 'warning' ? 'warn' : level;
-	}
-
-	/** Construct path based on topFolder and paths YAML */
-	getPath(name) {
-		return path.join(this.topFolder, this.paths[name]);
+		showSecrets = this.getParam('misc', 'show_secrets', false);
 	}
 
 	/**
-	 * Get a parameter from the main configuration file
-	 * @param {string} section section in the config
-	 * @param {string} param parameter in the section
-	 * @param {*} defaultValue value if the parameter is not set, else the parameter is mandatory
-	 * @returns the parameter value
+	 * Get the path of an item of the project, from the paths file.
+	 * @param {string} name name of the item in the paths file
+	 * @returns {string} absolute path of the item, that must exist
+	 */
+	getPath(name) {
+		const itemPath = path.join(this.topFolder, this.paths[name]);
+		if (!fs.existsSync(itemPath)) throw new Error(`File not found: ${itemPath}`);
+		return itemPath;
+	}
+
+	/**
+	 * Get a parameter from the configuration file.
+	 * @param {string} section section in the configuration file
+	 * @param {string} param name of the parameter in the section
+	 * @param {*} [defaultValue] value if the parameter is not set, else the parameter is mandatory
+	 * @returns {*} value of the parameter
 	 */
 	getParam(section, param, defaultValue = undefined) {
-		const sect = this.config[section];
-		if (!sect) {
-			throw new Error(`Section not found in configuration file: ${section}`);
-		}
+		const sect = this.config[section] ?? {};
 		if (!(param in sect)) {
 			if (defaultValue !== undefined) return defaultValue;
-			throw new Error(`Parameter not found in configuration file: ${section}.${param}`);
+			throw new Error(`Configuration parameter not found: ${section}.${param}`);
 		}
 		return sect[param];
 	}
 
 	/**
-	 * Add sources to a transfer spec
-	 * 
-	 * @param {object} tSpec Transfer spec
-	 * @param {string} dotPath Path to the sources in the transfer spec, e.g. `paths` or `assets.paths`
-	 * @param {string} destination Destination path for the sources
-	 * */
+	 * Add the files to transfer, from the command line arguments, to the transfer spec.
+	 * @param {object} tSpec transfer spec to modify
+	 * @param {string} dotPath path of the file list in the transfer spec: `paths` (V1) or `assets.paths` (V2)
+	 * @param {*} [destination] if set, add the file name as destination
+	 */
 	addSources(tSpec, dotPath, destination = null) {
 		const keys = dotPath.split('.');
 		let currentNode = tSpec;
@@ -86,13 +118,13 @@ export class Configuration {
 			if (typeof currentNode[key] === 'object' && currentNode[key] !== null) {
 				currentNode = currentNode[key];
 			} else {
-				throw new Error(`Key is not a dictionary: ${key}`);
+				throw new Error(`Invalid path in transfer spec: ${dotPath}`);
 			}
 		}
 		const lastKey = keys[keys.length - 1];
 		const paths = currentNode[lastKey] = [];
 		const fileList = process.argv.slice(2);
-		assert(fileList.length, 'ERROR: Provide at least one file path to transfer');
+		if (!fileList.length) throw new Error('Missing arguments: files to transfer');
 		fileList.forEach((file) => {
 			const source = { source: file };
 			if (destination) {
@@ -101,17 +133,32 @@ export class Configuration {
 			paths.push(source);
 		});
 	}
-	/** load and parse YAML file */
+
+	/**
+	 * Load a YAML file.
+	 * @param {string} filePath path of the YAML file
+	 * @returns {*} content of the file
+	 */
 	static loadYAML(filePath) {
 		return yaml.load(fs.readFileSync(filePath, 'utf8'));
 	}
 
-	/** Basic Authorization */
+	/**
+	 * Create the value of an HTTP Basic Authorization header.
+	 * @param {string} username user name
+	 * @param {string} password password
+	 * @returns {string} header value: `Basic <base64>`
+	 */
 	static basicAuthorization(username, password) {
 		return 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
 	}
 
-	/** Create an auth header for transfer spec v2 */
+	/**
+	 * Create an HTTP Basic Authorization header for a transfer spec V2.
+	 * @param {string} username user name
+	 * @param {string} password password
+	 * @returns {{key: string, value: string}} header as `key` and `value`
+	 */
 	static basicAuthHeaderKeyValue(username, password) {
 		return {
 			key: 'Authorization',

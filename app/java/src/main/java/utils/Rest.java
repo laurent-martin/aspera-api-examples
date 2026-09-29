@@ -1,11 +1,14 @@
 package utils;
 
 // import kong.unirest.Unirest;
+import kong.unirest.core.HttpRequestWithBody;
 import kong.unirest.core.Unirest;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import io.jsonwebtoken.JwtBuilder;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.HashMap;
@@ -13,10 +16,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.Base64;
+import java.util.stream.Collectors;
 import io.jsonwebtoken.Jwts;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+/**
+ * Simple REST client, with Basic or OAuth 2 JWT Bearer authentication.
+ */
 public class Rest {
     static private final Logger logger = Logger.getLogger(Rest.class.getName());
 
@@ -30,33 +37,66 @@ public class Rest {
     private final Map<String, String> headers;
     private final Map<String, String> authData;
 
+    /**
+     * Create a REST client.
+     *
+     * @param url base URL of the API
+     */
     public Rest(final String url) {
         baseUrl = url;
         headers = new HashMap<String, String>();
         authData = new HashMap<String, String>();
     }
 
+    /**
+     * Enable or disable the verification of the server certificate, for all REST clients.
+     *
+     * @param verify false for development servers with a self-signed certificate
+     */
     public void setVerify(final boolean verify) {
         Unirest.config().verifySsl(verify);
     }
 
+    /**
+     * Use Basic authentication.
+     *
+     * @param username user name
+     * @param password password
+     */
     public void setAuthBasic(final String username, final String password) {
         final String credentials = username + ":" + password;
         headers.put("Authorization",
                 "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes()));
     }
 
+    /**
+     * Use OAuth 2 Bearer authentication, with a JWT signed with a private key.
+     *
+     * @param authData {@code token_url}, {@code key_pem_path}, {@code client_id}, {@code client_secret}, {@code iss}, {@code aud}, {@code sub}, and optionally {@code org}
+     */
     public void setAuthBearer(final Map<String, String> authData) {
-        // do not log values: they contain secrets
-        logger.log(Level.FINE, "authData keys>> {0}", authData.keySet());
         this.authData.putAll(authData);
     }
 
+    /**
+     * Generate a bearer token, and use it for all subsequent requests.
+     *
+     * A new token is generated for each execution of the sample.
+     * In real code, the token should be reused until it expires.
+     *
+     * @param scope OAuth scope of the token, or none
+     * @throws Exception on HTTP error
+     */
     public void setDefaultScope(Optional<String> scope) throws Exception {
         headers.put("Authorization", getBearerToken(scope));
     }
 
-    // call Faspex 5 authData api and generate bearer token
+    /**
+     * Generate a bearer token, with the JWT Bearer grant.
+     *
+     * @param scope OAuth scope of the token, or none
+     * @return value of the Authorization header: {@code Bearer <token>}
+     */
     public String getBearerToken(Optional<String> scope) {
         final long epochDate = Instant.now().getEpochSecond();
         try {
@@ -78,24 +118,23 @@ public class Rest {
                 assertion.claim("org", authData.get("org"));
 
             }
-            Map<String, Object> www_form = new HashMap<>();
+            Map<String, String> www_form = new HashMap<>();
             www_form.put("client_id", authData.get("client_id"));
             www_form.put("grant_type", IETF_GRANT_JWT);
             www_form.put("assertion", assertion.compact());
             scope.ifPresent(s -> www_form.put("scope", s));
+            final String form = www_form.entrySet().stream()
+                    .map(e -> URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8) + "="
+                            + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+                    .collect(Collectors.joining("&"));
 
-            final var req = Unirest.post(authData.get("token_url"))//
+            final String tokenUrl = authData.get("token_url");
+            final var request = Unirest.post(tokenUrl)//
                     .basicAuth(authData.get("client_id"), authData.get("client_secret"))//
                     .header("Accept", MIME_JSON)//
-                    .header("Content-Type", MIME_WWW)//
-                    .fields(www_form);
-
-            final var response = req.asJson();
-            if (!response.isSuccess()) {
-                throw new Error("Failed to get access token: " + response.getStatus());
-            }
-            logger.log(Level.FINE, "token>> {0}", response.getBody().toPrettyString());
-            return "Bearer " + response.getBody().getObject().getString("access_token");
+                    .header("Content-Type", MIME_WWW);
+            final String responseBody = send("POST", tokenUrl, request, form);
+            return "Bearer " + new JSONObject(responseBody).getString("access_token");
         } catch (final GeneralSecurityException e) {
             throw new Error(e);
         } catch (final IOException e) {
@@ -104,6 +143,16 @@ public class Rest {
 
     }
 
+    /**
+     * Call the API: send a request, and get the response data.
+     *
+     * @param method HTTP method
+     * @param endpoint path of the endpoint, relative to the base URL
+     * @param body request data, sent in JSON
+     * @param query query parameters
+     * @return response data, or null if the response is empty
+     * @throws Exception on HTTP error
+     */
     public Object call(//
             String method, //
             String endpoint, //
@@ -115,52 +164,116 @@ public class Rest {
             url = url + "/" + endpoint;
         }
         // final String url = "http://localhost:12345";
-        body.ifPresent(v -> logger.log(Level.FINE, "Body: {0}", v));
-        query.ifPresent(q -> q
-                .forEach((k, v) -> logger.log(Level.FINE, "param>> {0}={1}", new Object[] {k, v})));
-        var request_builder = Unirest//
+        final var request = Unirest//
                 .request(method, url) //
                 .header("Content-Type", MIME_JSON)//
-                .header("Accept", MIME_JSON).body("");
-        headers.forEach(request_builder::header);
+                .header("Accept", MIME_JSON);
+        headers.forEach(request::header);
         query.ifPresent(p -> {
             for (var e : p.entrySet()) {
-                request_builder.queryString(e.getKey(), e.getValue());
+                request.queryString(e.getKey(), e.getValue());
             }
         });
-        body.ifPresent(v -> request_builder.body(v.toString()));
-        final var response = request_builder.asString();
-        if (!response.isSuccess()) {
-            logger.log(Level.SEVERE, "Request failed with status: {0}", response.getStatus());
-            logger.log(Level.SEVERE, "Request failed with body: {0}",
-                    response.getBody().toString());
-            throw new Exception("Request failed: " + response.getStatus());
+        final String responseBody = send(method, url, request, body.map(JSONObject::toString).orElse(""));
+        if (responseBody.isEmpty()) {
+            return null;
         }
-        logger.log(Level.FINE, "res>> {0}", response.getBody());
-        return new JSONTokener(response.getBody().toString()).nextValue();
+        return new JSONTokener(responseBody).nextValue();
     }
 
+    /**
+     * Send an HTTP request, log request and response bodies, and throw an exception on error.
+     *
+     * @param method HTTP method
+     * @param url URL without query
+     * @param request HTTP request
+     * @param body request body
+     * @return response body
+     */
+    private static String send(final String method, final String url, final HttpRequestWithBody request,
+            final String body) {
+        logger.log(Level.FINE, "HTTP {0} {1}", new Object[] {method, url});
+        if (!body.isEmpty()) {
+            Configuration.logDump("Request body", body);
+        }
+        final var response = request.body(body).asString();
+        final String responseBody = response.getBody() == null ? "" : response.getBody();
+        if (!response.isSuccess()) {
+            throw new RuntimeException(
+                    "HTTP " + response.getStatus() + " for " + method + " " + url + ": " + responseBody);
+        }
+        if (!responseBody.isEmpty()) {
+            Configuration.logDump("Response body", responseBody);
+        }
+        return responseBody;
+    }
+
+    /**
+     * Create a resource (HTTP POST).
+     *
+     * @param endpoint path of the endpoint, relative to the base URL
+     * @param data request data, sent in JSON
+     * @return response data
+     * @throws Exception on HTTP error
+     */
     public Object create(String endpoint, JSONObject data) throws Exception {
         return call("POST", endpoint, Optional.of(data), Optional.empty());
     }
 
+    /**
+     * Create a resource (HTTP POST).
+     *
+     * @param endpoint path of the endpoint, relative to the base URL
+     * @param data request data, sent in JSON
+     * @param params query parameters
+     * @return response data
+     * @throws Exception on HTTP error
+     */
     public Object create(String endpoint, JSONObject data, Map<String, String> params)
             throws Exception {
         return call("POST", endpoint, Optional.of(data), Optional.of(params));
     }
 
+    /**
+     * Read a resource (HTTP GET).
+     *
+     * @param endpoint path of the endpoint, relative to the base URL
+     * @param params query parameters
+     * @return response data
+     * @throws Exception on HTTP error
+     */
     public Object read(String endpoint, Map<String, String> params) throws Exception {
         return call("GET", endpoint, Optional.empty(), Optional.of(params));
     }
 
+    /**
+     * Read a resource (HTTP GET).
+     *
+     * @param endpoint path of the endpoint, relative to the base URL
+     * @return response data
+     * @throws Exception on HTTP error
+     */
     public Object read(String endpoint) throws Exception {
         return call("GET", endpoint, Optional.empty(), Optional.empty());
     }
 
+    /**
+     * Update a resource (HTTP PUT).
+     *
+     * @param endpoint path of the endpoint, relative to the base URL
+     * @param data request data, sent in JSON
+     * @throws Exception on HTTP error
+     */
     public void update(String endpoint, JSONObject data) throws Exception {
         call("PUT", endpoint, Optional.of(data), Optional.empty());
     }
 
+    /**
+     * Delete a resource (HTTP DELETE).
+     *
+     * @param endpoint path of the endpoint, relative to the base URL
+     * @throws Exception on HTTP error
+     */
     public void delete(String endpoint) throws Exception {
         call("DELETE", endpoint, Optional.empty(), Optional.empty());
     }

@@ -13,9 +13,8 @@ const node_api = new Rest(config.getParam('node', 'url'));
 node_api.setAuthBasic(config.getParam('node', 'username'), config.getParam('node', 'password'));
 node_api.setVerify(config.getParam('node', 'verify', true));
 
-logger.info('Generating transfer spec V1 from node');
-
 // Get upload authorization for given destination folder
+logger.info('Getting transfer spec');
 const response = await node_api.create('files/upload_setup', {
 	transfer_requests: [
 		{ transfer_request: { paths: [{ destination: config.getParam('node', 'folder_upload') }] } }
@@ -30,8 +29,8 @@ config.addSources(tSpec, 'paths');
 
 // Start the transfer using the transfer client
 try {
+	logger.info('Uploading files');
 	await transferClient.startTransferAndWait(tSpec);
-	logger.info('Done!');
 } finally {
 	await transferClient.shutdown();
 }

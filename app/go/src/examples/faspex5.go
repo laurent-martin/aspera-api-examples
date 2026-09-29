@@ -13,17 +13,19 @@ const (
 	transferSessions = 1
 )
 
-// errors are returned to main so that deferred calls are executed before exit
+// main runs the sample, and exits on error.
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
 }
 
+// run runs the sample.
+// Errors are returned to main, so that deferred calls are executed before exit.
 func run() error {
 	config, err := utils.NewConfiguration()
 	if err != nil {
-		return fmt.Errorf("error loading configuration: %w", err)
+		return err
 	}
 	transferClient := utils.NewTransferClient(config)
 	defer transferClient.Shutdown()
@@ -40,17 +42,18 @@ func run() error {
 		"aud":           config.ParamStr("faspex5", "client_id"),
 		"sub":           fmt.Sprintf("user:%s", config.ParamStr("faspex5", "username")),
 	})
-	f5API.SetDefaultScope("")
+	if err := f5API.SetDefaultScope(""); err != nil {
+		return err
+	}
 	// Create a new package with Faspex 5 API
-	config.Log.Debugf("Creating package: %s", packageName)
+	config.Log.Info("Creating package")
 	packageResp, err := f5API.Create("packages", map[string]interface{}{
 		"title":      packageName,
 		"recipients": []map[string]string{{"name": config.ParamStr("faspex5", "username")}},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create package: %w", err)
+		return err
 	}
-	config.Log.Debugf("Package info: %+v", packageResp)
 
 	// Build payload to specify files to send
 	filesToSend := map[string]interface{}{}
@@ -58,10 +61,10 @@ func run() error {
 		return err
 	}
 
-	config.Log.Debugf("Getting transfer spec")
+	config.Log.Info("Getting transfer spec")
 	tSpec, err := f5API.Create(fmt.Sprintf("packages/%v/transfer_spec/upload?transfer_type=connect", packageResp["id"]), filesToSend)
 	if err != nil {
-		return fmt.Errorf("failed to get transfer spec: %w", err)
+		return err
 	}
 
 	// Optional: multi-session
@@ -79,9 +82,6 @@ func run() error {
 	delete(tSpec, "authentication")
 
 	// Finally send files to package folder on server
-	if err := transferClient.StartTransferAndWait(tSpec); err != nil {
-		return fmt.Errorf("error during transfer: %w", err)
-	}
-	config.Log.Info("Transfer completed successfully")
-	return nil
+	config.Log.Info("Uploading files")
+	return transferClient.StartTransferAndWait(tSpec)
 }

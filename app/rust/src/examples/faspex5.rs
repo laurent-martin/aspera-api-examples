@@ -33,6 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     });
     f5_api.set_default_scope(None).await?;
     // Create package
+    log::info!("Creating package");
     let res: Value = f5_api
         .create(
             "packages",
@@ -45,11 +46,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
             None,
         )
         .await?;
-    log::info!("Package created: {:?}", res);
     let package_id = res["id"].as_str().unwrap();
     // Create transfer spec
     let mut upload_request = json!({});
     config.add_files_to_ts("paths", &mut upload_request)?;
+    log::info!("Getting transfer spec");
     let mut transfer_spec: Value = f5_api
         .create(
             &format!("packages/{package_id}/transfer_spec/upload"),
@@ -64,6 +65,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .remove("authentication");
     config.add_files_to_ts("paths", &mut transfer_spec)?;
     // upload files to package
+    log::info!("Uploading files");
     transfer_client
         .transfer_start_and_wait(&transfer_spec)
         .await?;

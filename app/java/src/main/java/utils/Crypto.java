@@ -13,7 +13,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
 /**
- * Utility class for loading keys. one can also use bouncy castle
+ * Load RSA private keys: PKCS#1 or PKCS#8, in PEM or DER format. One can also use Bouncy Castle.
  */
 public final class Crypto {
     private static final String PKCS_1_PEM_HEADER = "-----BEGIN RSA PRIVATE KEY-----";
@@ -21,6 +21,17 @@ public final class Crypto {
     private static final String PKCS_8_PEM_HEADER = "-----BEGIN PRIVATE KEY-----";
     private static final String PKCS_8_PEM_FOOTER = "-----END PRIVATE KEY-----";
 
+    /** Utility class: no instance. */
+    private Crypto() {}
+
+    /**
+     * Load a private key from a file.
+     *
+     * @param keyFilePath path of the key file, {@code ~} for home folder
+     * @return private key
+     * @throws GeneralSecurityException if the key is invalid
+     * @throws IOException if the file cannot be read
+     */
     public static PrivateKey loadKey(String keyFilePath)
             throws GeneralSecurityException, IOException {
         byte[] keyDataBytes = Files.readAllBytes(
@@ -43,6 +54,12 @@ public final class Crypto {
         return readPkcs8PrivateKey(Files.readAllBytes(Paths.get(keyFilePath)));
     }
 
+    /**
+     * Decode a private key in PKCS#8 format.
+     *
+     * @param pkcs8Bytes key in PKCS#8 DER format
+     * @return private key
+     */
     private static PrivateKey readPkcs8PrivateKey(byte[] pkcs8Bytes)
             throws GeneralSecurityException {
         KeyFactory keyFactory = KeyFactory.getInstance("RSA", "SunRsaSign");
@@ -50,6 +67,12 @@ public final class Crypto {
         return keyFactory.generatePrivate(keySpec);
     }
 
+    /**
+     * Decode a private key in PKCS#1 format.
+     *
+     * @param pkcs1Bytes key in PKCS#1 DER format
+     * @return private key
+     */
     private static PrivateKey readPkcs1PrivateKey(byte[] pkcs1Bytes)
             throws GeneralSecurityException {
         // We can't use Java internal APIs to parse ASN.1 structures,
@@ -70,6 +93,13 @@ public final class Crypto {
         return readPkcs8PrivateKey(pkcs8bytes);
     }
 
+    /**
+     * Concatenate two byte arrays.
+     *
+     * @param byteArray1 first bytes
+     * @param byteArray2 last bytes
+     * @return concatenated bytes
+     */
     private static byte[] join(byte[] byteArray1, byte[] byteArray2) {
         byte[] bytes = new byte[byteArray1.length + byteArray2.length];
         System.arraycopy(byteArray1, 0, bytes, 0, byteArray1.length);

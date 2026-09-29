@@ -33,14 +33,13 @@ int main(const int argc, const char* const argv[]) {
         f5_api.set_default_scope("");
 
         // Create a new package with Faspex 5 API
-        LOGGER(info) << "Creating package: " << package_name;
+        LOGGER(info) << "Creating package";
         json::object package_info = f5_api.create(
             "packages",
             {{"title", package_name},
              {"recipients", json::array{
                                 json::object{
                                     {"name", config.param_str({"faspex5", "username"})}}}}}).as_object();
-        LOGGER(debug) << package_info;
 
         // Build payload to specify files to send
         json::object upload_request = json::object{};
@@ -49,7 +48,6 @@ int main(const int argc, const char* const argv[]) {
         LOGGER(info) << "Getting transfer spec";
         std::ostringstream endpoint;
         endpoint << "packages/" << package_info.at("id").as_string().c_str() << "/transfer_spec/upload";
-        LOGGER(info) << ">>>>>>" << endpoint.str();
         json::object t_spec = f5_api.create(endpoint.str(), upload_request, {{"transfer_type", "connect"}}).as_object();
 
         // Optional: Multi session
@@ -65,10 +63,11 @@ int main(const int argc, const char* const argv[]) {
         t_spec.erase("authentication");
 
         // Finally, send files to package folder on server
+        LOGGER(info) << "Uploading files";
         transfer_client.transfer_start_and_wait(t_spec);
         return 0;
     } catch (const std::exception& e) {
-        std::clog << "Exception: " << e.what() << std::endl;
+        LOGGER(error) << e.what();
         return 1;
     }
 }

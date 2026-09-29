@@ -11,7 +11,12 @@ use std::process::{Command, Stdio};
 use std::sync::Arc;
 use url::Url;
 
-/// Perform file system operations
+/// Perform file operations on the server with ascmd.
+///
+/// # Arguments
+/// * `ascmd_agent` - ascmd client
+/// * `existing_file` - path of a file on the server
+/// * `writable_folder` - path of a folder on the server, where files are created and deleted
 fn perform_tests<I: Write, O: Read>(
     ascmd_agent: &mut server::AsCmd<I, O>,
     existing_file: &Path,
@@ -20,23 +25,28 @@ fn perform_tests<I: Write, O: Read>(
     let copy_file = writable_folder.join("copied_file");
     let delete_file = writable_folder.join("todelete_file");
     let delete_dir = writable_folder.join("todelete_dir");
-    log::info!("df: {:?}", ascmd_agent.df()?);
-    log::info!("info: {:?}", ascmd_agent.info()?);
-    log::info!("ls file: {:?}", ascmd_agent.ls(&existing_file)?);
-    log::info!("ls dir: {:?}", ascmd_agent.ls(&writable_folder)?);
-    log::info!("md5sum: {:?}", ascmd_agent.md5sum(&existing_file)?);
-    log::info!("du: {:?}", ascmd_agent.du(&existing_file)?);
-    log::info!("cp: {:?}", ascmd_agent.cp(&existing_file, &copy_file)?);
-    log::info!("mv: {:?}", ascmd_agent.mv(&copy_file, &delete_file)?);
-    log::info!("rm file: {:?}", ascmd_agent.rm(&delete_file)?);
-    log::info!("mkdir: {:?}", ascmd_agent.mkdir(&delete_dir)?);
-    log::info!("rm: {:?}", ascmd_agent.rm(&delete_dir)?);
+    log::info!("Server information: {:?}", ascmd_agent.info()?);
+    log::info!("Disk space: {:?}", ascmd_agent.df()?);
+    log::info!("File information: {:?}", ascmd_agent.ls(&existing_file)?);
+    log::info!("Folder content: {:?}", ascmd_agent.ls(&writable_folder)?);
+    log::info!("File MD5: {:?}", ascmd_agent.md5sum(&existing_file)?);
+    log::info!("Disk usage: {:?}", ascmd_agent.du(&existing_file)?);
+    ascmd_agent.cp(&existing_file, &copy_file)?;
+    log::info!("File copied");
+    ascmd_agent.mv(&copy_file, &delete_file)?;
+    log::info!("File moved");
+    ascmd_agent.rm(&delete_file)?;
+    log::info!("File deleted");
+    ascmd_agent.mkdir(&delete_dir)?;
+    log::info!("Folder created");
+    ascmd_agent.rm(&delete_dir)?;
+    log::info!("Folder deleted");
     ascmd_agent.terminate()
 }
 
-/// perform tests on ascmd executing a local command
+/// Test ascmd executed locally.
 fn test_local() -> Result<(), Box<dyn Error>> {
-    log::info!("== TEST LOCAL =============");
+    log::info!("Testing local ascmd");
     let protocol = 2;
     let binding = Command::new(server::ASCMD_COMMAND);
     let mut command = binding;
@@ -50,8 +60,8 @@ fn test_local() -> Result<(), Box<dyn Error>> {
     let mut process = command.spawn()?;
     // start the protocol
     let mut ascmd_agent = server::AsCmd::new(
-        process.stdin.take().expect("Failed to open stdin"),
-        process.stdout.take().expect("Failed to open stdout"),
+        process.stdin.take().ok_or("Failed to open stdin")?,
+        process.stdout.take().ok_or("Failed to open stdout")?,
         "",
         protocol,
     )?;
@@ -62,17 +72,21 @@ fn test_local() -> Result<(), Box<dyn Error>> {
     )?;
     // wait for process to terminate
     let status = process.wait()?;
-    log::debug!("ascmd exited with {:?}", status.code());
+    log::debug!("Ascmd exited with code {}", status.code().unwrap_or(-1));
     Ok(())
 }
 
-/// perform tests on ascmd executing a remote command
+/// Test ascmd executed on the server through SSH.
+///
+/// # Arguments
+/// * `config` - configuration of the samples
 fn test_remote(config: Arc<Configuration>) -> Result<(), Box<dyn Error>> {
-    log::info!("== TEST REMOTE =============");
+    log::info!("Testing remote ascmd");
     let server_url = config.param_str("server", "url")?;
     let server_uri = Url::parse(&server_url)?;
-    log::info!("Server URL: {server_url}");
-    assert_eq!(server_uri.scheme(), "ssh");
+    if server_uri.scheme() != "ssh" {
+        return Err(format!("Expecting SSH URL: {server_url}").into());
+    }
     let host = server_uri.host_str().unwrap_or_default();
     let port = server_uri.port_or_known_default().unwrap_or(33001);
     let username = config.param_str("server", "username")?;
@@ -100,10 +114,11 @@ fn test_remote(config: Arc<Configuration>) -> Result<(), Box<dyn Error>> {
     channel.send_eof()?;
     channel.wait_eof()?;
     channel.wait_close()?;
-    log::debug!("Command exited with status: {}", channel.exit_status()?);
+    log::debug!("Ascmd exited with code {}", channel.exit_status()?);
     Ok(())
 }
 
+/// Test ascmd executed locally, or on the server.
 fn main() -> Result<(), Box<dyn Error>> {
     let config: Arc<Configuration> = Arc::new(Configuration::new()?);
     if false {

@@ -1,6 +1,9 @@
 using Newtonsoft.Json.Linq;
 using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
+/// <summary>
+/// Sample: upload files with Faspex 5.
+/// </summary>
 class Faspex5 : SampleInterface
 {
     // base path for v5 api
@@ -11,6 +14,10 @@ class Faspex5 : SampleInterface
     const string package_name = "sample package C#";
     int transfer_sessions = 1;
 
+    /// <summary>
+    /// Execute the sample.
+    /// </summary>
+    /// <param name="args">files to transfer</param>
     public void start(string[] args)
     {
         var config = new Configuration(args);
@@ -30,23 +37,22 @@ class Faspex5 : SampleInterface
             });
             f5_api.setDefaultScope("user:all");
 
-            var user_profile = f5_api.read("account/preferences");
-            Log.log.Debug($"user_profile: {user_profile}");
-            Log.DumpJObject("user_profile", user_profile);
+            Log.log.Info("Getting user preferences");
+            f5_api.read("account/preferences");
             // Faspex 5 package creation information
             var package_creation = new JObject{
                 {"title",package_name},
                 {"recipients",new JArray{new JObject{{"name",config.GetParam("faspex5","username")}}}}, // send to myself (for test)
             };
             // create a new package with Faspex 5 API (this allocates a reception folder on package storage)
+            Log.log.Info("Creating package");
             var package_info = f5_api.create("packages", package_creation);
-            Log.DumpJObject("package_info", package_info);
             // build payload to specify files to send
             var files_to_send = new JObject { { "paths", new JArray() } };
             // add file list in transfer spec
             config.AddSources(files_to_send, "paths");
+            Log.log.Info("Getting transfer spec");
             var t_spec = f5_api.create($"packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect", files_to_send);
-            Log.DumpJObject("t_spec", t_spec);
             // optional: multi session
             if (transfer_sessions != 1)
             {
@@ -56,6 +62,7 @@ class Faspex5 : SampleInterface
             // add file list in transfer spec
             t_spec["paths"] = files_to_send["paths"];
             // Finally send files to package folder on server
+            Log.log.Info("Uploading files");
             transfer_client.StartTransferAndWait((JObject)t_spec);
         }
         finally

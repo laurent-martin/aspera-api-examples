@@ -38,33 +38,22 @@ inline constexpr const char* SYSTEM_CA_BUNDLES[] = {
     "/etc/ssl/certs/ca-certificates.crt",
     "/etc/pki/tls/certs/ca-bundle.crt"};
 
+/// @brief Format of the request data.
 enum BodyType {
     NONE,
     JSON,
     WWW
 };
 
+/// @brief Get a string attribute of a JSON object.
+/// @param dict JSON object
+/// @param key name of the attribute
+/// @return value of the attribute
 inline std::string attribute_str(json::object& dict, const std::string& key) {
     return dict.at(key).as_string().c_str();
 }
 
-// Hide credentials in debug logs: authorization header, JWT assertion, access token
-inline std::string mask_secrets(const std::string& text) {
-    static const boost::regex secrets(
-        R"re((Authorization: \w+ |assertion=|"(?:assertion|access_token)"\s*:\s*")[^\r\n&"]+)re",
-        boost::regex::icase);
-    return boost::regex_replace(text, secrets, "$1***");
-}
-
-// Hide credentials in debug logs of a value
-template <typename T>
-inline std::string mask_secrets_of(const T& value) {
-    std::ostringstream stream;
-    stream << value;
-    return mask_secrets(stream.str());
-}
-
-// simple REST client using boost
+/// @brief Simple REST client, with Basic or OAuth 2 JWT Bearer authentication.
 class Rest {
    private:
     // base url, including possibly path
@@ -74,21 +63,32 @@ class Rest {
     bool _verify;
 
    public:
+    /// @brief Create a REST client.
+    /// @param base_url base URL of the API
     Rest(std::string base_url)
         : _base_url(base_url),
           _headers(),
           _auth_data(),
           _verify(true) {
     }
+    /// @brief Enable or disable the verification of the server certificate.
+    /// @param verify false for development servers with a self-signed certificate
     void set_verify(bool verify) {
         _verify = verify;
     }
+    /// @brief Add headers to all subsequent requests.
+    /// @todo not implemented
     void add_headers() {}
 
+    /// @brief Use Basic authentication.
+    /// @param user user name
+    /// @param pass password
     void set_auth_basic(const std::string& user, const std::string& pass) {
         _headers.insert({http::field::authorization, basic_auth_header(user, pass)});
     }
 
+    /// @brief Use OAuth 2 Bearer authentication, with a JWT signed with a private key.
+    /// @param auth_data `token_url`, `key_pem_path`, `client_id`, `client_secret`, `iss`, `aud`, `sub`, and optionally `org`
     void set_auth_bearer(const std::unordered_map<std::string, std::string>& auth_data) {
         const std::set<std::string> mandatory_keys = {
             "token_url", "aud", "client_id", "client_secret",
@@ -98,19 +98,22 @@ class Rest {
                      std::inserter(missing_keys, missing_keys.end()),
                      [&](const std::string& key) { return auth_data.find(key) == auth_data.end(); });
         if (!missing_keys.empty()) {
-            std::ostringstream oss;
-            oss << "Missing mandatory keys in auth_data: ";
-            std::copy(missing_keys.begin(), missing_keys.end(),
-                      std::ostream_iterator<std::string>(oss, " "));
-            throw std::invalid_argument(oss.str());
+            throw std::invalid_argument("Missing keys in auth data: " + boost::algorithm::join(missing_keys, ", "));
         }
         _auth_data = auth_data;
     }
 
+    /// @brief Generate a bearer token, and use it for all subsequent requests.
+    /// A new token is generated for each execution of the sample.
+    /// In real code, the token should be reused until it expires.
+    /// @param scope OAuth scope of the token, or empty
     void set_default_scope(const std::string& scope) {
         _headers.insert({http::field::authorization, get_bearer_token(scope)});
     }
 
+    /// @brief Generate a bearer token, with the JWT Bearer grant.
+    /// @param scope OAuth scope of the token, or empty
+    /// @return value of the Authorization header: `Bearer <token>`
     std::string get_bearer_token(const std::string& scope) {
         std::string private_key_pem = read_file(_auth_data.at("key_pem_path"));
 
@@ -135,7 +138,6 @@ class Rest {
         if (!scope.empty()) {
             token_parameters.insert_or_assign("scope", scope);
         }
-        LOGGER(debug) << "parameters: " << mask_secrets_of(token_parameters);
 
         Rest oauth_api(_auth_data.at("token_url"));
         oauth_api.set_verify(_verify);
@@ -144,6 +146,13 @@ class Rest {
         return "Bearer " + static_cast<std::string>(response.at("access_token").as_string());
     }
 
+    /// @brief Call the API: send a request, and get the response data.
+    /// @param method HTTP method
+    /// @param endpoint path of the endpoint, relative to the base URL
+    /// @param body request data
+    /// @param body_type format of the request data
+    /// @param query query parameters
+    /// @return response data, or an empty object if no JSON response is expected
     json::value call(
         const http::verb method,
         const std::string& endpoint = "",
@@ -151,7 +160,8 @@ class Rest {
         BodyType body_type = BodyType::NONE,
         const json::object& query = empty_value  //
     ) {
-        LOGGER(debug) << "Calling: " << method << " on " << endpoint;
+        const std::string url = endpoint.empty() ? _base_url : _base_url + "/" + endpoint;
+        LOGGER(debug) << "HTTP " << method << " " << url;
         const auto base_uri = boost::urls::parse_uri(_base_url).value();
         std::string port = base_uri.port();
         if (port.empty()) {
@@ -197,7 +207,9 @@ class Rest {
         for (const auto& [key, value] : _headers) {
             request.set(key, value);
         }
-        LOGGER(debug) << "Request: " << mask_secrets_of(request);
+        if (!request.body().empty()) {
+            log_dump("Request body", request.body());
+        }
         boost::asio::io_context io_svc;
         ssl::context ssl_context(ssl::context::tls_client);
         ssl_context.set_options(ssl::context::default_workarounds);
@@ -238,34 +250,55 @@ class Rest {
         }
         if (ec)
             throw boost::system::system_error{ec};
-        LOGGER(debug) << "Code: " << response.result_int();
         // check HTTP status is success
         if (response.result_int() >= 300) {
-            LOGGER(debug) << "Response: " << mask_secrets(response.body());
-            throw std::runtime_error("HTTP error: " + std::to_string(response.result_int()));
+            throw std::runtime_error("HTTP " + std::to_string(response.result_int()) + " for " + std::string(http::to_string(method)) + " " + url + ": " + response.body());
         }
-        LOGGER(debug) << "Result: " << mask_secrets(response.body());
+        if (!response.body().empty()) {
+            log_dump("Response body", response.body());
+        }
         if (result_json) {
             return json::parse(response.body());
         }
         return empty_value;
     }
+    /// @brief Create a resource (HTTP POST).
+    /// @param endpoint path of the endpoint, relative to the base URL
+    /// @param body request data, sent in JSON
+    /// @param query query parameters
+    /// @return response data
     json::value create(std::string endpoint, json::value body, json::object query = empty_value) {
         return call(http::verb::post, endpoint, body, BodyType::JSON, query);
     }
+    /// @brief Read a resource (HTTP GET).
+    /// @param endpoint path of the endpoint, relative to the base URL
+    /// @param query query parameters
+    /// @return response data
     json::value read(std::string endpoint, json::object query = empty_value) {
         return call(http::verb::get, endpoint, empty_value, BodyType::NONE, query);
     }
+    /// @brief Update a resource (HTTP PUT).
+    /// @param endpoint path of the endpoint, relative to the base URL
+    /// @param body request data, sent in JSON
+    /// @return response data
     json::value update(std::string endpoint, json::value body) {
         return call(http::verb::put, endpoint, body, BodyType::JSON);
     }
+    /// @brief Delete a resource (HTTP DELETE).
+    /// @param endpoint path of the endpoint, relative to the base URL
     void delete_(std::string endpoint) {
         call(http::verb::delete_, endpoint);
     }
-    // Create a basic auth header
+    /// @brief Create the value of an HTTP Basic Authorization header.
+    /// @param username user name
+    /// @param password password
+    /// @return header value: `Basic <base64>`
     static inline std::string basic_auth_header(const std::string& username, const std::string& password) {
         return "Basic " + base64_encode(username + ":" + password);
     }
+    /// @brief Encode a string in base64url, without padding.
+    /// @param input string to encode
+    /// @return base64url string
     static std::string base64url_encode(const std::string& input) {
         std::string encoded = base64_encode(input);
         // Replace characters to make it URL-safe and remove padding
@@ -275,12 +308,16 @@ class Rest {
         return encoded;
     }
 
+    /// @brief Sign data with a RSA private key, with SHA-256.
+    /// @param data data to sign
+    /// @param key_pem private key, in PEM format
+    /// @return signature, in base64url
     static std::string sign_with_rsa(const std::string& data, const std::string& key_pem) {
         BIO* bio = BIO_new_mem_buf(key_pem.data(), -1);
         EVP_PKEY* pkey = PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
         BIO_free(bio);
         if (!pkey) {
-            throw std::runtime_error("Failed to load private key.");
+            throw std::runtime_error("Failed to load private key");
         }
         EVP_MD_CTX* md_ctx = EVP_MD_CTX_new();
         EVP_PKEY_CTX* pkey_ctx;
@@ -295,6 +332,12 @@ class Rest {
         return base64url_encode(signature);
     }
 
+    /// @brief Create a signed JWT.
+    /// @param payload claims of the JWT
+    /// @param key_pem private key, in PEM format
+    /// @param alg signature algorithm: `RS256`
+    /// @param header additional header fields
+    /// @return JWT
     static std::string jwt_encode(
         const json::object& payload,
         const std::string& key_pem,
@@ -306,13 +349,19 @@ class Rest {
         std::string signature = sign_with_rsa(unsigned_token, key_pem);
         return unsigned_token + "." + signature;
     }
+    /// @brief Read the content of a file.
+    /// @param file_path path of the file
+    /// @return content of the file
     static std::string read_file(const std::string& file_path) {
         std::ifstream file_stream(file_path);
         if (!file_stream.is_open()) {
-            throw std::runtime_error("Could not open file: " + file_path);
+            throw std::runtime_error("File not found: " + file_path);
         }
         return std::string((std::istreambuf_iterator<char>(file_stream)), std::istreambuf_iterator<char>());
     }
+    /// @brief Build a URL query string.
+    /// @param query query parameters
+    /// @return query string, without `?`
     static std::string build_query(const json::object& query) {
         std::string query_string;
         for (const auto& [key, val] : query) {

@@ -1,0 +1,9 @@
+# markdownlint configuration, see: https://github.com/DavidAnson/markdownlint
+# text: one sentence per line, tables and code blocks are not wrapped
+MD013:
+  line_length: 120
+  tables: false
+  code_blocks: false
+# same heading allowed in different sections
+MD024:
+  siblings_only: true

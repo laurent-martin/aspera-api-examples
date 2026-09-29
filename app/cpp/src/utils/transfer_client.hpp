@@ -11,8 +11,10 @@
 #include <boost/url/parse.hpp>
 #include <chrono>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <magic_enum.hpp>
+#include <sstream>
 #include <thread>
 
 #include "configuration.hpp"
@@ -23,7 +25,6 @@ namespace bp2 = boost::process;
 
 // define TransferStatus_to_string(value) trapi::TransferStatus_Name<trapi::TransferStatus>(value)
 #define TransferStatus_to_string(value) magic_enum::enum_name(value)
-#define grpc_connectivity_state_to_string(value) (magic_enum::enum_name(value).data() + strlen("GRPC_CHANNEL_"))
 
 namespace utils {
 inline constexpr const char* ASCP_LOG_FILE = "aspera-scp-transfer.log";
@@ -33,13 +34,11 @@ inline constexpr const uint16_t TRANSFERD_DEFAULT_PORT = 55002;
 // max wait time for the daemon to log its listening port
 inline constexpr const std::chrono::seconds STARTUP_TIMEOUT{10};
 // max wait time for the daemon to stop gracefully
-inline constexpr const std::chrono::seconds SHUTDOWN_TIMEOUT{5};
+inline constexpr const std::chrono::seconds SHUTDOWN_TIMEOUT{10};
 // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
 inline const boost::regex LISTENING_PORT_REGEX("API Server: Listening on [^\\s\"]+:([0-9]+)");
 
-// Provides the following services:
-// - daemon conf file generation, startup and shutdown of transferd
-// - transfer of files and monitoring
+/// @brief Client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
 class TransferClient {
    private:
     Configuration& _config;
@@ -52,6 +51,8 @@ class TransferClient {
     const std::string _daemon_log;
 
    public:
+    /// @brief Create a transfer client.
+    /// @param config configuration of the samples
     TransferClient(Configuration& config)
         : _config(config),
           _transfer_daemon_process(nullptr),
@@ -61,34 +62,34 @@ class TransferClient {
         auto sdk_url = _config.param_str({"trsdk", "url"});
         auto sdk_uri = boost::urls::parse_uri(sdk_url);
         if (!sdk_uri) {
-            throw std::runtime_error("Invalid trapi url");
+            throw std::runtime_error("Invalid URL: " + sdk_url);
         }
-        LOGGER(debug) << LOG_ITEM("grpc url") << sdk_uri.value();
         _server_address = sdk_uri.value().host();
         _server_port = sdk_uri.value().has_port() ? std::stoi(sdk_uri.value().port()) : TRANSFERD_DEFAULT_PORT;
     }
 
+    /// @brief Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
     ~TransferClient() {
         daemon_shutdown();
     }
 
-    // Start the transfer SDK daemon process
+    /// @brief Start the daemon, with output and logs in the log folder.
     void daemon_start() {
         const std::string file_base = _config.log_folder_path() / _daemon_name;
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
-        LOGGER(debug) << LOG_ITEM("daemon out") << out_file;
-        LOGGER(debug) << LOG_ITEM("daemon err") << err_file;
-        LOGGER(debug) << LOG_ITEM("daemon log") << _daemon_log;
-        LOGGER(debug) << LOG_ITEM("ascp log") << (_config.log_folder_path() / ASCP_LOG_FILE).string();
-        LOGGER(debug) << LOG_ITEM("exe") << _config.get_path("sdk_daemon");
+        log_dump("Daemon command", _config.get_path("sdk_daemon").string() + " --config " + conf_file);
+        log_dump("Daemon out", out_file);
+        log_dump("Daemon err", err_file);
+        log_dump("Daemon log", _daemon_log);
+        log_dump("Ascp log", (_config.log_folder_path() / ASCP_LOG_FILE).string());
         daemon_create_config_file(conf_file);
         // the log file may contain lines of previous executions: only read new lines
         std::error_code size_error;
         const std::uintmax_t log_size = std::filesystem::file_size(_daemon_log, size_error);
         const std::uintmax_t log_offset = size_error ? 0 : log_size;
-        LOGGER(info) << "Starting daemon...";
+        LOGGER(info) << "Starting daemon";
 
         // Open stdout/stderr redirect files (FILE* is accepted cross-platform by process_stdio)
         FILE* out_fp = std::fopen(out_file.c_str(), "w");
@@ -105,11 +106,11 @@ class TransferClient {
         std::fclose(err_fp);
 
         wait_daemon_listening(log_offset);
-        LOGGER(info) << "Daemon started: " << _transfer_daemon_process->id();
     }
 
-    // Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
-    // The port is read from the daemon log: requires log level `info` or more verbose.
+    /// @brief Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
+    /// The port is read from the daemon log: requires log level `info` or more verbose.
+    /// @param log_offset only read the daemon log after this offset
     void wait_daemon_listening(const std::uintmax_t log_offset) {
         const auto deadline = std::chrono::steady_clock::now() + STARTUP_TIMEOUT;
         while (true) {
@@ -117,10 +118,7 @@ class TransferClient {
             // Note: kill(pid, 0) cannot be used: it also succeeds on a zombie (exited, not yet reaped) process
             boost::system::error_code ec;
             if (!_transfer_daemon_process->running(ec)) {
-                LOGGER(error) << "Daemon not started.";
-                LOGGER(error) << "Exited with code: " << _transfer_daemon_process->exit_code();
-                LOGGER(error) << "Check daemon log: " << _daemon_log;
-                throw std::runtime_error("daemon startup failed");
+                throw std::runtime_error("Daemon exited with code " + std::to_string(_transfer_daemon_process->exit_code()) + ", see log: " + _daemon_log);
             }
             // fixed port: readiness is checked on connection
             if (_server_port != 0) {
@@ -129,7 +127,6 @@ class TransferClient {
             const int port = find_listening_port(_daemon_log, log_offset);
             if (port != 0) {
                 _server_port = port;
-                LOGGER(info) << "Allocated server port: " << _server_port;
                 return;
             }
             if (std::chrono::steady_clock::now() > deadline) {
@@ -139,22 +136,20 @@ class TransferClient {
         }
     }
 
-    // Connect to the transfer SDK daemon
+    /// @brief Connect to the daemon.
     void daemon_connect() {
-        const std::string _channel_address = _server_address + ":" + std::to_string(_server_port);
-        LOGGER(info) << "Connecting to " << _daemon_name << " on: " << _channel_address << " ...";
-        const auto channel = grpc::CreateChannel(_channel_address, grpc::InsecureChannelCredentials());
+        const std::string address = _server_address + ":" + std::to_string(_server_port);
+        const auto channel = grpc::CreateChannel(address, grpc::InsecureChannelCredentials());
         // wait until the daemon listens
         if (!channel->WaitForConnected(std::chrono::system_clock::now() + std::chrono::seconds(MAX_CONNECTION_WAIT_SEC))) {
-            LOGGER(error) << "Failed to connect: " << grpc_connectivity_state_to_string(channel->GetState(false));
             daemon_shutdown();
-            throw std::runtime_error("failed to connect.");
+            throw std::runtime_error("Failed to connect to daemon: " + address);
         }
         _transfer_service = trapi::TransferService::NewStub(channel);
-        LOGGER(info) << "Connected !";
+        LOGGER(info) << "Connected to daemon: " << address;
     }
 
-    // Start daemon and connect to it
+    /// @brief Start the daemon and connect to it, if not already done.
     void daemon_startup() {
         if (_transfer_service == nullptr) {
             daemon_start();
@@ -162,13 +157,14 @@ class TransferClient {
         }
     }
 
-    // Shutdown daemon
+    /// @brief Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+    /// transferd stops cleanly on SIGINT (not on SIGTERM).
     void daemon_shutdown() {
         if (_transfer_service != nullptr) {
             _transfer_service = nullptr;
         }
         if (_transfer_daemon_process != nullptr) {
-            LOGGER(info) << "Shutting down daemon...";
+            LOGGER(info) << "Stopping daemon";
             boost::system::error_code ec;
             // transferd stops cleanly on SIGINT (not on SIGTERM), kill it if it does not stop in time
             _transfer_daemon_process->interrupt(ec);
@@ -185,12 +181,12 @@ class TransferClient {
         }
     }
 
-    // Start a transfer given a transfer spec
-    // @param transfer_spec: a json object with the transfer specification
-    // @return transfer_id: the id of the started transfer
+    /// @brief Start a transfer.
+    /// @param transfer_spec transfer spec
+    /// @return transfer id
     std::string transfer_start(const json::object& transfer_spec) {
         const std::string ts_json = json::serialize(transfer_spec);
-        LOGGER(debug) << LOG_ITEM("ts") << ts_json;
+        log_dump("Transfer spec", ts_json);
         // create a transfer request
         auto* transfer_config = new trapi::TransferConfig;
         transfer_config->set_loglevel(2);  // ascp levels: 0 1 2
@@ -205,11 +201,11 @@ class TransferClient {
             "StartTransfer",
             _transfer_service->StartTransfer(&start_transfer_context, transfer_request, &start_transfer_response));
         transfer_check_failed_status(start_transfer_response.status(), error_description({start_transfer_response.error().description()}));
-        const std::string transfer_id = start_transfer_response.transferid();
-        LOGGER(info) << "transfer id: " << transfer_id << ", status: " << TransferStatus_to_string(start_transfer_response.status());
-        return transfer_id;
+        return start_transfer_response.transferid();
     }
 
+    /// @brief Wait for the end of a transfer, and log its status.
+    /// @param transfer_id transfer id
     void wait_transfer(const std::string& transfer_id) {
         // wait until finished, check every second
         while (true) {
@@ -222,7 +218,7 @@ class TransferClient {
                 "QueryTransfer",
                 _transfer_service->QueryTransfer(&query_transfer_context, transfer_info_request, &query_transfer_response));
             const trapi::TransferStatus status = query_transfer_response.status();
-            LOGGER(info) << "transfer: " << TransferStatus_to_string(status);
+            log_status(status, query_transfer_response.transferinfo().averageratekbps());
             // `error` is empty on session errors: the cause is in transfer information
             transfer_check_failed_status(
                 status,
@@ -232,6 +228,8 @@ class TransferClient {
         }
     }
 
+    /// @brief Start the daemon if needed, start a transfer, and wait for its end.
+    /// @param transfer_spec transfer spec
     void transfer_start_and_wait(const json::object& transfer_spec) {
         // ensure daemon is started and we are connected
         daemon_startup();
@@ -239,8 +237,10 @@ class TransferClient {
     }
 
    private:
-    // Find the API listening port in the daemon log, after the given offset.
-    // Returns 0 if not found (yet).
+    /// @brief Find the API listening port in the daemon log, after the given offset.
+    /// @param log_file path of the daemon log
+    /// @param offset only read the daemon log after this offset
+    /// @return port, or 0 if not found (yet)
     static int find_listening_port(const std::string& log_file, std::uintmax_t offset) {
         std::ifstream log_stream(log_file, std::ios::binary);
         if (!log_stream) {
@@ -259,7 +259,9 @@ class TransferClient {
         return std::stoi(match[1]);
     }
 
-    /** Convert log level for ascp from string to int */
+    /// @brief Convert the log level of ascp from name to number.
+    /// @param level `info`, `debug` or `trace`
+    /// @return 0, 1 or 2
     static int ascp_level(const std::string& level) {
         if (level == "info") {
             return 0;
@@ -272,6 +274,9 @@ class TransferClient {
         }
     }
 
+    /// @brief Create the configuration file of the daemon.
+    /// See: https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/Configuration%20File
+    /// @param conf_file path of the configuration file
     void daemon_create_config_file(const std::string& conf_file) {
         // Prepare daemon configuration file
         const json::object config_info = {
@@ -285,7 +290,6 @@ class TransferClient {
                {{"dir", _config.log_folder_path().string()},
                 {"level", ascp_level(_config.param_str({"trsdk", "ascp_level"}))}}}}}};
         const std::string config_data = json::serialize(config_info);
-        LOGGER(debug) << LOG_ITEM("config") << config_data;
         std::ofstream conf_stream(conf_file);
         conf_stream << config_data;
         if (!conf_stream) {
@@ -293,14 +297,18 @@ class TransferClient {
         }
     }
 
-    // Throw if the gRPC call itself failed (e.g. daemon not reachable)
+    /// @brief Throw an exception if a call to the daemon API failed, e.g. daemon not reachable.
+    /// @param rpc_name name of the API call
+    /// @param rpc_status status of the call
     static void check_rpc_status(const std::string& rpc_name, const grpc::Status& rpc_status) {
         if (!rpc_status.ok()) {
             throw std::runtime_error(rpc_name + " call failed: " + rpc_status.error_message());
         }
     }
 
-    // First non-empty error description
+    /// @brief Get the first non-empty error description.
+    /// @param texts error descriptions
+    /// @return error description, or `unknown error`
     static std::string error_description(std::initializer_list<std::string> texts) {
         for (std::string text : texts) {
             boost::algorithm::trim(text);
@@ -311,13 +319,27 @@ class TransferClient {
         return "unknown error";
     }
 
-    void transfer_check_failed_status(const trapi::TransferStatus& status, const std::string& description) {
+    /// @brief Log the transfer status, and the rate when running.
+    /// @param status transfer status
+    /// @param average_rate_kbps average rate in kilobits per second
+    static void log_status(const trapi::TransferStatus status, const int64_t average_rate_kbps) {
+        std::ostringstream message;
+        message << "Transfer: " << TransferStatus_to_string(status);
+        if (status == trapi::TransferStatus::RUNNING) {
+            message << " " << std::fixed << std::setprecision(1) << average_rate_kbps / 1000.0 << " Mbps";
+        }
+        LOGGER(info) << message.str();
+    }
+
+    /// @brief Throw an exception if the transfer status is failed or unknown.
+    /// @param status transfer status
+    /// @param description error description
+    static void transfer_check_failed_status(const trapi::TransferStatus& status, const std::string& description) {
         if (status == trapi::TransferStatus::FAILED) {
-            LOGGER(error) << last_file_line(_daemon_log);
-            throw std::runtime_error("transfer failed: " + description);
+            throw std::runtime_error("Transfer failed: " + description);
         }
         if (status == trapi::TransferStatus::UNKNOWN_STATUS) {
-            throw std::runtime_error("unknown transfer id: " + description);
+            throw std::runtime_error("Unknown transfer id: " + description);
         }
     }
 };

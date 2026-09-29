@@ -11,16 +11,28 @@ const TYPE_SIZE = 1;
 const LENGTH_SIZE = 4;
 const END_OF_BUFFER = 0;
 
-// Helper class for Type-Value pairs
+/**
+ * TLV (Tag-Length-Value) item of the ascmd protocol.
+ */
 class TypeValue {
+    /**
+     * Create a TLV item.
+     * @param {number} t tag
+     * @param {Buffer} v value
+     */
     constructor(t, v) {
         this.t = t;
         this.v = v;
     }
 }
 
-// Info Structure
+/**
+ * Information about the platform.
+ */
 class Info {
+    /**
+     * Create empty information about the platform.
+     */
     constructor() {
         this.platform = '';
         this.version = '';
@@ -36,16 +48,32 @@ class Info {
         this.protocol = 1;
     }
 
+    /**
+     * Decode a zero-terminated string.
+     * @param {string} label name of the field, for errors
+     * @param {Buffer} value data
+     * @returns {string} string
+     */
     static decodeZstr(label, value) {
         return value.toString('utf8').replace(/\0+$/, ''); // Remove null terminators
     }
 
+    /**
+     * Decode a 64-bit unsigned integer.
+     * @param {string} label name of the field, for errors
+     * @param {Buffer} value data
+     * @returns {bigint} integer
+     */
     static decodeU64(label, value) {
         return Buffer.from(value).readBigUInt64BE();
     }
 
+    /**
+     * Decode the information about the platform.
+     * @param {Buffer} data TLV data
+     * @returns {Promise<Info>} information about the platform
+     */
     static async create(data) {
-        logger.trace('decoding info:', data);
         const info = new Info();
         const reader = Buffer.from(data);
         let offset = 0;
@@ -103,6 +131,12 @@ class Info {
         return info;
     }
 
+    /**
+     * Read a TLV item.
+     * @param {Buffer} buffer TLV data
+     * @param {number} offset offset of the item in the data
+     * @returns {Promise<{t: number, v: Buffer, nextOffset: number}|null>} TLV item, and offset of the next item, or none at the end of the data
+     */
     static async readTLV(buffer, offset) {
         if (offset >= buffer.length) return null;
 
@@ -114,26 +148,47 @@ class Info {
     }
 }
 
-// Mnt Structure
+/**
+ * Information about one drive.
+ */
 class Mnt {
+    /**
+     * Create the information about one drive.
+     * @param {string} name name of the drive
+     * @param {string} path mount point of the drive
+     */
     constructor(name, path) {
         this.name = name;
         this.path = path;
     }
 }
 
-// Mounts Structure
+/**
+ * Information about available drives.
+ */
 class Mounts {
+    /**
+     * Create empty information about available drives.
+     */
     constructor() {
         this.mounts = [];
     }
 
+    /**
+     * Decode a zero-terminated string.
+     * @param {Buffer} value data
+     * @returns {string} string
+     */
     static decodeZstr(value) {
         return value.toString('utf8').replace(/\0+$/, '');
     }
 
+    /**
+     * Decode the information about available drives.
+     * @param {Buffer} data TLV data
+     * @returns {Promise<Mounts>} information about available drives
+     */
     static async create(data) {
-        logger.trace('decoding mounts:', data);
         const mounts = new Mounts();
         const reader = Buffer.from(data);
         let offset = 0;
@@ -155,24 +210,47 @@ class Mounts {
     }
 }
 
-// Stat Structure
+/**
+ * Information about a file or folder.
+ */
 class Stat {
+    /**
+     * Create the information about a file or folder.
+     * @param {string} filename name of the file
+     * @param {bigint} size size of the file
+     */
     constructor(filename, size) {
         this.filename = filename;
         this.size = size;
     }
 }
 
-// Size Structure
+/**
+ * Size information about a file or folder.
+ */
 class Size {
+    /**
+     * Create the size information about a file or folder.
+     * @param {bigint} size size
+     */
     constructor(size) {
         this.size = size;
     }
 
+    /**
+     * Decode a 64-bit unsigned integer.
+     * @param {Buffer} value data
+     * @returns {bigint} integer
+     */
     static decodeU64(value) {
         return Buffer.from(value).readBigUInt64BE();
     }
 
+    /**
+     * Decode the size information about a file or folder.
+     * @param {Buffer} data TLV data
+     * @returns {Promise<Size>} size information
+     */
     static async create(data) {
         const size = new Size();
         size.size = Size.decodeU64(data);
@@ -180,23 +258,45 @@ class Size {
     }
 }
 
-// CommandError Structure
+/**
+ * Error returned by a command.
+ */
 class CommandError {
+    /**
+     * Create the error returned by a command.
+     * @param {string} message error message
+     */
     constructor(message) {
         this.message = message;
     }
 }
 
-// Md5sum Structure
+/**
+ * MD5 checksum of a file.
+ */
 class Md5sum {
+    /**
+     * Create the MD5 checksum of a file.
+     * @param {string} hash MD5 checksum, in hexadecimal
+     */
     constructor(hash) {
         this.hash = hash;
     }
 
+    /**
+     * Decode the MD5 checksum.
+     * @param {Buffer} value data
+     * @returns {string} MD5 checksum, in hexadecimal
+     */
     static decodeHash(value) {
         return value.toString('hex');
     }
 
+    /**
+     * Decode the MD5 checksum of a file.
+     * @param {Buffer} data TLV data
+     * @returns {Promise<Md5sum>} MD5 checksum
+     */
     static async create(data) {
         const md5sum = new Md5sum();
         md5sum.hash = Md5sum.decodeHash(data);
@@ -204,17 +304,34 @@ class Md5sum {
     }
 }
 
-// AsCmd Class
+/**
+ * Client of the `ascmd` protocol: file operations on Aspera HSTS.
+ */
 class AsCmd {
+    /**
+     * Create an ascmd client: use `create` to start the protocol.
+     * @param {Writable} stdin channel to which commands are written
+     * @param {Readable} stdout channel from which TLV items are read
+     * @param {string} host address of the server, to traverse a proxy
+     * @param {number} version protocol version: 1 or 2
+     */
     constructor(stdin, stdout, host, version) {
         if (!stdin || !stdout) {
-            throw new Error('stdin and stdout must not be null');
+            throw new Error('Stdin and stdout must not be null');
         }
         this.stdin = stdin;
         this.stdout = stdout;
         this.version = version;
         this.started = false;
     }
+    /**
+     * Create an ascmd client, and start the protocol.
+     * @param {Writable} stdin channel to which commands are written
+     * @param {Readable} stdout channel from which TLV items are read
+     * @param {string} host address of the server, to traverse a proxy
+     * @param {number} version protocol version: 1 or 2
+     * @returns {Promise<AsCmd>} ascmd client
+     */
     static async create(stdin, stdout, host, version) {
         const ascmd = new AsCmd(stdin, stdout, version);
 
@@ -225,27 +342,36 @@ class AsCmd {
             }
             await ascmd.sendCommand(command);
         } else if (version !== 1) {
-            throw new Error(`unsupported ascmd version: ${version}`);
+            throw new Error(`Unsupported ascmd version: ${version}`);
         }
 
         const initialReader = Readable.from(stdout);
         const data = await AsCmd.readTLV(initialReader);
         if (data.tag !== 5) {
-            throw new Error(`expected tag 5, got: ${data.tag}`);
+            throw new Error(`Expected tag 5, got: ${data.tag}`);
         }
 
-        const info = AsCmd.newInfo(data.value);
-        console.debug('initial info:', info);
+        AsCmd.newInfo(data.value);
 
         return ascmd;
     }
 
+    /**
+     * Send a command to ascmd.
+     * @param {string} command command, without `as_` prefix
+     */
     async sendCommand(command) {
-        console.debug(`sending command: as_${command}`);
+        logger.debug(`Sending command: as_${command}`);
         const fullCommand = `as_${command}\n`;
         this.stdin.write(fullCommand);
     }
 
+    /**
+     * Execute a command, and get the result.
+     * @param {string} command command, without `as_` prefix
+     * @param {string} ...args arguments of the command
+     * @returns {Promise<object>} result of the command
+     */
     async executeCommandRes(command, ...args) {
         let fullCommand = command;
         if (args.length > 0) {
@@ -253,7 +379,6 @@ class AsCmd {
             fullCommand += ' ' + quotedArgs.join(' ');
         }
 
-        console.debug(`executing command: ${command}`);
         await this.sendCommand(fullCommand);
 
         const resultReader = Readable.from(this.stdout);
@@ -261,39 +386,68 @@ class AsCmd {
         return AsCmd.newCommandResult(typeValue);
     }
 
+    /**
+     * Execute a command that returns only success or error.
+     * @param {string} command command, without `as_` prefix
+     * @param {string} ...args arguments of the command
+     */
     async executeCommandNoRes(command, ...args) {
         const result = await this.executeCommandRes(command, ...args);
         if (result instanceof CommandSuccess) {
             return;
         } else if (result instanceof CommandError) {
-            throw new Error(`error: ${result.errstr}`);
+            throw new Error(`Ascmd error: ${result.errstr}`);
         } else {
-            throw new Error(`unexpected result: ${typeof result}`);
+            throw new Error(`Unexpected result: ${typeof result}`);
         }
     }
 
+    /**
+     * Terminate the ascmd session with the `as_exit` command.
+     */
     async terminate() {
         await this.sendCommand('exit');
     }
 
-    // Placeholder for readTLV implementation
+    /**
+     * Read a TLV item.
+     * @todo not implemented
+     * @param {Readable} reader reader of the ascmd output
+     * @returns {Promise<{tag: number, value: *}>} TLV item
+     */
     static async readTLV(reader) {
         // Implement TLV reading logic here
         return { tag: 5, value: {} };
     }
 
-    // Placeholder for newInfo implementation
+    /**
+     * Decode the information about the platform.
+     * @todo not implemented
+     * @param {*} value TLV data
+     * @returns {Info} information about the platform
+     */
     static newInfo(value) {
         // Implement Info parsing logic here
         return {};
     }
 
-    // Placeholder for newCommandResult implementation
+    /**
+     * Decode the result of a command.
+     * @todo not implemented
+     * @param {*} typeValue TLV item
+     * @returns {object} result of the command
+     */
     static newCommandResult(typeValue) {
         // Implement CommandResult parsing logic here
         return {};
     }
 
+    /**
+     * Send a command to ascmd, and read the response.
+     * @todo not implemented: overrides `sendCommand` above
+     * @param {string} command command, without `as_` prefix
+     * @returns {Promise<string>} response
+     */
     async sendCommand(command) {
         if (!this.started) {
             if (version === 2) {
@@ -310,24 +464,78 @@ class AsCmd {
         return response.toString('utf8');
     }
 
+    /**
+     * Get the information about available drives.
+     * @todo not implemented
+     * @returns {Promise<Mounts>} information about available drives
+     */
     async df() {
     }
+    /**
+     * Get the information about the platform.
+     * @todo not implemented
+     * @returns {Promise<Info>} information about the platform
+     */
     async info() {
     }
+    /**
+     * Get the information about a file, or about the files in a folder.
+     * @todo not implemented
+     * @param {*} path path of the file or folder
+     * @returns {Promise<Stat[]>} information about the files
+     */
     async ls() {
     }
+    /**
+     * Get the MD5 checksum of a file.
+     * @todo not implemented
+     * @param {*} path path of the file
+     * @returns {Promise<string>} MD5 checksum
+     */
     async md5sum() {
     }
+    /**
+     * Get the size information about a file or folder.
+     * @todo not implemented
+     * @param {*} path path of the file or folder
+     * @returns {Promise<Size>} size information
+     */
     async du() {
     }
+    /**
+     * Copy a file or folder.
+     * @todo not implemented
+     * @param {*} source path of the source
+     * @param {*} destination path of the destination
+     */
     async cp() {
     }
+    /**
+     * Move a file or folder.
+     * @todo not implemented
+     * @param {*} source path of the source
+     * @param {*} destination path of the destination
+     */
     async mv() {
     }
+    /**
+     * Delete a file or folder.
+     * @todo not implemented
+     * @param {*} path path of the file or folder
+     */
     async rm() {
     }
+    /**
+     * Create a folder.
+     * @todo not implemented
+     * @param {*} path path of the folder
+     */
     async mkdir() {
     }
+    /**
+     * Terminate the ascmd session with the `as_exit` command.
+     * @todo not implemented
+     */
     async terminate() {
     }
 }
@@ -335,12 +543,27 @@ class AsCmd {
 
 
 
+/**
+ * ascmd executed locally, for tests.
+ */
 class AsCmdLocal extends AsCmd {
+    /**
+     * Create a local ascmd client.
+     * @param {Writable} stdin channel to which commands are written
+     * @param {Readable} stdout channel from which TLV items are read
+     * @param {number} version protocol version: 1 or 2
+     * @param {ChildProcess} cmd ascmd process
+     */
     constructor(stdin, stdout, version, cmd) {
         super(stdin, stdout, version);
         this.cmd = cmd;
     }
 
+    /**
+     * Start ascmd locally, for tests.
+     * @param {number} protocol protocol version: 1 or 2
+     * @returns {Promise<AsCmdLocal>} ascmd client
+     */
     static async create(protocol) {
         const cmd = spawn('ascmd', protocol === 1 ? [] : [`-V${protocol}`], {
             env: { ...process.env, SSH_CLIENT: '' }
@@ -353,23 +576,46 @@ class AsCmdLocal extends AsCmd {
         return new AsCmdLocal(stdin, stdout, protocol, cmd);
     }
 
+    /**
+     * Terminate the ascmd session, and wait for the end of ascmd.
+     */
     async terminate() {
         await this.cmd.on('close', code => {
             if (code !== 0) {
-                throw new Error(`ascmd exited with error code: ${code}`);
+                throw new Error(`Ascmd exited with code ${code}`);
             }
-            console.info('ascmd exited successfully');
+            logger.debug(`Ascmd exited with code ${code}`);
         });
     }
 }
 
+/**
+ * ascmd executed on the server through SSH.
+ */
 class AsCmdRemote extends AsCmd {
+    /**
+     * Create a remote ascmd client.
+     * @param {Writable} stdin channel to which commands are written
+     * @param {Readable} stdout channel from which TLV items are read
+     * @param {number} version protocol version: 1 or 2
+     * @param {ssh2.Client} client SSH connection
+     * @param {object} session SSH channel of ascmd
+     */
     constructor(stdin, stdout, version, client, session) {
         super(stdin, stdout, version);
         this.client = client;
         this.session = session;
     }
 
+    /**
+     * Start ascmd on the server through SSH.
+     * @param {string} host address of the server
+     * @param {string} port SSH port
+     * @param {string} username transfer user
+     * @param {string} password password of the user
+     * @param {number} protocol protocol version: 1 or 2
+     * @returns {Promise<AsCmdRemote>} ascmd client
+     */
     static async create(host, port, username, password, protocol) {
         const client = new ssh2.Client();
 
@@ -398,10 +644,12 @@ class AsCmdRemote extends AsCmd {
         return new AsCmdRemote(stdin, stdout, protocol, connection, session);
     }
 
+    /**
+     * Terminate the ascmd session, and close the SSH connection.
+     */
     async terminate() {
         this.session.close();
         this.client.end();
-        console.info('Command exited successfully');
     }
 }
 

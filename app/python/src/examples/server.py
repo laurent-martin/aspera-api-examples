@@ -16,7 +16,8 @@ try:
     my_local_folder = tempfile.gettempdir()
 
     server_url = urlparse(config.param('server', 'url'))
-    assert server_url.scheme == 'ssh', 'expecting SSH scheme for server URL'
+    if server_url.scheme != 'ssh':
+        raise Exception(f"Expecting SSH URL: {config.param('server', 'url')}")
 
     remote_host = server_url.hostname
     remote_port = server_url.port
@@ -28,7 +29,7 @@ try:
     # Example 1: download
     # Instead of using the soon deprecated FaspManager1 Python lib, let's use the transfer spec
     # direction is relative to us, client, i.e. receive = download
-    log.info('======Test 1: download')
+    log.info('Downloading file')
     t_spec_download = {
         'remote_host': remote_host,
         'ssh_port': remote_port,
@@ -44,7 +45,7 @@ try:
     local_file = os.path.join(my_local_folder, os.path.basename(config.param('server', 'file_download')))
 
     # Example 2: upload: single file upload to existing folder.
-    log.info('======Test 2: upload file')
+    log.info('Uploading file')
     t_spec_upload = {
         'remote_host': remote_host,
         'ssh_port': remote_port,
@@ -63,13 +64,13 @@ try:
     # if there is only one source file and destination does not exist, then 'FASP' assumes it is destination filename
     # but if destination is a folder, it will send same source filename into folder
     # so enforce folder creation, to be sure of what happens
-    log.info('======Test 3: upload file to new folder')
+    log.info('Uploading file to new folder')
     t_spec_upload['destination_root'] = config.param('server', 'folder_upload')+'/new_folder'
     t_spec_upload['create_dir'] = True
     transfer_client.start_transfer_and_wait(t_spec_upload)
 
     # Example 4: upload: send to sub folder, but using file pairs
-    log.info('======Test 4: upload file and rename')
+    log.info('Uploading file with new name')
     t_spec_upload['destination_root'] = config.param('server', 'folder_upload')
     del t_spec_upload['create_dir']
     t_spec_upload['paths'] = [{'source': local_file, 'destination': 'xxx/newfilename.ext'}]

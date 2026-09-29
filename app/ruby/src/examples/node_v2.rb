@@ -39,6 +39,7 @@ begin
   config.add_sources(t_spec, 'assets.paths')
 
   # Start transfer
+  config.logger.info('Uploading files')
   transfer_client.start_transfer_and_wait(t_spec)
 ensure
   transfer_client.shutdown

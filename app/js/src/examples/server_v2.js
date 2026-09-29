@@ -2,14 +2,13 @@
 // laurent.martin.aspera@fr.ibm.com
 import { TransferClient } from '../utils/transfer_client.js';
 import { Configuration, logger } from '../utils/configuration.js';
-import assert from 'assert';
 
 const config = new Configuration();
 const transferClient = new TransferClient(config);
 
 // get destination server from example config
 const server_url = new URL(config.getParam('server','url'))
-assert(server_url.protocol === 'ssh:', 'ERROR: Expecting SSH protocol')
+if (server_url.protocol !== 'ssh:') throw new Error(`Expecting SSH URL: ${server_url}`)
 
 // create transfer spec version 2
 const transferSpecV2 = {
@@ -34,8 +33,8 @@ const transferSpecV2 = {
 config.addSources(transferSpecV2, 'assets.paths')
 
 try {
+	logger.info('Uploading files');
 	await transferClient.startTransferAndWait(transferSpecV2);
-	logger.info('Done!');
 } finally {
 	await transferClient.shutdown();
 }

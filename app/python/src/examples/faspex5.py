@@ -22,14 +22,16 @@ REMOTE_TRANSFER_TIMEOUT_SEC = 600
 
 
 def lookup_entity(api, path, value, prop='name', query=None):
-    """
-    Call lookup request on entity and find exact match
-    :param api: The Rest object
-    :param path: the entity type
-    :param prop: the property to search
-    :param value: the value to search
-    :param query: additional query parameters (list of 2-tuple)
-    """
+    '''
+    Find an entity with an exact match on a property.
+
+    :param api: REST client
+    :param path: type of entity
+    :param value: value to find
+    :param prop: property to match
+    :param query: additional query parameters, as list of tuples
+    :return: entity, or none if not found
+    '''
     query = list(query or [])
     query.append(('q', value))
     matching_items = api.read(path, query)
@@ -38,22 +40,26 @@ def lookup_entity(api, path, value, prop='name', query=None):
         matching_items = matching_items.get(path, None)
     # Assert that matching_items is a list
     if not isinstance(matching_items, list):
-        raise TypeError(f"Expected a list, got {type(matching_items).__name__}")
+        raise TypeError(f'Expecting a list, got: {type(matching_items).__name__}')
     # Filter for case-insensitive exact matches for property
     name_matches = [item for item in matching_items if item.get(prop, '').lower() == value.lower()]
     if len(name_matches) == 0:
         return None
     elif len(name_matches) > 1:
         raise ValueError(
-            f'{path}: "{value}" multiple matches: {len(name_matches)} items: {[item.get(prop) for item in matching_items]}'
+            f'Found {len(name_matches)} {path} for {value}'
         )
     return name_matches[0]
 
 
 def build_recipient_list(f5_api, emails):
-    """
-    Transform email list into recipient list (type, name)
-    """
+    '''
+    Build the list of recipients from email addresses.
+
+    :param f5_api: REST client of Faspex 5
+    :param emails: email addresses
+    :return: list of recipients: `name`, `recipient_type`
+    '''
     result = []
     for email in emails:
         if re.match(EMAIL_REGEX, email) is None:
@@ -75,7 +81,6 @@ def build_recipient_list(f5_api, emails):
                 'recipient_type': found['type'],
                 'name': found['name'],
             })
-    log.debug(result)
     return result
 
 
@@ -112,21 +117,21 @@ try:
     #
 
     # send to myself (for test, existing user) and external user (the calling user must have right to do so...)
+    log.info('Getting recipients')
     recipients = build_recipient_list(f5_api, [config.param('faspex5', 'username'), 'johndoe@example.com'])
 
     # create a new package with Faspex 5 API (this allocates a reception folder on package storage)
-    log.info(f'Creating package with local files')
+    log.info('Creating package')
     package_info = f5_api.create('packages', {
         'title': "Python local files ",
         'recipients': recipients
     })
-    log.debug(package_info)
 
     # build payload to specify files to send
     upload_request = {}
     config.add_sources(upload_request, 'paths')
 
-    log.info('getting transfer spec')
+    log.info('Getting transfer spec')
     t_spec = f5_api.create(f'packages/{package_info["id"]}/transfer_spec/upload?transfer_type=connect', upload_request)
 
     # optional: multi session
@@ -141,18 +146,18 @@ try:
     del t_spec['authentication']
 
     # Send local files to package folder on server and wait for completion
+    log.info('Uploading files')
     transfer_client.start_transfer_and_wait(t_spec)
 
     # Example: Create package from a remote source
     #
 
     # create a new package with Faspex 5 API (this allocates a reception folder on package storage)
-    log.info(f'Creating package with remote files')
+    log.info('Creating package')
     package_info = f5_api.create('packages', {
         'title': "Python remote files ",
         'recipients': recipients
     })
-    log.debug(package_info)
 
     # In this example, we have the name, not the id of the shared folder
     # so we need to get the id from the name
@@ -160,9 +165,9 @@ try:
     shared_folders = f5_api.read(f'shared_folders')
     folder_id = next((folder['id'] for folder in shared_folders['shared_folders'] if folder['name'] == shared_folder_name), None)
     if not folder_id:
-        raise Exception(f'No shared folder found with name {shared_folder_name}')
+        raise Exception(f'Shared folder not found: {shared_folder_name}')
 
-    log.info(f'Starting server side transfer using remote folder: {folder_id}')
+    log.info(f'Starting remote transfer from shared folder: {shared_folder_name}')
     upload_request = {
         "shared_folder_id": folder_id,
         "paths": [
@@ -170,20 +175,19 @@ try:
         ]
     }
     # this triggers a server-to-server (remote) transfer
-    transfer_info = f5_api.create(f'packages/{package_info["id"]}/remote_transfer', upload_request)
-    log.info(f'id: {transfer_info}')
+    f5_api.create(f'packages/{package_info["id"]}/remote_transfer', upload_request)
 
     # wait for remote transfer to complete
     deadline = time.monotonic() + REMOTE_TRANSFER_TIMEOUT_SEC
     while True:
         transfer_info = f5_api.read(f'packages/{package_info["id"]}/upload_details')
-        log.info(f'status: {transfer_info["upload_status"]}')
+        log.info(f'Remote transfer: {transfer_info["upload_status"]}')
         if transfer_info['upload_status'] == 'completed':
             break
         elif transfer_info['upload_status'] == 'failed':
             raise Exception('Remote transfer failed')
         if time.monotonic() > deadline:
-            raise TimeoutError(f'Remote transfer not completed after {REMOTE_TRANSFER_TIMEOUT_SEC} seconds')
+            raise TimeoutError(f'Remote transfer not completed after {REMOTE_TRANSFER_TIMEOUT_SEC} s')
         time.sleep(1)
 
 finally:

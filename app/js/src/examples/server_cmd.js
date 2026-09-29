@@ -9,27 +9,43 @@ import { Configuration, logger } from '../utils/configuration.js';
 
 const ASCMD_COMMAND = 'ascmd';
 
+/**
+ * Perform file operations on the server with ascmd.
+ * @param {AsCmd} ascmdAgent ascmd client
+ * @param {string} existingFile path of a file on the server
+ * @param {string} writableFolder path of a folder on the server, where files are created and deleted
+ * @returns {Promise<void>}
+ */
 async function performTests(ascmdAgent, existingFile, writableFolder) {
     const copyFile = join(writableFolder, 'copied_file');
     const deleteFile = join(writableFolder, 'todelete_file');
     const deleteDir = join(writableFolder, 'todelete_dir');
 
-    logger.info('df:', await ascmdAgent.df());
-    logger.info('info:', await ascmdAgent.info());
-    logger.info('ls file:', await ascmdAgent.ls(existingFile));
-    logger.info('ls dir:', await ascmdAgent.ls(writableFolder));
-    logger.info('md5sum:', await ascmdAgent.md5sum(existingFile));
-    logger.info('du:', await ascmdAgent.du(existingFile));
-    logger.info('cp:', await ascmdAgent.cp(existingFile, copyFile));
-    logger.info('mv:', await ascmdAgent.mv(copyFile, deleteFile));
-    logger.info('rm file:', await ascmdAgent.rm(deleteFile));
-    logger.info('mkdir:', await ascmdAgent.mkdir(deleteDir));
-    logger.info('rm:', await ascmdAgent.rm(deleteDir));
+    logger.info(`Server information: ${JSON.stringify(await ascmdAgent.info())}`);
+    logger.info(`Disk space: ${JSON.stringify(await ascmdAgent.df())}`);
+    logger.info(`File information: ${JSON.stringify(await ascmdAgent.ls(existingFile))}`);
+    logger.info(`Folder content: ${JSON.stringify(await ascmdAgent.ls(writableFolder))}`);
+    logger.info(`File MD5: ${JSON.stringify(await ascmdAgent.md5sum(existingFile))}`);
+    logger.info(`Disk usage: ${JSON.stringify(await ascmdAgent.du(existingFile))}`);
+    await ascmdAgent.cp(existingFile, copyFile);
+    logger.info('File copied');
+    await ascmdAgent.mv(copyFile, deleteFile);
+    logger.info('File moved');
+    await ascmdAgent.rm(deleteFile);
+    logger.info('File deleted');
+    await ascmdAgent.mkdir(deleteDir);
+    logger.info('Folder created');
+    await ascmdAgent.rm(deleteDir);
+    logger.info('Folder deleted');
     await ascmdAgent.terminate();
 }
 
+/**
+ * Test ascmd executed locally.
+ * @returns {Promise<void>}
+ */
 async function testLocal() {
-    logger.info('== TEST LOCAL =============');
+    logger.info('Testing local ascmd');
     const protocol_version = 2;
     const command = spawn(ASCMD_COMMAND, protocol_version !== 1 ? [`-V${protocol_version}`] : [], {
         env: { ...process.env, SSH_CLIENT: '' },
@@ -41,18 +57,21 @@ async function testLocal() {
         '/workspace/aspera/rust_ascmd/README.md',
         '/workspace/aspera/rust_ascmd'
     );
-    logger.info('wait for exit');
     const exitCode = await new Promise(resolve => command.on('close', resolve));
-    logger.info(`ascmd exited with ${exitCode}`);
+    logger.debug(`Ascmd exited with code ${exitCode}`);
 }
 
+/**
+ * Test ascmd executed on the server through SSH.
+ * @param {Configuration} config configuration of the samples
+ * @returns {Promise<void>}
+ */
 async function testRemote(config) {
-    logger.info('== TEST REMOTE =============');
+    logger.info('Testing remote ascmd');
     const serverUrl = config.getParam('server', 'url');
     const serverUri = new URL(serverUrl);
-    logger.info('Server URL:', serverUrl);
     if (serverUri.protocol !== 'ssh:') {
-        throw new Error('Invalid server URL protocol');
+        throw new Error(`Expecting SSH URL: ${serverUrl}`);
     }
     const host = serverUri.hostname;
     const port = serverUri.port || 33001;
@@ -85,10 +104,14 @@ async function testRemote(config) {
         config.getParam('server', 'folder_upload')
     );
     await new Promise(resolve => stream.on('close', resolve));
-    logger.info('Command exited with status:', stream.exitCode);
+    logger.debug(`Ascmd exited with code ${stream.exitCode}`);
     conn.end();
 }
 
+/**
+ * Test ascmd executed locally, and on the server.
+ * @returns {Promise<void>}
+ */
 async function main() {
     const config = new Configuration();
 
