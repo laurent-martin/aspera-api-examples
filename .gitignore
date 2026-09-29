@@ -1,10 +1,10 @@
 build/
 tmp/
 private/
-.DS_Store
+.venv/
 .vscode/
 .idea/
 .tested/
+.DS_Store
 .checked_env
 *.sln
-.venv/
