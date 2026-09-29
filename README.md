@@ -8,11 +8,23 @@ Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 - Aspera Applications APIs: interact with Aspera applications (Faspex, AoC, Node API, COS, etc.)
 - Aspera Web SDK: transfer files in a web browser
 
-![Component APIs](doc/api_components.png)
+![Component APIs](guide/api_components.png)
 
 > [!TIP]
-> New to Aspera APIs? Start with the [integration guide](doc/README.md):
+> New to Aspera APIs? Start with the [integration guide](guide/README.md):
 > concepts, transfer spec, authentication and authorization, integration scenarios.
+
+## Repository layout
+
+| Folder     | Content                                                                                  |
+|------------|------------------------------------------------------------------------------------------|
+| `app/`     | Samples with the Transfer Daemon and the application REST APIs, one folder per language  |
+| `web/`     | Samples of web applications with the Aspera Web SDK                                      |
+| `guide/`   | Integration guide: concepts, transfer spec, authentication, scenarios (Markdown and PDF) |
+| `docs/`    | GitHub Pages site: API menu and OpenAPI viewer (folder name required by GitHub Pages)    |
+| `openapi/` | OpenAPI specifications of the Aspera APIs                                                |
+| `config/`  | Paths of the project, and template of the configuration file                             |
+| `tools/`   | Build scripts: download of the Transfer SDK                                              |
 
 Samples are provided in several programming languages.
 
@@ -364,7 +376,7 @@ The Transfer Daemon SDK contains the following runtime files:
 - `etc/aspera-license`: the license file for `ascp` (free use)
 - `etc/aspera.conf`: the configuration file for `ascp` (optional)
 
-`product-info.mf` is an XML file with information on the SDK version, created by [`doc/get_sdk.sh`](doc/get_sdk.sh).
+`product-info.mf` is an XML file with information on the SDK version, created by [`tools/get_sdk.sh`](tools/get_sdk.sh).
 
 ### `aspera.conf`
 
