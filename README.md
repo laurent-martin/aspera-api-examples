@@ -65,15 +65,11 @@ IBM Aspera provides two types of APIs:
 
 Depending on the use case, one might use one or (often) several of these APIs (front-end, back-end).
 
-## Repository structure
+## Samples
 
-This repository is structured like this:
+The folder `web` contains a web application that uses the Aspera Web SDK with TypeScript.
 
-- `app`: examples in various languages using the **Aspera Transfer Daemon** and **Aspera Applications REST APIs**
-
-- `web`: an example that uses the Aspera web SDK with TypeScript.
-
-In `app`, you'll find one folder per programming language and, in each of them:
+The folder `app` contains one folder per programming language and, in each of them:
 
 - `README.md`: specific to the language
 - `Makefile`: runs the samples

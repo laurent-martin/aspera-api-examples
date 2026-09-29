@@ -6,6 +6,8 @@ require 'uri'
 require 'nokogiri'
 
 SAMPLE_EMAIL = 'john@example.com'
+# Warning link added by draw.io at the end of SVG exports with HTML labels
+DRAWIO_SVG_WARNING = %r{<switch><g requiredFeatures="[^"]*"/><a [^>]*svg-export-text-problems[^>]*>.*?</switch>}m.freeze
 # Generate a sample configuration file from existing working file.
 def generate_config_template
   local_config = ARGV.shift
@@ -70,6 +72,13 @@ def export_drawio_tab
     find_drawio_bin, '--export', '--page-index', page_index.to_s, *ARGV, '--output', output_file, drawio_file,
     exception: true
   )
+  remove_svg_text_warning(output_file) if File.extname(output_file).eql?('.svg')
+end
+
+# Remove the draw.io warning "Text is not SVG - cannot display" from an SVG file.
+# It is displayed by renderers without foreignObject support, e.g. librsvg used for the PDF.
+def remove_svg_text_warning(svg_file)
+  File.write(svg_file, File.read(svg_file).sub(DRAWIO_SVG_WARNING, ''))
 end
 
 # Find the draw.io desktop executable.

@@ -250,13 +250,11 @@ ascp -A
 ```
 
 ```console
-IBM Aspera SDK version 1.1.1.52
-ascp version 4.4.2.572 7fd3699
+IBM TransferD version 1.1.9
+ascp version 4.4.8.2592 6a5e6bf
 Operating System: MacOSX
-FIPS 140-2-validated crypto ready to configure
-AES-NI Supported
-License max rate=(unlimited), account no.=1, license no.=57999
-Enabled settings: desktop_gui
+License max rate=(unlimited), account no.=1, license no.=56
+Enabled settings: stream and sync2
 ```
 
 ```shell
@@ -355,7 +353,8 @@ The transfer specification may contain transfer authorization using either (see 
 - SSH credentials
 - Authorization token
 
-Any client type and SDK can be used with any type of transfer authorization: they are independent.
+Any client type and SDK can be used with any type of transfer authorization: they are independent,
+except that HTTP Gateway and WebSocket sessions require token authorization (see [A1](#a1--ssh-authentication)).
 
 Scenarios contain a typical mix of client SDK and transfer authorization type.
 
@@ -460,14 +459,16 @@ ascli -N server --url=ssh://hsts1.example.com:33001 \
 
 ```console
 ...
-D, [2019-12-09T13:53:09.541005 #58353] DEBUG -- : mgr is a Asperalm::Fasp::Local
-D, [2019-12-09T13:53:09.541110 #58353] DEBUG -- : ts (json)=
+DEBG transfer agent is a Aspera::Agent::Direct
+DEBG ts(json)Hash=
 {
   "remote_host": "hsts1.example.com",
   "remote_user": "my_hsts1_xfer_user",
   "ssh_port": 33001,
-  "remote_password": "my_hsts1_xfer_pass",
+  "remote_password": "🔑",
   "direction": "receive",
+  "create_dir": true,
+  "resume_policy": "sparse_csum",
   "destination_root": ".",
   "paths": [
     {
@@ -475,11 +476,15 @@ D, [2019-12-09T13:53:09.541110 #58353] DEBUG -- : ts (json)=
     }
   ]
 }
-D, [2019-12-09T13:53:09.541866 #58353] DEBUG -- : ENV={"ASPERA_SCP_PASS"=>"my_hsts1_xfer_pass"}, ARGS=["-k", "2", "--mode", "recv", "--user", "my_hsts1_xfer_user", "--host", "hsts1.example.com", "-P", "33001", "--dest64", "--file-list=/Users/laurent/.aspera/mlia/filelists/c9e8015a-cf45-4deb-9bf4-0e28d96d0f90", "Lg=="]
+...
+DEBG ascp args: #<struct Aspera::ExecSpec exec=:ascp, env={"ASPERA_SCP_PASS" => "🔑", ...},
+  args=["-q", "-d", "--mode", "recv", "--host", "hsts1.example.com", "--user", "my_hsts1_xfer_user",
+  "-k", "2", "-P", "33001", "--dest64", "--file-list=...", "Lg=="]>
 ...
 ```
 
 Lots of debug information: look for the transfer spec in the logs.
+Passwords and secrets are masked in logs by default.
 
 > [!NOTE]
 > Internally `ascli` uses a "transfer agent" which can be the bare `ascp`, or Transfer Daemon, or other Aspera components.
@@ -694,15 +699,16 @@ iteration_token = 1
 transfers = []
 loop do
     response = GET /ops/transfers?iteration_token=#{iteration_token}
-    if response.iteration_token == iteration_token
+    next_token = iteration_token found in response header Link
+    if next_token == iteration_token
       # all current responses received: process, then wait
-      call process(transfers)
+      process(transfers)
       transfers = []
       sleep 5
     else
-      # additional transfers received: store them and try to get more, before processing all
-      transfers.concat(response.transfers)
-      iteration_token = response.iteration_token
+      # additional transfers received (body is an array): store them and try to get more, before processing all
+      transfers.concat(response.body)
+      iteration_token = next_token
     end
 end
 ```
@@ -813,8 +819,8 @@ Key characteristics:
   The client must first resolve paths to IDs via `GET /files/{id}/files` before transferring.
 - **Permissions are set in advance** on the HSTS using `POST /permissions`,
   associating user identifiers (and optional group identifiers) with specific file IDs and access levels.
-- The client generates a **JWT Bearer token** signed with a private key.
-  The HSTS validates it using the corresponding public key configured in advance.
+- The application generates a **JWT Bearer token** signed with its private key, and provides it to the client.
+  The HSTS validates it using the corresponding public key, configured in advance in the access key.
 - A single token can be generated **once** and reused for its entire validity period
   — the client does not need to call the Node API per transfer.
 
@@ -1308,6 +1314,9 @@ Sometimes referred to as Gen4.
 |-------------------------|---------|
 | `GET /files/{id}`       | Get metadata for a file or directory |
 | `GET /files/{id}/files` | List contents of a directory |
+| `POST /files/{id}/files` | Create a file or directory |
+| `PUT /files/{id}`       | Rename or modify a file or directory |
+| `DELETE /files/{id}`    | Delete a file or directory |
 
 This requires the use of an Access Key.
 
@@ -1329,11 +1338,11 @@ Sometimes referred to as Gen3.
 
 | Endpoint | Purpose |
 |----------|----------|
-| `GET /files/browse` | Browse a directory by path |
+| `POST /files/browse` | Browse a directory by path |
 | `POST /files/create` | Create a file or directory |
 | `POST /files/delete` | Delete a file or directory |
 | `POST /files/rename` | Rename a file or directory |
-| `GET /files/search` | Search for files by path |
+| `POST /files/search` | Search for files by path |
 
 **Limitations:**
 
@@ -1353,7 +1362,9 @@ The API uses standard HTTP verbs: `GET`, `POST`, `PUT`, `DELETE`, and others as 
 
 #### Request Format
 
-All request bodies must be encoded as **JSON**:
+All request bodies must be encoded as **JSON**.
+For example, the body of `POST /ops/transfers` is a transfer spec,
+typically generated by `/files/upload_setup` on the remote server (see S6):
 
 ```http
 POST /ops/transfers HTTP/1.1
@@ -1362,15 +1373,11 @@ Authorization: Basic <base64-credentials>
 Content-Type: application/json
 
 {
-  "transfer_requests": [
-    {
-      "transfer_request": {
-        "remote_host": "example.com",
-        "direction": "send",
-        "paths": [{ "source": "/local/file.txt" }]
-      }
-    }
-  ]
+  "direction": "send",
+  "remote_host": "hsts2.example.com",
+  "remote_user": "xfer",
+  "token": "ATM2_...",
+  "paths": [{ "source": "/local/file.txt" }]
 }
 ```
 
@@ -1380,8 +1387,11 @@ Content-Type: application/json
 |---|---|
 | `200 OK` | Request succeeded |
 | `201 Created` | Resource created successfully |
+| `202 Accepted` | Request accepted, processing is asynchronous |
 | `204 No Content` | Request succeeded, no response body |
 | `400 Bad Request` | Malformed request |
+| `401 Unauthorized` | Missing or invalid credentials |
+| `403 Forbidden` | Valid credentials, but access denied |
 | `404 Not Found` | Resource not found |
 | `409 Conflict` | State conflict (e.g., duplicate resource) |
 | `500 Internal Server Error` | Server-side failure |
@@ -1410,9 +1420,11 @@ When a request fails, the server returns a structured JSON error object:
 
 ```javascript
 // Example: defensive error checking in JavaScript
-const data = await response.json();
-if (!response.ok || data.error || Object.keys(data).length === 0) {
-  throw new Error(data?.error?.user_message ?? "Unknown error from Node API");
+// (the body is empty for 204 No Content)
+const text = await response.text();
+const data = text ? JSON.parse(text) : {};
+if (!response.ok || data.error || (response.status !== 204 && Object.keys(data).length === 0)) {
+  throw new Error(data?.error?.user_message ?? `Unknown error from Node API: HTTP ${response.status}`);
 }
 ```
 
@@ -1448,10 +1460,10 @@ POST /permissions
 Browse and manage files on the node.
 
 ```text
-GET  /files/{id}/files      → list directory contents
-POST /files/create          → create a file or directory
-POST /files/delete          → delete files
-POST /files/rename          → rename a file
+GET    /files/{id}/files    → list directory contents
+POST   /files/{id}/files    → create a file or directory
+PUT    /files/{id}          → rename a file or directory
+DELETE /files/{id}          → delete a file or directory
 ```
 
 #### Transfer Operations
@@ -1467,9 +1479,9 @@ GET  /ops/transfers/bandwidth → monitor bandwidth usage
 #### Monitoring & Reporting
 
 ```text
-GET /events       → node events (transfer start, file creation, permission changes)
-GET /usage        → transfer volume
-GET /space        → available disk space (HSTS only)
+GET  /events      → node events (transfer start, file creation, permission changes)
+GET  /usage       → transfer volume
+POST /space       → available disk space (HSTS only)
 ```
 
 [HSTS Doc]: https://www.ibm.com/docs/en/ahts

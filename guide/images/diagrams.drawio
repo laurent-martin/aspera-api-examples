@@ -519,6 +519,12 @@
             <mxPoint x="390" y="230" as="targetPoint" />
           </mxGeometry>
         </mxCell>
+        <mxCell id="yA6QEEQTp7t8dGMwPB5s-ssh-note" value="SSH credentials" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#ffff88;strokeColor=#36393d;size=9;" vertex="1" parent="yA6QEEQTp7t8dGMwPB5s-1">
+          <mxGeometry x="580" y="240" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="yA6QEEQTp7t8dGMwPB5s-ssh-link" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="yA6QEEQTp7t8dGMwPB5s-1" source="yA6QEEQTp7t8dGMwPB5s-ssh-note" target="yA6QEEQTp7t8dGMwPB5s-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="yA6QEEQTp7t8dGMwPB5s-18" value="Application" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9933FF;fontColor=#ffffff;strokeColor=none;fontSize=14;" vertex="1" parent="yA6QEEQTp7t8dGMwPB5s-1">
           <mxGeometry x="490" y="50" width="120" height="70" as="geometry" />
         </mxCell>
@@ -564,7 +570,7 @@
             <mxPoint x="560" y="530" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="I_B0zjSFkdD3WZJVNH9P-3" value="&lt;div&gt;Transfer&lt;/div&gt;Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F649E;fontColor=#ffffff;strokeColor=none;strokeWidth=2;fontSize=14;align=center;verticalAlign=middle;fontFamily=Helvetica;" vertex="1" parent="I_B0zjSFkdD3WZJVNH9P-1">
+        <mxCell id="I_B0zjSFkdD3WZJVNH9P-3" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;Transfer&lt;br&gt;Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F649E;fontColor=#ffffff;strokeColor=none;strokeWidth=2;fontSize=14;align=center;verticalAlign=middle;fontFamily=Helvetica;" vertex="1" parent="I_B0zjSFkdD3WZJVNH9P-1">
           <mxGeometry x="680" y="270" width="120" height="80" as="geometry" />
         </mxCell>
         <mxCell id="I_B0zjSFkdD3WZJVNH9P-4" value="Client&lt;div&gt;Storage&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#1f649e;fontColor=#ffffff;strokeColor=#0e3a5e;fontSize=14;" vertex="1" parent="I_B0zjSFkdD3WZJVNH9P-1">
@@ -678,12 +684,15 @@
             <mxPoint x="680" y="80" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="3m9H4o4fVq-zU68rNT3Q-0" value="REST call&lt;div&gt;(HTTPS)&lt;/div&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#1F649E;fontSize=12;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="I_B0zjSFkdD3WZJVNH9P-1" target="I_B0zjSFkdD3WZJVNH9P-3">
+        <mxCell id="3m9H4o4fVq-zU68rNT3Q-0" value="REST call&lt;div&gt;(HTTPS)&lt;/div&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#1F649E;fontSize=12;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="I_B0zjSFkdD3WZJVNH9P-1" target="I_B0zjSFkdD3WZJVNH9P-node-api">
           <mxGeometry relative="1" as="geometry">
             <mxPoint as="offset" />
             <mxPoint x="740" y="150" as="sourcePoint" />
             <mxPoint x="740" y="180" as="targetPoint" />
           </mxGeometry>
+        </mxCell>
+        <mxCell id="I_B0zjSFkdD3WZJVNH9P-node-api" value="&lt;font face=&quot;Tahoma&quot;&gt;Node&lt;/font&gt;&lt;div&gt;&lt;font face=&quot;Tahoma&quot;&gt;API&lt;/font&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#1F3A5F;" vertex="1" parent="I_B0zjSFkdD3WZJVNH9P-1">
+          <mxGeometry x="715" y="270" width="50" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
@@ -997,7 +1006,7 @@
         <mxCell id="tYkAnNW6Bt06lkfV1WOp-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="tYkAnNW6Bt06lkfV1WOp-1" source="tYkAnNW6Bt06lkfV1WOp-5" target="tYkAnNW6Bt06lkfV1WOp-6">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="tYkAnNW6Bt06lkfV1WOp-15" value="Load UI static&lt;div&gt;REST API&lt;/div&gt;&lt;div&gt;(HTTPS)&lt;/div&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#1F649E;fontSize=12;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="tYkAnNW6Bt06lkfV1WOp-1" source="tYkAnNW6Bt06lkfV1WOp-6" target="tYkAnNW6Bt06lkfV1WOp-7">
+        <mxCell id="tYkAnNW6Bt06lkfV1WOp-15" value="Load UI static&lt;div&gt;REST API: get bearer token&lt;/div&gt;&lt;div&gt;(HTTPS)&lt;/div&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#1F649E;fontSize=12;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="tYkAnNW6Bt06lkfV1WOp-1" source="tYkAnNW6Bt06lkfV1WOp-6" target="tYkAnNW6Bt06lkfV1WOp-7">
           <mxGeometry relative="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
