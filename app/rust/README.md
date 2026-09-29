@@ -2,19 +2,19 @@
 
 <https://www.rust-lang.org/tools/install>
 
-## macos
+## macOS
 
-Install `rust`
+Install `rust`, and `protoc` (required to compile the proto file):
 
-    ```bash
-    brew install rust
-    ```
+```bash
+brew install rust protobuf
+```
 
-Init:
+For reference, the project was initialized with:
 
-    ```bash
-    cargo init
-    ```
+```bash
+cargo init
+```
 
 ## gRPC
 

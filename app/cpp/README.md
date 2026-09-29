@@ -1,14 +1,15 @@
 # C++ Examples
 
-Tool chain uses `cmake` and `conan`, and uses C++17.
+The toolchain uses `cmake` and `conan`, with C++17.
 
 The following C++ libraries are used:
 
 - boost
 - yaml-cpp
 - magic_enum
+- openssl
 
-Nevertheless, those libraries are used only for the examples and are not required to use the Aspera Transfer SDK.
+These libraries are used only by the examples: they are not required to use the Aspera Transfer Daemon SDK.
 
 ## Requirements
 
@@ -23,7 +24,7 @@ redhat$ sudo dnf install gcc-c++
 
 ### `cmake`
 
-[web site](https://cmake.org/)
+[Website](https://cmake.org/)
 
 ```console
 redhat$ sudo dnf install cmake
@@ -31,7 +32,7 @@ redhat$ sudo dnf install cmake
 
 ### `conan`
 
-[web site](https://conan.io/)
+[Website](https://conan.io/)
 
 ```console
 redhat$ sudo dnf install -y python3-pip
@@ -40,7 +41,7 @@ linux$ sudo pip install conan
 
 ### `protoc` and `grpc_cpp_plugin`
 
-[GRPC C++ Quickstart](https://grpc.io/docs/languages/cpp/quickstart/).
+[gRPC C++ Quickstart](https://grpc.io/docs/languages/cpp/quickstart/).
 
 Linux install:
 
@@ -57,14 +58,14 @@ make
 
 ## Known issues
 
-on macos:
+On macOS:
 
 ```text
 ld: archive member '/' not a mach-o file in ...
 ```
 
-This is because GNU ar is used from `/opt/homebrew/opt/binutils/bin/ar`.
-To fix this, ensure to use the system ar: `/usr/bin/ar`.
+This happens when GNU `ar` is used from `/opt/homebrew/opt/binutils/bin/ar`.
+To fix this, make sure that the system `ar` is used: `/usr/bin/ar`.
 
 ```bash
 export PATH=/usr/bin:$PATH

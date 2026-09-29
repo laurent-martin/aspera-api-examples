@@ -5,19 +5,19 @@
 Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 
 - Aspera Transfer daemon: transfer files in an application
-- Aspera Applications APIs: interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
+- Aspera Applications APIs: interact with Aspera applications (Faspex, AoC, Node API, COS, etc.)
 - Aspera Web SDK: transfer files in a web browser
 
 ![Component APIs](doc/api_components.png)
 
-Various programming languages are proposed.
+Samples are provided in several programming languages.
 
 > [!NOTE]
-> This repo uses Aspera `transferd` v1.1.5+
+> This repository uses Aspera `transferd` v1.1.5+.
 
 ## Other resources
 
-[IBM Aspera API documentation](https://developer.ibm.com/apis/catalog/?search=aspera) (select 24 items per page on bottom).
+[IBM Aspera API documentation](https://developer.ibm.com/apis/catalog/?search=aspera) (select 24 items per page at the bottom).
 
 [Aspera Transfer Daemon documentation](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22)
  contains code samples.
@@ -25,9 +25,9 @@ Various programming languages are proposed.
 [Video about Transfer Daemon SDK](https://higherlogicstream.s3.amazonaws.com/IMWUC/d5b91301-6aa1-5741-e083-2a9121d9d8a7_file.mp4)
 
 The [IBM Aspera Web SDK GitHub site](https://github.com/IBM/aspera-sdk-js)
-contains examples about using the Aspera Connect SDK.
+contains examples of using the Aspera web SDK.
 
-[Open API Ref for the repo](https://laurent-martin.github.io/aspera-api-examples/)
+[OpenAPI reference for this repository](https://laurent-martin.github.io/aspera-api-examples/)
 
 ## Introduction
 
@@ -35,35 +35,35 @@ IBM Aspera provides two types of APIs:
 
 - Client APIs:
 
-  SDKs include **libraries** to be used in applications to transfer files
+  SDKs include **libraries** to be used in applications to transfer files:
 
-  - **Aspera Transfer Daemon SDK**: (gRPC with multi-language) transfer files in an application
-  - The 3 existing web SDKs are replaced with a single one: **Aspera web SDK**
-    - **Aspera Connect SDK**: (web js) transfer files in a web browser
+  - **Aspera Transfer Daemon SDK**: (gRPC, multi-language) transfer files in an application
+  - **Aspera web SDK**: a single SDK that replaces the three former web SDKs:
+    - **Aspera Connect SDK**: (web js) transfer files in a web browser using IBM Aspera Connect
     - **Aspera HTTP Gateway SDK**: (web js) transfer files in a web browser using HTTPS
-    - **Aspera for Desktop SDK**: (web js) transfer files in a web browser
+    - **Aspera for Desktop SDK**: (web js) transfer files in a web browser using IBM Aspera for Desktop
 
 - Server APIs:
 
-  **REST** APIs (with OpenAPI spec) interact with Aspera applications (Faspex, AoC, Node API, COS, etc...)
+  **REST** APIs (with OpenAPI spec) interact with Aspera applications (Faspex, AoC, Node API, COS, etc.)
 
-Depending on the use case, one might use one or (often) several of those APIs (front-end, back-end).
+Depending on the use case, one might use one or (often) several of these APIs (front-end, back-end).
 
 ## Repository structure
 
 This repository is structured like this:
 
-- `app` : examples in various languages using the **Aspera Transfer Daemon** and **Aspera Applications REST APIs**
+- `app`: examples in various languages using the **Aspera Transfer Daemon** and **Aspera Applications REST APIs**
 
-- `web` : an example that shows the use of web SDK using typescript.
+- `web`: an example that uses the Aspera web SDK with TypeScript.
 
-In `app`, you'll find one folder per programming language and, in each of them :
+In `app`, you'll find one folder per programming language and, in each of them:
 
-- `README.md` : specific for the language
-- `Makefile` : a `Makefile` to run samples
-- `src` : source code
-- `src/examples` : sample programs
-- `src/utils` : helper classes, especially using `transferd`
+- `README.md`: specific to the language
+- `Makefile`: runs the samples
+- `src`: source code
+- `src/examples`: sample programs
+- `src/utils`: helper classes, in particular for `transferd`
 
 ### Available samples
 
@@ -84,72 +84,76 @@ Sample name in `code`: run by `make` (listed in `TEST_CASES` of the `Makefile` o
 Sample name in *italics*: present in `src/examples`, but not run by `make`.
 
 Sample programs use addresses and credentials from a common YAML configuration file.
-Once the configuration file is created, see below on how to run them.
+Once the configuration file is created, see below for how to run them.
 
 **Unix-like systems** (Linux, macOS...): a `Makefile` is provided to run the samples.
 
-**Windows**: Refer to [Quick start (Windows)](#quick-start-windows) below.
-`make` might not be available.
-Use the `Makefile` as a reference to execute the commands manually.
+**Windows**: refer to [Quick start (Windows)](#quick-start-windows) below.
+`make` might not be available:
+use the `Makefile` as a reference to execute the commands manually.
 
 ## Quick start (Unix-like systems)
 
 See [Running sample programs](#running-sample-programs).
 
-On the first execution of `make`: the Transfer Daemon SDK will be automatically downloaded.
+On the first execution of `make`, the Transfer Daemon SDK is automatically downloaded.
 
 To download the SDK only, execute: `make sdk`.
 
 ## Quick start (Windows)
 
-1. Refer to [Configuration File](#configuration-file):
-   Copy the file `config/config.tmpl` into `private/config.yaml` and fill values.
+1. Refer to [Configuration file](#configuration-file):
+   copy the file `config/config.tmpl` into `private/config.yaml` and fill in the values.
 
-    ```dos
-    md private
-    copy config\config.tmpl private\config.yaml
-    ```
+   ```dos
+   md private
+   copy config\config.tmpl private\config.yaml
+   ```
 
-   Set the parameter `misc.platform` to `windows-x86_64`
+   Set the parameter `misc.platform` to `windows-x86_64`.
 
-   Edit required parameters in `private/config.yaml`, for example Faspex connection information.
+   Edit the required parameters in `private/config.yaml`, for example Faspex connection information.
 
-> [!NOTE]
-> Yes, you can also drag and drop, and click, and copy/paste, and edit the file with Notepad, etc...
+   (Yes, you can also drag and drop, copy/paste, and edit the file with Notepad, etc.)
 
-1. Prepare the SDK folder
+2. Prepare the SDK folder:
 
-    ```dos
-    md tmp
-    ```
+   ```dos
+   md tmp
+   ```
 
-2. Download the
+3. Download the
    [Aspera Transfer Daemon SDK](https://developer.ibm.com/apis/catalog/aspera--aspera-transfer-sdk/downloads/downloads.json)
-   and extract its contents to the folder identified by `sdk_dir` in `config/paths.yaml` : `<main folder>/tmp/transfer_sdk`
+   and extract its contents to the folder identified by `sdk_dir` in `config/paths.yaml`: `<main folder>/tmp/transfer_sdk`
 
-> [!NOTE]
-> Make sure that files identified in `config/paths.yaml` are in the extracted folder as expected.
-> For example, the following file must exist: `<main folder>/tmp/transfer_sdk/sbin/transferd`
+   Make sure that the files identified in `config/paths.yaml` are in the extracted folder as expected.
+   For example, the following file must exist: `<main folder>/tmp/transfer_sdk/sbin/transferd`
 
-1. Run the samples: see [Running sample programs](#running-sample-programs)
+4. Run the samples: see [Running sample programs](#running-sample-programs)
 
 ## Running sample programs
 
 Create a configuration file as specified in [Configuration file](#configuration-file).
 Not all values are required, only those needed for the examples you want to run.
 
-For example to execute an individual sample, use `make .tested/<sample name here>`:
+For example, to execute an individual sample, use `make .tested/<sample name here>`:
 
 ```console
 $ cd app/python
 $ make list
-server aoc faspex faspex5 node shares node_v2
+Test individual case with:
+make ./.tested/server
+make ./.tested/aoc
+make ./.tested/faspex5
+make ./.tested/node
+make ./.tested/shares
+make ./.tested/node_v2
 $ make .tested/faspex5
 ```
 
-Running examples requires the Aspera Transfer daemon `transferd` to be downloaded
+Running examples requires the Aspera Transfer Daemon `transferd` to be downloaded,
 and some tools to compile the proto file.
-See [Transfer Daemon SDK](#transfer-daemon).
+See [Transfer Daemon](#transfer-daemon).
 
 For details, refer to the recipe in the `Makefile` of each language.
 
@@ -157,7 +161,8 @@ For details, refer to the recipe in the `Makefile` of each language.
 
 A template configuration file is provided: [`config/config.tmpl`](config/config.tmpl).
 
-Copy the file `config/config.tmpl` into `private/config.yaml` and fill with your own server addresses, credentials and parameters.
+Copy the file `config/config.tmpl` into `private/config.yaml`,
+and fill it in with your own server addresses, credentials and parameters.
 
 ```bash
 cp config/config.tmpl private/config.yaml
@@ -188,13 +193,13 @@ The parameter `trsdk.url` is the address of the Transfer Daemon, for example `gr
 If the port is zero (`0`), as in the template, the daemon chooses a free port, and the samples read it from the daemon log:
 this requires `trsdk.level` set to `info` or a more verbose level.
 
-Section `httpgw` is used by the `web` example only.
+Sections `web` and `httpgw` are used by the `web` example only.
 
 Other sections are used by the various examples.
 For example, if you want to test only the COS transfer using the Transfer Daemon,
 you can fill the `cos` section only and leave other sections empty.
 
-Example (with random credentials), the reference being the template [`config/config.tmpl`](config/config.tmpl):
+Example (with fake credentials), the reference being the template [`config/config.tmpl`](config/config.tmpl):
 
 ```yaml
 misc:
@@ -253,7 +258,7 @@ cos:
   auth: https://iam.cloud.ibm.com/identity/token
 coscreds:
   bucket: mybucket
-  service_credential_file: ./service_creds.json
+  service_credential_file: /path/to/service_creds.json
   region: eu-de
 aoc:
   org: acme
@@ -274,7 +279,7 @@ local:
 > Certificates are validated with the CA certificates of the system.
 > For C++, the environment variable `SSL_CERT_FILE` can specify another file of CA certificates.
 
-Some relative paths are defined in [`config/paths.yaml`](config/paths.yaml) (keep those values intact).
+Some relative paths are defined in [`config/paths.yaml`](config/paths.yaml) (do not change these values).
 
 The following log levels can be set:
 
@@ -282,20 +287,20 @@ The following log levels can be set:
 - `trsdk.level`: `transferd` log level: `trace` `debug` `info` `warning` `error` `fatal` `panic`
 - `trsdk.ascp_level`: `ascp` log level: `trace` `debug` `info`
 
-Sample application generate a file `transferd.conf` provided to the transfer daemon,
-log level there are taken from the general YAML config file.
+The samples generate the configuration file `transferd.conf` of the Transfer Daemon:
+its log levels are taken from the YAML configuration file.
 
 ## Transfer Daemon
 
 The Transfer Daemon is a **gRPC** service that allows you to transfer files in an application.
 It is a client API that can be used in various languages.
 
-The file `transfer.proto` describes in the remote procedure call interface provided by the daemon `transferd`.
+The file `transferd.proto` describes the remote procedure call interface provided by the daemon `transferd`.
 
 ```text
- +----------------+
- + transfer.proto +
- +----------------+
+ +-----------------+
+ + transferd.proto +
+ +-----------------+
          |
      [protoc]
          |
@@ -319,40 +324,37 @@ The file `transfer.proto` describes in the remote procedure call interface provi
 
 ### Generated client source files
 
-Client applications must use the client source files generated from the `transfer.proto` file.
+Client applications must use the client source files generated from the `transferd.proto` file.
 
 Generated (stub) code is provided for convenience in the Transfer Daemon SDK for several languages.
-It can be used directly, or the developer may choose to generate them from the `transfer.proto` file.
-For production and future compatibility it is recommended to generate the stub code from the `transfer.proto` file.
-If you generate stub code yourself, then you can benefit from support to latest platforms and versions.
+It can be used directly, or the developer may choose to generate it from the `transferd.proto` file.
+For production and future compatibility, it is recommended to generate the stub code from the `transferd.proto` file.
+If you generate the stub code yourself, you benefit from support for the latest platforms and versions.
 
-Most samples here generate the stub code from the `transfer.proto` file.
+Most samples here generate the stub code from the `transferd.proto` file.
 
-Refer to [GRPC web site](https://grpc.io/) for instructions on how to generate the code.
+Refer to the [gRPC website](https://grpc.io/) for instructions on how to generate the code.
 
 ### Helper classes
 
 Sample programs use helper classes located in package `utils`:
 
-- `Configuration` reads configuration parameters from `config.yaml` so that it is easier to run any samples.
-- `TransferClient` creates a configuration file and starting the Transfer daemon: `transferd`
-- `Rest` for simple API calls on Rest APIs.
+- `Configuration` reads configuration parameters from `config.yaml`, so that it is easier to run any sample.
+- `TransferClient` creates the configuration file of the Transfer Daemon (`transferd`), starts it and connects to it.
+- `Rest` makes simple calls to REST APIs.
 
 ### Runtime files
 
-The Transfer Daemon requires the following runtime files:
+The Transfer Daemon SDK contains the following runtime files:
 
-- `transferd` : executable that provides the **gRPC** service
-- `ascp` : executable that actually transfers the files
-- `ascp4` : another version of `ascp`
-- `async` : executable for `async` operations
-- `libafwsfeed` : a library for `ascp` for web sockets
-- `aspera-license` : the license file for `ascp` (free use)
+- `sbin/transferd`: executable that provides the **gRPC** service
+- `bin/ascp`: executable that actually transfers the files
+- `bin/async`: executable for `async` operations
+- `lib/libafwsfeed`: a library for `ascp` for web sockets
+- `etc/aspera-license`: the license file for `ascp` (free use)
+- `etc/aspera.conf`: the configuration file for `ascp` (optional)
 
-Optional files:
-
-- `aspera.conf` : the configuration file for `ascp`
-- `product-info.mf` : XML file with information on SDK version
+`product-info.mf` is an XML file with information on the SDK version, created by [`doc/get_sdk.sh`](doc/get_sdk.sh).
 
 ### `aspera.conf`
 
@@ -392,17 +394,17 @@ or to create a static configuration file and start it using another method (for 
 
 Examples provided here start the daemon using the `TransferClient` class.
 
-When `transferd` starts, if no configuration file is provided with option `--config`,
-then it expects to find `ascp`, `ascp4`, `async`, `libafwsfeed`, `aspera-license` in specific folders.
-In order to place all file in the same folder, then the configuration file must be provided and folders must be set.
+When `transferd` starts, it reads its configuration file, provided with option `--config`.
+When parameter `fasp_runtime.use_embedded` is `true`, `transferd` uses the runtime files (`ascp`, etc.)
+from the folders of the extracted SDK.
 
-The Makefile provided in the samples downloads the SDK and extracts it in a single folder,
-then the examples generate the configuration file accordingly.
+The `Makefile` provided with the samples downloads the SDK and extracts it in a single folder,
+then the samples generate the configuration file `transferd.conf` accordingly.
 
 ## HSTS Node API credentials
 
 Refer to the [HSTS documentation](https://www.ibm.com/docs/en/ahts/4.4?topic=linux-set-up-hsts-node-api)
-to create a user and get the credentials.
+to create a user and get its credentials.
 
 Typically, a Node API user is created like this:
 
@@ -417,8 +419,8 @@ Typically, a Node API user is created like this:
 
 Shares provides the following APIs:
 
-- Transfer related APIs: It is identical to the **Node API**. The root of Shares API for transfers is `<shares url>/node_api`.
-- Admin APIs (manage users , etc...)
+- Transfer-related APIs: identical to the **Node API**. The root of the Shares API for transfers is `<shares url>/node_api`.
+- Admin APIs (manage users, etc.)
 
 The same examples as for **Node API** can be used for **Shares**.
 
@@ -426,21 +428,21 @@ The same examples as for **Node API** can be used for **Shares**.
 
 For Aspera on Cloud, several configuration items are required:
 
-- `org` : The AoC Organization, i.e. the name before `.ibmaspera.com` in the URL
-- `user_email` : The user's IBMid
-- `private_key` : The path to the PEM file containing the user's private key.
-  The user configured the associated public key in his AoC User's profile.
-- `client_id` : (see below) The client app identifier
-- `client_secret` : (see below) The client app secret
+- `org`: the AoC organization, i.e. the name before `.ibmaspera.com` in the URL
+- `user_email`: the user's IBMid
+- `private_key`: the path to the PEM file containing the user's private key.
+  The user configures the associated public key in their AoC user profile.
+- `client_id`: (see below) the client app identifier
+- `client_secret`: (see below) the client app secret
 
 `client_id` and `client_secret` can be:
 
 - either a specific application credential created in the admin interface of AoC (Integrations)
-- or one of the two global client id : the one of aspera connect/drive or the one of the legacy `aspera` CLI :
+- or one of the global client IDs: the one of Aspera Connect (Drive), or the one of the legacy `aspera` CLI:
   - `aspera.global-cli-client`
   - `frpmsRsG4mjZ0PlxCgdJlvONqBg4Vlpz_IX7gXmBMAfsgMLy2FO6CXLodKfKAuhqnCqSptLbe_wdmnm9JRuEPO-PpFqpq_Kb`
 
-For example to extract the ones of Aspera Connect (Drive): `strings asperaconnect|grep -B1 '^aspera\.drive$'`
+For example, to extract the ones of Aspera Connect (Drive): `strings asperaconnect|grep -B1 '^aspera\.drive$'`
 
 ## COS service credentials
 
@@ -448,14 +450,15 @@ To test transfers to COS, you will need:
 
 - bucket name
 - storage endpoint
-- api key
-- resource instance id (crn)
+- API key
+- resource instance ID (CRN)
 - authentication endpoint (optional)
 
 This is the default in the example.
 
-Or it is also possible to use:
+It is also possible to use:
 
 - bucket name
 - region
-- service credentials: create the file `private/service_creds.json`, follow: [get service credentials](https://www.rubydoc.info/gems/aspera-cli#using-service-credential-file)
+- service credentials: a JSON file whose path is set in `coscreds.service_credential_file`,
+  refer to [get service credentials](https://github.com/IBM/aspera-cli/blob/main/docs/README.md#using-service-credential-file)

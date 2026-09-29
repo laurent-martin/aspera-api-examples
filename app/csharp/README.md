@@ -1,5 +1,4 @@
-
-# Samples for Csharp
+# Samples for C# (.NET)
 
 ## Get started
 
@@ -9,21 +8,21 @@ To run a sample manually (samples are `server`, `faspex5` and `aoc`):
 dotnet run -p:Proto_File=/path/to/transferd.proto server 'faux:///test1?1k'
 ```
 
-Execute: `make` to run all tests, or to test a single sample: `make .tested/server`
+Execute `make` to run all samples, or `make .tested/server` to run a single sample.
 
 > [!NOTE]
 > The `proto` file is specified with tag `<Protobuf>`
 > (from package [Grpc.Tools](https://www.nuget.org/packages/Grpc.Tools/)) in the `.csproj` file.
 >
-> Alternatively, one could use pre-generated `.cs` files provided in SDK:
+> Alternatively, one could use the pre-generated `.cs` files provided in the SDK:
 > `tmp/transfer_sdk/api/csharp/TransferService` or use `protoc` to compile the proto file to source stubs.
 
 ## Environment
 
 The project targets .NET 10 (`net10.0`).
 
-Install [dotnet CLI](https://learn.microsoft.com/en-us/nuget/reference/cli-reference/cli-ref-install)
-following [Microsoft manual](https://learn.microsoft.com/en-us/dotnet/core/install/).
+Install the .NET SDK, which includes the `dotnet` CLI,
+following the [Microsoft manual](https://learn.microsoft.com/en-us/dotnet/core/install/).
 
 For example, on macOS, add the following to `~/.profile` or equivalent:
 
@@ -33,9 +32,7 @@ export PATH="$PATH:/usr/local/share/dotnet"
 
 ## Project creation
 
-For reference:
-
-Project initialized with:
+For reference, the project was initialized with:
 
 ```bash
 dotnet new console
