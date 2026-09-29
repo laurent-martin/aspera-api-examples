@@ -32,7 +32,7 @@ await f5Api.setDefaultScope();
 // Create a new package
 logger.info('Creating package');
 const packageInfo = await f5Api.create('packages', {
-    title: "Node.js package example",
+    title: "Sample package",
     recipients: [{ name: config.getParam('faspex5', 'username') }]  // Send to myself (for test)
 });
 

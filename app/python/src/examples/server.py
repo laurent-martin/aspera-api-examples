@@ -56,7 +56,6 @@ try:
         'tags': {'mysample_tag': 'hello'},
     }
     transfer_client.start_transfer_and_wait(t_spec_upload)
-    # check file is uploaded by connecting to: http://demo.asperasoft.com/aspera/user/ with same creds
 
     # Example 3: upload: single file upload to non-existing folder
     # if there is only one source file and destination does not exist, then 'FASP' assumes it is destination filename

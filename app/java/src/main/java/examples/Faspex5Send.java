@@ -18,6 +18,8 @@ public class Faspex5Send {
     private static final Logger LOGGER = Logger.getLogger(Faspex5Send.class.getName());
     private static final String F5_API_PATH_V5 = "/api/v5";
     private static final String F5_API_PATH_TOKEN = "/auth/token";
+    // max wait time for server-to-server transfer
+    private static final int REMOTE_TRANSFER_TIMEOUT_SEC = 600;
 
     /**
      * Execute the sample.
@@ -52,7 +54,7 @@ public class Faspex5Send {
             // Faspex REST API: Create package (to myself) and get package information
             LOGGER.log(Level.INFO, "Creating package");
             final JSONObject package_info = (JSONObject) f5API.create("packages", new JSONObject()//
-                    .put("title", "test title")//
+                    .put("title", "Sample package")//
                     .put("recipients", new JSONArray()//
                             .put(new JSONObject()//
                                     .put("name", config.getParamStr("faspex5", "username")))));
@@ -76,7 +78,7 @@ public class Faspex5Send {
             // Faspex REST API: Create package for remote transfer
             LOGGER.log(Level.INFO, "Creating package");
             final JSONObject remotePackageInfo = (JSONObject) f5API.create("packages",
-                    new JSONObject().put("title", "Java remote files").put("recipients",
+                    new JSONObject().put("title", "Sample package (remote files)").put("recipients",
                             new JSONArray().put(new JSONObject().put("name",
                                     config.getParamStr("faspex5", "username")))));
 
@@ -104,6 +106,7 @@ public class Faspex5Send {
             f5API.create("packages/" + remotePackageInfo.getString("id") + "/remote_transfer",
                     remoteUploadRequest);
             // Poll for remote transfer completion
+            final long deadline = System.nanoTime() + REMOTE_TRANSFER_TIMEOUT_SEC * 1_000_000_000L;
             while (true) {
                 final JSONObject uploadDetails = (JSONObject) f5API
                         .read("packages/" + remotePackageInfo.getString("id") + "/upload_details");
@@ -113,6 +116,10 @@ public class Faspex5Send {
                     break;
                 } else if ("failed".equals(status)) {
                     throw new Exception("Remote transfer failed");
+                }
+                if (System.nanoTime() > deadline) {
+                    throw new Exception("Remote transfer not completed after "
+                            + REMOTE_TRANSFER_TIMEOUT_SEC + " s");
                 }
                 Thread.sleep(1000);
             }

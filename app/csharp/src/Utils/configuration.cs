@@ -69,18 +69,7 @@ public class Configuration
     public Configuration(string[] args)
     {
         _fileList = args;
-        // get project root folder
-        string? topFolder = Environment.GetEnvironmentVariable("DIR_TOP");
-        if (string.IsNullOrEmpty(topFolder))
-        {
-            throw new Exception("Environment variable DIR_TOP is not set");
-        }
-        mTopFolder = topFolder;
-        if (!Directory.Exists(mTopFolder))
-        {
-            throw new Exception($"Folder not found: {mTopFolder}");
-        }
-
+        mTopFolder = FindTopFolder();
         // read project's relative paths config file
         using (var reader = new StreamReader(Path.Combine(mTopFolder, PATHS_FILE_REL)))
         {
@@ -156,6 +145,32 @@ public class Configuration
             paths.Add(new JObject { { "source", f } });
         }
     }
+    /// <summary>
+    /// Find the main folder of the repository: from environment variable <c>DIR_TOP</c> if set,
+    /// else the first folder containing <c>config/paths.yaml</c>, from the current folder up.
+    /// </summary>
+    /// <returns>absolute path of the main folder</returns>
+    private static string FindTopFolder()
+    {
+        string? dirTop = Environment.GetEnvironmentVariable(DIR_TOP_VAR);
+        if (!string.IsNullOrEmpty(dirTop))
+        {
+            var topFolder = Path.GetFullPath(dirTop);
+            if (!Directory.Exists(topFolder))
+            {
+                throw new Exception($"Folder not found: {topFolder}");
+            }
+            return topFolder;
+        }
+        for (var folder = new DirectoryInfo(Directory.GetCurrentDirectory()); folder != null; folder = folder.Parent)
+        {
+            if (File.Exists(Path.Combine(folder.FullName, PATHS_FILE_REL)))
+            {
+                return folder.FullName;
+            }
+        }
+        throw new Exception($"Main folder not found: run from inside the repository, or set {DIR_TOP_VAR}");
+    }
 
     private string[] _fileList;
     // general test configuration parameters
@@ -165,4 +180,6 @@ public class Configuration
     private string mTopFolder;
     // config file with sub-paths in project's root folder
     private const string PATHS_FILE_REL = "config/paths.yaml";
+    // environment variable to set the project's root folder
+    private const string DIR_TOP_VAR = "DIR_TOP";
 }

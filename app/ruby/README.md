@@ -11,7 +11,8 @@ this downloads the SDK, installs the dependencies, and generates the gRPC stub c
 Then, in this folder:
 
 ```bash
-DIR_TOP=$PWD/../.. bundle exec src/examples/faspex5.rb /path/to/file
+bundle exec src/examples/faspex5.rb /path/to/file
 ```
 
-`DIR_TOP` is the main folder of the repository. Arguments are the files to transfer.
+Arguments are the files to transfer.
+The main folder of the repository is found from the current folder: to use another one, set the environment variable `DIR_TOP`.

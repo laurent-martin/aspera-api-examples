@@ -38,7 +38,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .create(
             "packages",
             &json!({
-                "title": "test title",
+                "title": "Sample package",
                 "recipients": [{
                     "name": config.param_str("faspex5", "username")?
                 }]

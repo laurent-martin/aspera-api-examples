@@ -9,7 +9,7 @@ import (
 const (
 	F5APIPathV5      = "/api/v5"
 	F5APIPathToken   = "/auth/token"
-	packageName      = "sample package"
+	packageName      = "Sample package"
 	transferSessions = 1
 )
 

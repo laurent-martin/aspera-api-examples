@@ -14,11 +14,12 @@ this downloads the SDK, installs the dependencies, and generates the gRPC stub c
 Then, in this folder:
 
 ```bash
-java -cp build/libs/java_samples-*-all.jar -Ddir_top=$PWD/../.. \
-  -Djava.util.logging.config.file=logging.properties examples.Faspex5Send /path/to/file
+java -cp build/libs/java_samples-*-all.jar -Djava.util.logging.config.file=logging.properties \
+  examples.Faspex5Send /path/to/file
 ```
 
-The system property `dir_top` is the main folder of the repository. Arguments are the files to transfer.
+Arguments are the files to transfer.
+The main folder of the repository is found from the current folder: to use another one, set the system property `dir_top` (`-Ddir_top=...`).
 
 ## Using `maven` to build the project
 

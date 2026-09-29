@@ -4,6 +4,7 @@ require 'yaml'
 require 'json'
 require 'logger'
 require 'tmpdir'
+require 'pathname'
 require 'base64'
 require 'uri'
 require 'net/http'
@@ -77,12 +78,7 @@ module Utils
       @file_list = ARGV.dup
       raise ArgumentError, 'Missing arguments: files to transfer' if @file_list.empty?
 
-      @top_folder = ENV[DIR_TOP_VAR]
-      raise "Environment variable #{DIR_TOP_VAR} is not set" if @top_folder.nil?
-
-      @top_folder = File.expand_path(@top_folder)
-      raise "Folder not found: #{@top_folder}" unless File.directory?(@top_folder)
-
+      @top_folder = find_top_folder
       @log_folder = Dir.tmpdir
 
       # read project's relative paths config file
@@ -165,6 +161,25 @@ module Utils
         arr << src
       end
       t_spec
+    end
+
+    private
+
+    # Find the main folder of the repository: from environment variable `DIR_TOP` if set,
+    # else the first folder containing `config/paths.yaml`, from the current folder up.
+    # @return [String] absolute path of the main folder
+    def find_top_folder
+      top_folder = ENV.fetch(DIR_TOP_VAR, '')
+      unless top_folder.empty?
+        top_folder = File.expand_path(top_folder)
+        raise "Folder not found: #{top_folder}" unless File.directory?(top_folder)
+
+        return top_folder
+      end
+      folder = Pathname.pwd.ascend.find { |candidate| candidate.join(PATHS_FILE_REL).file? }
+      raise "Main folder not found: run from inside the repository, or set #{DIR_TOP_VAR}" if folder.nil?
+
+      folder.to_s
     end
   end
 end

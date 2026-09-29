@@ -123,7 +123,7 @@ try:
     # create a new package with Faspex 5 API (this allocates a reception folder on package storage)
     log.info('Creating package')
     package_info = f5_api.create('packages', {
-        'title': "Python local files ",
+        'title': 'Sample package',
         'recipients': recipients
     })
 
@@ -156,7 +156,7 @@ try:
     # create a new package with Faspex 5 API (this allocates a reception folder on package storage)
     log.info('Creating package')
     package_info = f5_api.create('packages', {
-        'title': "Python remote files ",
+        'title': 'Sample package (remote files)',
         'recipients': recipients
     })
 

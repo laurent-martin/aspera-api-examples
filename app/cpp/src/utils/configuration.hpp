@@ -33,6 +33,7 @@ namespace base64 = boost::beast::detail::base64;
 
 namespace utils {
 inline constexpr const char* PATHS_FILE_REL = "config/paths.yaml";
+inline constexpr const char* DIR_TOP_VAR = "DIR_TOP";
 // logger
 inline boost::log::sources::severity_logger<boost::log::trivial::severity_level> global_logger;
 #define LOGGER(level) BOOST_LOG_SEV(utils::global_logger, boost::log::trivial::level)
@@ -74,7 +75,7 @@ class Configuration {
         const char* const argv[])
         : _init_log(init_log()),
           _file_list(argv + 1, argv + argc),
-          _top_folder_path(init_top_folder_path()),
+          _top_folder_path(find_top_folder()),
           _log_folder_path(std::filesystem::temp_directory_path()),
           _paths(load_yaml(_top_folder_path / PATHS_FILE_REL)),
           _config(load_yaml(get_path("main_config"))) {
@@ -221,18 +222,26 @@ class Configuration {
             });
         return true;
     }
-    /// @brief Get the folder of the project, from environment variable `DIR_TOP`.
-    /// @return folder of the project
-    static inline std::filesystem::path init_top_folder_path() {
-        const char* dir_top = std::getenv("DIR_TOP");
-        if (dir_top == nullptr) {
-            throw std::runtime_error("Environment variable DIR_TOP is not set");
+    /// @brief Find the main folder of the repository: from environment variable `DIR_TOP` if set,
+    /// else the first folder containing `config/paths.yaml`, from the current folder up.
+    /// @return absolute path of the main folder
+    static inline std::filesystem::path find_top_folder() {
+        const char* dir_top = std::getenv(DIR_TOP_VAR);
+        if (dir_top != nullptr && *dir_top != '\0') {
+            const std::filesystem::path top_path = std::filesystem::absolute(dir_top);
+            if (!std::filesystem::is_directory(top_path)) {
+                throw std::runtime_error("Folder not found: " + top_path.string());
+            }
+            return top_path;
         }
-        std::filesystem::path top_path = dir_top;
-        if (!std::filesystem::is_directory(top_path)) {
-            throw std::runtime_error("Folder not found: " + top_path.string());
+        for (std::filesystem::path folder = std::filesystem::current_path();; folder = folder.parent_path()) {
+            if (std::filesystem::is_regular_file(folder / PATHS_FILE_REL)) {
+                return folder;
+            }
+            if (folder == folder.parent_path()) {
+                throw std::runtime_error(std::string("Main folder not found: run from inside the repository, or set ") + DIR_TOP_VAR);
+            }
         }
-        return top_path;
     }
 };
 

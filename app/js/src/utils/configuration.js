@@ -60,12 +60,7 @@ export class Configuration {
 	 * Read the configuration file, and set up logging.
 	 */
 	constructor() {
-		const dir = process.env[DIR_TOP_VAR];
-		if (!dir) throw new Error(`Environment variable ${DIR_TOP_VAR} is not set`);
-		this.topFolder = path.resolve(dir);
-		if (!fs.existsSync(this.topFolder) || !fs.lstatSync(this.topFolder).isDirectory()) {
-			throw new Error(`Folder not found: ${this.topFolder}`);
-		}
+		this.topFolder = Configuration.findTopFolder();
 		this.logFolder = os.tmpdir();
 		this.tmpFolder = os.tmpdir();
 		this.paths = Configuration.loadYAML(path.join(this.topFolder, PATHS_FILE_REL));
@@ -132,6 +127,29 @@ export class Configuration {
 			}
 			paths.push(source);
 		});
+	}
+
+	/**
+	 * Find the main folder of the repository: from environment variable `DIR_TOP` if set,
+	 * else the first folder containing `config/paths.yaml`, from the current folder up.
+	 * @returns {string} absolute path of the main folder
+	 */
+	static findTopFolder() {
+		const dir = process.env[DIR_TOP_VAR];
+		if (dir) {
+			const topFolder = path.resolve(dir);
+			if (!fs.existsSync(topFolder) || !fs.lstatSync(topFolder).isDirectory()) {
+				throw new Error(`Folder not found: ${topFolder}`);
+			}
+			return topFolder;
+		}
+		let folder = process.cwd();
+		while (!fs.existsSync(path.join(folder, PATHS_FILE_REL))) {
+			const parent = path.dirname(folder);
+			if (parent === folder) throw new Error(`Main folder not found: run from inside the repository, or set ${DIR_TOP_VAR}`);
+			folder = parent;
+		}
+		return folder;
 	}
 
 	/**

@@ -68,11 +68,7 @@ impl Configuration {
                 writeln!(buf, "{:<8} {}", record.level(), record.args())
             })
             .init();
-        let dir_top = env::var(DIR_TOP_VAR).map_err(|_| format!("Environment variable {DIR_TOP_VAR} is not set"))?;
-        let top_folder_path = std::path::absolute(&dir_top)?;
-        if !top_folder_path.is_dir() {
-            return Err(format!("Folder not found: {}", top_folder_path.display()).into());
-        }
+        let top_folder_path = Self::find_top_folder()?;
         let log_folder_path = std::env::temp_dir();
         let paths = Self::load_yaml(top_folder_path.join(PATHS_FILE_REL))?;
         let config = Self::load_yaml(top_folder_path.join(Self::get_path_from_yaml(&paths, "main_config")))?;
@@ -180,6 +176,25 @@ impl Configuration {
         let paths_array: Vec<_> = self.file_list.iter().map(|file| json!({ "source": file })).collect();
         current[*last_key] = json!(paths_array);
         Ok(())
+    }
+    /// Find the main folder of the repository: from environment variable `DIR_TOP` if set,
+    /// else the first folder containing `config/paths.yaml`, from the current folder up.
+    ///
+    /// # Returns
+    /// Absolute path of the main folder
+    fn find_top_folder() -> Result<PathBuf, Box<dyn Error>> {
+        if let Some(dir_top) = env::var(DIR_TOP_VAR).ok().filter(|value| !value.is_empty()) {
+            let top_folder_path = std::path::absolute(&dir_top)?;
+            if !top_folder_path.is_dir() {
+                return Err(format!("Folder not found: {}", top_folder_path.display()).into());
+            }
+            return Ok(top_folder_path);
+        }
+        env::current_dir()?
+            .ancestors()
+            .find(|folder| folder.join(PATHS_FILE_REL).is_file())
+            .map(Path::to_path_buf)
+            .ok_or_else(|| format!("Main folder not found: run from inside the repository, or set {DIR_TOP_VAR}").into())
     }
     /// Load a YAML file.
     ///

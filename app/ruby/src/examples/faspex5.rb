@@ -36,7 +36,7 @@ begin
 
   # package creation parameters
   package_create_params = {
-    'title': 'test title',
+    'title': 'Sample package',
     'recipients': [{ 'name': config.param('faspex5', 'username') }]
   }
   log.info('Creating package')

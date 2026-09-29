@@ -7,6 +7,8 @@ import java.util.logging.Logger;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.yaml.snakeyaml.Yaml;
@@ -17,6 +19,7 @@ import org.yaml.snakeyaml.Yaml;
 public class Configuration {
     private static final Logger LOGGER = Logger.getLogger(Configuration.class.getName());
     private static final String PATHS_FILES = "config/paths.yaml";
+    private static final String DIR_TOP_PROPERTY = "dir_top";
     // secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
     private static final Pattern SECRETS_REGEX = Pattern.compile(
             "(\"[^\"]*(?:assertion|authorization|password|private_key|secret|token)\"\\s*:\\s*\")[^\"]+|(assertion=)[^&]+");
@@ -39,10 +42,8 @@ public class Configuration {
         fileList = args;
         Locale.setDefault(Locale.ENGLISH);
         try {
-            topFolder = System.getProperty("dir_top");
+            topFolder = findTopFolder();
             logFolder = System.getProperty("java.io.tmpdir");
-            if (topFolder == null)
-                throw new Error("System property dir_top is not set");
             final String paths_config_file = getPath(null);
             paths = new Yaml().load(new java.io.FileReader(paths_config_file));
             final String config_filepath = getPath("main_config");
@@ -221,5 +222,26 @@ public class Configuration {
             }
             paths.put(source);
         }
+    }
+
+    /**
+     * Find the main folder of the repository: from system property {@code dir_top} if set,
+     * else the first folder containing {@code config/paths.yaml}, from the current folder up.
+     *
+     * @return absolute path of the main folder
+     */
+    private static String findTopFolder() {
+        final String dirTop = System.getProperty(DIR_TOP_PROPERTY);
+        if (dirTop != null && !dirTop.isEmpty()) {
+            final Path topFolder = Path.of(dirTop).toAbsolutePath();
+            if (!Files.isDirectory(topFolder))
+                throw new Error("Folder not found: " + topFolder);
+            return topFolder.toString();
+        }
+        for (Path folder = Path.of("").toAbsolutePath(); folder != null; folder = folder.getParent()) {
+            if (Files.isRegularFile(folder.resolve(PATHS_FILES)))
+                return folder.toString();
+        }
+        throw new Error("Main folder not found: run from inside the repository, or set " + DIR_TOP_PROPERTY);
     }
 }

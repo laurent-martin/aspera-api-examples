@@ -163,9 +163,9 @@ For details, refer to the recipe in the `Makefile` of each language.
 
 To run a sample without `make`, for example in a debugger or on Windows,
 refer to the section **Run a sample manually** in the `README.md` of the language.
-Samples require the environment variable `DIR_TOP`, set to the main folder of this repository
-(Windows: `set DIR_TOP=...` in `cmd`, or `$env:DIR_TOP = "..."` in PowerShell),
-and the files to transfer as arguments.
+Samples take the files to transfer as arguments.
+They find the main folder of this repository from the current folder:
+to use another one, set the environment variable `DIR_TOP`.
 
 ## Configuration file
 

@@ -33,12 +33,7 @@ class Configuration:
         self._file_list = sys.argv[1:]
         if not self._file_list:
             raise Exception('Missing arguments: files to transfer')
-        self._top_folder = os.getenv(DIR_TOP_VAR)
-        if self._top_folder is None:
-            raise EnvironmentError(f'Environment variable {DIR_TOP_VAR} is not set')
-        self._top_folder = os.path.abspath(self._top_folder)
-        if not os.path.isdir(self._top_folder):
-            raise NotADirectoryError(f'Folder not found: {self._top_folder}')
+        self._top_folder = find_top_folder()
         self._log_folder = tempfile.gettempdir()
         # read project's relative paths config file
         with open(os.path.join(self._top_folder, *PATHS_FILE_REL.split('/'))) as paths_file:
@@ -117,6 +112,28 @@ class Configuration:
             if destination is not None:
                 source['destination'] = os.path.basename(f)
             paths.append(source)
+
+
+def find_top_folder():
+    '''
+    Find the main folder of the repository: from environment variable `DIR_TOP` if set,
+    else the first folder containing `config/paths.yaml`, from the current folder up.
+
+    :return: absolute path of the main folder
+    '''
+    top_folder = os.getenv(DIR_TOP_VAR)
+    if top_folder:
+        top_folder = os.path.abspath(top_folder)
+        if not os.path.isdir(top_folder):
+            raise NotADirectoryError(f'Folder not found: {top_folder}')
+        return top_folder
+    folder = os.getcwd()
+    while not os.path.isfile(os.path.join(folder, *PATHS_FILE_REL.split('/'))):
+        parent = os.path.dirname(folder)
+        if parent == folder:
+            raise FileNotFoundError(f'Main folder not found: run from inside the repository, or set {DIR_TOP_VAR}')
+        folder = parent
+    return folder
 
 
 def mask_secrets(text):

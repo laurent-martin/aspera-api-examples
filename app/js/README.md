@@ -15,7 +15,8 @@ this downloads the SDK and installs the dependencies.
 Then, in this folder:
 
 ```bash
-DIR_TOP=$PWD/../.. node src/examples/faspex5.js /path/to/file
+node src/examples/faspex5.js /path/to/file
 ```
 
-`DIR_TOP` is the main folder of the repository. Arguments are the files to transfer.
+Arguments are the files to transfer.
+The main folder of the repository is found from the current folder: to use another one, set the environment variable `DIR_TOP`.

@@ -8,7 +8,7 @@
 
 const std::string F5_API_PATH_V5 = "/api/v5";
 const std::string F5_API_PATH_TOKEN = "/auth/token";
-const std::string package_name = "sample package";
+const std::string package_name = "Sample package";
 const int transfer_sessions = 1;  // Typically, 1
 
 int main(const int argc, const char* const argv[]) {

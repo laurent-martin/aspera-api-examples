@@ -58,10 +58,11 @@ Then, in this folder:
 
 ```bash
 source .venv/bin/activate
-DIR_TOP=$PWD/../.. PYTHONPATH=.venv/grpc_aspera:src python3 src/examples/faspex5.py /path/to/file
+PYTHONPATH=.venv/grpc_aspera:src python3 src/examples/faspex5.py /path/to/file
 ```
 
-`DIR_TOP` is the main folder of the repository. Arguments are the files to transfer.
+Arguments are the files to transfer.
+The main folder of the repository is found from the current folder: to use another one, set the environment variable `DIR_TOP`.
 
 In VS Code, the file [`.env`](../../.env) of the main folder sets the same variables.
 

@@ -11,7 +11,7 @@ class Faspex5 : SampleInterface
     // path for oauth2 token generation
     const string F5_API_PATH_TOKEN = "/auth/token";
 
-    const string package_name = "sample package C#";
+    const string package_name = "Sample package";
     int transfer_sessions = 1;
 
     /// <summary>

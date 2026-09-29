@@ -65,10 +65,11 @@ Then, in this folder:
 
 ```bash
 cmake --build build --target faspex5
-DIR_TOP=$PWD/../.. build/faspex5 /path/to/file
+build/faspex5 /path/to/file
 ```
 
-`DIR_TOP` is the main folder of the repository. Arguments are the files to transfer.
+Arguments are the files to transfer.
+The main folder of the repository is found from the current folder: to use another one, set the environment variable `DIR_TOP`.
 
 `cmake --build` rebuilds the sample after a change of the source code.
 

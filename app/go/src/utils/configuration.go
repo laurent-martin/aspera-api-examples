@@ -21,6 +21,7 @@ import (
 // Constants for config file
 const (
 	PathsFileRel = "config/paths.yaml"
+	DirTopVar    = "DIR_TOP"
 )
 
 // logger of the package, set by NewConfiguration
@@ -109,17 +110,9 @@ func NewConfiguration() (*Configuration, error) {
 	defer zlogger.Sync() // Flushes buffer, if any
 	logger = zlogger.Sugar()
 
-	topFolderPath := os.Getenv("DIR_TOP")
-	if topFolderPath == "" {
-		return nil, errors.New("Environment variable DIR_TOP is not set")
-	}
-	topFolderPath, err := filepath.Abs(topFolderPath)
+	topFolderPath, err := findTopFolder()
 	if err != nil {
 		return nil, err
-	}
-	info, err := os.Stat(topFolderPath)
-	if err != nil || !info.IsDir() {
-		return nil, fmt.Errorf("Folder not found: %s", topFolderPath)
 	}
 
 	paths, err := loadYAML(filepath.Join(topFolderPath, PathsFileRel))
@@ -225,6 +218,38 @@ func (c *Configuration) GetPath(name string) string {
 		c.Log.Fatalf("File not found: %s", itemPath)
 	}
 	return itemPath
+}
+
+// findTopFolder finds the main folder of the repository: from environment variable `DIR_TOP` if set,
+// else the first folder containing `config/paths.yaml`, from the current folder up.
+//
+// Returns: absolute path of the main folder
+func findTopFolder() (string, error) {
+	if dirTop := os.Getenv(DirTopVar); dirTop != "" {
+		topFolderPath, err := filepath.Abs(dirTop)
+		if err != nil {
+			return "", err
+		}
+		info, err := os.Stat(topFolderPath)
+		if err != nil || !info.IsDir() {
+			return "", fmt.Errorf("Folder not found: %s", topFolderPath)
+		}
+		return topFolderPath, nil
+	}
+	folder, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	for {
+		if info, err := os.Stat(filepath.Join(folder, PathsFileRel)); err == nil && !info.IsDir() {
+			return folder, nil
+		}
+		parent := filepath.Dir(folder)
+		if parent == folder {
+			return "", fmt.Errorf("Main folder not found: run from inside the repository, or set %s", DirTopVar)
+		}
+		folder = parent
+	}
 }
 
 // loadYAML loads a YAML file.
