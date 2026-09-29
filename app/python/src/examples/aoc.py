@@ -122,7 +122,7 @@ try:
         'fasp_port': 33001,
         'cookie': generate_cookie('packages', user_info['name'], user_info['email']),
         'create_dir': True,
-        'target_rate_kbps': 2000000,
+        'target_rate_kbps': 100000,
         'paths': []
     }
 

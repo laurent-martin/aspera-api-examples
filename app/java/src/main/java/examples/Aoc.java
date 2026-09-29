@@ -127,7 +127,7 @@ public class Aoc {
                             .put("remote_host", nodeInfo.getString("host"))
                             .put("remote_user", "xfer").put("ssh_port", 33001)
                             .put("fasp_port", 33001).put("cookie", cookie).put("create_dir", true)
-                            .put("target_rate_kbps", 2000000).put("tags",
+                            .put("target_rate_kbps", 100000).put("tags",
                                     new JSONObject().put("aspera", new JSONObject()
                                             .put("app",
                                                     "packages")

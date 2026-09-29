@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
             {"fasp_port", 33001},
             {"cookie", generate_cookie("packages", utils::attribute_str(user_info, "name"), utils::attribute_str(user_info, "email"))},
             {"create_dir", true},
-            {"target_rate_kbps", 2000000},
+            {"target_rate_kbps", 100000},
             {"paths", json::array{}}};
 
         if (transfer_sessions != 1) {

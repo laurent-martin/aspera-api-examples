@@ -80,7 +80,6 @@ It **shall be used** for new developments.
 
 The legacy [FASPManager API](https://developer.ibm.com/apis/catalog?search=%22fasp%20manager%20sdk%22) (`faspmanager`)
 is now deprecated and shall not be used for new developments.
-An adapter is kept for reference (`src/utils/helper_aspera_faspmanager_deprecated.py`), but should not be used.
 
 ## Structure of examples
 

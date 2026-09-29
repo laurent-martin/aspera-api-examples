@@ -60,7 +60,7 @@ def gen4_base_spec(
     'fasp_port' => 33_001,
     'cookie' => aoc_xfer_cookie(app, user_info['name'], user_info['email']),
     'create_dir' => true,
-    'target_rate_kbps' => 300_000,
+    'target_rate_kbps' => 100_000,
     'token' => aoc_api.bearer_token_authorization("node.#{node_info['access_key']}:user:all"),
     # tags of the transfer spec:
     # - `node`: mandatory, HSTS authorizes the bearer token for this access key and folder

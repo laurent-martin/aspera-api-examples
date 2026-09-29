@@ -109,7 +109,7 @@ class Aoc : SampleInterface
                 {"remote_host", node_info["host"]},
                 // 'cookie': 'aspera.aoc:cGFja2FnZXM=:TGF1cmVudCBNYXJ0aW4=:bGF1cmVudC5tYXJ0aW4uYXNwZXJhQGZyLmlibS5jb20=',
                 {"create_dir", true},
-                {"target_rate_kbps", 2000000},
+                {"target_rate_kbps", 100000},
             };
             if (transfer_sessions != 1)
             {

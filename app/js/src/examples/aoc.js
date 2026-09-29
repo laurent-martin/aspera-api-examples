@@ -122,7 +122,7 @@ const tSpec = {
     fasp_port: 33001,
     cookie: generateCookie('packages', userInfo.name, userInfo.email),
     create_dir: true,
-    target_rate_kbps: 2000000,
+    target_rate_kbps: 100000,
     paths: []
 };
 
