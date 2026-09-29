@@ -21,7 +21,8 @@ Ultimately, most integrations aim to leverage the IBM Aspera FASP protocol to ac
 All Aspera transfers involve a client connecting to a server to either push or pull files.
 The client component is either one of Aspera's client applications, a server,
 or a custom application built using Aspera's client libraries.
-The server component is always the IBM Aspera High-Speed Transfer Server (HSTS).
+The server component is always the IBM Aspera High-Speed Transfer Server (HSTS) or Endpoint (HSTE),
+or the SaaS version: Aspera Transfer Service (ATS).
 
 ![Aspera transfer: client, server and storage](images/api-1.svg)
 
@@ -259,7 +260,7 @@ The Transfer Daemon (`transferd`) also accepts transfer spec version 2,
 a structured format where parameters are grouped in modules:
 
 | Module               | Content |
-|----------------------|--------------------------------------------------------------------------|
+|--------------------|--------------------------------------------------------------------|
 | `session_initiation` | How the session is initiated and authorized: `ssh`, `node_api` or `icos` |
 | `assets`             | Source and destination: `destination_root`, `paths`, ... |
 | `security`           | Security parameters, e.g. `cipher` |
@@ -457,7 +458,7 @@ and the samples of [this repository](https://github.com/laurent-martin/aspera-ap
 (names of the Python samples: refer to the `README.md` of the repository for other languages):
 
 | Scenario | Client | API | Authorization | Samples |
-|----------|--------|-----|---------------|---------|
+|------------------------------------|---------------------------|------------------------|---------------|------------------------|
 | [S1](#s1--the-simplest-integration-start-a-transfer-with-a-script-and-ascp): script and `ascp` | Script | Command line | SSH | |
 | [S2](#s2--start-a-transfer-with-transfer-sdk-and-listen-for-events): application with Transfer SDK | Custom client application | Transfer Daemon gRPC | SSH | `server`, `server_v2` (JS) |
 | [S3](#s3--start-a-transfer-in-a-web-browser): web browser | Web browser | Web SDK | Token | `web` |
@@ -478,7 +479,7 @@ Scenarios:
 - I am provided with bare Aspera Transfer credentials, and I need to transfer to that server using my scripts.
 
 | Client | API          | Authorization|
-|--------|--------------|--------------|
+|--------|--------------|---------------|
 | script | command line | SSH          |
 
 The simplest and lowest-level integration consists of starting an Aspera transfer as a transfer client
@@ -533,7 +534,7 @@ Scenarios:
   and I need to transfer to that server using my application written in Java, C++, .NET, Python, etc.
 
 | Client                    | API                  | Authorization|
-|---------------------------|----------------------|--------------|
+|---------------------------|----------------------|---------------|
 | Custom Client Application | Transfer Daemon gRPC | SSH          |
 
 If the integration to start a simple transfer job is made in an application
@@ -611,7 +612,7 @@ Scenarios:
 Typically, authentication/authorization is performed in the web app, and a transfer token is used to authorize transfers.
 
 | Client      | API          | Authorization|
-|-------------|--------------|--------------|
+|-------------|---------|---------------|
 | Web Browser | Web SDK      | Token        |
 
 If the transfer must be started by a user in the context of a web browser,
@@ -646,7 +647,7 @@ Scenarios:
 Machine-to-machine transfer.
 
 | Client                    | API                  | Authorization |
-|---------------------------|----------------------|---------------|
+|------------------------|----------|---------------|
 | Aspera Transfer Server    | Node API             | SSH           |
 
 This is the method used for automated server-to-server transfers.
@@ -692,7 +693,7 @@ Scenarios:
 - I need to transfer files between my custom client app and my custom server app, using my own authentication/authorization.
 
 | Client                    | API                  | Authorization |
-|---------------------------|----------------------|---------------|
+|---------------------------|---------------------------|---------------|
 | Custom Client Application | Transfer SDK (client app)<br/>Node API (server app) | Token |
 
 In previous examples, transfers were started using SSH credentials and no token, using various client application types:
@@ -731,7 +732,7 @@ Scenarios:
 Machine-to-machine transfer.
 
 | Client                    | API                  | Authorization |
-|---------------------------|----------------------|---------------|
+|------------------------|----------|---------------|
 | Aspera Transfer Server    | Node API             | Token         |
 
 This is the method used for automated server-to-server transfers if one owns both servers and token-based transfer is preferred.
@@ -790,7 +791,7 @@ Such information is stored on HSTS in the Redis database.
 Activation and retention are controlled by `aspera.conf` parameters:
 
 | Parameter            | Description |
-|----------------------|-------------|
+|--------------------|-----------------------------------------------------------|
 | `activity_retention` | Controls how long data is kept in the database.<br/>Default: `1d 12h` |
 | `activity_logging`   | Enables the logging of transfer activity in the database.<br/>Default: `false` |
 | `activity_*`         | Other parameters related to activity logging. |
@@ -881,14 +882,15 @@ Choosing the wrong one is a common source of integration failures.
 #### Architecture comparison
 
 |                    | ATx (Aspera Transfer Token) | Basic Token | Bearer Token |
-|--------------|----------------------|----------------------|----------------------|
-| **Node User type** | Node API User or Access Key | Access Key | Access Key |
-| **File addressing** | Path-based (Gen3 `/files/*`) | ID-based or Path-based | ID-based (Gen4 `/files/{id}`) |
-| **Token generated when** | Per transfer request | Permanent (AK credentials) | Once, reused during validity period |
-| **Token generated by** | Web app via Node API | Client app from AK credentials | Client app using /token endpoint of web app (based on app and user private keys) |
-| **Access control enforced by** | The web app (before calling Node API) | Access Key scope | HSTS directly (via `/permissions`) |
-| **Typical use case** | Custom web app acting as transfer broker | Simple programmatic access | AoC integration, advanced permission model |
-| **Complexity** | Medium | Low | High |
+|----------------------------------|------------------------------------------|-------------------|-------------------------------------------------------------------|
+| **Node User**            | Yes | No | No |
+| **Access Key**           | Yes | Yes | Yes |
+| **File addressing**      | Path-based<br/>(Gen3 `/files/*`) | ID-based or Path-based | ID-based (Gen4 `/files/{id}`) |
+| **Token generated when** | Per transfer request | Permanent<br/>(AK credentials) | Once, reused during validity period |
+| **Token generated by**   | Web app via Node API | Client app from AK credentials | Client app using /token endpoint of web app (based on app and user private keys) |
+| **Access control** | The web app<br/>(before calling Node API) | Access Key scope | HSTS directly (via `/permissions`) |
+| **Typical use case**     | Custom web app acting as transfer broker | Simple programmatic access | AoC integration, advanced permission model |
+| **Complexity**           | Medium | Low | High |
 
 #### Decision guide
 
@@ -1188,7 +1190,7 @@ The Node API is designed to complement other Aspera APIs, enabling seamless inte
 ### What Can You Do With the Node API?
 
 | Capability | Description |
-|------------|-------------------------------------------|
+|-------------------|----------------------------------------------------------------------------------|
 | **Access Management** | Manage user access to the node's file system and transfer capabilities |
 | **File Transfer** | Upload and download files using the FASP protocol or HTTP/HTTPS fallback |
 | **Transfer Control** | Start, stop, resume, and reconfigure transfers |
@@ -1200,17 +1202,17 @@ The Node API is designed to complement other Aspera APIs, enabling seamless inte
 The Node API is available on several types of Aspera servers:
 
 | Node Type | Description |
-|-----------|-------------|
-| **IBM Aspera High-Speed Transfer Server (HSTS)** | Self-managed Aspera transfer server |
-| **IBM Aspera High-Speed Transfer Endpoint (HSTE)** | Self-managed limited version of HSTS |
-| **Aspera on Cloud (AoC) Transfer Service** (ATS) | Aspera's cloud-based SaaS hosted service (IBM-managed HSTS clusters) |
+|----------------------------------------------------|---------------------------------------------|
+| **IBM Aspera High-Speed Transfer Server (HSTS)**   | Self-managed Aspera transfer server         |
+| **IBM Aspera High-Speed Transfer Endpoint (HSTE)** | Self-managed limited version of HSTS        |
+| **Aspera on Cloud (AoC) Transfer Service (ATS)**   | Aspera's cloud-based SaaS hosted service<br/>(IBM-managed HSTS clusters) |
 
 ### Network Interface & Port Configuration
 
 The Node API daemon listens on both HTTP and HTTPS interfaces:
 
 | Protocol  | Default Port | Default Activation |
-|-----------|--------------|--------------------|
+|----------|--------------|--------------------|
 | **HTTPS** | `9092`       | Yes                |
 | **HTTP**  | `9091`       | No                 |
 
@@ -1220,7 +1222,7 @@ The Node API daemon listens on both HTTP and HTTPS interfaces:
 
 ### Authentication
 
-The Node API supports the following authentication mechanisms and types:
+The Node API supports the following authentication mechanisms and types, described in the next sections:
 
 - Basic Authentication
   - Node Users
@@ -1233,7 +1235,7 @@ The Node API supports the following authentication mechanisms and types:
 
 #### Basic Authentication
 
-Standard username/password credentials.
+Standard username + password credentials.
 
 There are two main types of node credentials: Node Users and Access Keys.
 
@@ -1241,7 +1243,7 @@ There are two main types of node credentials: Node Users and Access Keys.
 
 Managed via the `asnodeadmin` utility.
 
-**Example**: creation of a node user with `asnodeadmin`:
+**Example**: Creation of a node user with `asnodeadmin`:
 
 ```shell
 asnodeadmin -a -u <API username> -p <API password> -x <OS user>
@@ -1257,19 +1259,20 @@ Node users are always associated with a **Transfer User**, which is an OS-level 
 It represents the OS user under which transfers are executed when started or authorized using the Node API.
 The file system access rights of this user apply (not applicable to object storage).
 
-There are two types of Node Users: **Transfer Node User** and **Master Node User**,
-depending on the configuration of their Transfer User (exclusive): a docroot, or file restrictions.
+There are two types of Node Users: **Transfer Node User** and **Master Node User**.
+The type is related to the configuration of their Transfer User (exclusive): a docroot, or file restrictions.
 Refer to the HSTS manual section: "Docroot vs. File Restriction".
 In both cases, Node API calls and transfers are "jailed" either in the docroot, or in the storage root of the access key.
 
 #### Transfer Node User
 
-Node Users with a **docroot** (`absolute`): they can be used to manage transfers directly, but not to create Access Keys.
+Node Users with a **docroot** (`absolute`):
+they can be used to manage transfers directly, but not to create Access Keys.
 The **docroot** is associated with the Transfer user, in `aspera.conf`, modified with `asconfigurator`.
 The **docroot** is defined as a PVCL URL, which can range from a local file system to object storage (e.g. S3).
 
 > [!CAUTION]
-> Cannot be used to integrate with **Aspera on Cloud**.
+> Cannot be used to integrate with **Aspera on Cloud** which requires Access Keys.
 
 #### Master Node User
 
@@ -1286,7 +1289,7 @@ The Master Node User is usually associated with the transfer (OS) user: `xfer`, 
 
 #### Access Keys
 
-Created and managed through the Node API.
+Created and managed through the Node API using a Master Node User.
 A storage root is associated with it,
 and must comply with the file restriction associated with the Master Node User used to create it.
 AoC provides an API (ATS) to create access keys on SaaS nodes.
@@ -1308,11 +1311,12 @@ The `path` cannot be `/`: it must be a sub-folder within the Primary Access Key'
 
 Token-based authentication used for integration with cloud services like **Aspera on Cloud (AoC)**.
 Bearer tokens are always associated with an Access Key.
-Use of the newer `/files/{id}` endpoint group is required.
+Use of the newer `/files/{id}` endpoint group is required (aka Gen4).
 Bearer tokens contain a user "identifier", managed by the upper level managing application, as well as optional group identifiers.
 
 Access to file resources is granted on the Access Key with the `/permissions` endpoint
 by providing user and group identifiers and access levels.
+A sample scenario is provided in the aspera-cli manual.
 
 ### API Endpoint Reference
 
@@ -1328,7 +1332,7 @@ Manage files by their unique **file ID**.
 Sometimes referred to as Gen4.
 
 | Endpoint                | Purpose |
-|-------------------------|---------|
+|------------------------|--------------------------------------|
 | `GET /files/{id}`       | Get metadata for a file or directory |
 | `GET /files/{id}/files` | List contents of a directory |
 | `POST /files/{id}/files` | Create a file or directory |
@@ -1338,7 +1342,7 @@ Sometimes referred to as Gen4.
 This requires the use of an Access Key.
 
 File IDs are automatically managed by the node daemon providing the Node API,
-and are stored in a Redis Database together with permissions.
+and are stored in a Redis Database of HSTS together with permissions.
 
 **Advantages:**
 
@@ -1353,13 +1357,13 @@ An earlier set of file management endpoints (legacy, still supported).
 Manage files by their **file path**.
 Sometimes referred to as Gen3.
 
-| Endpoint | Purpose |
-|----------|----------|
+| Endpoint             | Purpose                    |
+|----------------------|----------------------------|
 | `POST /files/browse` | Browse a directory by path |
 | `POST /files/create` | Create a file or directory |
 | `POST /files/delete` | Delete a file or directory |
 | `POST /files/rename` | Rename a file or directory |
-| `POST /files/search` | Search for files by path |
+| `POST /files/search` | Search for files by path   |
 
 **Limitations:**
 
@@ -1401,7 +1405,7 @@ Content-Type: application/json
 #### Response Codes
 
 | Status Code | Meaning |
-|---|---|
+|---------------------------|----------------------------------------------|
 | `200 OK` | Request succeeded |
 | `201 Created` | Resource created successfully |
 | `202 Accepted` | Request accepted, processing is asynchronous |
