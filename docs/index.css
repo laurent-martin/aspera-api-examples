@@ -7,6 +7,27 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
+/* ── Tag filter ────────────────────────────────────────── */
+.tag-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 20px;
+    margin-top: 15px;
+}
+
+.tag-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.tag-all {
+    font-weight: 600;
+}
+
 /* ── API grid ──────────────────────────────────────────── */
 .api-grid {
     display: grid;

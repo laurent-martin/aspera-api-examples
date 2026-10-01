@@ -37,3 +37,35 @@ body.redoc-active {
 #redoc-container {
     height: 100vh;
 }
+
+/* ── Tag filter ────────────────────────────────────────── */
+#tag-filter {
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 0.9rem;
+}
+
+#tag-filter summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+#tag-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 4px 16px;
+    padding-top: 10px;
+}
+
+#tag-list label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+#tag-list .tag-all {
+    grid-column: 1 / -1;
+    font-weight: 600;
+}

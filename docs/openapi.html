@@ -8,6 +8,7 @@
   <title>OpenAPI Viewer</title>
 
   <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" defer></script>
 
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="openapi.css">
@@ -43,6 +44,11 @@
       <p>IBM Aspera API Examples Repository</p>
     </footer>
   </div>
+
+  <details id="tag-filter" hidden>
+    <summary>Tags <span id="tag-count"></span></summary>
+    <div id="tag-list"></div>
+  </details>
 
   <div id="redoc-container" hidden></div>
 

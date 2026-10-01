@@ -94,6 +94,18 @@ function parseApiInfo(spec) {
     };
 }
 
+// Function to list the tags of a spec, with their badge class
+function getTags(apiInfo) {
+    const tags = [
+        { name: apiInfo.format, badge: "version-badge" },
+        { name: apiInfo.specVersion, badge: "spec-badge" },
+    ];
+    if (apiInfo.isEnhanced) {
+        tags.push({ name: "Enhanced", badge: "enhanced-badge" });
+    }
+    return tags;
+}
+
 // Function to group specs by product name
 function groupSpecsByProduct(specs) {
     const grouped = {};
@@ -152,9 +164,9 @@ function createProductCard(productName, versions) {
 
     // Create version lines
     const versionLines = versions.map(apiInfo => {
-        const enhancedText = apiInfo.isEnhanced ? " • Enhanced" : "";
+        const tagNames = getTags(apiInfo).map((tag) => tag.name).join(",");
         return `
-            <div class="version-line">
+            <div class="version-line" data-tags="${tagNames}">
                 <div class="version-info">
                     <span class="version-badge">${apiInfo.format}</span>
                     <span class="version-text">v${apiInfo.version || "1.0"}</span>
@@ -230,15 +242,69 @@ function updateStats() {
     document.getElementById("jsonCount").textContent = jsonCount;
 }
 
-// Search function
-function handleSearch(event) {
-    const searchTerm = event.target.value.toLowerCase();
+// Function to create the tag filter: one checkbox for all tags, and one per tag, all checked
+function createTagFilter() {
+    const badges = {};
+    openApiSpecs.forEach((spec) => {
+        getTags(parseApiInfo(spec)).forEach((tag) => {
+            badges[tag.name] = tag.badge;
+        });
+    });
+
+    // Sort tags by badge kind, then by name
+    const badgeOrder = ["version-badge", "spec-badge", "enhanced-badge"];
+    const tagNames = Object.keys(badges).sort((a, b) =>
+        badgeOrder.indexOf(badges[a]) - badgeOrder.indexOf(badges[b]) || a.localeCompare(b));
+
+    const filter = document.getElementById("tagFilter");
+    filter.innerHTML = `
+        <label class="tag-option tag-all">
+            <input type="checkbox" checked>
+            All
+        </label>
+        ${tagNames.map((name) => `
+            <label class="tag-option">
+                <input type="checkbox" value="${name}" checked>
+                <span class="${badges[name]}">${name}</span>
+            </label>
+        `).join("")}
+    `;
+
+    const allBox = filter.querySelector(".tag-all input");
+    const tagBoxes = filter.querySelectorAll("input[value]");
+    allBox.addEventListener("change", () => {
+        tagBoxes.forEach((box) => {
+            box.checked = allBox.checked;
+        });
+        applyFilters();
+    });
+    tagBoxes.forEach((box) => box.addEventListener("change", applyFilters));
+}
+
+// Function to show versions with only checked tags, and cards matching search with a visible version
+function applyFilters() {
+    const searchInput = document.getElementById("searchInput");
+    const searchTerm = searchInput.value.toLowerCase();
+    const tagBoxes = [...document.querySelectorAll("#tagFilter input[value]")];
+    const checkedTags = new Set(tagBoxes.filter((box) => box.checked).map((box) => box.value));
+
+    // "All" is checked if all tags are, and partially checked if some are
+    const allBox = document.querySelector("#tagFilter .tag-all input");
+    allBox.checked = checkedTags.size === tagBoxes.length;
+    allBox.indeterminate = checkedTags.size > 0 && !allBox.checked;
+
     const cards = document.querySelectorAll(".api-card");
     let visibleCount = 0;
 
     cards.forEach((card) => {
-        const searchText = card.dataset.searchText;
-        if (searchText.includes(searchTerm)) {
+        let visibleVersions = 0;
+        card.querySelectorAll(".version-line").forEach((line) => {
+            const visible = line.dataset.tags.split(",").every((tag) => checkedTags.has(tag));
+            line.style.display = visible ? "" : "none";
+            if (visible) visibleVersions++;
+        });
+
+        if (visibleVersions > 0 && card.dataset.searchText.includes(searchTerm)) {
             card.style.display = "block";
             visibleCount++;
         } else {
@@ -249,20 +315,22 @@ function handleSearch(event) {
     // Display message if no results
     const grid = document.getElementById("apiGrid");
     const noResults = grid.querySelector(".no-results");
-
-    if (visibleCount === 0 && searchTerm !== "") {
-        if (!noResults) {
-            const noResultsDiv = document.createElement("div");
-            noResultsDiv.className = "no-results";
-            noResultsDiv.style.gridColumn = "1 / -1";
-            noResultsDiv.innerHTML = `
-                <div class="no-results-icon">🔍</div>
-                <div class="no-results-text">No APIs found for "${event.target.value}"</div>
-            `;
-            grid.appendChild(noResultsDiv);
-        }
-    } else if (noResults) {
+    if (noResults) {
         noResults.remove();
+    }
+
+    if (visibleCount === 0) {
+        const noResultsDiv = document.createElement("div");
+        noResultsDiv.className = "no-results";
+        noResultsDiv.style.gridColumn = "1 / -1";
+        noResultsDiv.innerHTML = `
+            <div class="no-results-icon">🔍</div>
+            <div class="no-results-text">No APIs found</div>
+        `;
+        if (searchInput.value !== "") {
+            noResultsDiv.lastElementChild.textContent += ` for "${searchInput.value}"`;
+        }
+        grid.appendChild(noResultsDiv);
     }
 }
 
@@ -270,7 +338,8 @@ function handleSearch(event) {
 document.addEventListener("DOMContentLoaded", () => {
     displayApis();
     updateStats();
+    createTagFilter();
 
     const searchInput = document.getElementById("searchInput");
-    searchInput.addEventListener("input", handleSearch);
+    searchInput.addEventListener("input", applyFilters);
 });
