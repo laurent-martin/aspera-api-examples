@@ -15,7 +15,6 @@ clean::
 pdf: README.pdf
 # one image per tab of the drawio file, named after the tab: regenerated only if older than the drawio file
 DRAWIO_FILE=images/diagrams.drawio
-DRAWIO_IMAGES:=$(shell $(DOC_TOOL) list_drawio_images $(DRAWIO_FILE) svg)
-$(DRAWIO_IMAGES): images/%.svg: $(DRAWIO_FILE)
-	$(DOC_TOOL) export_drawio_tab $< $@ --scale 2 --transparent
+DRAWIO_OPTIONS=--scale 2 --transparent
+include $(DIR_PANDOC)drawio.mak
 README.pdf: $(DRAWIO_IMAGES)
