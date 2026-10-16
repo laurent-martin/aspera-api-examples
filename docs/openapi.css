@@ -1,80 +1,24 @@
 /* ── Form screen ───────────────────────────────────────── */
-#form-container {
-    max-width: 600px;
-    margin: 0 auto;
+.page-narrow {
+    max-width: 720px;
+    padding-top: 64px;
 }
 
-#form-container h1 {
-    margin-bottom: 8px;
-}
-
-.form-card {
-    margin-top: 0;
-}
-
-.form-card p {
-    margin-bottom: 16px;
-    color: #555;
-}
-
-.form-card .text-input {
-    margin-bottom: 12px;
+.url-form {
+    display: flex;
+    gap: 8px;
 }
 
 .error {
-    color: #c0392b;
     margin-top: 12px;
-    font-size: 0.9rem;
-}
-
-/* ── Redoc viewer ──────────────────────────────────────── */
-/* Colors come from Redoc variables (light or dark), with fallbacks until Redoc is loaded */
-[hidden] {
-    display: none !important;
-}
-
-body.redoc-active {
-    color-scheme: light dark;
-    background: var(--bg-color, light-dark(#ffffff, #22242b));
-    color: var(--text-color-primary, light-dark(#1a1c21, #fbfbfc));
-    padding: 0;
-    min-height: unset;
-}
-
-#redoc-container.error {
-    margin: 0;
-    padding: 20px;
-}
-
-/* ── Top bar ───────────────────────────────────────────── */
-#top-bar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    height: 48px;
-    padding: 0 16px;
-    background: var(--bg-color, light-dark(#ffffff, #22242b));
-    border-bottom: 1px solid var(--border-color-secondary, light-dark(#ededf2, #3b3c45));
-    font-family: var(--font-family-base, system-ui, sans-serif);
+    color: var(--app-danger);
     font-size: 14px;
 }
 
-#top-bar .brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: inherit;
-    font-weight: 600;
-    text-decoration: none;
-}
-
-#top-bar .brand img {
-    width: 20px;
-    height: 20px;
+/* ── Redoc viewer ──────────────────────────────────────── */
+#redoc-container.error {
+    margin: 0;
+    padding: 20px;
 }
 
 /* ── Tag filter ────────────────────────────────────────── */
@@ -84,7 +28,7 @@ body.redoc-active {
     gap: 8px;
     height: 32px;
     padding: 0 10px 0 12px;
-    border: 1px solid var(--border-color-primary, light-dark(#dcdde5, #555761));
+    border: 1px solid var(--app-border);
     border-radius: 6px;
     background: transparent;
     color: inherit;
@@ -93,24 +37,24 @@ body.redoc-active {
 }
 
 .tag-button:hover {
-    background: var(--bg-color-hover, light-dark(#f3f3f6, #2a2b33));
+    background: var(--app-hover);
 }
 
 #tag-count {
     padding: 1px 7px;
     border-radius: 10px;
-    background: var(--bg-color-active, light-dark(#ededf2, #3b3c45));
+    background: var(--app-active);
     font-size: 12px;
     font-variant-numeric: tabular-nums;
 }
 
 #tag-filter.filtered .tag-button {
-    border-color: var(--link-color-primary, light-dark(#1f7cff, #6eabfa));
+    border-color: var(--app-accent);
 }
 
 #tag-filter.filtered #tag-count {
-    background: var(--link-color-primary, light-dark(#1f7cff, #6eabfa));
-    color: var(--bg-color, light-dark(#ffffff, #22242b));
+    background: var(--app-accent);
+    color: var(--app-on-accent);
 }
 
 /* Popover below the top bar, right aligned (hidden until opened) */
@@ -122,13 +66,12 @@ body.redoc-active {
     margin: 0;
     padding: 8px;
     overflow-y: auto;
-    border: 1px solid var(--border-color-primary, light-dark(#dcdde5, #555761));
+    border: 1px solid var(--app-border);
     border-radius: 8px;
-    background: var(--bg-color-raised, light-dark(#ffffff, #22242b));
-    color: var(--text-color-primary, light-dark(#1a1c21, #fbfbfc));
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-    font-family: var(--font-family-base, system-ui, sans-serif);
-    font-size: 14px;
+    background: var(--app-bg);
+    color: var(--app-text);
+    box-shadow: var(--app-shadow);
+    font: inherit;
 }
 
 #tag-list:popover-open {
@@ -148,18 +91,18 @@ body.redoc-active {
 }
 
 #tag-list label:hover {
-    background: var(--bg-color-hover, light-dark(#f3f3f6, #2a2b33));
+    background: var(--app-hover);
 }
 
 #tag-list input {
     flex-shrink: 0;
-    accent-color: var(--link-color-primary, light-dark(#1f7cff, #6eabfa));
+    accent-color: var(--app-accent);
 }
 
 #tag-list .tag-all {
     grid-column: 1 / -1;
     margin-bottom: 4px;
-    border-bottom: 1px solid var(--border-color-secondary, light-dark(#ededf2, #3b3c45));
+    border-bottom: 1px solid var(--app-border-subtle);
     border-radius: 4px 4px 0 0;
     font-weight: 600;
 }

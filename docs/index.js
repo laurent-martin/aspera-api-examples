@@ -66,25 +66,44 @@ const openApiSpecs = [
     },
 ];
 
+// Filter groups: values of the same group are alternatives, groups are combined
+const filterGroups = [
+    { key: "format", label: "Format" },
+    { key: "spec", label: "Specification" },
+    { key: "variant", label: "Variant" },
+];
+
+// Selected values per filter group: none means no filter
+const activeFilters = Object.fromEntries(filterGroups.map((group) => [group.key, new Set()]));
+
+// Icons (Lucide, ISC license)
+const icons = {
+    docs: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+    raw: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
+    copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+};
+
+// Function to generate an inline SVG icon
+function icon(name) {
+    return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
+}
+
 // Function to extract information from spec object
 function parseApiInfo(spec) {
     const filename = spec.filename;
     const format = filename.endsWith(".yaml") ? "YAML" : "JSON";
     const nameWithoutExt = filename.replace(/\.(yaml|json)$/, "");
 
-    // Extract name and version
-    const versionMatch = nameWithoutExt.match(/-(\d+\.\d+(?:\.\d+)?)/);
-    const version = versionMatch ? versionMatch[1] : null;
-
-    let name = nameWithoutExt;
-    if (version) {
-        name = name.replace(`-${version}`, "");
-    }
-
     // Check if it's an enhanced version
-    const isEnhanced = nameWithoutExt.includes("-enhanced");
-    if (isEnhanced) {
-        name = name.replace("-enhanced", "");
+    const isEnhanced = nameWithoutExt.endsWith("-enhanced");
+    let name = nameWithoutExt.replace(/-enhanced$/, "");
+
+    // Extract version at end of name, e.g. "-4.4.6" or "-v1"
+    const versionMatch = name.match(/-v?(\d+(?:\.\d+)*)$/);
+    const version = versionMatch ? versionMatch[1] : null;
+    if (versionMatch) {
+        name = name.slice(0, versionMatch.index);
     }
 
     return {
@@ -93,21 +112,15 @@ function parseApiInfo(spec) {
         version,
         format,
         isEnhanced,
+        variant: isEnhanced ? "Enhanced" : "Original",
         specVersion: spec.specVersion,
-        displayName: name.replace(/_/g, " "),
+        displayName: name.replace(/_/g, " ").replace(/^IBM /, ""),
     };
 }
 
-// Function to list the tags of a spec, with their badge class
-function getTags(apiInfo) {
-    const tags = [
-        { name: apiInfo.format, badge: "version-badge" },
-        { name: apiInfo.specVersion, badge: "spec-badge" },
-    ];
-    if (apiInfo.isEnhanced) {
-        tags.push({ name: "Enhanced", badge: "enhanced-badge" });
-    }
-    return tags;
+// Function to get the value of a spec for a filter group
+function filterValue(apiInfo, key) {
+    return { format: apiInfo.format, spec: apiInfo.specVersion, variant: apiInfo.variant }[key];
 }
 
 // Function to group specs by product name
@@ -141,65 +154,52 @@ function groupSpecsByProduct(specs) {
     return grouped;
 }
 
-// Function to generate viewer URL
-function generateViewerUrl(filename) {
-    const specUrl = `https://raw.githubusercontent.com/laurent-martin/aspera-api-examples/refs/heads/main/openapi/${encodeURIComponent(filename)}`;
-    return `openapi.html?spec=${encodeURIComponent(specUrl)}`;
-}
-
 // Function to generate raw URL
 function generateRawUrl(filename) {
     return `https://raw.githubusercontent.com/laurent-martin/aspera-api-examples/refs/heads/main/openapi/${encodeURIComponent(filename)}`;
 }
 
+// Function to generate viewer URL
+function generateViewerUrl(filename) {
+    return `openapi.html?spec=${encodeURIComponent(generateRawUrl(filename))}`;
+}
+
 // Function to create API card for a product group
 function createProductCard(productName, versions) {
-    const card = document.createElement("div");
-
-    // Check if any version is enhanced
-    const hasEnhanced = versions.some(v => v.isEnhanced);
-    card.className = hasEnhanced ? "api-card enhanced-card" : "api-card";
-
-    // Build search text from all versions
-    const searchText = `${productName} ${versions.map(v =>
-        `${v.version || ""} ${v.format} ${v.specVersion}`
-    ).join(" ")}`.toLowerCase();
-    card.dataset.searchText = searchText;
+    const card = document.createElement("section");
+    card.className = "api-card";
 
     // Create version lines
     const versionLines = versions.map(apiInfo => {
-        const tagNames = getTags(apiInfo).map((tag) => tag.name).join(",");
+        const rawUrl = generateRawUrl(apiInfo.filename);
+        const searchText = `${productName} ${apiInfo.version || ""} ${apiInfo.format} ${apiInfo.specVersion} ${apiInfo.variant}`.toLowerCase();
         return `
-            <div class="version-line" data-tags="${tagNames}">
+            <div class="version-line" data-format="${apiInfo.format}" data-spec="${apiInfo.specVersion}"
+                 data-variant="${apiInfo.variant}" data-search="${searchText}">
                 <div class="version-info">
-                    <span class="version-badge">${apiInfo.format}</span>
-                    <span class="version-text">v${apiInfo.version || "1.0"}</span>
-                    <span class="spec-badge">${apiInfo.specVersion}</span>
-                    ${apiInfo.isEnhanced ? '<span class="enhanced-badge">Enhanced</span>' : ''}
+                    ${apiInfo.version ? `<span class="version-text">v${apiInfo.version}</span>` : ""}
+                    <span class="badge">${apiInfo.specVersion}</span>
+                    <span class="badge">${apiInfo.format}</span>
+                    ${apiInfo.isEnhanced ? '<span class="badge badge-accent">Enhanced</span>' : ""}
                 </div>
                 <div class="version-actions">
-                    <a href="${generateViewerUrl(apiInfo.filename)}"
-                       target="_blank"
-                       class="icon-btn"
-                       title="View in OpenAPI viewer">
-                        📖
-                    </a>
-                    <a href="${generateRawUrl(apiInfo.filename)}"
-                       target="_blank"
-                       class="icon-btn"
-                       title="View raw file">
-                        📄
-                    </a>
+                    <a href="${generateViewerUrl(apiInfo.filename)}" class="action action-primary"
+                       title="View documentation">${icon("docs")}Docs</a>
+                    <a href="${rawUrl}" target="_blank" rel="noopener" class="action"
+                       title="Open raw file">${icon("raw")}Raw</a>
+                    <button type="button" class="action copy-button" data-url="${rawUrl}"
+                            title="Copy file URL" aria-label="Copy file URL">${icon("copy")}</button>
                 </div>
             </div>
         `;
     }).join("");
 
     card.innerHTML = `
-        <div class="api-name">${productName}</div>
-        <div class="versions-container">
-            ${versionLines}
-        </div>
+        <header class="api-card-header">
+            <h2 class="api-name">${productName}</h2>
+            <span class="api-count"></span>
+        </header>
+        ${versionLines}
     `;
 
     return card;
@@ -210,20 +210,11 @@ function displayApis(specs = openApiSpecs) {
     const grid = document.getElementById("apiGrid");
     grid.innerHTML = "";
 
-    if (specs.length === 0) {
-        grid.innerHTML = `
-            <div class="no-results" style="grid-column: 1 / -1;">
-                <div class="no-results-icon">🔍</div>
-                <div class="no-results-text">No APIs found</div>
-            </div>
-        `;
-        return;
-    }
-
     const groupedSpecs = groupSpecsByProduct(specs);
 
-    // Sort product names alphabetically
-    const sortedProducts = Object.keys(groupedSpecs).sort();
+    // Sort product names alphabetically, ignoring case
+    const sortedProducts = Object.keys(groupedSpecs).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" }));
 
     sortedProducts.forEach((productName) => {
         const versions = groupedSpecs[productName];
@@ -232,118 +223,119 @@ function displayApis(specs = openApiSpecs) {
     });
 }
 
-// Function to update statistics
-function updateStats() {
-    const yamlCount = openApiSpecs.filter((s) =>
-        s.filename.endsWith(".yaml"),
-    ).length;
-    const jsonCount = openApiSpecs.filter((s) =>
-        s.filename.endsWith(".json"),
-    ).length;
-
-    document.getElementById("totalApis").textContent = openApiSpecs.length;
-    document.getElementById("yamlCount").textContent = yamlCount;
-    document.getElementById("jsonCount").textContent = jsonCount;
-}
-
-// Function to create the tag filter: one checkbox for all tags, and one per tag, all checked
-function createTagFilter() {
-    const badges = {};
-    openApiSpecs.forEach((spec) => {
-        getTags(parseApiInfo(spec)).forEach((tag) => {
-            badges[tag.name] = tag.badge;
-        });
+// Function to create the filters: one chip per value, grouped
+function createFilters() {
+    const filters = document.getElementById("filters");
+    filterGroups.forEach((group) => {
+        // Sort values by version number, then by name
+        const values = [...new Set(openApiSpecs.map((spec) => filterValue(parseApiInfo(spec), group.key)))]
+            .sort((a, b) => (a.match(/[\d.]+/)?.[0] || "").localeCompare(b.match(/[\d.]+/)?.[0] || "", undefined, { numeric: true })
+                || a.localeCompare(b));
+        const element = document.createElement("div");
+        element.className = "filter-group";
+        element.setAttribute("role", "group");
+        element.setAttribute("aria-label", group.label);
+        element.innerHTML = `
+            <span class="filter-label">${group.label}</span>
+            ${values.map((value) => `
+                <button type="button" class="chip" aria-pressed="false"
+                        data-group="${group.key}" data-value="${value}">${value}</button>
+            `).join("")}
+        `;
+        filters.appendChild(element);
     });
 
-    // Sort tags by badge kind, then by name
-    const badgeOrder = ["version-badge", "spec-badge", "enhanced-badge"];
-    const tagNames = Object.keys(badges).sort((a, b) =>
-        badgeOrder.indexOf(badges[a]) - badgeOrder.indexOf(badges[b]) || a.localeCompare(b));
-
-    const filter = document.getElementById("tagFilter");
-    filter.innerHTML = `
-        <label class="tag-option tag-all">
-            <input type="checkbox" checked>
-            All
-        </label>
-        ${tagNames.map((name) => `
-            <label class="tag-option">
-                <input type="checkbox" value="${name}" checked>
-                <span class="${badges[name]}">${name}</span>
-            </label>
-        `).join("")}
-    `;
-
-    const allBox = filter.querySelector(".tag-all input");
-    const tagBoxes = filter.querySelectorAll("input[value]");
-    allBox.addEventListener("change", () => {
-        tagBoxes.forEach((box) => {
-            box.checked = allBox.checked;
-        });
+    filters.addEventListener("click", (event) => {
+        const chip = event.target.closest(".chip");
+        if (!chip) return;
+        const selected = activeFilters[chip.dataset.group];
+        const pressed = !selected.has(chip.dataset.value);
+        if (pressed) selected.add(chip.dataset.value);
+        else selected.delete(chip.dataset.value);
+        chip.setAttribute("aria-pressed", pressed);
         applyFilters();
     });
-    tagBoxes.forEach((box) => box.addEventListener("change", applyFilters));
 }
 
-// Function to show versions with only checked tags, and cards matching search with a visible version
+// Function to clear the search and the filters
+function clearFilters() {
+    document.getElementById("searchInput").value = "";
+    Object.values(activeFilters).forEach((selected) => selected.clear());
+    document.querySelectorAll(".chip").forEach((chip) => chip.setAttribute("aria-pressed", "false"));
+    applyFilters();
+}
+
+// Function to show versions matching search and filters, and cards with a visible version
 function applyFilters() {
     const searchInput = document.getElementById("searchInput");
-    const searchTerm = searchInput.value.toLowerCase();
-    const tagBoxes = [...document.querySelectorAll("#tagFilter input[value]")];
-    const checkedTags = new Set(tagBoxes.filter((box) => box.checked).map((box) => box.value));
-
-    // "All" is checked if all tags are, and partially checked if some are
-    const allBox = document.querySelector("#tagFilter .tag-all input");
-    allBox.checked = checkedTags.size === tagBoxes.length;
-    allBox.indeterminate = checkedTags.size > 0 && !allBox.checked;
-
-    const cards = document.querySelectorAll(".api-card");
+    const searchWords = searchInput.value.toLowerCase().split(/\s+/).filter(Boolean);
+    const lines = document.querySelectorAll(".version-line");
     let visibleCount = 0;
 
-    cards.forEach((card) => {
-        let visibleVersions = 0;
-        card.querySelectorAll(".version-line").forEach((line) => {
-            const visible = line.dataset.tags.split(",").every((tag) => checkedTags.has(tag));
-            line.style.display = visible ? "" : "none";
-            if (visible) visibleVersions++;
-        });
-
-        if (visibleVersions > 0 && card.dataset.searchText.includes(searchTerm)) {
-            card.style.display = "block";
-            visibleCount++;
-        } else {
-            card.style.display = "none";
-        }
+    lines.forEach((line) => {
+        const visible = filterGroups.every((group) =>
+            activeFilters[group.key].size === 0 || activeFilters[group.key].has(line.dataset[group.key]))
+            && searchWords.every((word) => line.dataset.search.includes(word));
+        line.hidden = !visible;
+        if (visible) visibleCount++;
     });
 
-    // Display message if no results
-    const grid = document.getElementById("apiGrid");
-    const noResults = grid.querySelector(".no-results");
-    if (noResults) {
-        noResults.remove();
-    }
+    document.querySelectorAll(".api-card").forEach((card) => {
+        const total = card.querySelectorAll(".version-line").length;
+        const shown = card.querySelectorAll(".version-line:not([hidden])").length;
+        const files = total > 1 ? "files" : "file";
+        card.querySelector(".api-count").textContent = shown < total ? `${shown} of ${total} ${files}` : `${total} ${files}`;
+        card.hidden = shown === 0;
+    });
 
-    if (visibleCount === 0) {
-        const noResultsDiv = document.createElement("div");
-        noResultsDiv.className = "no-results";
-        noResultsDiv.style.gridColumn = "1 / -1";
-        noResultsDiv.innerHTML = `
-            <div class="no-results-icon">🔍</div>
-            <div class="no-results-text">No APIs found</div>
-        `;
-        if (searchInput.value !== "") {
-            noResultsDiv.lastElementChild.textContent += ` for "${searchInput.value}"`;
-        }
-        grid.appendChild(noResultsDiv);
-    }
+    const filtered = visibleCount < lines.length;
+    document.getElementById("resultCount").textContent = filtered
+        ? `Showing ${visibleCount} of ${lines.length} specification files`
+        : `${lines.length} specification files`;
+    document.getElementById("clearFilters").hidden = !filtered && searchWords.length === 0;
+    document.getElementById("noResults").hidden = visibleCount > 0;
+}
+
+// Function to copy the file URL, and show the result on the button
+async function copyUrl(button) {
+    const copied = await navigator.clipboard.writeText(button.dataset.url).then(() => true, (error) => {
+        console.error(error);
+        return false;
+    });
+    button.innerHTML = copied ? `${icon("check")}Copied` : "Copy failed";
+    button.classList.add(copied ? "copied" : "failed");
+    setTimeout(() => {
+        button.innerHTML = icon("copy");
+        button.classList.remove("copied", "failed");
+    }, 1500);
 }
 
 // Initialization
 document.addEventListener("DOMContentLoaded", () => {
     displayApis();
-    updateStats();
-    createTagFilter();
+    createFilters();
+    applyFilters();
 
     const searchInput = document.getElementById("searchInput");
     searchInput.addEventListener("input", applyFilters);
+    document.getElementById("clearFilters").addEventListener("click", clearFilters);
+
+    document.getElementById("apiGrid").addEventListener("click", (event) => {
+        const button = event.target.closest(".copy-button");
+        if (button) copyUrl(button);
+    });
+
+    // "/" focuses the search, Escape clears it
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "/" && !event.target.closest("input, textarea")) {
+            event.preventDefault();
+            searchInput.focus();
+        }
+    });
+    searchInput.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            searchInput.value = "";
+            applyFilters();
+        }
+    });
 });

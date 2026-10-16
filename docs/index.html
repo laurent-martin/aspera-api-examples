@@ -4,50 +4,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
     <link rel="icon" type="image/svg+xml" href="openapi.svg">
-    <title>Aspera API Menu</title>
+    <title>Aspera APIs</title>
+    <script>
+        // Use the light/dark mode selected in the Redoc viewer, else the OS one
+        try {
+            const mode = localStorage.getItem("redoc.colorMode");
+            if (mode === "light" || mode === "dark") document.documentElement.classList.add(mode);
+        } catch { }
+    </script>
     <link rel="stylesheet" href="./common.css">
     <link rel="stylesheet" href="./index.css">
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>🚀 Aspera API Menu</h1>
-            <p class="subtitle">Explore and test IBM Aspera OpenAPI specifications</p>
+    <nav class="top-bar">
+        <a href="index.html" class="brand">
+            <img src="openapi.svg" alt="">
+            Aspera APIs
+        </a>
+        <div class="top-bar-actions">
+            <a href="openapi.html" class="top-link" title="View any OpenAPI file by URL">Open URL</a>
+            <a href="https://github.com/laurent-martin/aspera-api-examples" class="top-link" title="GitHub repository"
+                aria-label="GitHub repository">
+                <svg class="icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <path
+                        d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z" />
+                </svg>
+            </a>
+        </div>
+    </nav>
+
+    <main class="page">
+        <header class="page-header">
+            <h1>IBM Aspera API specifications</h1>
+            <p class="subtitle">OpenAPI descriptions of IBM Aspera products: browse the documentation, or copy the
+                file URL into your tools.</p>
         </header>
-        <div class="search-box">
-            <input type="text" id="searchInput" class="text-input"
-                placeholder="🔍 Search APIs by name, version, or format...">
-            <div id="tagFilter" class="tag-filter"></div>
+        <div class="toolbar">
+            <div class="search">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-3.5-3.5" />
+                </svg>
+                <input type="search" id="searchInput" class="text-input" placeholder="Search by name, version or format"
+                    aria-label="Search APIs" autocomplete="off">
+                <kbd class="kbd" title="Press / to search">/</kbd>
+            </div>
+            <div id="filters" class="filters"></div>
+        </div>
+        <div class="results-bar">
+            <span id="resultCount"></span>
+            <button type="button" id="clearFilters" class="link-button" hidden>Clear filters</button>
         </div>
         <div id="apiGrid" class="api-grid"></div>
-        <div class="stats">
-            <div class="stats-content">
-                <div class="stat-item">
-                    <div class="stat-number" id="totalApis">0</div>
-                    <div class="stat-label">API Specifications</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="yamlCount">0</div>
-                    <div class="stat-label">YAML Files</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="jsonCount">0</div>
-                    <div class="stat-label">JSON Files</div>
-                </div>
-            </div>
-        </div>
-        <footer>
-            <p>IBM Aspera API Examples Repository</p>
-            <p style="margin-top: 10px; font-size: 0.9rem;">
-                <a href="https://github.com/laurent-martin/aspera-api-examples"
-                    style="color: white; text-decoration: none;">
-                    📦 GitHub Repository
-                </a>
-            </p>
-        </footer>
-    </div>
+        <p id="noResults" class="no-results" hidden>No specification matches the search and filters.</p>
+    </main>
+
+    <footer class="page-footer">
+        IBM Aspera API Examples ·
+        <a href="https://github.com/laurent-martin/aspera-api-examples">GitHub repository</a>
+    </footer>
     <script src="./index.js"></script>
 </body>
 

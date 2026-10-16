@@ -168,19 +168,16 @@ if (!specUrl) {
       window.location.pathname + "?spec=" + encodeURIComponent(url);
   }
 
-  document.getElementById("load-btn").addEventListener("click", loadSpec);
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") loadSpec();
+  document.getElementById("spec-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    loadSpec();
   });
 
 } else {
 
   const topBar = document.getElementById("top-bar");
   document.getElementById("form-screen").hidden = true;
-  topBar.hidden = false;
   document.getElementById("redoc-container").hidden = false;
-  document.body.classList.add("redoc-active");
 
   const redocOptions = {
     downloadUrls: [{ url: specUrl, title: decodeURIComponent(new URL(specUrl).pathname.split("/").pop()) }],
@@ -193,6 +190,7 @@ if (!specUrl) {
 
   Promise.all([redoc, fetchSpec(specUrl)]).then(
     ([Redoc, spec]) => {
+      if (spec.info?.title) document.title = `${spec.info.title} · Aspera APIs`;
       const tags = listTags(spec);
       const selected = new Set(tagParams.length > 0 ? tagParams.filter((tag) => tags.includes(tag)) : tags);
       let root = null;

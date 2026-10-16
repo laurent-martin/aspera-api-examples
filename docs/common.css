@@ -1,3 +1,34 @@
+/* ── Design tokens ─────────────────────────────────────── */
+/* Same palette as Redoc, light or dark: follows the OS, or the mode selected in Redoc (class on html) */
+:root {
+    color-scheme: light dark;
+    --app-bg: light-dark(#ffffff, #22242b);
+    --app-layer: light-dark(#fbfbfc, #2a2b33);
+    --app-hover: light-dark(#f3f3f6, #2a2b33);
+    --app-layer-hover: light-dark(#f3f3f6, #33353d);
+    --app-active: light-dark(#ededf2, #3b3c45);
+    --app-border: light-dark(#dcdde5, #555761);
+    --app-border-subtle: light-dark(#ededf2, #3b3c45);
+    --app-text: light-dark(#1a1c21, #fbfbfc);
+    --app-text-secondary: light-dark(#3b3c45, #c4c6d1);
+    --app-text-muted: light-dark(#555761, #9b9ca8);
+    --app-accent: light-dark(#0f62fe, #6eabfa);
+    --app-on-accent: light-dark(#ffffff, #22242b);
+    --app-accent-tint: color-mix(in srgb, var(--app-accent) 12%, transparent);
+    --app-danger: light-dark(#da1e28, #ff8389);
+    --app-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    --app-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Ubuntu, sans-serif;
+    --app-font-mono: ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Roboto Mono', monospace;
+}
+
+:root.light {
+    color-scheme: light;
+}
+
+:root.dark {
+    color-scheme: dark;
+}
+
 /* ── Reset ─────────────────────────────────────────────── */
 * {
     margin: 0;
@@ -5,92 +36,158 @@
     box-sizing: border-box;
 }
 
+[hidden] {
+    display: none !important;
+}
+
 /* ── Base ──────────────────────────────────────────────── */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
-    padding: 20px;
-    color: #333;
+    background: var(--app-bg);
+    color: var(--app-text);
+    font-family: var(--app-font);
+    font-size: 14px;
+    line-height: 1.5;
 }
 
-/* ── Layout ────────────────────────────────────────────── */
-.container {
+a {
+    color: var(--app-accent);
+}
+
+/* ── Top bar ───────────────────────────────────────────── */
+.top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 48px;
+    padding: 0 16px;
+    background: var(--app-bg);
+    border-bottom: 1px solid var(--app-border-subtle);
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: inherit;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.brand img {
+    width: 20px;
+    height: 20px;
+}
+
+.top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.top-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: 6px;
+    color: var(--app-text-secondary);
+    text-decoration: none;
+}
+
+.top-link:hover {
+    background: var(--app-hover);
+    color: var(--app-text);
+}
+
+/* ── Page ──────────────────────────────────────────────── */
+.page {
     max-width: 1200px;
     margin: 0 auto;
+    padding: 32px 16px 48px;
 }
 
-/* ── Header ────────────────────────────────────────────── */
-header {
-    text-align: center;
-    color: white;
-    margin-bottom: 40px;
-    padding: 40px 20px;
+.page-header {
+    margin-bottom: 24px;
 }
 
 h1 {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
 }
 
 .subtitle {
-    font-size: 1.1rem;
-    opacity: 0.9;
+    margin-top: 6px;
+    color: var(--app-text-muted);
+    font-size: 15px;
 }
 
-/* ── Card ──────────────────────────────────────────────── */
-.card {
-    background: white;
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+.page-footer {
+    padding: 24px 16px;
+    border-top: 1px solid var(--app-border-subtle);
+    color: var(--app-text-muted);
+    font-size: 13px;
+    text-align: center;
 }
 
 /* ── Form elements ─────────────────────────────────────── */
 .text-input {
     width: 100%;
-    padding: 15px 20px;
-    font-size: 1rem;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    outline: none;
-    transition: border-color 0.3s;
-    box-sizing: border-box;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--app-border);
+    border-radius: 6px;
+    background: var(--app-bg);
+    color: var(--app-text);
+    font: inherit;
+    font-size: 15px;
+}
+
+.text-input::placeholder {
+    color: var(--app-text-muted);
 }
 
 .text-input:focus {
-    border-color: #667eea;
+    border-color: var(--app-accent);
+    outline: 3px solid var(--app-accent-tint);
 }
 
 .btn {
-    padding: 12px 24px;
-    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 38px;
+    padding: 0 16px;
     border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    border-radius: 6px;
+    background: var(--app-accent);
+    color: var(--app-on-accent);
+    font: inherit;
     font-weight: 600;
-    transition: opacity 0.2s;
+    cursor: pointer;
 }
 
 .btn:hover {
-    opacity: 0.9;
+    background: color-mix(in srgb, var(--app-accent) 88%, var(--app-text));
 }
 
-/* ── Footer ────────────────────────────────────────────── */
-footer {
-    text-align: center;
-    color: white;
-    margin-top: 40px;
-    padding: 20px;
-    opacity: 0.8;
+.btn:focus-visible,
+.top-link:focus-visible,
+.brand:focus-visible {
+    outline: 2px solid var(--app-accent);
+    outline-offset: 2px;
 }
 
-/* ── Responsive ────────────────────────────────────────── */
-@media (max-width: 768px) {
-    h1 {
-        font-size: 2rem;
-    }
+.icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
 }
