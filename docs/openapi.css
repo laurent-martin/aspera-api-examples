@@ -38,6 +38,11 @@ body.redoc-active {
     height: 100vh;
 }
 
+#redoc-container.error {
+    margin: 0;
+    padding: 20px;
+}
+
 /* ── Tag filter ────────────────────────────────────────── */
 #tag-filter {
     padding: 10px 20px;

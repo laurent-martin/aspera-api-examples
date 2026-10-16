@@ -174,6 +174,11 @@ if (!specUrl) {
     },
     // Let Redoc load the spec and report the error
     () => Redoc.init(addCacheBuster(specUrl), redocOptions, container)
-  );
+  ).catch((error) => {
+    // Redoc not loaded, or failed: show the error instead of an empty page
+    console.error(error);
+    container.classList.add("error");
+    container.textContent = `Failed to display ${specUrl}: ${error.message}`;
+  });
 
 }
