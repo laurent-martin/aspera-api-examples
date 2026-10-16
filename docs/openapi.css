@@ -28,14 +28,17 @@
 }
 
 /* ── Redoc viewer ──────────────────────────────────────── */
-body.redoc-active {
-    background: white;
-    padding: 0;
-    min-height: unset;
+/* Colors come from Redoc variables (light or dark), with fallbacks until Redoc is loaded */
+[hidden] {
+    display: none !important;
 }
 
-#redoc-container {
-    height: 100vh;
+body.redoc-active {
+    color-scheme: light dark;
+    background: var(--bg-color, light-dark(#ffffff, #22242b));
+    color: var(--text-color-primary, light-dark(#1a1c21, #fbfbfc));
+    padding: 0;
+    min-height: unset;
 }
 
 #redoc-container.error {
@@ -43,34 +46,120 @@ body.redoc-active {
     padding: 20px;
 }
 
-/* ── Tag filter ────────────────────────────────────────── */
-#tag-filter {
-    padding: 10px 20px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e0e0e0;
-    font-size: 0.9rem;
+/* ── Top bar ───────────────────────────────────────────── */
+#top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 48px;
+    padding: 0 16px;
+    background: var(--bg-color, light-dark(#ffffff, #22242b));
+    border-bottom: 1px solid var(--border-color-secondary, light-dark(#ededf2, #3b3c45));
+    font-family: var(--font-family-base, system-ui, sans-serif);
+    font-size: 14px;
 }
 
-#tag-filter summary {
-    cursor: pointer;
+#top-bar .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: inherit;
     font-weight: 600;
+    text-decoration: none;
 }
 
+#top-bar .brand img {
+    width: 20px;
+    height: 20px;
+}
+
+/* ── Tag filter ────────────────────────────────────────── */
+.tag-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 10px 0 12px;
+    border: 1px solid var(--border-color-primary, light-dark(#dcdde5, #555761));
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.tag-button:hover {
+    background: var(--bg-color-hover, light-dark(#f3f3f6, #2a2b33));
+}
+
+#tag-count {
+    padding: 1px 7px;
+    border-radius: 10px;
+    background: var(--bg-color-active, light-dark(#ededf2, #3b3c45));
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+#tag-filter.filtered .tag-button {
+    border-color: var(--link-color-primary, light-dark(#1f7cff, #6eabfa));
+}
+
+#tag-filter.filtered #tag-count {
+    background: var(--link-color-primary, light-dark(#1f7cff, #6eabfa));
+    color: var(--bg-color, light-dark(#ffffff, #22242b));
+}
+
+/* Popover below the top bar, right aligned (hidden until opened) */
 #tag-list {
+    position: fixed;
+    inset: 52px 16px auto auto;
+    width: min(760px, calc(100vw - 32px));
+    max-height: calc(100vh - 72px);
+    margin: 0;
+    padding: 8px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color-primary, light-dark(#dcdde5, #555761));
+    border-radius: 8px;
+    background: var(--bg-color-raised, light-dark(#ffffff, #22242b));
+    color: var(--text-color-primary, light-dark(#1a1c21, #fbfbfc));
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    font-family: var(--font-family-base, system-ui, sans-serif);
+    font-size: 14px;
+}
+
+#tag-list:popover-open {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 4px 16px;
-    padding-top: 10px;
+    gap: 2px 8px;
 }
 
 #tag-list label {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    overflow-wrap: anywhere;
     cursor: pointer;
+}
+
+#tag-list label:hover {
+    background: var(--bg-color-hover, light-dark(#f3f3f6, #2a2b33));
+}
+
+#tag-list input {
+    flex-shrink: 0;
+    accent-color: var(--link-color-primary, light-dark(#1f7cff, #6eabfa));
 }
 
 #tag-list .tag-all {
     grid-column: 1 / -1;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border-color-secondary, light-dark(#ededf2, #3b3c45));
+    border-radius: 4px 4px 0 0;
     font-weight: 600;
 }

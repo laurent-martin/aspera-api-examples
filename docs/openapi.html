@@ -7,7 +7,6 @@
   <link rel="icon" type="image/svg+xml" href="openapi.svg">
   <title>OpenAPI Viewer</title>
 
-  <script src="https://cdn.redoc.ly/redoc/v2.5.4/bundles/redoc.standalone.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" defer></script>
 
   <link rel="stylesheet" href="common.css">
@@ -45,10 +44,21 @@
     </footer>
   </div>
 
-  <details id="tag-filter" hidden>
-    <summary>Tags <span id="tag-count"></span></summary>
-    <div id="tag-list"></div>
-  </details>
+  <nav id="top-bar" hidden>
+    <a href="index.html" class="brand" title="All Aspera APIs">
+      <img src="openapi.svg" alt="">
+      OpenAPI Viewer
+    </a>
+    <div id="tag-filter" hidden>
+      <button type="button" class="tag-button" popovertarget="tag-list">
+        Tags <span id="tag-count"></span>
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+      </button>
+      <div id="tag-list" popover></div>
+    </div>
+  </nav>
 
   <div id="redoc-container" hidden></div>
 

@@ -4,6 +4,8 @@ const specUrl = params.get("spec");
 const tagParams = params.getAll("tag");
 
 const HTTP_METHODS = ["get", "put", "post", "delete", "options", "head", "patch", "trace"];
+// Redoc 3 is an ES module: pin the version, "latest" may break the page
+const REDOC_URL = "https://cdn.redoc.ly/redoc/v3.0.1/bundles/redoc.standalone.js";
 
 function addCacheBuster(url) {
   const u = new URL(url);
@@ -78,19 +80,20 @@ function filterSpec(spec, selected) {
 }
 
 /**
- * Reload the page with the selected tags in URL.
- * @param {string[]} selected selected tag names
+ * Save the selected tags in URL, without reloading the page.
  * @param {string[]} tags all tag names
+ * @param {Set<string>} selected selected tag names
  */
-function selectTags(selected, tags) {
+function saveTags(tags, selected) {
   const url = new URL(window.location.href);
   url.hash = "";
   url.searchParams.delete("tag");
-  if (selected.length < tags.length) {
+  if (selected.size < tags.length) {
     // An empty value means no tag selected
-    (selected.length > 0 ? selected : [""]).forEach((tag) => url.searchParams.append("tag", tag));
+    const values = tags.filter((tag) => selected.has(tag));
+    (values.length > 0 ? values : [""]).forEach((tag) => url.searchParams.append("tag", tag));
   }
-  window.location.replace(url.toString());
+  history.replaceState(null, "", url);
 }
 
 /**
@@ -113,21 +116,40 @@ function addCheckbox(container, text, checked) {
 /**
  * Show the tag filter: one checkbox for all tags, and one per tag.
  * @param {string[]} tags all tag names
- * @param {Set<string>} selected selected tag names
+ * @param {Set<string>} selected selected tag names, updated on change
+ * @param {function} onChange called when the selection changes
  */
-function showTagFilter(tags, selected) {
+function showTagFilter(tags, selected, onChange) {
+  const filter = document.getElementById("tag-filter");
   const list = document.getElementById("tag-list");
-  const allBox = addCheckbox(list, "All", selected.size === tags.length);
-  allBox.indeterminate = selected.size > 0 && selected.size < tags.length;
+  const allBox = addCheckbox(list, "All", false);
   allBox.parentElement.classList.add("tag-all");
   const tagBoxes = tags.map((tag) => addCheckbox(list, tag, selected.has(tag)));
-  allBox.addEventListener("change", () => selectTags(allBox.checked ? tags : [], tags));
-  tagBoxes.forEach((box) => box.addEventListener("change", () =>
-    selectTags(tags.filter((_, index) => tagBoxes[index].checked), tags)));
-  document.getElementById("tag-count").textContent = `(${selected.size}/${tags.length})`;
-  const panel = document.getElementById("tag-filter");
-  panel.open = selected.size < tags.length;
-  panel.hidden = false;
+  // Show the selection state on "All" and on the button
+  const update = () => {
+    allBox.checked = selected.size === tags.length;
+    allBox.indeterminate = selected.size > 0 && !allBox.checked;
+    document.getElementById("tag-count").textContent = `${selected.size}/${tags.length}`;
+    filter.classList.toggle("filtered", !allBox.checked);
+  };
+  const apply = () => {
+    selected.clear();
+    tags.forEach((tag, index) => {
+      if (tagBoxes[index].checked) selected.add(tag);
+    });
+    update();
+    saveTags(tags, selected);
+    onChange();
+  };
+  allBox.addEventListener("change", () => {
+    tagBoxes.forEach((box) => {
+      box.checked = allBox.checked;
+    });
+    apply();
+  });
+  tagBoxes.forEach((box) => box.addEventListener("change", apply));
+  update();
+  filter.hidden = false;
 }
 
 if (!specUrl) {
@@ -154,26 +176,36 @@ if (!specUrl) {
 
 } else {
 
+  const topBar = document.getElementById("top-bar");
   document.getElementById("form-screen").hidden = true;
+  topBar.hidden = false;
   document.getElementById("redoc-container").hidden = false;
   document.body.classList.add("redoc-active");
 
   const redocOptions = {
-    hideDownloadButton: false,
-    downloadDefinitionUrl: specUrl,
-    expandResponses: "200,201"
+    downloadUrls: [{ url: specUrl, title: decodeURIComponent(new URL(specUrl).pathname.split("/").pop()) }],
+    // Keep the sidebar and anchors below the top bar
+    scrollYOffset: () => topBar.offsetHeight,
+    disableTelemetry: true
   };
   const container = document.getElementById("redoc-container");
+  const redoc = import(REDOC_URL);
 
-  fetchSpec(specUrl).then(
-    (spec) => {
+  Promise.all([redoc, fetchSpec(specUrl)]).then(
+    ([Redoc, spec]) => {
       const tags = listTags(spec);
       const selected = new Set(tagParams.length > 0 ? tagParams.filter((tag) => tags.includes(tag)) : tags);
-      if (tags.length > 1) showTagFilter(tags, selected);
-      Redoc.init(selected.size < tags.length ? filterSpec(spec, selected) : spec, redocOptions, container);
+      let root = null;
+      // Render again when the selection changes: Redoc may modify the spec, so give it a copy
+      const render = () => {
+        root?.unmount();
+        root = Redoc.init(structuredClone(selected.size < tags.length ? filterSpec(spec, selected) : spec), redocOptions, container);
+      };
+      if (tags.length > 1) showTagFilter(tags, selected, render);
+      render();
     },
     // Let Redoc load the spec and report the error
-    () => Redoc.init(addCacheBuster(specUrl), redocOptions, container)
+    () => redoc.then((Redoc) => Redoc.init(addCacheBuster(specUrl), redocOptions, container))
   ).catch((error) => {
     // Redoc not loaded, or failed: show the error instead of an empty page
     console.error(error);
