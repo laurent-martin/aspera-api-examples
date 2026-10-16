@@ -29,6 +29,10 @@ const openApiSpecs = [
         specVersion: "OpenAPI 3.0",
     },
     {
+        filename: "IBM Aspera faspio Gateway API-1.0.0-enhanced.yaml",
+        specVersion: "OpenAPI 3.1",
+    },
+    {
         filename: "IBM Aspera faspio Gateway API-1.0.0.json",
         specVersion: "OpenAPI 3.0",
     },
