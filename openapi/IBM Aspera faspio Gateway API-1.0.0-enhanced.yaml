@@ -256,7 +256,7 @@ paths:
                         protocol: tcp
                         tls_enabled: false
                       forward:
-                        hosts:
+                        host:
                           - gw2.example.com
                           - 10.0.0.2
                         port:
@@ -388,7 +388,7 @@ paths:
                   protocol: tcp
                   tls_enabled: false
                 forward:
-                  hosts:
+                  host:
                     - gw2.example.com
                   port:
                     - 3000
@@ -757,6 +757,7 @@ components:
           examples:
             - false
       required:
+        - host
         - port
         - protocol
         - tls_enabled
@@ -777,6 +778,11 @@ components:
           type: boolean
           examples:
             - false
+      required:
+        - bind_address
+        - port
+        - protocol
+        - tls_enabled
     ForwardAbutmentResponse:
       description: Forward abutment as returned by the API (ports expanded to an
         integer array).
@@ -787,7 +793,7 @@ components:
           type: string
           examples:
             - 192.168.1.10
-        hosts:
+        host:
           description: List of remote peer hostnames / IP addresses.
           type: array
           items:
@@ -803,6 +809,11 @@ components:
           type: boolean
           examples:
             - false
+      required:
+        - host
+        - port
+        - protocol
+        - tls_enabled
     # ------------------------------------------------------------------
     # Bridge schemas
     # ------------------------------------------------------------------
@@ -854,6 +865,12 @@ components:
           $ref: '#/components/schemas/LocalAbutmentResponse'
         forward:
           $ref: '#/components/schemas/ForwardAbutmentResponse'
+      required:
+        - id
+        - name
+        - source
+        - local
+        - forward
     # ------------------------------------------------------------------
     # OAuth 2.0
     # ------------------------------------------------------------------
@@ -917,6 +934,10 @@ components:
           format: int64
           examples:
             - 3600
+      required:
+        - access_token
+        - token_type
+        - expires_in
     # ------------------------------------------------------------------
     # Error schema
     # ------------------------------------------------------------------
@@ -932,6 +953,8 @@ components:
           type: string
           examples:
             - bridge not found
+      required:
+        - message
   # ---------------------------------------------------------------------------
   # Reusable responses
   # ---------------------------------------------------------------------------
