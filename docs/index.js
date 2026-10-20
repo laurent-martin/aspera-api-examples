@@ -25,6 +25,10 @@ const openApiSpecs = [
         specVersion: "OpenAPI 3.0",
     },
     {
+        filename: "IBM Aspera Orchestrator API-v1-enhanced.yaml",
+        specVersion: "OpenAPI 3.0",
+    },
+    {
         filename: "IBM Aspera Orchestrator API-v1.yaml",
         specVersion: "OpenAPI 3.0",
     },
