@@ -63,18 +63,41 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                  description: User login name
-                password:
-                  type: string
-                  format: password
-                  description: User password
-                api_key:
-                  type: string
-                  description: API key, instead of `username` and `password`
+              description: Either `username` and `password`, or `api_key`
+              oneOf:
+                - title: Username and password
+                  type: object
+                  required:
+                    - username
+                    - password
+                  properties:
+                    username:
+                      type: string
+                      description: User login name
+                    password:
+                      type: string
+                      format: password
+                      description: User password
+                  additionalProperties: false
+                - title: API key
+                  type: object
+                  required:
+                    - api_key
+                  properties:
+                    api_key:
+                      type: string
+                      description: API key
+                  additionalProperties: false
+            examples:
+              credentials:
+                summary: Username and password
+                value:
+                  username: admin
+                  password: mypassword
+              api_key:
+                summary: API key
+                value:
+                  api_key: my_api_key
       responses:
         '200':
           description: Successfully authenticated
