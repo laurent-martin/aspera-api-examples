@@ -20,12 +20,13 @@ info:
     2. Include the token in subsequent requests using the Authorization header:
        `Authorization: Bearer <your_token>`
 
-    ### Basic Authentication (When JWT is Disabled)
+    ### Credentials in Each Request (When JWT is Disabled)
 
-    If JWT authentication is disabled in your Orchestrator configuration:
+    If JWT authentication is disabled in your Orchestrator configuration (`/api/login` then returns 403), give the credentials with every API request, either:
 
-    - Add query parameters to every API request: `?login=username&password=password`
-    - Example: `/api/workflows_list?login=admin&password=mypassword&format=json`
+    - as query parameters `login` and `password`, e.g. `/api/workflows_list?login=admin&password=mypassword&format=json`
+    - as query parameters `login` and `api_key` (the API key of the user)
+    - with HTTP Basic authentication
 
     **Note:** Check your Orchestrator configuration to determine which authentication mode is active.
 
@@ -50,6 +51,13 @@ servers:
     description: 'Configured host: 158.176.9.141'
   - url: https://orchestrator.aspera-emea.com/aspera/orchestrator
     description: 'Configured host: orchestrator.aspera-emea.com'
+security:
+  - bearerAuth: []
+  - basicAuth: []
+  - loginQuery: []
+    passwordQuery: []
+  - loginQuery: []
+    apiKeyQuery: []
 paths:
   /api/login:
     post:
@@ -63,7 +71,7 @@ paths:
         content:
           application/json:
             schema:
-              description: Either `username` and `password`, or `api_key`
+              description: '`username`, with either `password` or `api_key` (the API key of that user)'
               oneOf:
                 - title: Username and password
                   type: object
@@ -79,14 +87,18 @@ paths:
                       format: password
                       description: User password
                   additionalProperties: false
-                - title: API key
+                - title: Username and API key
                   type: object
                   required:
+                    - username
                     - api_key
                   properties:
+                    username:
+                      type: string
+                      description: User login name
                     api_key:
                       type: string
-                      description: API key
+                      description: API key of the user
                   additionalProperties: false
             examples:
               credentials:
@@ -95,8 +107,9 @@ paths:
                   username: admin
                   password: mypassword
               api_key:
-                summary: API key
+                summary: Username and API key
                 value:
+                  username: admin
                   api_key: my_api_key
       responses:
         '200':
@@ -133,8 +146,6 @@ paths:
       description: 'JSON: `{"workflows": {"time", "action", "id", "workflow": [{"id", "name", "full_name", "folder_id", "portable_id", "published_status", "published_revision_id", "latest_revision_id", "last_modification", "comments"}]}}`.'
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Format'
       responses:
@@ -149,8 +160,6 @@ paths:
       description: 'JSON: `{"workflows": {"workflow": [{"id", "name", "status" (running or not running), "last_activity"}]}}`.'
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: query
@@ -170,8 +179,6 @@ paths:
       description: 'JSON: `{"workflows": {"workflow": {"name", "id", "statuses": [{"count", "last_activity", "workflow_name", "status"}]}}}`.'
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -202,8 +209,6 @@ paths:
       description: 'JSON: `{"workflow_inputs_spec": {"workflow_name", "workflow_id", "parameter": [{"id", "name", "value_type", "optional", "value"}]}}`.'
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -234,8 +239,6 @@ paths:
       description: 'JSON: `{"workflow_outputs_spec": {"output": [{"context_id", "name", "workflow_id", "step_name", "variable_name", "value_type", "variable_type"}]}}`.'
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -261,8 +264,6 @@ paths:
       description: Always creates a new workflow. The response is the new workflow as JSON, whatever the format.
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -279,6 +280,7 @@ paths:
                   description: The workflow file to import (.wkf or .yml)
                 import_file_name:
                   type: string
+                  pattern: (wkf|yml)$
                   description: File name ending with `wkf` or `yml`. The file is saved under this name in the import folder of the server.
                   examples:
                     - my_workflow.wkf
@@ -311,8 +313,6 @@ paths:
       description: 'Analyzes a workflow file present on the Orchestrator host, and returns the list expected by `import_with_constraints`, with the possible choices for each conflict with existing sub-workflows, global templates and remote nodes, and the plugins that are not enabled. The file existence is not checked: a wrong path returns the same empty lists as a file without conflict.'
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       parameters:
         - name: file
           in: query
@@ -343,8 +343,6 @@ paths:
       description: 'Imports a workflow file present on the Orchestrator host, as a new workflow or as a new revision of an existing workflow. The workflow is not published. Orchestrator does not check what `find_constraints` reports: if plugins to enable are listed and `Auto-enable missing plugins?` is not `true`, the call fails with an internal error; a conflict without choice is imported as a copy, without error. `Auto-enable missing plugins?` must be a JSON boolean: the string `"false"` is taken as true.'
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -354,8 +352,76 @@ paths:
               description: Array of six objects with one key each, in this order
               minItems: 6
               maxItems: 6
-              items:
-                type: object
+              prefixItems:
+                - type: object
+                  required:
+                    - filename
+                  properties:
+                    filename:
+                      type: string
+                      description: Path of the workflow file on the Orchestrator host
+                  additionalProperties: false
+                - type: object
+                  required:
+                    - add as revision
+                  properties:
+                    add as revision:
+                      type:
+                        - integer
+                        - string
+                        - 'null'
+                      description: ID or portable ID of the workflow to add a revision to, or `null` for a new workflow
+                  additionalProperties: false
+                - type: object
+                  required:
+                    - subwf constraints
+                  properties:
+                    subwf constraints:
+                      type: object
+                      description: Sub-workflow name to choice
+                      additionalProperties:
+                        type: string
+                        enum:
+                          - Map to the Existing Sub-Workflow
+                          - Create a new Sub-Workflow with a unique name
+                          - Add a new revision to the existing Sub-Workflow
+                  additionalProperties: false
+                - type: object
+                  required:
+                    - action template constraints
+                  properties:
+                    action template constraints:
+                      type: object
+                      description: Global template name to choice
+                      additionalProperties:
+                        type: string
+                        enum:
+                          - Map to the existing Global Template
+                          - Create a new Global Template with a different name
+                          - Override the existing Global Template with this new template
+                  additionalProperties: false
+                - type: object
+                  required:
+                    - remote node constraints
+                  properties:
+                    remote node constraints:
+                      type: object
+                      description: Remote node name to choice
+                      additionalProperties:
+                        type: string
+                        enum:
+                          - Map to the existing Remote Node
+                          - Create a new Remote Node with a different name
+                          - Override the Existing Remote Node with this importing node
+                  additionalProperties: false
+                - type: object
+                  required:
+                    - Auto-enable missing plugins?
+                  properties:
+                    Auto-enable missing plugins?:
+                      type: boolean
+                  additionalProperties: false
+              items: false
               examples:
                 - - filename: /opt/aspera/orchestrator/var/run/orchestrator/workflows/import/my_workflow.yml
                   - add as revision: 239
@@ -379,8 +445,6 @@ paths:
       description: Publishes the last whiteboard revision. The result is `true`, or `false` when the whiteboard has no `error_free` value.
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: query
@@ -410,8 +474,6 @@ paths:
       description: Returns the workflow file (`.yml`), or a package (`.wkf`) with its sub-workflows and remote nodes.
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -441,8 +503,6 @@ paths:
       description: 'JSON: `{"parent_workflows": [<workflow id>...]}`.'
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -468,8 +528,6 @@ paths:
       description: 'JSON: `[{"step_id", "step_name", "step_status", "wf_id", "wo_id", "wo_status"}]`.'
       tags:
         - Workflows
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - name: type
@@ -491,8 +549,6 @@ paths:
       description: 'JSON: `{"work_orders": [...]}`.'
       tags:
         - Work Orders
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -522,8 +578,12 @@ paths:
           description: Work orders updated before this date
         - name: tag
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
           description: Comma-separated list of tags, all required
         - name: max_results
           in: query
@@ -547,8 +607,6 @@ paths:
         If the work order includes sub-workflows, only the sub-workflow status is displayed, not the steps within the sub-workflow.
       tags:
         - Work Orders
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -572,8 +630,6 @@ paths:
         Format `text` (or `string`) returns the values, one per line.
       tags:
         - Work Orders
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -626,8 +682,6 @@ paths:
       summary: Cancel a work order
       tags:
         - Work Orders
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -653,8 +707,6 @@ paths:
       description: 'JSON: `{"work_order": {...}, "work_steps": [...]}`.'
       tags:
         - Work Orders
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -675,8 +727,6 @@ paths:
       description: Same as `work_order_reset`, implemented by the work order pages. The response is always XML.
       tags:
         - Work Orders
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -702,8 +752,6 @@ paths:
       summary: Delete a work order and its dependents
       tags:
         - Work Orders
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -732,8 +780,6 @@ paths:
         or `{"work_order": {..., "status": "Not started"}, "missing_parameters": [...]}` (status 400) when required parameters are missing.
       tags:
         - Work Orders
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Format'
         - name: synchronous
@@ -748,6 +794,7 @@ paths:
           in: query
           schema:
             type: integer
+            minimum: 0
           description: 'With `synchronous`, maximum wait in seconds (0 or not set: no limit)'
         - name: explicit_output
           in: query
@@ -776,8 +823,12 @@ paths:
           description: HTTP status to return when the work order ends with status `Failed`
         - name: tags
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
           description: Comma-separated tags of the work order
         - name: preemptive_level
           in: query
@@ -827,8 +878,6 @@ paths:
         With `set_status` or `set_status_details`, modifies the work step and returns its new status.
       tags:
         - Work Steps
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -870,6 +919,8 @@ paths:
           in: query
           schema:
             type: integer
+            minimum: 0
+            maximum: 100
           description: New percentage of completion, with `set_status` or `set_status_details`
         - name: format
           in: query
@@ -892,8 +943,6 @@ paths:
       summary: Cancel a work step
       tags:
         - Work Steps
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -914,14 +963,14 @@ paths:
       description: 'JSON: `{"workstep_reset": true, "work_order": {...}, "work_steps": [...]}`, or a list of them for several IDs.'
       tags:
         - Work Steps
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
           schema:
-            type: string
+            type: array
+            items:
+              type: integer
           description: Work step ID, or comma-separated list of IDs
         - $ref: '#/components/parameters/Format'
       responses:
@@ -936,8 +985,6 @@ paths:
       description: 'JSON: `{"Queues": {"queue": [{"id", "name", "displayed_name", "update_at", "created_at"}]}}`.'
       tags:
         - Queues
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Format'
       responses:
@@ -952,8 +999,6 @@ paths:
       description: 'JSON: `{"queued_items": [{"id", "queued_item", "item_description", "priority", "weight", "position", "rank", ...}], "queue_metadata": {"id", "name", "comments", "administrators", "paused"}}`.'
       tags:
         - Queues
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -974,8 +1019,6 @@ paths:
       description: 'JSON: `{"item", "description", "rank", "priority", "weight", "id"}`.'
       tags:
         - Queues
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1006,8 +1049,12 @@ paths:
           description: Weight of the item
         - name: tags
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
           description: Comma-separated tags
         - $ref: '#/components/parameters/Format'
       responses:
@@ -1022,8 +1069,6 @@ paths:
       description: By item ID, by item (optionally in a queue), or by description (optionally in a queue). Same response as `queued_items`.
       tags:
         - Queues
-      security:
-        - bearerAuth: []
       parameters:
         - name: queued_item_id
           in: query
@@ -1057,8 +1102,6 @@ paths:
       summary: Move a queued item
       tags:
         - Queues
-      security:
-        - bearerAuth: []
       parameters:
         - name: operation
           in: query
@@ -1098,14 +1141,16 @@ paths:
       summary: Move several queued items
       tags:
         - Queues
-      security:
-        - bearerAuth: []
       parameters:
         - name: queued_item_ids
           in: query
+          style: form
+          explode: false
           required: true
           schema:
-            type: string
+            type: array
+            items:
+              type: integer
           description: Comma-separated IDs of queued items
         - name: operation
           in: query
@@ -1130,8 +1175,6 @@ paths:
       summary: Delete a queued item
       tags:
         - Queues
-      security:
-        - bearerAuth: []
       parameters:
         - name: queue_name
           in: query
@@ -1158,8 +1201,6 @@ paths:
       description: 'JSON: `{"monitor": {"monitor_workflows", "monitor_workorders", "monitor_folders", "monitor_nodes", "monitor_scripts"}}`.'
       tags:
         - Monitors
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: query
@@ -1185,8 +1226,6 @@ paths:
       description: 'JSON: list of monitors (all their attributes). Remote node monitors give the names of the monitored remote nodes (`remote_node_name`).'
       tags:
         - Monitors
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - $ref: '#/components/parameters/MonitorType'
@@ -1203,8 +1242,6 @@ paths:
       description: 'JSON: `{"action", "time", "id", "description"}`.'
       tags:
         - Monitors
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1231,8 +1268,6 @@ paths:
       description: 'JSON: `{"action", "time", "id", "description"}`.'
       tags:
         - Monitors
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1259,8 +1294,6 @@ paths:
       description: 'JSON: `{"user", "tasks": [{..., "event", "group", "user", "requested_user_inputs"}]}`.'
       tags:
         - Tasks
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1281,14 +1314,13 @@ paths:
       description: 'JSON: `{"task", "task_inputs", "user_inputs": [{"name", "type", "value", "required"}]}`.'
       tags:
         - Tasks
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: string
+            pattern: ^(WO)?[0-9]+$
           description: Task ID, or `WO<work order ID>` for the user input of a work order
         - name: step_name
           in: query
@@ -1313,8 +1345,6 @@ paths:
       description: 'JSON: `{"task", "user_inputs", "input_provider"}`.'
       tags:
         - Tasks
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1347,8 +1377,6 @@ paths:
       summary: Search the tasks of the current user
       tags:
         - Tasks
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - name: value
@@ -1370,8 +1398,6 @@ paths:
       description: 'JSON: `{"Plugin": [{"name", "version"}]}`.'
       tags:
         - Plugins
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: query
@@ -1390,8 +1416,6 @@ paths:
       summary: Reload a plugin, or all enabled plugins
       tags:
         - Plugins
-      security:
-        - bearerAuth: []
       parameters:
         - name: action_type
           in: query
@@ -1411,8 +1435,6 @@ paths:
       description: 'With format `json`, the body is `{"plugin_set": [...]}`; with format `xml`, `<plugin_set><action_type>...</action_type>...</plugin_set>`.'
       tags:
         - Plugins
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Format'
       requestBody:
@@ -1449,8 +1471,6 @@ paths:
       description: 'JSON: `{"install_id"}`.'
       tags:
         - Plugins
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - name: action_type
@@ -1471,8 +1491,6 @@ paths:
       description: 'JSON: `{"action_type"}`.'
       tags:
         - Plugins
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - name: file
@@ -1494,8 +1512,6 @@ paths:
       description: 'JSON: `{"Portlet": [{"name", "version"}]}`.'
       tags:
         - Portlets
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: query
@@ -1514,8 +1530,6 @@ paths:
       summary: Status of the processes (engine, monitor, workers)
       tags:
         - System
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Format'
       responses:
@@ -1530,8 +1544,6 @@ paths:
       description: 'Returns the status of the processes (as `processes_status`). JSON: `{"processes": {"process": [{"class", "id", "pid", "status", "type"}]}}`.'
       tags:
         - System
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1556,8 +1568,12 @@ paths:
           description: Command (`status` does nothing but returns the status)
         - name: worker_id
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: integer
           description: Comma-separated worker IDs, required for type `worker`
         - $ref: '#/components/parameters/Format'
       responses:
@@ -1572,8 +1588,6 @@ paths:
       description: The query parameters and the request body are stored in table `SharedState`, where a workflow can watch them with a database trigger. The response is always XML.
       tags:
         - System
-      security:
-        - bearerAuth: []
       parameters:
         - name: identifier
           in: query
@@ -1602,8 +1616,6 @@ paths:
       summary: Statistics of the execution queue of the engine
       tags:
         - System
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - $ref: '#/components/parameters/Format'
@@ -1618,8 +1630,6 @@ paths:
       summary: Alerts of the categories the user is subscribed to
       tags:
         - System
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - name: count_only
@@ -1648,8 +1658,6 @@ paths:
       description: 'JSON: `{"remote_orchestrator_info": {"orchestrator-version", "platform", "engine_id"}}`.'
       tags:
         - Remote Nodes
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Format'
       responses:
@@ -1666,8 +1674,6 @@ paths:
         Pass that UUID to `/api/test_step_status` to poll for results.
       tags:
         - Testing
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1678,10 +1684,15 @@ paths:
           example: my_workflow
         - name: step
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
           description: Comma-separated step name(s) to test. Omit to test all steps.
-          example: Get file size
+          example:
+            - Get file size
         - name: case
           in: query
           schema:
@@ -1691,9 +1702,11 @@ paths:
         - name: synchronous
           in: query
           schema:
-            type: boolean
-            default: false
-          description: Wait for all test cases to complete before returning
+            type: string
+            enum:
+              - 'true'
+              - 'false'
+          description: '`true`: wait for all test cases to complete before returning'
         - $ref: '#/components/parameters/Format'
       responses:
         '200':
@@ -1711,14 +1724,13 @@ paths:
         The `id` parameter must be the **Test_run_id UUID** returned by that call, not a numeric workflow or step ID.
       tags:
         - Testing
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: string
+            format: uuid
           description: Test run UUID returned by /api/test_step (e.g. 935e0080-97f5-0135-26f8-34363bc6aedc)
           example: 935e0080-97f5-0135-26f8-34363bc6aedc
         - $ref: '#/components/parameters/Format'
@@ -1734,8 +1746,6 @@ paths:
       description: Returns the text `No Statistics found. Change the filter and try again.` when there is none.
       tags:
         - Statistics
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - name: workflow_id
@@ -1752,6 +1762,7 @@ paths:
           in: query
           schema:
             type: string
+            format: date
           description: 'Statistics of this day, e.g. `2017-04-04`. Not set: monthly statistics.'
         - $ref: '#/components/parameters/Format'
       responses:
@@ -1766,29 +1777,40 @@ paths:
       description: 'Returns the text `No Statistics found. Change the filter and try again.` when there is none. The filters are inserted as is in an SQL condition (`workflow_id in (...)`): give comma-separated numbers or quoted values.'
       tags:
         - Statistics
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - name: workflow_id
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: integer
           description: Comma-separated workflow IDs
         - name: step_id
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: integer
           description: Comma-separated step IDs
         - name: step_type
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
           description: Comma-separated step types, quoted (e.g. `'CustomRuby'`)
         - name: date
           in: query
           schema:
             type: string
+            format: date
           description: 'Statistics of this day, e.g. `2017-04-04`. Not set: monthly statistics.'
         - $ref: '#/components/parameters/Format'
       responses:
@@ -1803,8 +1825,6 @@ paths:
       description: 'JSON: `{"Journal": {"name", "id", "description", "active"}, "Packages": [{"name", "id", "files": [...]}], "Files": [...]}`; each file has `file_id`, `file`, `status`, `status_details`, `created_at`, `updated_at`, and `states` when detailed.'
       tags:
         - Journals
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1822,23 +1842,39 @@ paths:
           description: '`false`: without the states (steps) of each file'
         - name: status
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
           description: Comma-separated statuses, e.g. `In Progress,Processing complete`
         - name: file
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
           description: Comma-separated file paths
         - name: package
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
           description: Comma-separated package names (not with `package_id`)
         - name: package_id
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: integer
           description: Comma-separated package IDs (not with `package`)
         - $ref: '#/components/parameters/Format'
       responses:
@@ -1853,8 +1889,6 @@ paths:
       description: 'JSON: `{"ManagedResource": {...}}`.'
       tags:
         - Resources
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - $ref: '#/components/parameters/PoolName'
@@ -1867,8 +1901,12 @@ paths:
           description: Capacity of the resource
         - name: tags
           in: query
+          style: form
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
           description: Comma-separated tags
         - $ref: '#/components/parameters/Format'
       responses:
@@ -1883,8 +1921,6 @@ paths:
       description: 'JSON: `{"ManagedResource": {...}}`.'
       tags:
         - Resources
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1908,8 +1944,6 @@ paths:
       description: 'JSON: `{"ManagedResource": [...]}`.'
       tags:
         - Resources
-      security:
-        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1931,8 +1965,6 @@ paths:
       summary: Take a resource online
       tags:
         - Resources
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - $ref: '#/components/parameters/PoolName'
@@ -1949,8 +1981,6 @@ paths:
       summary: Take a resource offline
       tags:
         - Resources
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - $ref: '#/components/parameters/PoolName'
@@ -1968,8 +1998,6 @@ paths:
       description: 'JSON: `{"ManagedResource": [{"id", ...}]}`.'
       tags:
         - Resources
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - name: name
@@ -1991,8 +2019,6 @@ paths:
       description: 'The response is JSON unless format is `xml`: `{"create_user": {"success": "..."}}`.'
       tags:
         - Users
-      security:
-        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/AnyId'
         - $ref: '#/components/parameters/Format'
@@ -2002,6 +2028,10 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - login
+                - password
+                - email
               properties:
                 login:
                   type: string
@@ -2015,6 +2045,8 @@ paths:
                   type: string
                 email:
                   type: string
+                  format: email
+                  description: Email of the user, unique
                 phone:
                   type: string
                 SMS:
@@ -2029,6 +2061,7 @@ paths:
                   type: array
                   items:
                     type: string
+                    format: email
                 groups:
                   type: array
                   description: Names of existing groups
@@ -2046,6 +2079,25 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: JWT token obtained from /api/login endpoint
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Login and password, when JWT authentication is disabled
+    loginQuery:
+      type: apiKey
+      in: query
+      name: login
+      description: User login, with `password` or `api_key`, when JWT authentication is disabled
+    passwordQuery:
+      type: apiKey
+      in: query
+      name: password
+      description: User password, when JWT authentication is disabled
+    apiKeyQuery:
+      type: apiKey
+      in: query
+      name: api_key
+      description: API key of the user, when JWT authentication is disabled
   parameters:
     Format:
       name: format
