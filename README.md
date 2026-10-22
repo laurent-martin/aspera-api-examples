@@ -237,7 +237,7 @@ httpgw:
 server:
   url: ssh://demo.asperasoft.com:33001
   username: aspera
-  password: demoaspera
+  password: <PASSWORD>
   file_download: /aspera-test-dir-small/10MB.1
   folder_upload: /Upload
   persist_max: 10
@@ -246,33 +246,33 @@ node:
   url: https://node.example.com:9092
   verify: false
   username: node_user
-  password: _the_password_here_
+  password: <PASSWORD>
   folder_upload: /Upload
 faspex:
   url: https://faspex.example.com/aspera/faspex
   verify: true
   username: faspex_user
-  password: _the_password_here_
+  password: <PASSWORD>
 faspex5:
   url: https://faspex5.example.com/aspera/faspex
   verify: true
   username: john@example.com
-  client_id: _the_client_id_here_
-  client_secret: _the_client_secret_here_
-  private_key: /path/to/my_faspex5_key
+  client_id: <CLIENT_ID>
+  client_secret: <CLIENT_SECRET>
+  private_key: <PRIVATE_KEY_FILE>
   shared_folder_name: Server Files
   shared_folder_file: /testfiles/aspera-test-dir-small/10MB.1
 shares:
   url: https://shares.example.com
   verify: true
   username: shares_user
-  password: _the_password_here_
+  password: <PASSWORD>
   folder_upload: my_share
 cos:
   endpoint: https://s3.eu-de.cloud-object-storage.appdomain.cloud
   bucket: my_bucket
-  key: _the_key_here_
-  crn: 'crn:v1:bluemix:public:cloud-object-storage:global:_the_crn_::'
+  key: <API_KEY>
+  crn: 'crn:v1:bluemix:public:cloud-object-storage:global:a/<ACCOUNT_ID>:<INSTANCE_ID>::'
   auth: https://iam.cloud.ibm.com/identity/token
 coscreds:
   bucket: mybucket
@@ -281,9 +281,9 @@ coscreds:
 aoc:
   org: acme
   user_email: john@example.com
-  private_key: /path/to/my_aoc_key
+  private_key: <PRIVATE_KEY_FILE>
   client_id: aspera.global-cli-client
-  client_secret: frpmsRsG4mjZ0PlxCgdJlvONqBg4Vlpz_IX7gXmBMAfsgMLy2FO6CXLodKfKAuhqnCqSptLbe_wdmnm9JRuEPO-PpFqpq_Kb
+  client_secret: <CLIENT_SECRET>
   workspace: Default
   shared_inbox: TheSharedInbox
 local:
@@ -457,8 +457,8 @@ For Aspera on Cloud, several configuration items are required:
 
 - either a specific application credential created in the admin interface of AoC (Integrations)
 - or one of the global client IDs: the one of Aspera Connect (Drive), or the one of the legacy `aspera` CLI:
-  - `aspera.global-cli-client`
-  - `frpmsRsG4mjZ0PlxCgdJlvONqBg4Vlpz_IX7gXmBMAfsgMLy2FO6CXLodKfKAuhqnCqSptLbe_wdmnm9JRuEPO-PpFqpq_Kb`
+  - client ID: `aspera.global-cli-client`
+  - client secret: `<CLIENT_SECRET>`
 
 For example, to extract the ones of Aspera Connect (Drive): `strings asperaconnect|grep -B1 '^aspera\.drive$'`
 

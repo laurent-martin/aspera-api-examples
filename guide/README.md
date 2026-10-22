@@ -84,13 +84,13 @@ In order to test, one needs:
 Examples provided in this document use the following virtual connection information:
 
 - `hsts1.example.com`: Address of HSTS 1.
-- `my_hsts1_xfer_user`: A transfer user with SSH credentials on HSTS 1.
-- `my_hsts1_xfer_pass`: Password for `my_hsts1_xfer_user`.
-- `my_hsts1_node_user`: A Node API user (or access key ID).
-- `my_hsts1_node_pass`: Password for `my_hsts1_node_user` (or access key secret).
+- `<HSTS1_XFER_USER>`: A transfer user with SSH credentials on HSTS 1.
+- `<HSTS1_XFER_PASSWORD>`: Password for `<HSTS1_XFER_USER>`.
+- `<HSTS1_NODE_USER>`: A Node API user (or access key ID).
+- `<HSTS1_NODE_PASSWORD>`: Password for `<HSTS1_NODE_USER>` (or access key secret).
 - `hsts2.example.com`: Address of HSTS 2.
-- `my_hsts2_node_user`: A Node API user (or access key ID).
-- `my_hsts2_node_pass`: Password for `my_hsts2_node_user` (or access key secret).
+- `<HSTS2_NODE_USER>`: A Node API user (or access key ID).
+- `<HSTS2_NODE_PASSWORD>`: Password for `<HSTS2_NODE_USER>` (or access key secret).
 
 ## Concepts
 
@@ -233,8 +233,8 @@ Example of a simple transfer spec for a download using SSH credentials (without 
 {
     "remote_host"     :"hsts1.example.com",
     "ssh_port"        :33001,
-    "remote_user"     :"my_hsts1_xfer_user",
-    "remote_password" :"my_hsts1_xfer_pass",
+    "remote_user"     :"<HSTS1_XFER_USER>",
+    "remote_password" :"<HSTS1_XFER_PASSWORD>",
     "direction"       :"receive",
     "destination_root":".",
     "paths":[
@@ -284,7 +284,7 @@ Example of upload with Node API credentials (sample `node_v2`):
     "node_api": {
       "url": "https://hsts1.example.com:9092",
       "headers": [
-        {"key": "Authorization", "value": "Basic <base64 of my_hsts1_node_user:my_hsts1_node_pass>"}
+        {"key": "Authorization", "value": "Basic <base64 of <HSTS1_NODE_USER>:<HSTS1_NODE_PASSWORD>>"}
       ]
     }
   },
@@ -491,8 +491,8 @@ For example, using bash:
 
 ```shell
 #!/bin/bash
-ASPERA_SCP_PASS=my_hsts1_xfer_pass ascp --mode=recv --host=hsts1.example.com -P 33001 \
-  --user=my_hsts1_xfer_user aspera-test-dir-tiny/200KB.1 .
+ASPERA_SCP_PASS=<HSTS1_XFER_PASSWORD> ascp --mode=recv --host=hsts1.example.com -P 33001 \
+  --user=<HSTS1_XFER_USER> aspera-test-dir-tiny/200KB.1 .
 ```
 
 This starts the `ascp` executable with session parameters on the command line (and an environment variable for the password).
@@ -507,7 +507,7 @@ Equivalent with `ascli`: (includes resume)
 
 ```shell
 ascli -N server --url=ssh://hsts1.example.com:33001 \
-  --username=my_hsts1_xfer_user --password=my_hsts1_xfer_pass \
+  --username=<HSTS1_XFER_USER> --password=<HSTS1_XFER_PASSWORD> \
   download aspera-test-dir-tiny/200KB.1
 ```
 
@@ -518,8 +518,8 @@ Equivalent with `asession` (from `aspera-cli` gem), using a transfer spec: (incl
 
 ```shell
 asession @json:'{"spec":{
-  "remote_host":"hsts1.example.com","remote_user":"my_hsts1_xfer_user","ssh_port":33001,
-  "remote_password":"my_hsts1_xfer_pass","direction":"receive","destination_root":".",
+  "remote_host":"hsts1.example.com","remote_user":"<HSTS1_XFER_USER>","ssh_port":33001,
+  "remote_password":"<HSTS1_XFER_PASSWORD>","direction":"receive","destination_root":".",
   "paths":[{"source":"/aspera-test-dir-tiny/200KB.1"}]}}'
 ```
 
@@ -564,7 +564,7 @@ Equivalent with `ascli`:
 
 ```shell
 ascli -N server --url=ssh://hsts1.example.com:33001 \
-  --username=my_hsts1_xfer_user --password=my_hsts1_xfer_pass \
+  --username=<HSTS1_XFER_USER> --password=<HSTS1_XFER_PASSWORD> \
   download aspera-test-dir-tiny/200KB.1 --log-level=debug
 ```
 
@@ -574,7 +574,7 @@ DEBG transfer agent is a Aspera::Agent::Direct
 DEBG ts(json)Hash=
 {
   "remote_host": "hsts1.example.com",
-  "remote_user": "my_hsts1_xfer_user",
+  "remote_user": "<HSTS1_XFER_USER>",
   "ssh_port": 33001,
   "remote_password": "🔑",
   "direction": "receive",
@@ -589,7 +589,7 @@ DEBG ts(json)Hash=
 }
 ...
 DEBG ascp args: #<struct Aspera::ExecSpec exec=:ascp, env={"ASPERA_SCP_PASS" => "🔑", ...},
-  args=["-q", "-d", "--mode", "recv", "--host", "hsts1.example.com", "--user", "my_hsts1_xfer_user",
+  args=["-q", "-d", "--mode", "recv", "--host", "hsts1.example.com", "--user", "<HSTS1_XFER_USER>",
   "-k", "2", "-P", "33001", "--dest64", "--file-list=...", "Lg=="]>
 ...
 ```
@@ -627,7 +627,7 @@ Example using Aspera for Desktop with `ascli` (here, not in a browser):
 
 ```shell
 ascli -N server --url=ssh://hsts1.example.com:33001 \
-  --username=my_hsts1_xfer_user --password=my_hsts1_xfer_pass \
+  --username=<HSTS1_XFER_USER> --password=<HSTS1_XFER_PASSWORD> \
   download aspera-test-dir-tiny/200KB.1 --transfer=desktop
 ```
 
@@ -660,11 +660,11 @@ transfer spec with SSH credentials of the remote server.
 Equivalent API call, on the client side of the transfer (`hsts2.example.com`):
 
 ```shell
-curl -s -u my_hsts2_node_user:my_hsts2_node_pass \
+curl -s -u <HSTS2_NODE_USER>:<HSTS2_NODE_PASSWORD> \
   https://hsts2.example.com/ops/transfers \
   -H 'Content-Type: application/json' \
   -d '{"remote_host":"hsts1.example.com","ssh_port":33001,
-    "remote_user":"my_hsts1_xfer_user","remote_password":"my_hsts1_xfer_pass",
+    "remote_user":"<HSTS1_XFER_USER>","remote_password":"<HSTS1_XFER_PASSWORD>",
     "direction":"receive","destination_root":".",
     "paths":[{"source":"aspera-test-dir-tiny/200KB.1"}]}'
 ```
@@ -673,9 +673,9 @@ Example of use with `ascli`: (for demonstration of use of API)
 
 ```shell
 ascli --url=ssh://hsts1.example.com:33001 \
-  --username=my_hsts1_xfer_user --password=my_hsts1_xfer_pass \
+  --username=<HSTS1_XFER_USER> --password=<HSTS1_XFER_PASSWORD> \
   --transfer=node --transfer-info=@json:'{"url":"https://hsts2.example.com",
-    "username":"my_hsts2_node_user","password":"my_hsts2_node_pass"}' \
+    "username":"<HSTS2_NODE_USER>","password":"<HSTS2_NODE_PASSWORD>"}' \
   --log-level=debug server download aspera-test-dir-tiny/200KB.1
 ```
 
@@ -754,14 +754,14 @@ Equivalent API calls (the first result is edited with `jq`):
 
 ```shell
 # 1. server side of the transfer (hsts1): get a transfer spec with an Aspera transfer token
-curl -s -u my_hsts1_node_user:my_hsts1_node_pass \
+curl -s -u <HSTS1_NODE_USER>:<HSTS1_NODE_PASSWORD> \
   https://hsts1.example.com:9092/files/upload_setup \
   -H 'Content-Type: application/json' \
   -d '{"transfer_requests":[{"transfer_request":{"paths":[{"destination":"/"}]}}]}' \
   | jq '.transfer_specs[0].transfer_spec | .paths = [{"source":"aspera-test-dir-tiny/200KB.1"}]' \
   > transfer_spec.json
 # 2. client side of the transfer (hsts2): start the transfer with this transfer spec
-curl -s -u my_hsts2_node_user:my_hsts2_node_pass \
+curl -s -u <HSTS2_NODE_USER>:<HSTS2_NODE_PASSWORD> \
   https://hsts2.example.com/ops/transfers \
   -H 'Content-Type: application/json' -d @transfer_spec.json
 ```
@@ -770,9 +770,9 @@ Example of use with `ascli`: (for demonstration of use of API)
 
 ```shell
 ascli --url=https://hsts1.example.com:9092 \
-  --username=my_hsts1_node_user --password=my_hsts1_node_pass \
+  --username=<HSTS1_NODE_USER> --password=<HSTS1_NODE_PASSWORD> \
   --transfer=node --transfer-info=@json:'{"url":"https://hsts2.example.com",
-    "username":"my_hsts2_node_user","password":"my_hsts2_node_pass"}' \
+    "username":"<HSTS2_NODE_USER>","password":"<HSTS2_NODE_PASSWORD>"}' \
   --log-level=debug node upload aspera-test-dir-tiny/200KB.1
 ```
 
@@ -988,7 +988,7 @@ The authorization is based on an authorization token, generated by the node daem
 Example:
 
 ```shell
-curl -s -u my_hsts2_node_user:my_hsts2_node_pass \
+curl -s -u <HSTS2_NODE_USER>:<HSTS2_NODE_PASSWORD> \
   https://hsts2.example.com/files/download_setup \
   -d '{"transfer_requests":[{"transfer_request":{"paths":[{"source":"/aspera/aspera-test-dir-large/1GB"}]}}]}'
 ```
@@ -998,7 +998,7 @@ curl -s -u my_hsts2_node_user:my_hsts2_node_pass \
   "paths": [ { "source": "/aspera/aspera-test-dir-large/1GB" } ],
   "source_root": "",
   "destination_root": "",
-  "token": "ATM2_ACsPr3W_d35XOqASXde2bPbvadFuMeG15Hoy9M61_zLbGEAAF465hdKlCgiEOh3gjRfgtf_2MTA",
+  "token": "<TOKEN>",
   "direction": "receive",
   "cipher": "aes-128",
   "tags": null,

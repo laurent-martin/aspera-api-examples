@@ -52404,14 +52404,14 @@
             "minLength": 1,
             "type": "string",
             "description": "JWT access token used to authorize access to protected endpoints.",
-            "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZSI6IiIsImV4cCI6MTYwMzI3MDIxNywiYXVkIjoiZThiM2Q2OGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIiwianRpIjoiZ2VyYXJkOGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIiwiaWF0IjoxNjAzMjI3MDE3LCJzdWIiOiJjbGllbnQ6ZThiM2Q2OGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIn0.dsXeTd4USW0MS6N265fdPhZZo4YsnIPyKVDVJ0sHwg9bI5DH5alesqKqjyZSNo7fQ0EZXlbtVuSlX0geYXSE4PnaMnIv5vH1D9OnMtfj1ms3u1DI2ee_1bVvgCb3g3uA81etnRTwzn9e1RuXjpe4_kAiOOURGPRJMTbjju2GFErAFFunZavaw-e3VdHDIvhmKgJIGuGzqPJSs1n10RixJocSQsve-S0c3UYcY5kES8MmqZk9Ap5iYskak8gK5JO3BT1-GNydG11RpDbGg-7mDd3s4IhRGRnBCYBCfdqwfWohGOpecV6NNlA6N8w0k7Hs1aNXEZO-yYE-dIPkEezOvQ"
+            "example": "<ACCESS_TOKEN>"
           },
           "refresh_token": {
             "minLength": 1,
             "maxLength": 255,
             "type": "string",
             "description": "The refresh token used to request a new access token. This is required when `grant_type = refresh_token`.",
-            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMj"
+            "example": "<REFRESH_TOKEN>"
           }
         }
       },
@@ -52436,7 +52436,7 @@
             "minLength": 1,
             "type": "string",
             "description": "JWT access token used to authorize access to protected endpoints.",
-            "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZSI6IiIsImV4cCI6MTYwMzI3MDIxNywiYXVkIjoiZThiM2Q2OGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIiwianRpIjoiZ2VyYXJkOGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIiwiaWF0IjoxNjAzMjI3MDE3LCJzdWIiOiJjbGllbnQ6ZThiM2Q2OGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIn0.dsXeTd4USW0MS6N265fdPhZZo4YsnIPyKVDVJ0sHwg9bI5DH5alesqKqjyZSNo7fQ0EZXlbtVuSlX0geYXSE4PnaMnIv5vH1D9OnMtfj1ms3u1DI2ee_1bVvgCb3g3uA81etnRTwzn9e1RuXjpe4_kAiOOURGPRJMTbjju2GFErAFFunZavaw-e3VdHDIvhmKgJIGuGzqPJSs1n10RixJocSQsve-S0c3UYcY5kES8MmqZk9Ap5iYskak8gK5JO3BT1-GNydG11RpDbGg-7mDd3s4IhRGRnBCYBCfdqwfWohGOpecV6NNlA6N8w0k7Hs1aNXEZO-yYE-dIPkEezOvQ"
+            "example": "<ACCESS_TOKEN>"
           }
         }
       },
@@ -52480,7 +52480,7 @@
             "minLength": 1,
             "type": "string",
             "description": "JWT access token used to authorize access to protected endpoints.",
-            "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZSI6IiIsImV4cCI6MTYwMzI3MDIxNywiYXVkIjoiZThiM2Q2OGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIiwianRpIjoiZ2VyYXJkOGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIiwiaWF0IjoxNjAzMjI3MDE3LCJzdWIiOiJjbGllbnQ6ZThiM2Q2OGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIn0.dsXeTd4USW0MS6N265fdPhZZo4YsnIPyKVDVJ0sHwg9bI5DH5alesqKqjyZSNo7fQ0EZXlbtVuSlX0geYXSE4PnaMnIv5vH1D9OnMtfj1ms3u1DI2ee_1bVvgCb3g3uA81etnRTwzn9e1RuXjpe4_kAiOOURGPRJMTbjju2GFErAFFunZavaw-e3VdHDIvhmKgJIGuGzqPJSs1n10RixJocSQsve-S0c3UYcY5kES8MmqZk9Ap5iYskak8gK5JO3BT1-GNydG11RpDbGg-7mDd3s4IhRGRnBCYBCfdqwfWohGOpecV6NNlA6N8w0k7Hs1aNXEZO-yYE-dIPkEezOvQ"
+            "example": "<ACCESS_TOKEN>"
           },
           "redirect_uri": {
             "minLength": 1,
@@ -52519,7 +52519,7 @@
             "maxLength": 255,
             "type": "string",
             "description": "The refresh token used to request a new access token. This is required when `grant_type = refresh_token`.",
-            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMj"
+            "example": "<REFRESH_TOKEN>"
           },
           "client_secret": {
             "minLength": 1,
@@ -52570,7 +52570,7 @@
             "minLength": 1,
             "type": "string",
             "description": "JWT access token used to authorize access to protected endpoints.",
-            "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZSI6IiIsImV4cCI6MTYwMzI3MDIxNywiYXVkIjoiZThiM2Q2OGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIiwianRpIjoiZ2VyYXJkOGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIiwiaWF0IjoxNjAzMjI3MDE3LCJzdWIiOiJjbGllbnQ6ZThiM2Q2OGEtYmNlOC00OTQzLWExY2EtMjliZWQxMzRhZWQxIn0.dsXeTd4USW0MS6N265fdPhZZo4YsnIPyKVDVJ0sHwg9bI5DH5alesqKqjyZSNo7fQ0EZXlbtVuSlX0geYXSE4PnaMnIv5vH1D9OnMtfj1ms3u1DI2ee_1bVvgCb3g3uA81etnRTwzn9e1RuXjpe4_kAiOOURGPRJMTbjju2GFErAFFunZavaw-e3VdHDIvhmKgJIGuGzqPJSs1n10RixJocSQsve-S0c3UYcY5kES8MmqZk9Ap5iYskak8gK5JO3BT1-GNydG11RpDbGg-7mDd3s4IhRGRnBCYBCfdqwfWohGOpecV6NNlA6N8w0k7Hs1aNXEZO-yYE-dIPkEezOvQ"
+            "example": "<ACCESS_TOKEN>"
           },
           "redirect_uri": {
             "minLength": 1,
@@ -52609,7 +52609,7 @@
             "maxLength": 255,
             "type": "string",
             "description": "The refresh token used to request a new access token. This is required when `grant_type = refresh_token`.",
-            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMj"
+            "example": "<REFRESH_TOKEN>"
           },
           "client_secret": {
             "minLength": 1,
@@ -52651,7 +52651,7 @@
             "maxLength": 255,
             "type": "string",
             "description": "The assertion for the urn:ietf:params:oauth:grant-type:jwt-bearer grant_type.",
-            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+            "example": "<JWT>"
           }
         }
       },
@@ -52687,7 +52687,7 @@
             "maxLength": 255,
             "type": "string",
             "description": "The refresh token used to request a new access token. This is required when `grant_type = refresh_token`.",
-            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMj"
+            "example": "<REFRESH_TOKEN>"
           }
         }
       },

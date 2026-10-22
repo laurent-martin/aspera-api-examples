@@ -76,12 +76,12 @@ web:
 node:
   url: https://node.example.com:9092
   verify: false
-  username: _node_user_here_
-  password: _node_pass_here_
+  username: <NODE_USER>
+  password: <NODE_PASSWORD>
 server:
   url: ssh://eudemo.asperademo.com:33001
-  username: _server_user_here_
-  password: _server_pass_here_
+  username: <SERVER_USER>
+  password: <SERVER_PASSWORD>
   file_download: /aspera-test-dir-small/10MB.1
   folder_upload: /Upload
 httpgw:

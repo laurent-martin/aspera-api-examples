@@ -2,12 +2,19 @@
 # frozen_string_literal: true
 
 require 'yaml'
-require 'uri'
 require 'nokogiri'
 
 SAMPLE_EMAIL = 'john@example.com'
+# Placeholder of parameters whose name does not tell the type of value
+PLACEHOLDERS = { 'key' => '<API_KEY>', 'adminpass' => '<ADMIN_PASSWORD>', 'private_key' => '<PRIVATE_KEY_FILE>' }.freeze
 # Warning link added by draw.io at the end of SVG exports with HTML labels
 DRAWIO_SVG_WARNING = %r{<switch><g requiredFeatures="[^"]*"/><a [^>]*svg-export-text-problems[^>]*>.*?</switch>}m.freeze
+
+# Placeholder of a parameter value: name in upper case in angle brackets, a format that secret scanners ignore.
+def placeholder(name)
+  PLACEHOLDERS.fetch(name) { "<#{name.upcase}>" }
+end
+
 # Generate a sample configuration file from existing working file.
 def generate_config_template
   local_config = ARGV.shift
@@ -25,15 +32,13 @@ def generate_config_template
       when 'verify'
         h[p] = false
       when 'url'
-        uri = URI.parse(v)
-        uri.host = "#{k}.address.here"
-        h[p] = uri.to_s
+        # Replace host, also if already a placeholder (not a valid URI)
+        h[p] = v.sub(%r{(?<=://)[^/:]+}, placeholder("#{k}_host"))
       when 'username', 'user', 'adminuser', 'user_email'
-        h[p] = v.include?('@') ? SAMPLE_EMAIL : "_#{p}_here_"
-      when 'private_key', 'service_credential_file'
-        h[p] = "/path/to/your/#{p}"
-      when 'bucket', 'instance', 'key', 'workspace', 'shared_inbox', /pass/, /secret/, /_id$/, /crn/
-        h[p] = "_#{p}_here_"
+        h[p] = v.include?('@') ? SAMPLE_EMAIL : placeholder(p)
+      when 'org', 'bucket', 'instance', 'key', 'workspace', 'shared_inbox', 'private_key', 'service_credential_file',
+           /pass/, /secret/, /_id$/, /crn/
+        h[p] = placeholder(p)
       end
     end
   end

@@ -22,7 +22,7 @@ info:
     If JWT authentication is disabled in your Orchestrator configuration:
 
     - Add query parameters to every API request: `?login=username&password=password`
-    - Example: `/api/workflows_list?login=admin&password=mypassword&format=json`
+    - Example: `/api/workflows_list?login=admin&password=<PASSWORD>&format=json`
 
     **Note:** Check your Orchestrator configuration to determine which authentication mode is active.
 
