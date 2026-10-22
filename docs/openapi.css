@@ -21,8 +21,8 @@
     padding: 20px;
 }
 
-/* ── Tag filter ────────────────────────────────────────── */
-.tag-button {
+/* ── Top bar buttons ───────────────────────────────────── */
+.bar-button {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -36,10 +36,16 @@
     cursor: pointer;
 }
 
-.tag-button:hover {
+.bar-button:hover {
     background: var(--app-hover);
 }
 
+/* Text only: no icon on the right */
+#expand-toggle {
+    padding: 0 12px;
+}
+
+/* ── Tag filter ────────────────────────────────────────── */
 #tag-count {
     padding: 1px 7px;
     border-radius: 10px;
@@ -48,7 +54,7 @@
     font-variant-numeric: tabular-nums;
 }
 
-#tag-filter.filtered .tag-button {
+#tag-filter.filtered .bar-button {
     border-color: var(--app-accent);
 }
 

@@ -2,6 +2,8 @@ const params = new URLSearchParams(window.location.search);
 const specUrl = params.get("spec");
 // Selected tags: all tags if no "tag" parameter
 const tagParams = params.getAll("tag");
+// Schemas expanded at all levels, unless parameter "expand=none"
+const expandParam = params.get("expand") !== "none";
 
 const HTTP_METHODS = ["get", "put", "post", "delete", "options", "head", "patch", "trace"];
 // Redoc 3 is an ES module: pin the version, "latest" may break the page
@@ -138,6 +140,30 @@ function saveTags(tags, selected) {
 }
 
 /**
+ * Show the button that expands or collapses all schemas, and save the state in URL.
+ * @param {boolean} expanded initial state
+ * @param {function} onChange called with the new state
+ */
+function showExpandToggle(expanded, onChange) {
+  const button = document.getElementById("expand-toggle");
+  const update = () => {
+    button.textContent = expanded ? "Collapse all" : "Expand all";
+  };
+  button.addEventListener("click", () => {
+    expanded = !expanded;
+    update();
+    const url = new URL(window.location.href);
+    if (expanded) url.searchParams.delete("expand");
+    else url.searchParams.set("expand", "none");
+    // Keep the hash, so that Redoc shows the same section again
+    history.replaceState(null, "", url);
+    onChange(expanded);
+  });
+  update();
+  button.hidden = false;
+}
+
+/**
  * Append a labelled checkbox to the container.
  * @param {HTMLElement} container parent element
  * @param {string} text label text
@@ -226,26 +252,39 @@ if (!specUrl) {
     scrollYOffset: () => topBar.offsetHeight,
     disableTelemetry: true
   };
+  // Expansion of schemas is a Redoc option: applied when rendering only
+  const optionsFor = (expanded) => (expanded ? { ...redocOptions, schemasExpansionLevel: "all" } : redocOptions);
   const container = document.getElementById("redoc-container");
   const redoc = import(REDOC_URL);
 
   Promise.all([redoc, fetchSpec(specUrl)]).then(
     ([Redoc, loaded]) => {
-      const spec = !loaded.openapi && !loaded.swagger && loaded.$schema ? schemaToOpenApi(loaded) : loaded;
+      const isSchema = !loaded.openapi && !loaded.swagger && loaded.$schema;
+      const spec = isSchema ? schemaToOpenApi(loaded) : loaded;
+      if (isSchema) {
+        // Official logo of JSON Schema, for the page icon and the top bar
+        document.querySelector("link[rel=icon]").href = "json-schema.svg";
+        document.querySelector(".brand img").src = "json-schema.svg";
+      }
       if (spec.info?.title) document.title = `${spec.info.title} · Aspera APIs`;
       const tags = listTags(spec);
       const selected = new Set(tagParams.length > 0 ? tagParams.filter((tag) => tags.includes(tag)) : tags);
+      let expanded = expandParam;
       let root = null;
-      // Render again when the selection changes: Redoc may modify the spec, so give it a copy
+      // Render again when the selection or the expansion changes: Redoc may modify the spec, so give it a copy
       const render = () => {
         root?.unmount();
-        root = Redoc.init(structuredClone(selected.size < tags.length ? filterSpec(spec, selected) : spec), redocOptions, container);
+        root = Redoc.init(structuredClone(selected.size < tags.length ? filterSpec(spec, selected) : spec), optionsFor(expanded), container);
       };
       if (tags.length > 1) showTagFilter(tags, selected, render);
+      showExpandToggle(expanded, (value) => {
+        expanded = value;
+        render();
+      });
       render();
     },
     // Let Redoc load the spec and report the error
-    () => redoc.then((Redoc) => Redoc.init(addCacheBuster(specUrl), redocOptions, container))
+    () => redoc.then((Redoc) => Redoc.init(addCacheBuster(specUrl), optionsFor(expandParam), container))
   ).catch((error) => {
     // Redoc not loaded, or failed: show the error instead of an empty page
     console.error(error);
