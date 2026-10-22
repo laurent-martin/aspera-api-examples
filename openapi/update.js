@@ -5,7 +5,7 @@
  *
  * This script:
  * 1. Scans the current directory for .yaml and .json files
- * 2. Reads each file to determine if it's OpenAPI or Swagger and which version
+ * 2. Reads each file to determine if it's OpenAPI, Swagger or JSON Schema, and which version, skips others
  * 3. Updates the openApiSpecs array in docs/index.js
  * 
  * Usage: node update.js
@@ -34,7 +34,7 @@ function getSpecFiles() {
 }
 
 /**
- * Parse a spec file and determine its OpenAPI/Swagger version
+ * Parse a spec file and determine its OpenAPI/Swagger version, or JSON Schema, null if none
  */
 function parseSpecFile(filename) {
     const filePath = path.join(CURRENT_DIR, filename);
@@ -48,6 +48,18 @@ function parseSpecFile(filename) {
             spec = JSON.parse(content);
         } else {
             spec = yaml.load(content);
+        }
+
+        if (!spec.openapi && !spec.swagger) {
+            if (!spec.$schema) {
+                return null;
+            }
+            // JSON Schema, e.g. of a configuration file: its title replaces the product name of the file name
+            return {
+                filename,
+                specVersion: 'JSON Schema',
+                title: spec.title
+            };
         }
 
         // Determine spec version
@@ -87,7 +99,8 @@ function parseSpecFile(filename) {
 function formatSpecEntry(spec) {
     const filename = JSON.stringify(spec.filename);
     const specVersion = JSON.stringify(spec.specVersion);
-    return `    {\n        filename: ${filename},\n        specVersion: ${specVersion},\n    },`;
+    const title = spec.title ? `\n        title: ${JSON.stringify(spec.title)},` : '';
+    return `    {\n        filename: ${filename},\n        specVersion: ${specVersion},${title}\n    },`;
 }
 
 /**
@@ -142,6 +155,11 @@ function main() {
 
     for (const file of files) {
         const spec = parseSpecFile(file);
+        if (!spec) {
+            console.log(`  ⏭️  ${file}`);
+            console.log('     Skipped: not OpenAPI, Swagger or JSON Schema\n');
+            continue;
+        }
         specs.push(spec);
         console.log(`  📄 ${file}`);
         console.log(`     Version: ${spec.specVersion}\n`);

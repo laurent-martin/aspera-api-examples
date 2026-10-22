@@ -22,7 +22,7 @@ Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 | `web/`     | Samples of web applications with the Aspera Web SDK                                      |
 | `guide/`   | Integration guide: concepts, transfer spec, authentication, scenarios (Markdown and PDF) |
 | `docs/`    | GitHub Pages site: API menu and OpenAPI viewer (folder name required by GitHub Pages)    |
-| `openapi/` | OpenAPI specifications of the Aspera APIs                                                |
+| `openapi/` | OpenAPI specifications of the Aspera APIs, JSON Schema of the `transferd` configuration  |
 | `config/`  | Paths of the project, and template of the configuration file                             |
 | `tools/`   | Build scripts: download of the Transfer SDK                                              |
 

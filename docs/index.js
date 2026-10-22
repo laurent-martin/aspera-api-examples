@@ -26,7 +26,7 @@ const openApiSpecs = [
     },
     {
         filename: "IBM Aspera Orchestrator API-v1-enhanced.yaml",
-        specVersion: "OpenAPI 3.0",
+        specVersion: "OpenAPI 3.1",
     },
     {
         filename: "IBM Aspera Orchestrator API-v1.yaml",
@@ -68,6 +68,11 @@ const openApiSpecs = [
         filename: "IBM_Aspera_Shares.yaml",
         specVersion: "OpenAPI 3.0",
     },
+    {
+        filename: "transferd-config.schema.json",
+        specVersion: "JSON Schema",
+        title: "IBM Aspera Transfer SDK daemon (transferd) configuration",
+    },
 ];
 
 // Filter groups: values of the same group are alternatives, groups are combined
@@ -101,7 +106,8 @@ function parseApiInfo(spec) {
 
     // Check if it's an enhanced version
     const isEnhanced = nameWithoutExt.endsWith("-enhanced");
-    let name = nameWithoutExt.replace(/-enhanced$/, "");
+    // Title of a JSON Schema, else product name from the file name
+    let name = spec.title || nameWithoutExt.replace(/-enhanced$/, "");
 
     // Extract version at end of name, e.g. "-4.4.6" or "-v1"
     const versionMatch = name.match(/-v?(\d+(?:\.\d+)*)$/);

@@ -29,6 +29,47 @@ async function fetchSpec(url) {
   }
 }
 
+// Keywords whose value is data, not a schema
+const DATA_KEYWORDS = ["example", "examples", "default", "const", "enum"];
+// Keywords whose value maps names to schemas
+const SCHEMA_MAPS = ["properties", "patternProperties", "$defs", "definitions"];
+
+/**
+ * Adapt a JSON Schema for Redoc, which shows "example" but not "examples", reads "<x>" in descriptions as HTML,
+ * and shows if/then/else as "case 1/case 2" (conditions are expected in descriptions).
+ * @param {object} schema schema, modified in place
+ */
+function adaptSchema(schema) {
+  if (Array.isArray(schema)) return schema.forEach(adaptSchema);
+  if (!schema || typeof schema !== "object") return;
+  if (Array.isArray(schema.examples) && !("example" in schema)) schema.example = schema.examples[0];
+  if (typeof schema.description === "string") schema.description = schema.description.replace(/</g, "&lt;");
+  delete schema.if;
+  delete schema.then;
+  delete schema.else;
+  Object.entries(schema).forEach(([key, value]) => {
+    if (SCHEMA_MAPS.includes(key)) Object.values(value).forEach(adaptSchema);
+    else if (!DATA_KEYWORDS.includes(key)) adaptSchema(value);
+  });
+}
+
+/**
+ * Wrap a JSON Schema in an OpenAPI document, so that Redoc shows it in a "Schema" section.
+ * @param {object} jsonSchema JSON Schema
+ * @returns {object} OpenAPI 3.1 document
+ */
+function schemaToOpenApi(jsonSchema) {
+  const { $schema, $comment, title, description, ...schema } = structuredClone(jsonSchema);
+  adaptSchema(schema);
+  return {
+    openapi: "3.1.0",
+    info: { title: title || "JSON Schema", version: "", description: description?.replace(/</g, "&lt;") },
+    tags: [{ name: "Schema", description: '{% schemaDefinition schemaRef="#/components/schemas/Schema" /%}' }],
+    paths: {},
+    components: { schemas: { Schema: schema } },
+  };
+}
+
 /**
  * List tag names: declared ones first, then those only used in operations.
  * @param {object} spec parsed spec
@@ -189,7 +230,8 @@ if (!specUrl) {
   const redoc = import(REDOC_URL);
 
   Promise.all([redoc, fetchSpec(specUrl)]).then(
-    ([Redoc, spec]) => {
+    ([Redoc, loaded]) => {
+      const spec = !loaded.openapi && !loaded.swagger && loaded.$schema ? schemaToOpenApi(loaded) : loaded;
       if (spec.info?.title) document.title = `${spec.info.title} · Aspera APIs`;
       const tags = listTags(spec);
       const selected = new Set(tagParams.length > 0 ? tagParams.filter((tag) => tags.includes(tag)) : tags);
