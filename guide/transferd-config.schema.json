@@ -1,222 +1,328 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Matches transferd 1.1.10 (source of truth: internal/config/config.go in the transferd repository). Durations are in seconds.",
+  "title": "IBM Aspera Transfer SDK daemon (transferd) configuration",
+  "description": "Configuration file of transferd, in JSON or YAML. Without option --config (-c), transferd reads ../etc/transferd.json relative to the directory of the transferd executable, then /etc/transferd/transferd.json, and if neither exists uses built-in defaults. transferd ignores unknown keys, so a misspelled key silently has no effect: validate the file against this schema to catch it.",
   "type": "object",
-  "required": [],
+  "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional URI or path of this schema, used by editors for completion and validation. Ignored by transferd."
+    },
     "log_directory": {
       "type": "string",
-      "description": "Local log directory path of the TransferD daemon.",
-      "example": "/var/log/aspera"
+      "description": "Directory of the transferd log file transferd.log (rotated at 10 MiB, 10 files kept). A relative path is resolved from the directory of the transferd executable. The directory is created if missing. Empty or omitted: logs are written to standard output.",
+      "examples": ["/var/log/aspera", "../var/log"]
     },
     "log_level": {
       "type": "string",
-      "description": "Log level of detail of the TransferD daemon. Allowable values: trace, debug, info, warning, error, fatal, panic0-4.  value (trace) contains the basic data, such as files transferred and transfer rate.",
-      "example": "trace",
-      "default": "trace"
+      "description": "Level of detail of the transferd log, from most (trace) to least (panic) verbose. Omitted or unrecognized value: info.",
+      "enum": ["trace", "debug", "info", "warning", "error", "fatal", "panic"],
+      "default": "info"
+    },
+    "log_format": {
+      "type": "string",
+      "description": "Format of the transferd log: text for human-readable lines, json for one JSON object per line. Any value other than text gives json.",
+      "enum": ["text", "json"],
+      "default": "text"
     },
     "address": {
       "type": "string",
-      "description": "Address of the local server that serves the TransferD daemon.",
-      "example": "127.0.0.1",
-      "default": "127.0.0.1"
+      "description": "IP address or host name on which the gRPC API listens. Use 0.0.0.0 to listen on all IPv4 interfaces (for example in a container); when not listening on a loopback address, consider enabling tls and authentication. Overridden by environment variable TRANSFERD_ADDRESS, and by option --address (-a), which takes precedence.",
+      "default": "127.0.0.1",
+      "examples": ["127.0.0.1", "0.0.0.0"]
     },
     "port": {
       "type": "integer",
-      "description": "Local TCP port to which the TransferD daemon is bound.",
-      "example": 23456,
-      "default": 55002
+      "description": "TCP port on which the gRPC API listens. 0 or omitted: a free port is selected at startup; it is written in the log and in file transferd.<port>.optport of runtime_dir. The configuration file shipped with the SDK sets 55002. Overridden by environment variable TRANSFERD_PORT, and by option --port (-p), which takes precedence.",
+      "minimum": 0,
+      "maximum": 65535,
+      "default": 0,
+      "examples": [55002]
+    },
+    "runtime_dir": {
+      "type": "string",
+      "description": "Directory for runtime files. When port is 0, transferd writes the selected port in file transferd.<port>.optport there. Created with owner-only permissions if missing. Omitted: ../var/run/aspera relative to the directory of the transferd executable.",
+      "examples": ["/var/run/aspera"]
     },
     "reflection": {
       "type": "boolean",
-      "description": "Unused.",
-      "example": true,
-      "default": true
+      "description": "Enables the gRPC server reflection service, so that tools such as grpcurl or grpcui can list and call the API without the transferd.proto file. Useful for debugging; leave disabled otherwise.",
+      "default": false
     },
     "workers": {
       "type": "object",
+      "description": "Transfer execution and retention.",
+      "additionalProperties": false,
       "properties": {
         "max_concurrent": {
           "type": "integer",
-          "description": "Maximum number of concurrent transfers.",
-          "example": 10,
-          "default": 100
+          "description": "Maximum number of transfers running at the same time. Additional transfers wait in a queue until a running one ends. 0 or omitted: 100.",
+          "minimum": 0,
+          "default": 100,
+          "examples": [10]
         },
         "transfer_cleaning_period": {
           "type": "integer",
-          "description": "Period for cleaning up old transfers (in seconds).",
-          "example": 3600,
+          "description": "Interval, in seconds, at which transferd removes ended transfers older than transfer_max_age. 0 or omitted: 3600 (1 hour).",
+          "minimum": 0,
           "default": 3600
         },
         "transfer_max_age": {
           "type": "integer",
-          "description": "Maximum age of transfers (in seconds).",
-          "example": 86400,
-          "default": 7200
+          "description": "Time, in seconds, during which an ended transfer remains known to transferd (status queries, events) before it can be removed. Removal happens at the next cleaning, so a transfer may remain up to transfer_max_age + transfer_cleaning_period. 0 or omitted: 7200 (2 hours).",
+          "minimum": 0,
+          "default": 7200,
+          "examples": [86400]
         }
-      },
-      "required": []
+      }
     },
     "fasp_management": {
       "type": "object",
-      "description": "Settings for FASP management.",
+      "description": "Management port on which the ascp processes started by transferd report transfer progress.",
+      "additionalProperties": false,
       "properties": {
         "promiscuous_mode_enabled": {
           "type": "boolean",
-          "description": "If you enable this setting, the TransferD daemon can monitor transfers that it does not start itself. These external transfers must use the same <code>fasp_runtime</code> paths as the TransferD daemon.",
-          "example": false,
+          "description": "When true, transferd also reports transfers of ascp processes that it did not start. So that those processes find the management port, transferd writes it in file transferd.<port>.optport of directory ../var/run/aspera, relative to the FASP runtime bin directory. Those ascp processes must use the same FASP runtime as transferd (see fasp_runtime).",
           "default": false
         },
         "port": {
           "type": "integer",
-          "description": "Port used for FASP management communications. TransferD selects a random port if none is provided.",
-          "example": 23456,
-          "default": 0
+          "description": "TCP port of the management server. 0 or omitted: a free port is selected at startup. Overridden by environment variable TRANSFERD_MGMT_PORT, and by option --mgmtport (-P), which takes precedence.",
+          "minimum": 0,
+          "maximum": 65535,
+          "default": 0,
+          "examples": [23456]
         },
         "address": {
           "type": "string",
-          "description": "TransferD uses the local host address (127.0.0.1) for FASP management communications unless you provide a different address. Use this configuration setting only when the host has multiple interfaces and you expect to use an address other than 127.0.0.1 for FASP management communications.",
-          "example": "127.0.0.1",
-          "default": "127.0.0.1"
+          "description": "IP address on which the management server listens. Change it only when ascp must reach transferd through an interface other than loopback. Overridden by environment variable TRANSFERD_MGMT_ADDRESS, and by option --mgmtaddress (-A), which takes precedence.",
+          "default": "127.0.0.1",
+          "examples": ["127.0.0.1"]
         }
-      },
-      "required": []
+      }
     },
     "fasp_runtime": {
       "type": "object",
-      "description": "FASP runtime settings.",
+      "description": "FASP runtime (ascp, async, license, aspera.conf) used for transfers. Omitted: the runtime embedded in the SDK is used. When this section is present, set use_embedded explicitly: if it is not true, user_defined is required.",
+      "additionalProperties": false,
       "properties": {
         "use_embedded": {
           "type": "boolean",
-          "description": "Use the FASP binary files embedded in the TransferD daemon. These binary files are part of the redistributable package (see \"Overview\").",
-          "example": false,
-          "default": true
+          "description": "true: use the FASP runtime embedded in the SDK, and ignore user_defined. false: use the runtime located by user_defined. Omitted while the fasp_runtime section is present: false.",
+          "examples": [true]
         },
         "force_version": {
           "type": "string",
-          "description": "Force the use of a specific FASP version.",
-          "example": "3.7.3.143062",
-          "default": "3.9.6"
+          "description": "Accepted for backward compatibility. Has no effect.",
+          "deprecated": true
         },
         "user_defined": {
           "type": "object",
-          "description": "If you choose not to set use_embedded to true, these parameters define your custom FASP binary files, configuration, and license paths.",
+          "description": "Location of a separately installed FASP runtime. Required when use_embedded is not true, ignored otherwise. Both directories must exist at startup.",
+          "additionalProperties": false,
+          "required": ["bin", "etc"],
           "properties": {
             "bin": {
               "type": "string",
-              "description": "Path to the FASP binary files. All the FASP binary files must be located in the same directory.",
-              "example": "/usr/local/bin"
+              "description": "Directory containing the ascp and async executables. A relative path is resolved from the working directory of transferd.",
+              "minLength": 1,
+              "examples": ["/opt/aspera/bin"]
             },
             "etc": {
               "type": "string",
-              "description": "Path to FASP config and license files.",
-              "example": "/usr/local/etc"
+              "description": "Directory containing the license file aspera-license and the configuration file aspera.conf. A relative path is resolved from the working directory of transferd.",
+              "minLength": 1,
+              "examples": ["/opt/aspera/etc"]
             }
-          },
-          "required": []
+          }
         },
         "log": {
           "type": "object",
-          "description": "FASP log settings",
+          "description": "Default logging of ascp, for transfers whose request configuration does not set localLog or logLevel. Does not apply to async.",
+          "additionalProperties": false,
           "properties": {
             "dir": {
               "type": "string",
-              "description": "Directory for FASP logs.",
-              "example": "/var/log"
+              "description": "Directory where ascp writes its log (ascp option -L). Empty or omitted: default location of ascp.",
+              "examples": ["/var/log/aspera"]
             },
             "level": {
               "type": "integer",
-              "description": "Level of detail to return in the log. Allowable values: 0 (basic data, such as files transferred and transfer rate), 1-2 (increasingly detailed levels of debug messages).",
-              "example": 3,
+              "description": "Level of detail of the ascp log: 0 for basic information (files transferred, transfer rate), 1 to 4 for increasingly detailed debug messages (ascp options -D to -DDDD).",
+              "minimum": 0,
+              "maximum": 4,
               "default": 0
             }
-          },
-          "required": []
+          }
+        },
+        "extra_config": {
+          "type": "array",
+          "description": "Extra command line options added to the executables started for transfers. Does not apply to async.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["command"],
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "End of the path of the executable to which options are added, for example ascp (ascp.exe on Windows). Only the first matching entry is used.",
+                "minLength": 1,
+                "examples": ["ascp", "ascp.exe"]
+              },
+              "options": {
+                "type": "array",
+                "description": "Options added to the command line, one argument per item, before the transfer arguments.",
+                "items": {
+                  "type": "string"
+                },
+                "examples": [["--save-before-overwrite"]]
+              }
+            }
+          }
         }
       },
-      "required": []
+      "if": {
+        "required": ["use_embedded"],
+        "properties": {
+          "use_embedded": {
+            "const": true
+          }
+        }
+      },
+      "else": {
+        "required": ["user_defined"]
+      }
     },
     "tls": {
       "type": "object",
+      "description": "TLS for the gRPC API. When enabled, clients must connect using TLS.",
+      "additionalProperties": false,
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "TLS is enabled.",
-          "example": false,
-          "default": true
+          "description": "Enables TLS. certificate and key are then required.",
+          "default": false
         },
         "certificate": {
           "type": "string",
-          "description": "Certificate file for TLS.",
-          "example": "cert.cert"
+          "description": "Path of the PEM server certificate file, which may include intermediate certificates. A relative path is resolved from the working directory of transferd.",
+          "minLength": 1,
+          "examples": ["/etc/transferd/server.crt"]
         },
         "key": {
           "type": "string",
-          "description": "Key for TLS.",
-          "example": "key.key"
+          "description": "Path of the PEM private key file matching certificate. A relative path is resolved from the working directory of transferd.",
+          "minLength": 1,
+          "examples": ["/etc/transferd/server.key"]
         },
-        "min_tlsversion": {
+        "min_tls_version": {
           "type": "string",
-          "description": "Minimum TLS version.",
-          "example": "TLSv12",
+          "description": "Minimum TLS version accepted from clients. Omitted or other value: TLSv12.",
+          "enum": ["TLSv12", "TLSv13"],
           "default": "TLSv12"
         }
       },
-      "required": []
+      "if": {
+        "required": ["enabled"],
+        "properties": {
+          "enabled": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": ["certificate", "key"]
+      }
     },
     "authentication": {
       "type": "object",
-      "description": "specifies if the client calls should be authenticated. If authentication is required, this setting defines the string value that client requests should provide in order to get access to the service.",
+      "description": "API key authentication of clients of the gRPC API.",
+      "additionalProperties": false,
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Specifies if authentication is enabled.",
-          "example": true,
+          "description": "Requires every call to carry the API key; other calls are rejected with status UNAUTHENTICATED. api_key is then required.",
           "default": false
         },
-        "apikey": {
+        "api_key": {
           "type": "string",
-          "description": "API key for authentication.",
-          "example": "your_api_key"
+          "description": "Value that clients must send in gRPC request metadata entry api_key. It is stored in clear text: restrict read access to this file.",
+          "minLength": 1,
+          "examples": ["change-me-to-a-long-random-value"]
         }
       },
-      "required": []
+      "if": {
+        "required": ["enabled"],
+        "properties": {
+          "enabled": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": ["api_key"]
+      }
     },
     "api_time_settings": {
       "type": "object",
-      "description": "the time-related settings for the local server connection.",
+      "description": "Keepalive and connection lifetime settings of the gRPC API server, in seconds.",
+      "additionalProperties": false,
       "properties": {
         "max_conn_idle": {
           "type": "integer",
-          "description": "The maximum time the server connection can be idle (in seconds).",
-          "example": 120,
-          "default": 86400
+          "description": "Time after which a client connection with no ongoing call is closed. 0 or omitted: 86400 (24 hours).",
+          "minimum": 0,
+          "default": 86400,
+          "examples": [120]
         },
         "max_conn_age": {
           "type": "integer",
-          "description": "The time until the server connection's lifetime reaches its maximum age (in seconds).",
-          "example": "infinity",
-          "default": "infinity"
+          "description": "Maximum lifetime of a client connection, with a random variation of +/-10%; the client must then reconnect. 0 or omitted: no limit.",
+          "minimum": 0,
+          "default": 0,
+          "examples": [3600]
         },
         "max_conn_age_grace": {
           "type": "integer",
-          "description": "After the server connection's lifetime reaches its maximum age, the length of the grace period before the connection is closed (in seconds).",
-          "example": 10,
-          "default": 10
+          "description": "Additional time given to ongoing calls once max_conn_age is reached, before the connection is forcibly closed. 0 or omitted: no limit.",
+          "minimum": 0,
+          "default": 0,
+          "examples": [10]
         },
         "time": {
           "type": "integer",
-          "description": "After a duration of this time (in seconds), if the server doesn't see any activity from the client, it pings the client to see whether the transport is still alive.",
-          "example": 1,
-          "default": 7200
+          "description": "Time without activity from a client after which the server pings it to check that the connection is still alive. 0 or omitted: 7200 (2 hours).",
+          "minimum": 0,
+          "default": 7200,
+          "examples": [60]
         },
         "timeout": {
           "type": "integer",
-          "description": "After pinging the server for a keepalive check, the TransferD daemon waits for the specified timeout duration (in seconds). If the client shows no activity after this duration, the TransferD daemon closes the connection.",
-          "example": 3,
-          "default": 20
+          "description": "Time the server waits for activity after a keepalive ping before closing the connection. 0 or omitted: 20.",
+          "minimum": 0,
+          "default": 20,
+          "examples": [3]
         }
-      },
-      "required": []
+      }
     }
-  }
+  },
+  "examples": [
+    {
+      "address": "127.0.0.1",
+      "port": 55002,
+      "workers": {
+        "max_concurrent": 10
+      },
+      "fasp_management": {
+        "promiscuous_mode_enabled": false,
+        "port": 23456
+      },
+      "fasp_runtime": {
+        "use_embedded": true
+      }
+    }
+  ]
 }
