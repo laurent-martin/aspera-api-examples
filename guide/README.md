@@ -1,10 +1,9 @@
 # Using Aspera API for Integration and Automation
-<!--
-PANDOC_DEFAULTS_BEGIN
-metadata:
-  subtitle: "Unofficial document"
-  author: "Laurent MARTIN"
-PANDOC_DEFAULTS_END
+<!-- gfm2pdf
+common:
+  metadata:
+    subtitle: "Unofficial document"
+    author: "Laurent MARTIN"
 -->
 <!-- markdownlint-disable MD033 MD060 -->
 

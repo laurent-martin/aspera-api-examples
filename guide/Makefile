@@ -1,7 +1,13 @@
-ifndef DIR_PANDOC
-$(error The environment variable DIR_PANDOC is not set. Please set it and try again.)
+ifndef GFM2PDF_HOME
+$(error The environment variable GFM2PDF_HOME is not set. Please set it and try again.)
 endif
-include $(DIR_PANDOC)pandoc.mak
+# Look of the PDF, e.g. the theme of aspera-cli: build/doc/pdf_theme
+ifndef GFM2PDF_THEME
+$(error The environment variable GFM2PDF_THEME is not set. Please set it and try again.)
+endif
+# gfm2pdf-toolchain 1.x: themes, options of a document in a comment <!-- gfm2pdf
+GFM2PDF_VERSION_REQUIRED ?= >= 1.0.0.pre, < 2
+include $(GFM2PDF_HOME)/pandoc.mak
 
 DIR_TOP=$(CURDIR)/../
 include $(DIR_TOP)common.mak
