@@ -4,11 +4,16 @@
   "description": "Automatically update the OpenAPI list in docs/index.js with spec files",
   "main": "update.js",
   "scripts": {
-    "update": "node update.js"
+    "update": "node update.js",
+    "lint": "node lint.js"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@ibm-cloud/openapi-ruleset": "^1.33.17",
+    "ibm-openapi-validator": "^1.38.8"
+  }
 }
