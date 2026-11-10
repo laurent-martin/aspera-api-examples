@@ -1,6 +1,6 @@
 DIR_TOP=$(realpath ../..)/
 include $(DIR_TOP)common.mak
-TEST_CASES=minimal server aoc faspex5 node shares node_v2
+TEST_CASES=minimal server aoc faspex5 faspex5_remote node shares node_v2
 #  faspex
 # shares_v2 cos cos_node_api cos_v2
 # this folder

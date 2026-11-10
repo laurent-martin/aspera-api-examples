@@ -91,6 +91,7 @@ The folder `app` contains one folder per programming language and, in each of th
 | HSTS Node API, transfer spec v2 | `node_v2` | `node_v2` | | | `node_v2` | | `node_v2` | |
 | Shares | `shares` *shares_v2* | | | | | | `shares` | |
 | Faspex | `faspex5` | `faspex5` | `faspex5` | `Faspex5Send` | `faspex5` | `faspex5` | `faspex5` | `faspex5` |
+| Faspex, package from a shared folder to a shared inbox (no local transfer) | `faspex5_remote` | | | | | | | |
 | Faspex, legacy API (deprecated) | *faspex* | | | | *faspex4* | | | |
 | Aspera on Cloud | `aoc` | `aoc` | | `Aoc` | `aoc` | `aoc` | `aoc` | `aoc` |
 | IBM Cloud Object Storage | *cos* *cos_v2* *cos_node_api* | `cos` | | *COSFileUploadExample* | | | | |
@@ -270,6 +271,7 @@ faspex5:
   private_key: <PRIVATE_KEY_FILE>
   shared_folder_name: Server Files
   shared_folder_file: /testfiles/aspera-test-dir-small/10MB.1
+  shared_inbox: <SHARED_INBOX>
 shares:
   url: https://shares.example.com
   verify: true
