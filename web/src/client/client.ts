@@ -5,6 +5,10 @@ import {
     launch,
     getInstallerInfo,
     startTransfer,
+    stopTransfer,
+    resumeTransfer,
+    removeTransfer,
+    getAllTransfers,
     showSelectFileDialog,
     showSelectFolderDialog,
     initDragDrop,
@@ -34,6 +38,9 @@ async function showSelectDialog(options: SelectDialogOptions = {}): Promise<Data
     return options.select === 'folder' ? showSelectFolderDialog(options) : showSelectFileDialog(options);
 }
 
+/** A transfer as reported by the SDK. */
+type TransferInfo = TransferResponse['transfers'][number];
+
 /** Formatter for human-readable file sizes. */
 const bytesFormatter = new Intl.NumberFormat('en', {
     style: 'unit',
@@ -45,6 +52,9 @@ const bytesFormatter = new Intl.NumberFormat('en', {
 
 /** Get value of input text. */
 const getVal = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value;
+
+/** Get state of a checkbox or switch. */
+const isChecked = (id: string) => (document.getElementById(id) as HTMLInputElement)?.checked ?? false;
 
 /** Get status of radio button */
 const getChecked = (name: string) => document.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value;
@@ -61,10 +71,11 @@ const uniqueMerge = <T>(...arrays: T[][]): T[] => [...new Set(arrays.flat())];
 
 /** Status color mapping */
 const STATUS_COLORS: Record<string, string> = {
-    'RUNNING': 'green',
-    'DEGRADED': 'orange',
-    'FAILED': 'red',
-    'DISCONNECTED': 'red'
+    // readable on both light and dark backgrounds
+    'RUNNING': '#24a148',
+    'DEGRADED': '#f1c21b',      // partly working
+    'DISCONNECTED': '#ff832b',  // connection lost, often recoverable by relaunching
+    'FAILED': '#fa4d56'         // client not reachable
 };
 
 class ClientApp {
@@ -83,6 +94,10 @@ class ClientApp {
      * Flag to track if drag & drop has been initialized for current client
      */
     private dragDropInitialized: boolean = false;
+    /**
+     * Transfers known by the app, by uuid, updated by SDK activity events.
+     */
+    private transfers = new Map<string, TransferInfo>();
 
     constructor(private config: any) { }
 
@@ -119,7 +134,14 @@ class ClientApp {
 
         // Event Bindings
         document.querySelectorAll('input[type=radio]').forEach(el => el.addEventListener('change', () => this.updateUi()));
-        document.getElementById('btn_select_files')?.addEventListener('click', () => this.pickFiles());
+        document.getElementById('btn_select_files')?.addEventListener('click', () => this.pickFiles('file'));
+        document.getElementById('btn_select_folders')?.addEventListener('click', () => this.pickFiles('folder'));
+        document.getElementById('transfers')?.addEventListener('click', e => {
+            const button = (e.target as HTMLElement).closest('button');
+            if (button?.dataset.action && button.dataset.id) {
+                this.controlTransfer(button.dataset.action, button.dataset.id);
+            }
+        });
         document.getElementById('btn_start_transfer')?.addEventListener('click', () => this.startClientTransfer());
 
         const initialClient = this.uiState.client;
@@ -132,9 +154,10 @@ class ClientApp {
     // UI event Handlers
     // =====================
 
-    async pickFiles() {
+    /** Select local files or folders to upload with the native dialog of the transfer client. */
+    async pickFiles(select: 'file' | 'folder') {
         try {
-            const response = await showSelectDialog({ select: 'file', multiple: true, });
+            const response = await showSelectDialog({ select, multiple: true });
             const files = response.dataTransfer?.files || [];
             // replace the selection only once the user has actually picked files
             this.selectedUploadFiles = uniqueMerge(files.map(f => f.name));
@@ -166,11 +189,32 @@ class ClientApp {
                 spec.authentication = 'token';
             }
 
-            await startTransfer(spec, {});
+            // second argument: IBM Aspera settings for this transfer (not part of the transfer spec).
+            // allow_dialogs is for Desktop only: true brings the app to the front, false keeps it in the background.
+            await startTransfer(spec, state.client === 'desktop' ? { allow_dialogs: state.allowDialogs } : {});
             if (!isDownload) this.selectedUploadFiles = [];
             this.updateUi();
         } catch (err) {
             handleError("Transfer Failed", err);
+        }
+    }
+
+    /** Stop, resume or remove a transfer, from the buttons of the transfer list. */
+    private async controlTransfer(action: string, id: string) {
+        try {
+            if (action === 'stop') {
+                await stopTransfer(id);
+            } else if (action === 'resume') {
+                // resuming creates a new transfer object
+                const resumed = await resumeTransfer(id);
+                this.transfers.set(resumed.uuid, resumed);
+            } else if (action === 'remove') {
+                await removeTransfer(id);
+                this.transfers.delete(id);
+            }
+            this.renderTransfers();
+        } catch (err) {
+            handleError(`Cannot ${action} transfer`, err);
         }
     }
 
@@ -186,6 +230,7 @@ class ClientApp {
             serverUrl: getVal('server_url'),
             downloadPath: getVal('file_to_download'),
             uploadDest: getVal('folder_for_upload'),
+            allowDialogs: isChecked('allow_dialogs'),
         };
     }
 
@@ -211,6 +256,7 @@ class ClientApp {
         // VISIBILITY MATRIX
         const visibilityMatrix: Record<string, boolean> = {
             'httpgw_url': state.client === 'httpgw',
+            'desktop_options': state.client === 'desktop',
             'div_ssh_creds_selector': ['connect', 'desktop'].includes(state.client),
             'hsts_basic_info': state.authType === 'basic_token',
             'hsts_ssh_info': state.authType === 'ssh_creds',
@@ -287,6 +333,14 @@ class ClientApp {
                     }
                 }
 
+                // Show transfers that already exist for this application
+                try {
+                    (await getAllTransfers()).forEach(t => this.transfers.set(t.uuid, t));
+                    this.renderTransfers();
+                } catch (err) {
+                    console.debug('Cannot list existing transfers:', err);
+                }
+
                 // Refresh status display after drag & drop is initialized
                 await this.refreshStatusDisplay(this.currentClient || 'desktop');
             }, 500); // Wait 500ms for SDK to be fully verified
@@ -330,14 +384,48 @@ class ClientApp {
     }
 
     private handleTransferEvents(response: TransferResponse) {
-        // Modernized logging using formatted strings
         response.transfers.forEach(t => {
-            const status = `ID: ${t.uuid} | ${t.status} | ${(t.percentage * 100).toFixed(1)}% | ${bytesFormatter.format(t.bytes_written)} / ${bytesFormatter.format(t.bytes_expected)}`;
-            console.log(status);
-            const el = document.getElementById('status');
-            if (el) el.textContent = status;
+            console.log(`Transfer ${t.uuid}: ${t.status} ${(t.percentage * 100).toFixed(1)}%`);
+            if (t.status === 'removed') {
+                this.transfers.delete(t.uuid);
+            } else {
+                this.transfers.set(t.uuid, t);
+            }
         });
+        this.renderTransfers();
         this.updateUi();
+    }
+
+    /** Display the list of transfers, with the buttons that are relevant for the status of each one. */
+    private renderTransfers() {
+        const el = document.getElementById('transfers');
+        if (!el) return;
+        el.replaceChildren();
+        if (this.transfers.size === 0) {
+            el.textContent = 'No transfer';
+            return;
+        }
+        for (const t of this.transfers.values()) {
+            const row = document.createElement('div');
+            row.className = 'transfer';
+            const info = document.createElement('span');
+            info.textContent = `${t.uuid} | ${t.status} | ${(t.percentage * 100).toFixed(1)}% | ` +
+                `${bytesFormatter.format(t.bytes_written)} / ${bytesFormatter.format(t.bytes_expected)}` +
+                (t.error_desc ? ` | ${t.error_desc}` : '');
+            row.append(info);
+            const actions: [string, string][] = [];
+            if (['initiating', 'queued', 'running', 'willretry'].includes(t.status)) actions.push(['stop', 'Stop']);
+            if (['paused', 'cancelled', 'failed'].includes(t.status)) actions.push(['resume', 'Resume']);
+            actions.push(['remove', 'Remove']);
+            for (const [action, label] of actions) {
+                const button = document.createElement('button');
+                button.textContent = label;
+                button.dataset.action = action;
+                button.dataset.id = t.uuid;
+                row.append(button);
+            }
+            el.append(row);
+        }
     }
 
     private handleDropEvent(data: { event: DragEvent; files?: DataTransferResponse }) {

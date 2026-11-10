@@ -19,6 +19,7 @@ $(DIR_TESTED_FLAG)%: $(INSTALL_FLAG) $(GBL_FILE_SAMPLE)
 	@echo "== Test: $(notdir $@) ==========================="
 	make run&
 	sleep 5
+	@echo "Shutting down server for test."
 	curl -X POST http://localhost:9080/api/shutdown
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@

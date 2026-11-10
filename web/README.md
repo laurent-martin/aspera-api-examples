@@ -64,11 +64,43 @@ The web application is split into two parts:
 
 ![Diagram](doc/diagram.png)
 
+## Read this first
+
+The whole transfer flow, in the order it happens
+(function names are in [`client.ts`](src/client/client.ts) unless noted):
+
+1. **Load config**: the page fetches `/api/config` from the server, then `ClientApp.initialize()` runs.
+2. **Initialize the SDK**: `reinitSdk()` calls `initSession()` with the settings of the selected transfer client
+   (Desktop, Connect or HTTP Gateway), after registering `registerStatusCallback()` and `registerActivityCallback()`.
+3. **Wait for status `RUNNING`**: `handleStatusEvents()` receives SDK status changes.
+   Once `RUNNING`, it enables drag and drop with `initDragDrop()` and `createDropzone()`
+   (not for HTTP Gateway, where only the file dialog is used).
+4. **Choose what to transfer**: `pickFiles()` uses `showSelectFileDialog()` or `showSelectFolderDialog()`,
+   or the user drops files in the drop area.
+5. **Get a transfer spec**: `startClientTransfer()` builds it with `getTransferSpecFromServer()`,
+   which calls `POST /api/tspec`.
+   The server ([`server.ts`](src/server/server.ts)) calls the HSTS Node API `files/<operation>_setup`
+   and returns the transfer spec.
+   (With SSH credentials, `getTransferSpecSSH()` builds the spec in the browser instead.)
+6. **Start the transfer**: `startClientTransfer()` calls `startTransfer(spec, settings)`.
+   The second argument holds IBM Aspera settings that are not part of the transfer spec,
+   such as `allow_dialogs` (Desktop only: bring the app to the front or keep it hidden),
+   set by the switch on the page.
+7. **Follow progress**: `handleTransferEvents()` receives transfer events from `registerActivityCallback()`
+   and updates the list of transfers. Existing transfers are loaded with `getAllTransfers()` once the SDK is `RUNNING`.
+8. **Control transfers**: `controlTransfer()` calls `stopTransfer()`, `resumeTransfer()` or `removeTransfer()`
+   from the buttons of the transfer list.
+
+The parts that are specific to the Aspera SDK are steps 2, 3, 4, 6, 7 and 8, plus the `/api/tspec` call in step 5.
+Everything else (the `uiState` getter, the visibility matrix, status colors, page reload when switching client)
+is demo scaffolding for the HTML form: do not copy it.
+
 ## Configuration
 
-Refer to [the configuration section of the upper README.md](../README.md#configuration-file) to create `config.yaml`.
+Refer to [the configuration section of the upper README.md](../README.md#configuration-file)
+to create `private/config.yaml`.
 
-This sample app uses these values from the config file (`config.yaml`):
+This sample app uses these values from the config file (`private/config.yaml`):
 
 ```yaml
 web:
@@ -103,7 +135,7 @@ httpgw:
 
 ## Environment Setup
 
-The server uses [Node.js](https://nodejs.org/) (20.19+ or 22.12+, required by Vite 7).
+The server uses [Node.js](https://nodejs.org/) (20.19+ or 22.12+, required by Vite 8).
 Install it.
 Check the version with:
 
@@ -136,16 +168,35 @@ If you do not have `make`, refer to the `Makefile` for the startup procedure:
   npm run all
   ```
 
+To run only the API server (compiled with `tsc`, without `vite`, so no UI), do:
+
+```bash
+make server
+```
+
+It listens on `web.port` (`9080`) and is also what `make run` starts, next to `vite`.
+This is useful to test the broker API alone, for example:
+
+```bash
+curl -X POST http://localhost:9080/api/tspec -H 'Content-Type: application/json' \
+  -d '{"operation":"download","sources":["<FILE_PATH>"]}'
+```
+
 ## Using the application
 
 Once the runtime is started:
 
-- `express` serves the API on port `9080` (`web.port` in `config.yaml`)
-- `vite` serves the client app and works as a reverse proxy for the server API, on port `5173` (`server.port` in `vite.config.ts`)
+- `express` serves the API on port `9080` (`web.port` in `private/config.yaml`;
+  if you change it, also update the `/api` proxy target in `vite.config.ts`)
+- `vite` serves the client app and works as a reverse proxy for the server API,
+  on port `5173` (`server.port` in `vite.config.ts`)
 
 Use `vite`'s URL in the browser: <http://localhost:5173>
 
 Select the transfer client: IBM Aspera for Desktop, IBM Aspera Connect, or HTTP Gateway.
+Desktop or Connect must be installed and running on your computer
+(for Desktop, the status line offers a launch or download link if not),
+and HTTP Gateway requires `httpgw.url` in the configuration.
 The client app connects to it and shows its status and version.
 
 Select the direction of the transfer: Download or Upload.
@@ -158,4 +209,5 @@ For download, provide the path on the server; for upload, select local files and
 
 Then start the transfer.
 
-The status of the transfer can be followed on the web page.
+The transfers are listed on the web page, with their progress.
+A running transfer can be stopped, a stopped one can be resumed, and any transfer can be removed from the list.

@@ -33,6 +33,12 @@
     <div id="client_info">
       <p id="client_status">-</p>
     </div>
+    <div id="desktop_options">
+      <label class="switch-label">
+        <input type="checkbox" id="allow_dialogs" checked />
+        Bring the Desktop app to the front when a transfer starts
+      </label>
+    </div>
     <input type="text" id="httpgw_url" />
   </fieldset>
   <fieldset>
@@ -74,6 +80,7 @@
     <legend>Source and destination</legend>
     <div id="upload_selection">
       <button id="btn_select_files">Select Files to Upload</button>
+      <button id="btn_select_folders">Select Folders to Upload</button>
       <p>Locally selected files:
       <div id="upload_files"></div>
       </p>
@@ -86,8 +93,8 @@
   </fieldset>
   <button id="btn_start_transfer">Start transfer</button><br />
   <fieldset>
-    <legend>Transfer status</legend>
-    <pre id="status"></pre>
+    <legend>Transfers</legend>
+    <div id="transfers">No transfer</div>
   </fieldset>
 </body>
 
