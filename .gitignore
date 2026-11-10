@@ -1,9 +1,9 @@
-build/
-tmp/
-private/
-.venv/
-.vscode/
-.idea/
+/build/
+/tmp/
+/private/
+/.venv/
+/.vscode/
+/.idea/
 .tested/
 .checked_env
 # macOS

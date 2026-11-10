@@ -9,7 +9,7 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "lib": ["ES2020", "DOM"],
-    "moduleResolution": "node"
+    "moduleResolution": "bundler"
   },
   "include": ["src/client/**/*"]
 }

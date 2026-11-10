@@ -6,15 +6,17 @@
     "all": "concurrently --kill-others \"npm run server\" \"npm run client\""
   },
   "dependencies": {
-    "@ibm-aspera/sdk": "^0.23.6",
-    "express": "^5.2.1",
-    "js-yaml": "^5.4.2",
-    "undici": "^7.22.0"
+    "@ibm-aspera/sdk": "^0.23.7",
+    "express": "^5.3.0",
+    "js-yaml": "^5.5.0",
+    "undici": "^8.12.4"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/js-yaml": "^4.0.9",
-    "concurrently": "^9.2.1",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "@types/node": "^26.6.6",
+    "concurrently": "^10.0.7",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.7"
   }
 }

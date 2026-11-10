@@ -5,7 +5,6 @@
 import express, { Request, Response } from "express";
 import yaml from "js-yaml";
 import fs from "fs";
-import os from "os";
 import path from "path";
 import { Agent, setGlobalDispatcher } from "undici";
 
@@ -249,11 +248,5 @@ app.use(express.static(publicFolder));
 // --------------------------------------------------
 
 server = app.listen(config.web.port, "0.0.0.0", () => {
-  const port = config.web.port;
-  const vitePort = 5173;
-  const localIp = Object.values(os.networkInterfaces())
-    .flat()
-    .find((iface) => iface?.family === "IPv4" && !iface.internal)?.address ?? "localhost";
-  console.log(`API server listening on HTTP port ${port}`);
-  console.log(`Use Vite UI at any of the URLs shown above.`);
+  console.log(`API server listening on HTTP port ${config.web.port}`);
 });

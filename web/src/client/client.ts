@@ -133,10 +133,10 @@ class ClientApp {
     // =====================
 
     async pickFiles() {
-        this.selectedUploadFiles = [];
         try {
             const response = await showSelectDialog({ select: 'file', multiple: true, });
             const files = response.dataTransfer?.files || [];
+            // replace the selection only once the user has actually picked files
             this.selectedUploadFiles = uniqueMerge(files.map(f => f.name));
             this.updateUi();
         } catch (err) {
