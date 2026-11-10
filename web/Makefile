@@ -26,6 +26,7 @@ $(DIR_TESTED_FLAG)%: $(INSTALL_FLAG) $(GBL_FILE_SAMPLE)
 # install dependencies
 $(INSTALL_FLAG): package.json
 	npm install
+build:: $(DIST)client/client.js $(DIST)server/server.js
 zip:
 	zip aspera-httpgw-example.zip $$(git ls-files)
 $(DIST)client/client.js: $(INSTALL_FLAG) $(SRC)client/client.ts

@@ -6,7 +6,7 @@ SECTIONS=app/csharp app/go app/java app/js app/python app/ruby app/rust app/cpp 
 .PHONY: cleantmp template sdk
 template:
 	cd guide && make
-all clean clobber clean_flags:: .checked_env
+all build clean clobber clean_flags:: .checked_env
 	set -ex && for sec in $(SECTIONS); do make --directory=$$sec $@; done
 # Delete intermediate files
 clean::

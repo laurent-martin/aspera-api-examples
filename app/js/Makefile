@@ -11,6 +11,8 @@ $(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) node_modules/.package-l
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
+build:: node_modules/.package-lock.json
+	for f in $(EXAMPLES)*.js $(SRC)utils/*.js; do node --check $$f || exit 1; done
 # install packages with the versions of package-lock.json
 node_modules/.package-lock.json: package.json package-lock.json
 	npm ci

@@ -9,7 +9,7 @@ $(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) $(shell find src -name 
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
-build:
+build:: $(SDK_FILE_PROTO)
 	dotnet build $(PROPERTIES)
 clean::
 	rm -fr bin obj

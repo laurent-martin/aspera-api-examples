@@ -30,6 +30,8 @@ $(DIR_TESTED_FLAG)%: $(FILES_RUNTIME) $(GBL_FILE_SAMPLE) $(CPP_BUILD_DIR)/Makefi
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
+build:: $(SDK_FILE_PROTO) $(CPP_BUILD_DIR)/Makefile
+	cmake --build $(CPP_BUILD_DIR)
 # Setup compilation environment
 # 1. Install dependencies
 # 2. Configure cmake

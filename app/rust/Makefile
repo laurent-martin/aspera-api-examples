@@ -14,6 +14,8 @@ $(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(EXAMPLES_DIR)%.rs
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
+build:: $(SDK_FILE_PROTO)
+	cargo build --locked
 clean::
 clobber::
 	rm -fr target

@@ -1,0 +1,116 @@
+# Build the samples of each language, without running them: no server and no secret required.
+# Each job downloads the Transfer Daemon SDK, generates the gRPC stub code and compiles: `make build`.
+# It catches breakage on version upgrades (SDK, gRPC, protobuf, dependencies).
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # platform of the Transfer Daemon SDK, usually read from private/config.yaml
+  PLATFORM: linux-x86_64
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: make sdk PLATFORM="$PLATFORM"
+      - run: make -C app/python build
+
+  js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: make sdk PLATFORM="$PLATFORM"
+      - run: make -C app/js build
+
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go/go.mod
+      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
+      - run: make sdk PLATFORM="$PLATFORM"
+      - run: make -C app/go build
+
+  java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      # build.gradle requires Gradle 9
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.8.2"
+      - run: make sdk PLATFORM="$PLATFORM"
+      - run: make -C app/java build
+
+  ruby:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0"
+      - run: make sdk PLATFORM="$PLATFORM"
+      - run: make -C app/ruby build
+
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # tonic-prost-build calls protoc
+      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - run: make sdk PLATFORM="$PLATFORM"
+      - run: make -C app/rust build
+
+  cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # gRPC and protobuf from the system, other libraries from Conan (conanfile.txt)
+      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler libprotobuf-dev libgrpc++-dev protobuf-compiler-grpc
+      - run: pip install conan
+      - run: make sdk PLATFORM="$PLATFORM"
+      - run: make -C app/cpp build
+
+  csharp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: make sdk PLATFORM="$PLATFORM"
+      - run: make -C app/csharp build
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: make -C web build

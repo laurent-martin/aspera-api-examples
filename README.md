@@ -115,6 +115,10 @@ On the first execution of `make`, the Transfer Daemon SDK is automatically downl
 
 To download the SDK only, execute: `make sdk`.
 
+To compile the samples without running them (no server and no configuration file needed), execute `make build`
+at the top of the repository, or in the folder of one language.
+The workflow [`build`](.github/workflows/build.yml) runs it on GitHub for each language.
+
 ## Quick start (Windows)
 
 1. Refer to [Configuration file](#configuration-file):

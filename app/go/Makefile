@@ -19,6 +19,9 @@ $(BUILD_DIR).exists:
 	@mkdir -p $(BUILD_DIR)
 	@touch $@
 all:: $(TEST_FLAGS)
+# all samples in the examples folder, including those not in TEST_CASES
+ALL_SAMPLES=$(basename $(notdir $(wildcard $(EXAMPLES_DIR)*.go)))
+build:: $(GO_FILES_GRPC) $(foreach item,$(ALL_SAMPLES),$(BUILD_DIR)$(item))
 export SDK_FILE_PROTO
 $(BUILD_DIR)%: $(BUILD_DIR).exists $(EXAMPLES_DIR)%.go $(shell find src/utils -name "*.go")
 	go build -o $@ $(EXAMPLES_DIR)$(notdir $@).go

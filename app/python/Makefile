@@ -38,6 +38,8 @@ $(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(PYENV_ACTIVATE) $(PY_
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
+build:: $(PYENV_ACTIVATE) $(PY_FILES_GRPC)
+	source $(PYENV_ACTIVATE) && python -m py_compile $(EXAMPLES)*.py $(SRC)utils/*.py
 $(PYENV_ACTIVATE):
 	python3 -m venv $(PYENV_DIR)
 	source $(PYENV_ACTIVATE) && pip3 install -r $(SRC)requirements.txt

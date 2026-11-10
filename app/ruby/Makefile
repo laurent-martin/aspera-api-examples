@@ -24,6 +24,8 @@ $(DIR_TESTED_FLAG)%: $(GBL_FILE_SAMPLE) $(FILES_RUNTIME) $(GEMS_FLAG) $(RB_FILES
 	@sleep 2
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
+build:: $(GEMS_FLAG) $(RB_FILES_GRPC)
+	for f in $(EXAMPLES)*.rb $(SRC)utils/*.rb; do ruby -c $$f > /dev/null || exit 1; done
 $(GEMS_FLAG): Gemfile Gemfile.lock
 	bundle install
 	@touch $@

@@ -30,8 +30,10 @@ GBL_FILE_SAMPLE=$(GBL_DIR_TMP)This_is_a_test.txt
 # folder for test flags
 DIR_TESTED_FLAG=./.tested/
 TEST_FLAGS=$(foreach var,$(TEST_CASES),$(DIR_TESTED_FLAG)$(var))
-.PHONY: all clean clobber clean_flags clean_daemon list
+.PHONY: all build clean clobber clean_flags clean_daemon list
 all::
+# compile the samples without running them: no server and no configuration file required (used by CI)
+build::
 # list of test cases
 list:
 	@echo "Test individual case with:"
