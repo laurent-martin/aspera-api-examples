@@ -83,7 +83,7 @@ The folder `app` contains one folder per programming language and, in each of th
 
 | Use case | Python | JS | Go | Java | Ruby | Rust | C++ | C# |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| HSTS, SSH credentials, Transfer Daemon API only (start here) | `minimal` | `minimal` | `minimal` | `Minimal` | `minimal` | `minimal` | | `minimal` |
+| HSTS, SSH credentials, Transfer Daemon API only (start here) | `minimal` | `minimal` | `minimal` | `Minimal` | `minimal` | `minimal` | `minimal` | `minimal` |
 | HSTS, SSH credentials | `server` | `server` `server_v2` | `server` | `ServerFileUploadV1Example` `ServerFileDownloadV2Example` | `server` | `server` | `server` | `server` |
 | HSTS, persistent session | | | | `PersistentUploadExample` | | | | |
 | HSTS, remote commands (`ascmd`) | | *server_cmd* | `server_cmd` | | | `server_cmd` | | |
