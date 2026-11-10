@@ -19,8 +19,8 @@ pub mod transfer {
 
 use transfer::transfer_service_client::TransferServiceClient;
 use transfer::InstanceInfoRequest;
-use transfer::QueryTransferResponse;
-use transfer::TransferInfoRequest;
+use transfer::RegistrationFilter;
+use transfer::RegistrationRequest;
 use transfer::TransferRequest;
 use transfer::TransferStatus;
 use transfer::TransferType;
@@ -315,35 +315,37 @@ impl TransferClient {
         &mut self,
         transfer_id: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        loop {
-            let transfer_info_request = TransferInfoRequest {
-                transfer_id: transfer_id.to_string(),
+        let registration_request = RegistrationRequest {
+            filters: vec![RegistrationFilter {
+                transfer_id: vec![transfer_id.to_string()],
                 ..Default::default()
-            };
-            let query_transfer_request = tonic::Request::new(transfer_info_request);
-            let client: &mut TransferServiceClient<Channel> = self.get_transfer_service()?;
-            let query_transfer_response: QueryTransferResponse = client
-                .query_transfer(query_transfer_request)
-                .await?
-                .into_inner();
-            let status = TransferStatus::try_from(query_transfer_response.status)
-                .unwrap_or(TransferStatus::UnknownStatus);
-            let transfer_info = query_transfer_response.transfer_info.as_ref();
+            }],
+            ..Default::default()
+        };
+        // monitor transfer status: the daemon sends an event on each change
+        let mut events = self
+            .get_transfer_service()?
+            .monitor_transfers(registration_request)
+            .await?
+            .into_inner();
+        while let Some(event) = events.message().await? {
+            let status = TransferStatus::try_from(event.status).unwrap_or(TransferStatus::UnknownStatus);
+            let transfer_info = event.transfer_info.as_ref();
             Self::log_status(status, transfer_info.map_or(0, |info| info.average_rate_kbps));
-            // `error` is empty on session errors: the cause is in transfer information
+            // `error` is empty on session errors: the cause is in session or transfer information
             Self::throw_on_error(
                 status,
                 &[
-                    query_transfer_response.error.as_ref().map(|err| err.description.as_str()),
+                    event.error.as_ref().map(|err| err.description.as_str()),
+                    event.session_info.as_ref().map(|info| info.error_desc.as_str()),
                     transfer_info.map(|info| info.error_description.as_str()),
                 ],
             )?;
             if status == TransferStatus::Completed {
-                break;
+                return Ok(());
             }
-            tokio::time::sleep(Duration::from_secs(1)).await;
         }
-        Ok(())
+        Err("Transfer monitoring ended before transfer completion".into())
     }
     /// Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
     pub fn daemon_shutdown(&mut self) -> Result<(), String> {
