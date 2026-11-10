@@ -8,7 +8,7 @@ Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 - Aspera Applications APIs: interact with Aspera applications (Faspex, AoC, Node API, COS, etc.)
 - Aspera Web SDK: transfer files in a web browser
 
-![Component APIs](guide/api_components.png)
+![Overview of the Aspera APIs: your code, client API, servers](guide/images/api-overview.svg)
 
 > [!TIP]
 > New to Aspera APIs? Start with the [integration guide](guide/README.md):

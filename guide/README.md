@@ -27,6 +27,8 @@ or the SaaS version: Aspera Transfer Service (ATS).
 
 ### Components and their APIs
 
+![Overview of the Aspera APIs: your application, applications, transfer agents and servers](images/api-overview.svg)
+
 These three types of software components provide APIs:
 
 - **Transfer Server (HSTS)**: Node API (REST)
