@@ -10,7 +10,7 @@ The sample code in `src` shows how to transfer files using:
 - IBM Aspera HSTS using SSH credentials
 - IBM Aspera HSTS or Shares using Node credentials, using transfer spec v1 or v2
 - IBM Cloud Object Storage (COS) using IBM Cloud service credentials
-- IBM Aspera Faspex 4 and 5
+- IBM Aspera Faspex
 - IBM Aspera on Cloud using JWT and a private key
 
 ## Requirements
@@ -75,7 +75,7 @@ Check the [`Makefile`](Makefile) for details.
 
 ## SDK Selection
 
-The examples use the current Aspera SDK: [Transfer SDK](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22).
+The examples use the current Aspera SDK: [Transfer Daemon SDK](https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22).
 It **shall be used** for new developments.
 
 The legacy [FASPManager API](https://developer.ibm.com/apis/catalog?search=%22fasp%20manager%20sdk%22) (`faspmanager`)
@@ -93,7 +93,7 @@ Each sample program is structured like this:
 - start the transfer and wait for its completion: `transfer_client.start_transfer_and_wait(transfer_spec)`
 - stop the daemon: `transfer_client.shutdown()`
 
-## Known Transfer SDK Issues
+## Known Transfer Daemon SDK Issues
 
 Transfer fails if `http_fallback` is `True`.
 

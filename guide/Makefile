@@ -6,7 +6,7 @@ ifndef GFM2PDF_THEME
 $(error The environment variable GFM2PDF_THEME is not set. Please set it and try again.)
 endif
 # gfm2pdf-toolchain 1.x: themes, options of a document in a comment <!-- gfm2pdf
-GFM2PDF_VERSION_REQUIRED ?= >= 1.0.0.pre, < 2
+GFM2PDF_VERSION_REQUIRED ?= >= 1.1.0.pre, < 2
 include $(GFM2PDF_HOME)/pandoc.mak
 
 DIR_TOP=$(CURDIR)/../

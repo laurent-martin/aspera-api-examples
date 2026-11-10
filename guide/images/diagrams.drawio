@@ -1,6 +1,6 @@
-<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.1.1 Chrome/132.0.6834.210 Electron/34.3.3 Safari/537.36" version="26.1.1" pages="11">
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.1.1 Chrome/132.0.6834.210 Electron/34.3.3 Safari/537.36" version="26.1.1" pages="10">
   <diagram name="api-overview" id="ovwApiOverview0001">
-    <mxGraphModel dx="1509" dy="1125" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1120" pageHeight="810" math="0" shadow="0">
+    <mxGraphModel dx="981" dy="731" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1120" pageHeight="810" math="0" shadow="0">
       <root>
         <mxCell id="ov-0" />
         <mxCell id="ov-1" parent="ov-0" />
@@ -100,7 +100,7 @@
         <mxCell id="ov-29" value="Server storage" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#1f649e;fontColor=#ffffff;strokeColor=#0e3a5e;fontSize=12;fontFamily=Helvetica;" parent="ov-1" vertex="1">
           <mxGeometry x="515" y="670" width="90" height="65" as="geometry" />
         </mxCell>
-        <mxCell id="ov-30" value="HTTPS" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#43A047;fontSize=12;fontColor=#43A047;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.858;exitY=1.023;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.59;entryY=-0.018;entryDx=0;entryDy=0;entryPerimeter=0;" parent="ov-1" edge="1" target="ov-28" source="ov-13">
+        <mxCell id="ov-30" value="HTTPS" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#43A047;fontSize=12;fontColor=#43A047;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.858;exitY=1.023;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.59;entryY=-0.018;entryDx=0;entryDy=0;entryPerimeter=0;" parent="ov-1" source="ov-13" target="ov-28" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="1040" y="245" as="sourcePoint" />
             <mxPoint x="1040" y="585" as="targetPoint" />
@@ -115,18 +115,18 @@
         <mxCell id="ov-32" value="REST API: authenticate, get the transfer authorization (spec, token)" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;fontSize=13;fontColor=#1f649e;fontFamily=Helvetica;" parent="ov-1" vertex="1">
           <mxGeometry x="205" y="115" width="170" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="ov-33" value="" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#212121;fontSize=12;fontColor=#212121;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.465;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.077;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="ov-1" edge="1" target="ov-13" source="ov-3">
+        <mxCell id="ov-33" value="" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#212121;fontSize=12;fontColor=#212121;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.465;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.077;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="ov-1" source="ov-3" target="ov-13" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="470" y="110" as="sourcePoint" />
             <mxPoint x="470" y="205" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="8CQcvS7rRyw75GKBpGV6-1" value="&lt;span style=&quot;color: rgb(31, 100, 158); font-size: 13px; text-align: left; text-wrap-mode: wrap; background-color: rgb(251, 251, 251);&quot;&gt;start, monitor&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="ov-33">
+        <mxCell id="8CQcvS7rRyw75GKBpGV6-1" value="&lt;span style=&quot;color: rgb(31, 100, 158); font-size: 13px; text-align: left; text-wrap-mode: wrap; background-color: rgb(251, 251, 251);&quot;&gt;start, monitor&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="ov-33" vertex="1" connectable="0">
           <mxGeometry x="-0.1789" y="-1" relative="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="ov-35" value="" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1E88E5;fontSize=12;fontColor=#1E88E5;fontStyle=1;labelBackgroundColor=#ffffff;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="ov-1" edge="1" target="ov-16">
+        <mxCell id="ov-35" value="" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#1E88E5;fontSize=12;fontColor=#1E88E5;fontStyle=1;labelBackgroundColor=#ffffff;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="ov-1" target="ov-16" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="420" y="110" as="sourcePoint" />
             <mxPoint x="460" y="370" as="targetPoint" />
@@ -135,7 +135,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="8CQcvS7rRyw75GKBpGV6-3" value="&lt;span style=&quot;color: rgb(31, 100, 158); font-size: 13px; text-align: left; text-wrap-mode: wrap; background-color: rgb(251, 251, 251);&quot;&gt;start, monitor&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="ov-35">
+        <mxCell id="8CQcvS7rRyw75GKBpGV6-3" value="&lt;span style=&quot;color: rgb(31, 100, 158); font-size: 13px; text-align: left; text-wrap-mode: wrap; background-color: rgb(251, 251, 251);&quot;&gt;start, monitor&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="ov-35" vertex="1" connectable="0">
           <mxGeometry x="-0.1238" y="1" relative="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -154,13 +154,13 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="ov-39" value="" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#757575;fontSize=12;fontColor=#757575;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.965;exitY=0.02;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" parent="ov-1" edge="1" target="ov-23" source="ov-17">
+        <mxCell id="ov-39" value="" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#757575;fontSize=12;fontColor=#757575;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.965;exitY=0.02;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" parent="ov-1" source="ov-17" target="ov-23" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="910" y="445" as="sourcePoint" />
             <mxPoint x="940" y="445" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="ov-40" value="" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#757575;fontSize=12;fontColor=#757575;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="ov-1" edge="1" target="ov-29" source="ov-27">
+        <mxCell id="ov-40" value="" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=2;strokeColor=#757575;fontSize=12;fontColor=#757575;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="ov-1" source="ov-27" target="ov-29" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="600" y="650" as="sourcePoint" />
             <mxPoint x="600" y="670" as="targetPoint" />
@@ -216,6 +216,17 @@
         </mxCell>
         <mxCell id="ov-51" value="Storage access" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;fontSize=13;fontColor=#6b7785;fontFamily=Helvetica;" parent="ov-1" vertex="1">
           <mxGeometry x="980" y="763" width="200" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="FYABObNFBzB81-ZOtBqg-0" value="Node API" style="html=1;rounded=0;endArrow=classic;endFill=1;strokeWidth=3;strokeColor=#43A047;fontSize=12;fontColor=#43A047;fontStyle=1;labelBackgroundColor=#ffffff;exitX=0.336;exitY=1.02;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="ov-1" source="ov-3" target="ov-26">
+          <mxGeometry x="0.2066" relative="1" as="geometry">
+            <mxPoint x="379.5" y="190" as="sourcePoint" />
+            <mxPoint x="379.5" y="330" as="targetPoint" />
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="383" y="490" />
+              <mxPoint x="263" y="490" />
+            </Array>
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>

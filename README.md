@@ -24,7 +24,9 @@ Sample code using IBM Aspera APIs for various IBM Aspera products and SDKs:
 | `docs/`    | GitHub Pages site: API menu and OpenAPI viewer (folder name required by GitHub Pages)    |
 | `openapi/` | OpenAPI specifications of the Aspera APIs, JSON Schema of the `transferd` configuration  |
 | `config/`  | Paths of the project, and template of the configuration file                             |
-| `tools/`   | Build scripts: download of the Transfer SDK                                              |
+| `tools/`   | Build scripts: download of the Transfer Daemon SDK                                       |
+
+AI agents: read [AGENTS.md](AGENTS.md) first.
 
 Samples are provided in several programming languages.
 
@@ -43,7 +45,7 @@ Samples are provided in several programming languages.
 The [IBM Aspera Web SDK GitHub site](https://github.com/IBM/aspera-sdk-js)
 contains examples of using the Aspera web SDK.
 
-[OpenAPI reference for this repository](https://laurent-martin.github.io/aspera-api-examples/)
+[OpenAPI reference for this repository](https://ibm.biz/aspera_openapi)
 
 ## Introduction
 
@@ -87,8 +89,8 @@ The folder `app` contains one folder per programming language and, in each of th
 | HSTS Node API, transfer spec v1 | `node` | `node` | | `Node` | `node` | | | |
 | HSTS Node API, transfer spec v2 | `node_v2` | `node_v2` | | | `node_v2` | | `node_v2` | |
 | Shares | `shares` *shares_v2* | | | | | | `shares` | |
-| Faspex 5 | `faspex5` | `faspex5` | `faspex5` | `Faspex5Send` | `faspex5` | `faspex5` | `faspex5` | `faspex5` |
-| Faspex 4 | *faspex* | | | | *faspex4* | | | |
+| Faspex | `faspex5` | `faspex5` | `faspex5` | `Faspex5Send` | `faspex5` | `faspex5` | `faspex5` | `faspex5` |
+| Faspex, legacy API (deprecated) | *faspex* | | | | *faspex4* | | | |
 | Aspera on Cloud | `aoc` | `aoc` | | `Aoc` | `aoc` | `aoc` | `aoc` | `aoc` |
 | IBM Cloud Object Storage | *cos* *cos_v2* *cos_node_api* | `cos` | | *COSFileUploadExample* | | | | |
 
@@ -315,29 +317,15 @@ It is a client API that can be used in various languages.
 
 The file `transferd.proto` describes the remote procedure call interface provided by the daemon `transferd`.
 
-```text
- +-----------------+
- + transferd.proto +
- +-----------------+
-         |
-     [protoc]
-         |
-         v
-+----------------------+        +------------+
-+ generated stub code  +        + your code  +
-+----------------------+        +------------+
-          | [combine]                  |
-          +-----+----------------------+
-                |
-                v
-          +------------+                      +---------------------+
-          | client app |-----[connect to]---->|   Transfer daemon   |
-          +------------+                      +---------------------+
-                |                                       ^      | [executes]
-                +-------------[executes]----------------+      v
-                                                        |   +------+
-[or other method, systemd, or manual]---[executes]------+   | ascp |
-                                                            +------+
+```mermaid
+flowchart TD
+    proto[transferd.proto] -- protoc --> stub[Generated stub code]
+    stub --> app[Client app]
+    code[Your code] --> app
+    app -- "gRPC: connect to" --> daemon[Transfer Daemon]
+    app -. executes .-> daemon
+    other["Other method: systemd, or manual"] -. executes .-> daemon
+    daemon -- executes --> ascp
 ```
 
 ### Generated client source files

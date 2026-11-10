@@ -70,7 +70,7 @@ The whole transfer flow, in the order it happens
 (function names are in [`client.ts`](src/client/client.ts) unless noted):
 
 1. **Load config**: the page fetches `/api/config` from the server, then `ClientApp.initialize()` runs.
-2. **Initialize the SDK**: `reinitSdk()` calls `initSession()` with the settings of the selected transfer client
+2. **Initialize the SDK**: `reinitSdk()` calls `initSession()` with the settings of the selected transfer agent
    (Desktop, Connect or HTTP Gateway), after registering `registerStatusCallback()` and `registerActivityCallback()`.
 3. **Wait for status `RUNNING`**: `handleStatusEvents()` receives SDK status changes.
    Once `RUNNING`, it enables drag and drop with `initDragDrop()` and `createDropzone()`
@@ -193,7 +193,7 @@ Once the runtime is started:
 
 Use `vite`'s URL in the browser: <http://localhost:5173>
 
-Select the transfer client: IBM Aspera for Desktop, IBM Aspera Connect, or HTTP Gateway.
+Select the transfer agent: IBM Aspera for Desktop, IBM Aspera Connect, or HTTP Gateway.
 Desktop or Connect must be installed and running on your computer
 (for Desktop, the status line offers a launch or download link if not),
 and HTTP Gateway requires `httpgw.url` in the configuration.

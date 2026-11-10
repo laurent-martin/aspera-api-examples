@@ -34,25 +34,19 @@ Instead, the `.proto` file should be used to generate the classes (gRPC stubs).
 The Gradle build generates the Java classes from the `.proto` file of the Transfer Daemon SDK.
 Any toolchain can be used to generate the classes with `protoc` and `grpc-java`.
 
-```text
-╭───────────────╮                                    ╭───────────────╮
-│ Application   │                                    │ Faspex 5      │
-╞═══════════════╡                                    │               │
-│ App Classes   │ -------------API(REST)------------>│               │
-╞═══════════════╡                                    ╰───────────────╯
-│  Generated    │              ╭───────────────╮             |
-│ Stub Classes  │ <--compile-- │ proto file    │             |
-╰───────────────╯              ╰───────────────╯             |
-        |                                                    |
-       GRPC                                               API(REST)
-        |                                                    |
-        v                                                    v
-╭───────────────╮                                    ╭───────────────╮
-│ transferd     │                                    │ HSTS          │
-│               │                                    │               │
-│ ascp          │ ------------transfer-------------->│ FASP          │
-╰───────────────╯                                    ╰───────────────╯
-  | Native executables
+```mermaid
+flowchart LR
+    subgraph app [Application]
+        classes[App classes] --> stubs[Generated stub classes]
+    end
+    proto[proto file] -- compile --> stubs
+    classes -- "API (REST)" --> faspex[Faspex]
+    stubs -- gRPC --> transferd
+    subgraph native [Native executables]
+        transferd --> ascp
+    end
+    ascp -- "FASP transfer" --> hsts[HSTS]
+    faspex -- "API (REST)" --> hsts
 ```
 
 Classes are compiled for Java 25 (`--release 25`) with the JDK used by Gradle: any JDK 25 or newer.

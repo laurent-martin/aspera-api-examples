@@ -43,19 +43,84 @@ These three types of software components provide APIs:
   - Do not embed the FASP protocol, but the web app uses the Node API of Transfer Servers
   - Can control and use several Transfer Servers
   - Applications authenticate users, manage users, manage file resources, authorize users for transfers
-- **Transfer Clients**: SDKs
-  - Transfer Daemon provides a **gRPC** interface that can be used from virtually any language.
-  - Provides transfer session management (start, monitor)
-  - Internally starts one `ascp` process per transfer session.
-  - Web SDK: provides the equivalent of Transfer SDK API in the browser (JavaScript),
+- **Transfer Agents**: software that starts and monitors transfer sessions, through an SDK
+  - Transfer Daemon SDK: the Transfer Daemon (`transferd`) provides a **gRPC** interface
+    that can be used from virtually any language.
+    It provides transfer session management (start, monitor),
+    and internally starts one `ascp` process per transfer session.
+  - Web SDK: provides the equivalent of the Transfer Daemon SDK API in the browser (JavaScript),
     with Aspera for Desktop, Connect or HTTP Gateway.
     It replaces the former Connect SDK, HTTP Gateway SDK and Desktop SDK.
-  - Mobile SDK: the equivalent of Transfer SDK for mobile (Swift for iOS, or Java for Android) (under review)
+  - Mobile SDK: the equivalent of the Transfer Daemon SDK for mobile (Swift for iOS, or Java for Android) (under review)
+  - Other transfer agents have no SDK: `ascp` (command line options, no transfer spec),
+    and the Node API of a server (see above).
 
 > [!NOTE]
 > The Aspera legacy client SDK was called "FaspManager" and is now deprecated (do not use).
 > It provided language-specific implementations: C/C++, Java, Go, Python, .NET, C# (, Ruby).
 > FaspManager2 (based on SWIG) is also deprecated.
+
+### API definitions
+
+Official definitions are published on the [Aspera API Hub].
+This repository also maintains a copy of the OpenAPI specifications in the folder [openapi](../openapi),
+and a viewer (Swagger-like, searchable) here: <https://ibm.biz/aspera_openapi>.
+
+For each API there are up to two kinds of files:
+
+- The original file, as published by IBM (or the closest available).
+- The `-enhanced` file: corrected and completed by this repository, and checked with the IBM `openapi-validator`
+  (`npm run lint` in the folder `openapi`). Prefer it, and prefer it when generating a client or code with an AI agent.
+
+| API | Files in this repository |
+|---|---|
+| Node API (HSTS, HSTE, ATS) | [4.4.6](../openapi/IBM%20Aspera%20Node%20API-4.4.6.yaml), [4.4.1](../openapi/IBM%20Aspera%20Node%20API-4.4.1.yaml) |
+| Faspex | [5.0 enhanced](../openapi/IBM%20Aspera%20Faspex%20API-5.0-enhanced.yaml), [5.0](../openapi/IBM%20Aspera%20Faspex%20API-5.0.json) |
+| Aspera on Cloud | [0.2.6 enhanced](../openapi/IBM%20Aspera%20on%20Cloud%20API-0.2.6-enhanced.yaml), [0.2.6](../openapi/IBM%20Aspera%20on%20Cloud%20API-0.2.6.yaml) |
+| Aspera on Cloud Automation | [1.0.5 enhanced](../openapi/IBM%20Aspera%20on%20Cloud%20Automation%20API-1.0.5-enhanced.yaml), [1.0.5](../openapi/IBM%20Aspera%20on%20Cloud%20Automation%20API-1.0.5.yaml) |
+| Shares | [Shares](../openapi/IBM_Aspera_Shares.yaml) |
+| Orchestrator | [v1 enhanced](../openapi/IBM%20Aspera%20Orchestrator%20API-v1-enhanced.yaml), [v1](../openapi/IBM%20Aspera%20Orchestrator%20API-v1.yaml) |
+| Console | [enhanced](../openapi/IBM%20Aspera%20Console-enhanced.yaml) |
+| faspio Gateway | [1.0.0 enhanced](../openapi/IBM%20Aspera%20faspio%20Gateway%20API-1.0.0-enhanced.yaml), [1.0.0](../openapi/IBM%20Aspera%20faspio%20Gateway%20API-1.0.0.yaml) |
+| Transfer Daemon configuration | JSON Schema [transferd-config.schema.json](../openapi/transferd-config.schema.json) |
+
+The gRPC definition of the Transfer Daemon, `transferd.proto`, is not in this repository:
+it is in the Transfer Daemon SDK archive (see [Transfer agents and tools](#transfer-agents-and-tools)).
+The Web SDK is documented in its [TypeDoc](https://ibm.github.io/aspera-sdk-js/docs/).
+
+The guide explains concepts and flows.
+The reference of a REST call (parameters, schemas, errors) is in these definitions: use them rather than the guide.
+
+### Choose your integration
+
+Find the row that matches what you want to build.
+Each row gives the client, the authorization, the guide section to read and the samples of this repository
+(the samples exist in several languages: see [Available samples](../README.md#available-samples)).
+
+| I want to... | Transfer agent | Authorization | Read | Sample |
+|---|---|---|---|---|
+| Send or receive files from a script, with an account on a server I own | `ascp` or `ascli` | SSH | [S1](#s1--the-simplest-integration-start-a-transfer-with-a-script-and-ascp) | |
+| Transfer from my own desktop or server application (any language), with an account on a server I own | Transfer Daemon (gRPC) | SSH | [S2](#s2--start-a-transfer-with-transfer-daemon-sdk-and-listen-for-events) | `server` |
+| Let users of my web application transfer from their browser | Web SDK | Token, generated by my back end | [S3](#s3--start-a-transfer-in-a-web-browser), [A2](#a2--aspera-transfer-token-authorization) | `web/` |
+| Authenticate my own users and decide what they can transfer, from a custom application | Transfer Daemon, or Web SDK | Transfer token (ATx), generated by my back end | [S5](#s5--start-a-transfer-with-token-authorization), [A2](#a2--aspera-transfer-token-authorization) | `node`, `node_v2` |
+| Transfer between two servers I own, with SSH accounts | Node API on the source server | SSH | [S4](#s4--start-a-server-server-transfer-with-node-api-and-ssh-credentials) | |
+| Transfer between two servers I own, without SSH accounts | Node API on the source server | Transfer token | [S6](#s6--start-a-server-server-transfer-with-node-api-and-transfer-token) | `node_v2` |
+| Follow or list the transfers of a server | Node API | Node user or access key | [S7](#s7--polling-on-transfer-status-on-node-api) | |
+| Send or receive a package with Faspex | Transfer Daemon, or Web SDK | Faspex OAuth bearer token, gives a transfer spec with token | [Faspex](#faspex) | `faspex5` |
+| Send or receive a package or files with Aspera on Cloud | Transfer Daemon, or Web SDK | AoC OAuth bearer token, then node bearer token | [Aspera on Cloud](#ibm-aspera-on-cloud), [A3](#a3--aspera-bearer-token-authorization) | `aoc` |
+| Use Aspera Shares | Transfer Daemon | Same as Node API | [Shares](#ibm-aspera-shares) | `shares` |
+| Use IBM Cloud Object Storage | Transfer Daemon | COS credentials | [README](../README.md#cos-service-credentials) | `cos` |
+
+If the table does not settle it, answer these questions in order:
+
+1. **Do you already have an Aspera application** (Faspex, AoC, Shares)?
+   Yes: use its REST API to get the transfer spec, never generate tokens yourself.
+2. **Does the transfer start in a web browser?**
+   Yes: use the Web SDK, and a token (SSH credentials must not reach the browser).
+3. **Do you have your own users to authenticate?**
+   Yes: use a token, see [Choosing the Right Token Type](#choosing-the-right-token-type).
+   No, only a server account: use SSH credentials.
+4. **Is the client a server?** Yes: use the Node API (`POST /ops/transfers`), else use the Transfer Daemon.
 
 ### Where to start
 
@@ -63,21 +128,23 @@ There are many scenarios to use Aspera to send files.
 A typical path:
 
 1. Get familiar with what an Aspera transfer is: see [Concepts](#concepts).
-2. Get the `ascp` executable and the free license file, from the Transfer SDK or one of the free clients:
-   see [Transfer clients and tools](#transfer-clients-and-tools).
+2. Get the `ascp` executable and the free license file, from the Transfer Daemon SDK or one of the free clients:
+   see [Transfer agents and tools](#transfer-agents-and-tools).
 3. Execute command line transfers with `ascp` or `ascli` to a test server using SSH credentials:
    see [S1](#s1--the-simplest-integration-start-a-transfer-with-a-script-and-ascp).
 4. Do the same with the client method chosen, for example `transferd` with gRPC:
-   see [S2](#s2--start-a-transfer-with-transfer-sdk-and-listen-for-events), and the samples of this repository.
+   see [S2](#s2--start-a-transfer-with-transfer-daemon-sdk-and-listen-for-events), and the samples of this repository.
 5. If you send to an Aspera application (Faspex, AoC),
    use its REST API to create a **transfer spec** (with token authorization): see [Aspera applications](#aspera-applications).
 6. If you need to receive files on your own Aspera server,
    install an Aspera Transfer Server to test with (evaluation or development license),
    and initiate transfers to it using the chosen methods (Web SDK, Node API, etc.).
 
+If something fails, see [Troubleshooting](#troubleshooting).
+
 In order to test, one needs:
 
-- Client-side libraries (Transfer SDK, Web SDK, Mobile SDK) or API definitions (Node API, web app API)
+- Client-side libraries (Transfer Daemon SDK, Web SDK, Mobile SDK) or API definitions (Node API, web app API)
 - Server-side testing server
 
 ### Addresses and Credentials
@@ -297,9 +364,9 @@ Example of upload with Node API credentials (sample `node_v2`):
 ```
 
 In this repository, samples with suffix `_v2` use transfer spec version 2.
-The reference of transfer spec version 2 is provided in the Transfer SDK: `api/transferd.md` (`TransferSpecV2`).
+The reference of transfer spec version 2 is provided in the Transfer Daemon SDK: `api/transferd.md` (`TransferSpecV2`).
 
-## Transfer clients and tools
+## Transfer agents and tools
 
 ### `ascp`
 
@@ -412,7 +479,7 @@ A sample web application is provided in the folder `web` of this repository.
 
 ### Mobile: Android, iOS
 
-The Mobile SDK is the equivalent of the Transfer SDK for mobile apps (Swift for iOS, Java for Android).
+The Mobile SDK is the equivalent of the Transfer Daemon SDK for mobile apps (Swift for iOS, Java for Android).
 It is currently under review.
 
 ### CLI: `ascli`
@@ -426,7 +493,7 @@ See [manual for installation](https://github.com/IBM/aspera-cli).
 - Connects to all types of Aspera servers
 - Provides a logging capability that traces API calls
 - Starts transfers using either:
-  - Transfer SDK
+  - Transfer Daemon SDK
   - `ascp`
   - Node API
   - Web client (Connect, Aspera for Desktop)
@@ -441,7 +508,7 @@ This section exhibits various file transfer scenarios.
 
 It shows how a FASP transfer is started using a transfer specification.
 
-The transfer is started using various transfer client types/SDKs (CLI, web, app, server).
+The transfer is started using various transfer agent types/SDKs (CLI, web, app, server).
 
 The transfer specification may contain transfer authorization using either
 (see [Transfer authentication and authorization](#transfer-authentication-and-authorization)):
@@ -461,10 +528,10 @@ and the samples of [this repository](https://github.com/laurent-martin/aspera-ap
 | Scenario | Client | API | Authorization | Samples |
 |------------------------------------|---------------------------|------------------------|---------------|------------------------|
 | [S1](#s1--the-simplest-integration-start-a-transfer-with-a-script-and-ascp): script and `ascp` | Script | Command line | SSH | |
-| [S2](#s2--start-a-transfer-with-transfer-sdk-and-listen-for-events): application with Transfer SDK | Custom client application | Transfer Daemon gRPC | SSH | `server`, `server_v2` (JS) |
+| [S2](#s2--start-a-transfer-with-transfer-daemon-sdk-and-listen-for-events): application with Transfer Daemon SDK | Custom client application | Transfer Daemon gRPC | SSH | `server`, `server_v2` (JS) |
 | [S3](#s3--start-a-transfer-in-a-web-browser): web browser | Web browser | Web SDK | Token | `web` |
 | [S4](#s4--start-a-server-server-transfer-with-node-api-and-ssh-credentials): server to server, SSH | Transfer Server | Node API | SSH | |
-| [S5](#s5--start-a-transfer-with-token-authorization): client and server applications | Custom client application | Transfer SDK, Node API | Token | `node`, `node_v2`, `shares` |
+| [S5](#s5--start-a-transfer-with-token-authorization): client and server applications | Custom client application | Transfer Daemon SDK, Node API | Token | `node`, `node_v2`, `shares` |
 | [S6](#s6--start-a-server-server-transfer-with-node-api-and-transfer-token): server to server, token | Transfer Server | Node API | Token | |
 | [S7](#s7--polling-on-transfer-status-on-node-api): transfer status | | Node API | | |
 
@@ -524,7 +591,7 @@ asession @json:'{"spec":{
   "paths":[{"source":"/aspera-test-dir-tiny/200KB.1"}]}}'
 ```
 
-### S2- Start a transfer with Transfer SDK and listen for events
+### S2- Start a transfer with Transfer Daemon SDK and listen for events
 
 ![S2: custom application with Transfer Daemon and SSH credentials](images/api-4.svg)
 
@@ -541,7 +608,7 @@ Scenarios:
 If the integration to start a simple transfer job is made in an application
 written in one of the languages C, C++, C#, Java, Python, Go, Rust, etc.,
 then the best option is to use the newer **Transfer Daemon**.
-This component can be freely downloaded here: [Transfer SDK].
+This component can be freely downloaded here: [Transfer Daemon SDK].
 It is basically a daemon, `transferd`, that wraps the `ascp` executable, and it comes with examples.
 
 The basic usage of the API is:
@@ -557,7 +624,7 @@ The same `ascp` executable and `aspera-license` file from previous step can be u
 
 Note that in these two possibilities, the transfer is run locally.
 Development of a mobile app is similar, with the Mobile SDK providing a library to start transfers.
-The Transfer SDK provides several code examples in several languages.
+The Transfer Daemon SDK provides several code examples in several languages.
 
 Other examples: `server` and `server_v2` samples of [this repository](https://github.com/laurent-martin/aspera-api-examples).
 
@@ -618,7 +685,7 @@ Typically, authentication/authorization is performed in the web app, and a trans
 
 If the transfer must be started by a user in the context of a web browser,
 then the **IBM Aspera JavaScript SDK** can be used (for Aspera for Desktop and HTTP Gateway).
-It consists of a JavaScript library used similarly to the "Transfer SDK"
+It consists of a JavaScript library used similarly to the "Transfer Daemon SDK"
 (build session parameters, start transfer, monitor progress).
 
 Reference (includes sample code): [Aspera API Hub] &rarr; IBM Aspera JavaScript SDK:
@@ -633,7 +700,7 @@ ascli -N server --url=ssh://hsts1.example.com:33001 \
 ```
 
 The transfer spec remains identical to the previous `ascli` example.
-Only the transfer agent (`--transfer`) is changed from the local transfer SDK to Aspera for Desktop.
+Only the transfer agent (`--transfer`) is changed from the local Transfer Daemon SDK to Aspera for Desktop.
 Aspera for Desktop is almost exclusively used in a web context: `ascli` is used here as an example only.
 
 ### S4- Start a Server-Server transfer with Node API and SSH credentials
@@ -695,10 +762,10 @@ Scenarios:
 
 | Client                    | API                  | Authorization |
 |---------------------------|---------------------------|---------------|
-| Custom Client Application | Transfer SDK (client app)<br/>Node API (server app) | Token |
+| Custom Client Application | Transfer Daemon SDK (client app)<br/>Node API (server app) | Token |
 
 In previous examples, transfers were started using SSH credentials and no token, using various client application types:
-command line, Transfer SDK, browser, server (node) or even mobile.
+command line, Transfer Daemon SDK, browser, server (node) or even mobile.
 Using SSH credentials, the authentication and transfer authorization are provided by the bare Aspera Server
 and its host operating system.
 In fact, in many integration cases,
@@ -851,7 +918,7 @@ This applies universally, regardless of the method used to start the session.
 
 All transfers are executed on the server under a designated **transfer user**.
 The method of authorization is mostly independent of the session initiation mechanism
-(script, Transfer SDK, Node API, mobile, or web applications), with the exceptions listed below.
+(script, Transfer Daemon SDK, Node API, mobile, or web applications), with the exceptions listed below.
 
 Aspera supports multiple authorization mechanisms:
 
@@ -949,7 +1016,7 @@ Instead:
 3. The web app enforces its own access control logic, then calls the Node API
    (`POST /files/upload_setup` or `POST /files/download_setup`) to generate a transfer spec containing a signed ATx token.
 4. The web app returns that transfer spec to the client.
-5. The client passes the transfer spec directly to the transfer engine (`transferd`, Web SDK, etc.) to execute the transfer.
+5. The client passes the transfer spec directly to the transfer agent (`transferd`, Web SDK, etc.) to execute the transfer.
 
 The HSTS only sees a valid token — it does not know anything about the web app's user model.
 Access control is entirely the web app's responsibility.
@@ -958,19 +1025,18 @@ This works with both **Node API Users** and **Access Keys** on the HSTS side.
 
 ![A2: Aspera transfer token authorization](images/api-a2-scen.svg)
 
-```text
-Client App                          Server App                                HSTS
-    │──────── app API call ────────────>│                                       │
-    │                                   │ checks own ACL                        │
-    │                                   │───── POST /files/upload_setup ───────>│
-    │                                   │             Node API                  │
-    │                                   │                                       │
-    │                                   │                   generates ATx token │
-    │                                   │                                       │
-    │                                   │<────── transfer spec + token ─────────│
-    │<──────── transfer spec ───────────┘
-    │
-    └───── FASP transfer (with token) ───────────(ascp)────────────────────────>│
+```mermaid
+sequenceDiagram
+    participant C as Client App
+    participant S as Server App
+    participant H as HSTS
+    C->>S: app API call
+    S->>S: checks its own ACL
+    S->>H: POST /files/upload_setup (Node API)
+    H->>H: generates the ATx token
+    H-->>S: transfer spec with token
+    S-->>C: transfer spec with token
+    C->>H: FASP transfer with the token (ascp)
 ```
 
 #### Token generation
@@ -1059,30 +1125,25 @@ Key characteristics:
 When a transfer starts, the HSTS checks that the resource (folder/file) is granted access
 to the user and group IDs found in the bearer token.
 
-```text
-                                  Application                           HSTS
-                                      │───── PUT /access_keys/:id ──────>│
-                                         (insert app public key in AK)
-
-Admin                             Application                           HSTS
-  │──────────────────────────────────>│───── POST /permissions ─────────>│
-  │(admin grants access to folder to user)                               │
-
-Client App                        Application                           HSTS
-  │<─generates JWT                    │                                  │
-  │(signed with user private key)     │                                  │
-  │─────────────POST /token──────────>│                                  │
-  │<─── node bearer token ────────────┘                                  │
-  │   (signed with app private key)                                      │
-  │                                                                      │
-  │────────── GET /files/{id}/files (with Bearer token) ────────────────>│
-  │              Node API                                                │
-  │<─────────────── file IDs ────────────────────────────────────────────│
-  │                                                                      │
-  │<─Build transfer spec with node bearer token                          │
-  └───── FASP transfer (with token) ───────────(ascp)───────────────────>│
-                                                        validates token─>│
-                                                      checks permissions │
+```mermaid
+sequenceDiagram
+    actor Admin
+    participant C as Client App
+    participant A as Application
+    participant H as HSTS
+    Note over A,H: Setup, once
+    A->>H: PUT /access_keys/:id (public key of the application)
+    Admin->>A: grants a user access to a folder
+    A->>H: POST /permissions
+    Note over C,H: Each user
+    C->>C: generates a JWT, signed with the private key of the user
+    C->>A: POST /token
+    A-->>C: node bearer token, signed with the private key of the application
+    C->>H: GET /files/{id}/files with the bearer token (Node API)
+    H-->>C: file IDs
+    C->>C: builds the transfer spec with the node bearer token
+    C->>H: FASP transfer with the token (ascp)
+    H->>H: validates the token, checks the permissions
 ```
 
 The added complexity is the trade-off for eliminating the broker intermediary and gaining a richer,
@@ -1122,52 +1183,221 @@ The general flow is the same as seen earlier with the custom client and server.
 Aspera Web Apps provide REST APIs.
 Some are related to transfer authorization, and others are not directly (e.g. list files, create a user, etc.).
 
-### Faspex 5
+### Pattern for all applications
+
+Whatever the application, a transfer follows the same three steps:
+
+1. **Authenticate** to the REST API of the application (OAuth 2.0 bearer token).
+2. **Get a transfer spec** with a token from the application (Faspex), or build it (AoC),
+   after creating or selecting the resource to send to or receive from (package, shared inbox, folder).
+3. **Start the transfer** with a transfer agent (Transfer Daemon or Web SDK), using that transfer spec,
+   adding only the local files.
+
+The application authorizes the transfer: do not try to reach the transfer server directly with other credentials.
+
+### Faspex
+
+In this guide, Faspex is IBM Aspera Faspex 5, the only supported version (Faspex 4 is deprecated).
+
+API reference: [Faspex OpenAPI](../openapi/IBM%20Aspera%20Faspex%20API-5.0-enhanced.yaml)
+(see [API definitions](#api-definitions)).
+
+The sample `faspex5` implements the whole sequence.
+Implementations (same steps and same log messages in each language):
+
+| Language | Sample |
+|---|---|
+| Python | [faspex5.py](../app/python/src/examples/faspex5.py) |
+| JS | [faspex5.js](../app/js/src/examples/faspex5.js) |
+| Go | [faspex5.go](../app/go/src/examples/faspex5.go) |
+| Java | [Faspex5Send.java](../app/java/src/main/java/examples/Faspex5Send.java) |
+| Ruby | [faspex5.rb](../app/ruby/src/examples/faspex5.rb) |
+| Rust | [faspex5.rs](../app/rust/src/examples/faspex5.rs) |
+| C++ | [faspex5.cpp](../app/cpp/src/examples/faspex5.cpp) |
+| C# | [faspex5.cs](../app/csharp/src/Examples/faspex5.cs) |
+
+Sending local files in a package, step by step (base URL: `https://<FASPEX5_HOST>/aspera/faspex`):
+
+| Step | Call | Result |
+|---|---|---|
+| 1. Get a bearer token | `POST /auth/token` with a JWT assertion | Bearer token (re-use until it expires) |
+| 2. Find the recipients | `GET /api/v5/contacts?q=<EMAIL>&context=packages` | Recipient name and type; unknown email: `external_user` |
+| 3. Create the package | `POST /api/v5/packages` with `title` and `recipients` | Package `id`: this allocates the reception folder |
+| 4. Get the transfer spec | `POST /api/v5/packages/{id}/transfer_spec/upload?transfer_type=connect` | Transfer spec with token |
+| 5. Prepare the transfer spec | Add `paths` (local files), delete the `authentication` key | Transfer spec for the Transfer Daemon |
+| 6. Start the transfer | Transfer Daemon `StartTransfer` (or Web SDK `startTransfer`) | Upload to the package folder |
+
+The calls between the components:
+
+```mermaid
+sequenceDiagram
+    actor Sender
+    participant F as Faspex
+    participant H as HSTS
+    Sender->>+F: POST /packages
+    F->>F: reserves a folder to receive the files
+    F-->>-Sender: package id
+    Sender->>+F: POST /packages/:id/transfer_spec/upload
+    F->>+H: POST /files/upload_setup
+    H-->>-F: transfer spec
+    F-->>-Sender: transfer spec
+    Sender->>H: FASP transfer with the transfer spec (ascp)
+```
+
+To receive a package, step 4 becomes `POST /api/v5/packages/{id}/transfer_spec/download?transfer_type=connect&type=received`,
+and the direction of the transfer spec is `receive`.
+List the packages to receive with `GET /api/v5/packages`.
+
+To send files that are already on a Faspex shared folder (server-side, no local file):
+after step 3, `POST /api/v5/packages/{id}/remote_transfer` with `shared_folder_id` and `paths`,
+then poll `GET /api/v5/packages/{id}/upload_details` until `upload_status` is `completed` (or `failed`).
+No transfer agent is needed: the Faspex server does the transfer.
+
+Points to remember:
+
+- `transfer_type=connect` gives a transfer spec that works with the Transfer Daemon and the Web SDK.
+  Use `http_gateway` only for a client that must use the HTTP Gateway.
+- The transfer spec has an `authentication` key that the Transfer Daemon does not use: the samples remove it.
+- Check the permissions of the calling user: sending to external users or to some recipient types may be refused.
 
 #### Authentication
 
-Faspex 5 uses OAuth 2.0 for authentication and authorization: a Bearer token shall be used for REST API calls.
+Faspex uses OAuth 2.0 for authentication and authorization: a Bearer token shall be used for REST API calls.
 For automated operations, the bearer token shall be obtained using a JWT (JSON Web Token) signed with a private key.
 
-The first step for a client application is to get a client ID and secret from Faspex 5.
-This is done in the Faspex 5 web interface, in the "API Clients" section.
+The first step for a client application is to get a client ID and secret from Faspex.
+This is done in the Faspex web interface, in the "API Clients" section.
 
 This client ID and secret, together with the private key, are used to obtain a bearer token
-by calling the Faspex 5 API endpoint `/token`.
-Refer to the [Faspex 5 documentation](https://www.ibm.com/docs/en/aspera-faspex/5.0) for details, or to the `faspex5` sample.
+by calling the Faspex API endpoint `/token`.
+Refer to the [Faspex documentation](https://www.ibm.com/docs/en/aspera-faspex/5.0) for details, or to the `faspex5` sample.
 
 A user generates, once, a private/public key pair.
-The public key is configured in Faspex 5 in the user's profile or in the API client configuration.
+The public key is configured in Faspex in the user's profile or in the API client configuration.
 The private key is used to sign the JWT token,
-which is then sent to the Faspex 5 API endpoint `/token` to obtain a bearer token.
+which is then sent to the Faspex API endpoint `/token` to obtain a bearer token.
 Refer to the `faspex5` sample.
 
-Once the bearer token is generated, it can be used to call the Faspex 5 REST API endpoints.
+The JWT assertion sent to `/auth/token` uses these claims, with the key pair of the user:
+
+| Claim | Value |
+|---|---|
+| `iss` | The client ID of the API client |
+| `aud` | The client ID of the API client |
+| `sub` | `user:<USERNAME>` |
+
+Other claims: `iat`, `nbf`, `exp` (short validity) and `jti` (unique identifier).
+The JWT is signed with RS256, with the private key of the user.
+
+The token request is `POST /auth/token`, with the form parameters `grant_type`
+(`urn:ietf:params:oauth:grant-type:jwt-bearer`), `client_id` and `assertion` (the signed JWT),
+and the client ID and client secret of the API client as HTTP Basic authentication.
+The response contains `access_token`.
+
+Once the bearer token is generated, it can be used to call the Faspex REST API endpoints.
 
 #### Transfers (send/receive packages)
 
-Faspex 5 provides a REST API to manage transfers, including sending and receiving packages.
+Faspex provides a REST API to manage transfers, including sending and receiving packages.
 
-The first step is to create a transfer spec using the Faspex 5 API.
+The first step is to create a transfer spec using the Faspex API.
 This transfer spec is either for sending a new package, in that case one must first create a package,
 or for receiving an existing package, identified by a unique ID.
 A user can list received packages, and then select one to download.
-The Faspex 5 API provides endpoints to create a transfer spec for sending or receiving packages.
+The Faspex API provides endpoints to create a transfer spec for sending or receiving packages.
 
 The second step is to use the transfer spec to start the transfer using one of the Aspera transfer agents
 (Transfer Daemon, Node API, ...).
 
 ### IBM Aspera on Cloud
 
-Similar to Faspex 5, AoC uses OAuth 2.0 for authentication and authorization,
+Similar to Faspex, AoC uses OAuth 2.0 for authentication and authorization,
 using API client ID and secret and `/token` with JWT and private key.
 
 There is no endpoint to create a transfer spec directly,
 but a transfer spec can be built relatively easily: refer to the `aoc` sample.
 
+API reference: [AoC OpenAPI](../openapi/IBM%20Aspera%20on%20Cloud%20API-0.2.6-enhanced.yaml)
+(see [API definitions](#api-definitions)).
+
+AoC uses two levels of bearer tokens (see [A3](#a3--aspera-bearer-token-authorization)):
+
+- a token for the AoC API (scope `user:all`),
+- a token for the transfer server (node) that holds the files (scope `node.<ACCESS_KEY>:user:all`),
+  in the `token` of the transfer spec.
+
+Both are obtained the same way: JWT signed with the private key of the user, sent to the same token endpoint.
+
+```mermaid
+sequenceDiagram
+    actor C as API Client
+    participant A as AoC API
+    participant N as HSTS Node
+    Note over C,A: Setup, once: the client is declared in AoC (client ID and secret),<br/>the user sets the public key of their key pair in their AoC profile
+    C->>+A: POST /oauth2/ORG/token, JWT signed with the private key of the user (scope user:all)
+    A-->>-C: bearer token for the AoC API
+    C->>A: use the AoC API with the bearer token
+    C->>+A: POST /oauth2/ORG/token, same JWT (scope node.ACCESS_KEY:user:all)
+    A-->>-C: bearer token for the node
+    C->>N: use the Node API, or transfer, with the bearer token
+```
+
+Implementations (same steps and same log messages in each language):
+
+| Language | Sample |
+|---|---|
+| Python | [aoc.py](../app/python/src/examples/aoc.py) |
+| JS | [aoc.js](../app/js/src/examples/aoc.js) |
+| Java | [Aoc.java](../app/java/src/main/java/examples/Aoc.java) |
+| Ruby | [aoc.rb](../app/ruby/src/examples/aoc.rb) |
+| Rust | [aoc.rs](../app/rust/src/examples/aoc.rs) |
+| C++ | [aoc.cpp](../app/cpp/src/examples/aoc.cpp) |
+| C# | [aoc.cs](../app/csharp/src/Examples/aoc.cs) |
+
+Sending local files to a shared inbox, step by step (base URL: `https://api.ibmaspera.com/api/v1`):
+
+| Step | Call | Result |
+|---|---|---|
+| 1. Get an API token | `POST /oauth2/<ORG>/token`, JWT assertion, scope `user:all` | Bearer token for the AoC API |
+| 2. Get the user | `GET /self` | User name and email (for the cookie) |
+| 3. Find the workspace | `GET /workspaces?q=<NAME>` | Workspace `id` |
+| 4. Find the shared inbox | `GET /dropboxes?current_workspace_id=<ID>&q=<NAME>` | Shared inbox `id` |
+| 5. Create the package | `POST /packages` with `workspace_id`, `recipients` (type `dropbox`), `name`, `sent`, `transfers_expected` | Package `id`, `node_id`, `contents_file_id` |
+| 6. Get the node | `GET /nodes/{node_id}` | Node `host` and `access_key` |
+| 7. Get a node token | Same token request, scope `node.<ACCESS_KEY>:user:all` | Bearer token for the node |
+| 8. Build the transfer spec | See below | Transfer spec |
+| 9. Start the transfer | Transfer Daemon `StartTransfer` (or Web SDK `startTransfer`) | Upload to the package folder |
+
+The transfer spec of step 8 contains:
+
+| Parameter | Value |
+|---|---|
+| `direction` | `send` |
+| `token` | The node token of step 7 |
+| `remote_host` | `host` of the node |
+| `remote_user`, `ssh_port`, `fasp_port` | `xfer`, `33001`, `33001` |
+| `cookie` | `aspera.aoc:<APP>:<USER_NAME>:<USER_EMAIL>`, each of the three values in base64 (`APP` is `packages`) |
+| `tags.aspera.app` | `packages` |
+| `tags.aspera.node` | `access_key` of the node, `file_id`: `contents_file_id` of the package |
+| `tags.aspera.files` | `node_id`, `package_id`, `package_name`, `package_operation`: `upload`, `files_transfer_action`: `upload_package`, `workspace_id`, `workspace_name` |
+| `paths` | The local files |
+
+The `tags` are mandatory: `node` tells the transfer server which access key and folder the token authorizes,
+and `app` and `files` let AoC link the transfer to the package.
+`usage_id` and `xfer_retry` are optional.
+
+Points to remember:
+
+- The `aud` claim of the JWT is specific to AoC (see the sample), and `sub` is the email of the user.
+- The sample creates the package with `sent: true` and `transfers_expected` (number of transfer sessions).
+  These two parameters can also be set later with `PUT /packages/{id}`.
+- The sample generates new tokens at each run: in real code, re-use the token until it expires.
+
 ### IBM Aspera Shares
 
 Same API as Node API (internally, Shares calls the Node API for transfer spec generation).
+API reference: [Shares OpenAPI](../openapi/IBM_Aspera_Shares.yaml) (admin APIs),
+and the [Node API](#node-api) for transfers (see [API definitions](#api-definitions)).
 
 ## Node API
 
@@ -1187,6 +1417,9 @@ and acts as a daemon process that exposes endpoints for:
 - Node monitoring and reporting
 
 The Node API is designed to complement other Aspera APIs, enabling seamless integration with the broader Aspera ecosystem.
+
+API reference: [Node API OpenAPI](../openapi/IBM%20Aspera%20Node%20API-4.4.6.yaml)
+(see [API definitions](#api-definitions)).
 
 ### What Can You Do With the Node API?
 
@@ -1506,6 +1739,58 @@ GET  /usage       → transfer volume
 POST /space       → available disk space (HSTS only)
 ```
 
+## Troubleshooting
+
+### Find where the problem is
+
+A transfer involves three steps, and each one fails in its own way:
+
+1. **Get authorization**: REST calls to an application or to the Node API.
+   Failure: HTTP error, or an error JSON. No transfer has started yet.
+2. **Start the session**: the client `ascp` connects to the server (SSH or WSS, TCP).
+   Failure: authentication or authorization error, the session stops at once.
+3. **Move the data**: UDP between the two `ascp`.
+   Failure: the session starts, but no data moves, or the rate is very low.
+
+Increase the log level, in this order:
+
+| What | How |
+|---|---|
+| REST calls of the samples | `misc.level: debug` in the configuration file: shows each request and response (secrets are masked, unless `misc.show_secrets: true`) |
+| Transfer spec | Same: displayed at `debug` level |
+| `transferd` | `trsdk.level: debug`, and the `.out` and `.err` files of the daemon |
+| `ascp` | `trsdk.ascp_level: debug` (or `trace`), or `ascp -DDL-` on the command line |
+| The same transfer spec, outside of your code | `ascli`, for example `ascli -N server --url=ssh://hsts1.example.com:33001 ...` (see [S1](#s1--the-simplest-integration-start-a-transfer-with-a-script-and-ascp)) |
+
+If a transfer works with `ascp` or `ascli` and not in your code, compare the two transfer specs.
+
+### Common problems
+
+| Symptom | Likely cause | What to do |
+|---|---|---|
+| `transferd` or `ascp` does not start, or reports a license problem | `ascp` has no license file | Check `ascp -A`: the `aspera-license` file must be in the same folder as `ascp`, or in `../etc` (see [Client-side minimum components](#client-side-minimum-components)) |
+| The session starts, then no data moves, or it ends on a timeout | The UDP port (`fasp_port`, `33001` by default) is blocked by a firewall | Open UDP in both directions between client and server. The TCP port (`ssh_port`) works, so authentication succeeds: the problem is only on UDP |
+| Authentication error with a token | Wrong token type for the API, token generated for another access key or node, or expired token | See [Choosing the Right Token Type](#choosing-the-right-token-type). Do not mix a token of one type with the file addressing of another (path for ATx, file ID for bearer) |
+| Authentication error with a token, while SSH works | The transfer user does not accept token authentication over SSH | Enable Aspera SSH public key authentication for the transfer user (see [Transfer authentication and authorization](#transfer-authentication-and-authorization)) |
+| HTTP Gateway or WebSocket session refused | These need a token: SSH credentials do not work | Use token authorization (see [A1](#a1--ssh-authentication)) |
+| The transfer starts then fails with a permission or access error | The destination is outside the docroot or storage root, the user cannot write there, or (bearer token) no permission was granted on the folder | Check the docroot or access key, the transfer user, and `POST /permissions` for the bearer token (see [A3](#a3--aspera-bearer-token-authorization)) |
+| `401` from `/auth/token` of Faspex | API client not set up, public key not configured for the user, or wrong `sub` | Check the client ID and secret, and that `sub` is `user:<USERNAME>` (see [Faspex](#faspex)) |
+| `401` from the token endpoint of AoC | Wrong `org`, `aud` or `sub`, or public key not set in the AoC user profile | Check the values with the `aoc` sample (see [Aspera on Cloud](#ibm-aspera-on-cloud)) |
+| The transfer works, but the package does not show the files (AoC) | Missing `tags`, or wrong `package_id` or `node_id` in them | Rebuild the transfer spec as in the `aoc` sample |
+| Faspex transfer spec refused by the Transfer Daemon | The `authentication` key was left in the transfer spec | Remove it, as the samples do |
+| Node API returns `{}` or an unexpected empty body | Some known errors have no error body | Treat an empty JSON as an error (see [Error Handling](#error-handling)) |
+| Certificate error calling an HTTPS API | Self-signed certificate on a test server | In the samples, set `verify: false` for this server in the configuration file. In production, install the CA certificate: do not disable verification |
+| A rate lower than expected | The license, `aspera.conf` or the transfer spec (`target_rate_kbps`) limit the rate, or the network is the limit | Check the license limit with `ascp -A`, then the rate parameters of the transfer spec and the server |
+
+### Before asking for help
+
+Collect:
+
+- the versions: `ascp -A` (shows `transferd` and `ascp`), and the server version,
+- the transfer spec, **without secrets and tokens**,
+- the `ascp` log at `debug` level (`ascp_level`),
+- which step fails: authorization, session start, or data transfer.
+
 [HSTS Doc]: https://www.ibm.com/docs/en/ahts
-[Transfer SDK]: https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22
+[Transfer Daemon SDK]: https://developer.ibm.com/apis/catalog?search=%22aspera%20transfer%20sdk%22
 [Aspera API Hub]: https://developer.ibm.com/apis/catalog?search=aspera
