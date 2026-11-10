@@ -207,25 +207,26 @@ class TransferClient {
     /// @brief Wait for the end of a transfer, and log its status.
     /// @param transfer_id transfer id
     void wait_transfer(const std::string& transfer_id) {
-        // wait until finished, check every second
-        while (true) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            trapi::TransferInfoRequest transfer_info_request;
-            transfer_info_request.set_transferid(transfer_id);
-            grpc::ClientContext query_transfer_context;
-            trapi::QueryTransferResponse query_transfer_response;
-            check_rpc_status(
-                "QueryTransfer",
-                _transfer_service->QueryTransfer(&query_transfer_context, transfer_info_request, &query_transfer_response));
-            const trapi::TransferStatus status = query_transfer_response.status();
-            log_status(status, query_transfer_response.transferinfo().averageratekbps());
-            // `error` is empty on session errors: the cause is in transfer information
+        trapi::RegistrationRequest registration_request;
+        registration_request.add_filters()->add_transferid(transfer_id);
+        // monitor transfer status: the daemon sends an event on each change
+        grpc::ClientContext monitor_context;
+        const auto events = _transfer_service->MonitorTransfers(&monitor_context, registration_request);
+        trapi::TransferResponse event;
+        while (events->Read(&event)) {
+            const trapi::TransferStatus status = event.status();
+            log_status(status, event.transferinfo().averageratekbps());
+            // `error` is empty on session errors: the cause is in session or transfer information
             transfer_check_failed_status(
                 status,
-                error_description({query_transfer_response.error().description(), query_transfer_response.transferinfo().errordescription()}));
-            if (status == trapi::TransferStatus::COMPLETED)
-                break;
+                error_description({event.error().description(), event.sessioninfo().errordesc(), event.transferinfo().errordescription()}));
+            if (status == trapi::TransferStatus::COMPLETED) {
+                // stop monitoring
+                monitor_context.TryCancel();
+                return;
+            }
         }
+        throw std::runtime_error("Transfer monitoring ended before transfer completion");
     }
 
     /// @brief Start the daemon if needed, start a transfer, and wait for its end.
