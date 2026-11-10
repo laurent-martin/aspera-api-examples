@@ -83,6 +83,7 @@ The folder `app` contains one folder per programming language and, in each of th
 
 | Use case | Python | JS | Go | Java | Ruby | Rust | C++ | C# |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| HSTS, SSH credentials, Transfer Daemon API only (start here) | `minimal` | `minimal` | `minimal` | `Minimal` | `minimal` | `minimal` | | `minimal` |
 | HSTS, SSH credentials | `server` | `server` `server_v2` | `server` | `ServerFileUploadV1Example` `ServerFileDownloadV2Example` | `server` | `server` | `server` | `server` |
 | HSTS, persistent session | | | | `PersistentUploadExample` | | | | |
 | HSTS, remote commands (`ascmd`) | | *server_cmd* | `server_cmd` | | | `server_cmd` | | |
@@ -156,6 +157,7 @@ For example, to execute an individual sample, use `make .tested/<sample name her
 $ cd app/python
 $ make list
 Test individual case with:
+make ./.tested/minimal
 make ./.tested/server
 make ./.tested/aoc
 make ./.tested/faspex5
@@ -348,6 +350,10 @@ Sample programs use helper classes located in package `utils`:
 - `Configuration` reads configuration parameters from `config.yaml`, so that it is easier to run any sample.
 - `TransferClient` creates the configuration file of the Transfer Daemon (`transferd`), starts it and connects to it.
 - `Rest` makes simple calls to REST APIs.
+
+The sample `minimal` does not use `TransferClient`:
+it starts the daemon, connects to it, starts a transfer and follows it, with the gRPC API only.
+Read it first to see the calls of the Transfer Daemon API.
 
 ### Runtime files
 

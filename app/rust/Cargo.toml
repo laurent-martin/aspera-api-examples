@@ -42,3 +42,6 @@ path = "src/examples/aoc.rs"
 name = "server_cmd"
 path = "src/examples/server_cmd.rs"
 
+[[bin]]
+name = "minimal"
+path = "src/examples/minimal.rs"

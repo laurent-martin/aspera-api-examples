@@ -7,6 +7,7 @@ and transfer files for various IBM Aspera products using Python.
 
 The sample code in `src` shows how to transfer files using:
 
+- IBM Aspera HSTS using SSH credentials, with the Transfer Daemon API only, without helper class: `minimal` (start here)
 - IBM Aspera HSTS using SSH credentials
 - IBM Aspera HSTS or Shares using Node credentials, using transfer spec v1 or v2
 - IBM Cloud Object Storage (COS) using IBM Cloud service credentials

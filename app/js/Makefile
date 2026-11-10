@@ -1,5 +1,5 @@
 DIR_TOP=$(realpath ../..)/
-TEST_CASES=server server_v2 node_v2 node faspex5 aoc cos
+TEST_CASES=minimal server server_v2 node_v2 node faspex5 aoc cos
 include $(DIR_TOP)common.mak
 SRC=./src/
 EXAMPLES=$(SRC)examples/

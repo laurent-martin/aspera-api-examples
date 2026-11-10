@@ -16,7 +16,7 @@ the guide is long (about 1700 lines), and its sections are independent.
 | Send or receive with Faspex | [guide: Faspex](guide/README.md#faspex), samples `faspex5` |
 | Send or receive with Aspera on Cloud | [guide: Aspera on Cloud](guide/README.md#ibm-aspera-on-cloud), samples `aoc` |
 | Call a REST API (parameters, schemas) | `openapi/` (prefer the `*-enhanced.yaml` files), not the guide: see [guide: API definitions](guide/README.md#api-definitions). Viewer: <https://ibm.biz/aspera_openapi> |
-| Start a transfer from code | Samples in `app/<language>/src/examples/`, helper classes in `app/<language>/src/utils/` |
+| Start a transfer from code | Sample `minimal` (Java: `Minimal`): the Transfer Daemon API without helper. Other samples in `app/<language>/src/examples/`, helper classes in `app/<language>/src/utils/` |
 | Start a transfer in a browser | `web/` (Web SDK, TypeScript) |
 | Diagnose a failure | [guide: Troubleshooting](guide/README.md#troubleshooting) |
 | Create the configuration file, run a sample | [README.md](README.md) |

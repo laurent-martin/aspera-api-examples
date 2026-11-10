@@ -15,7 +15,7 @@ Then, in this folder:
 dotnet run -p:Proto_File=$PWD/../../tmp/transfer_sdk/api/transferd.proto faspex5 /path/to/file
 ```
 
-The first argument is the name of the sample (`server`, `faspex5` or `aoc`), the next ones are the files to transfer.
+The first argument is the name of the sample (`minimal`, `server`, `faspex5` or `aoc`), the next ones are the files to transfer.
 The main folder of the repository is found from the current folder: to use another one, set the environment variable `DIR_TOP`.
 
 > [!NOTE]
