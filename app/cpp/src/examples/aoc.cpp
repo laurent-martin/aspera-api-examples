@@ -1,5 +1,3 @@
-#include <uuid/uuid.h>
-
 #include <boost/beast.hpp>
 #include <boost/json.hpp>
 #include <iostream>

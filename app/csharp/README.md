@@ -28,6 +28,7 @@ The main folder of the repository is found from the current folder: to use anoth
 ## Environment
 
 The project targets .NET 10 (`net10.0`).
+If .NET 10 is not installed, it runs on a later major version of the runtime (`RollForward` in `csharp.csproj`).
 
 Install the .NET SDK, which includes the `dotnet` CLI,
 following the [Microsoft manual](https://learn.microsoft.com/en-us/dotnet/core/install/).

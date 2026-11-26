@@ -11,6 +11,10 @@ The following C++ libraries are used:
 
 These libraries are used only by the examples: they are not required to use the Aspera Transfer Daemon SDK.
 
+`conan` builds them from source the first time, in `.conan2`.
+Only the compiled Boost libraries used by the samples are built: see `[options]` in `conanfile.txt`.
+To use another compiled Boost library, remove its `without_` option.
+
 ## Requirements
 
 The following tools are used.
@@ -43,11 +47,12 @@ linux$ sudo pip install conan
 
 [gRPC C++ Quickstart](https://grpc.io/docs/languages/cpp/quickstart/).
 
-Linux install:
+The gRPC and protobuf libraries come from the system, not from `conan`.
 
 ```console
+macos$ brew install protobuf grpc
+ubuntu$ sudo apt-get install protobuf-compiler libprotobuf-dev libgrpc++-dev protobuf-compiler-grpc
 redhat$ sudo dnf install -y protobuf-compiler protobuf-devel
-ubuntu$ sudo apt-get install protobuf-compiler
 ```
 
 ## Build and Run

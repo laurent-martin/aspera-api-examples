@@ -17,7 +17,12 @@ find_package(magic_enum CONFIG REQUIRED)
 message(STATUS "Using magic_enum ${magic_enum_VERSION}")
 find_package(yaml-cpp CONFIG REQUIRED)
 message(STATUS "Using yaml-cpp ${yaml-cpp_VERSION}")
-find_package(Protobuf CONFIG REQUIRED)
+# Homebrew provides a CMake package configuration for protobuf, Debian and Ubuntu do not.
+# Without it, use the module FindProtobuf of CMake.
+find_package(Protobuf CONFIG QUIET)
+if(NOT Protobuf_FOUND)
+  find_package(Protobuf MODULE REQUIRED)
+endif()
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
 find_package(gRPC CONFIG REQUIRED)
 message(STATUS "Using gRPC ${gRPC_VERSION}")

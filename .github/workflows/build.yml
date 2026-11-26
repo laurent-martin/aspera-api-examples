@@ -91,10 +91,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # gRPC and protobuf from the system, other libraries from Conan (conanfile.txt)
-      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler libprotobuf-dev libgrpc++-dev protobuf-compiler-grpc
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler libprotobuf-dev libgrpc++-dev protobuf-compiler-grpc
       - run: pip install conan
+      # Conan packages depend on the OS, the CPU and the compiler version: they are part of the cache key
+      - id: conan
+        run: echo "key=conan-$RUNNER_OS-$RUNNER_ARCH-gcc$(gcc -dumpversion)" >> "$GITHUB_OUTPUT"
+      # Conan cache (CONAN_HOME in app/cpp/Makefile): Boost is built only when the key changes
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: app/cpp/.conan2
+          key: ${{ steps.conan.outputs.key }}-${{ hashFiles('app/cpp/conanfile.txt', 'app/cpp/Makefile') }}
       - run: make sdk PLATFORM="$PLATFORM"
       - run: make -C app/cpp build
+      # Keep only the packages in the saved cache: remove the source and build folders
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: conan cache clean
+        env:
+          CONAN_HOME: ${{ github.workspace }}/app/cpp/.conan2
 
   csharp:
     runs-on: ubuntu-latest

@@ -36,7 +36,7 @@ build:: $(SDK_FILE_PROTO) $(CPP_BUILD_DIR)/Makefile
 # 1. Install dependencies
 # 2. Configure cmake
 # 3. Generate build files
-$(CPP_BUILD_DIR)/Makefile: CMakeLists.txt $(CONAN_HOME)/profiles/default
+$(CPP_BUILD_DIR)/Makefile: CMakeLists.txt conanfile.txt $(CONAN_HOME)/profiles/default
 	conan install . \
 		--output-folder=. \
 		--build=missing \

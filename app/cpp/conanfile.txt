@@ -4,6 +4,32 @@ magic_enum/0.9.6
 yaml-cpp/0.8.0
 openssl/3.3.2
 
+[options]
+# Build only the compiled Boost libraries that the samples use:
+# json, log, process, url, filesystem, regex, and their dependencies (atomic, chrono, container, context, date_time, exception, thread).
+# Header-only libraries (asio, beast, uuid, algorithm...) are always installed.
+boost/*:without_charconv=True
+boost/*:without_cobalt=True
+boost/*:without_contract=True
+boost/*:without_coroutine=True
+boost/*:without_fiber=True
+boost/*:without_graph=True
+boost/*:without_graph_parallel=True
+boost/*:without_iostreams=True
+boost/*:without_locale=True
+boost/*:without_math=True
+boost/*:without_mpi=True
+boost/*:without_nowide=True
+boost/*:without_program_options=True
+boost/*:without_python=True
+boost/*:without_random=True
+boost/*:without_serialization=True
+boost/*:without_stacktrace=True
+boost/*:without_test=True
+boost/*:without_timer=True
+boost/*:without_type_erasure=True
+boost/*:without_wave=True
+
 [generators]
 CMakeDeps
 CMakeToolchain
