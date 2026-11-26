@@ -64,6 +64,7 @@ paths:
       operationId: login
       security: []
       summary: Authenticate and obtain JWT token
+      description: 'Returns a JWT for the `Authorization: Bearer` header of the other calls. Returns 403 when JWT authentication is disabled in the configuration.'
       tags:
         - Authentication
       requestBody:
@@ -117,20 +118,26 @@ paths:
           content:
             application/json:
               schema:
+                description: Token and identity of the user
                 type: object
                 properties:
                   message:
+                    description: Result message
                     type: string
                     examples:
                       - Logged in successfully
                   user:
+                    description: Authenticated user
                     type: object
                     properties:
                       id:
+                        description: User ID
                         type: integer
                       login:
+                        description: User login
                         type: string
                       email:
+                        description: Email of the user
                         type: string
                   token:
                     type: string
@@ -143,6 +150,7 @@ paths:
     get:
       operationId: workflows_list
       summary: List all workflows
+      description: Lists all the workflows, with their publication status, revisions and folder. Requires the monitor permission.
       tags:
         - Workflows
       parameters:
@@ -153,36 +161,46 @@ paths:
           content:
             application/json:
               schema:
+                description: All workflows
                 type: object
                 properties:
                   workflows:
+                    description: Wrapper of the list
                     type: object
                     properties:
                       time:
                         type: string
                         description: UTC time
                       action:
+                        description: Name of the call
                         type: string
                         const: list
                       id:
+                        description: Always `0` for this call
                         type: integer
                       workflow:
+                        description: Workflows
                         type: array
                         items:
                           type: object
                           properties:
                             id:
+                              description: Workflow ID
                               type: integer
                             name:
+                              description: Workflow name
                               type: string
                             full_name:
                               type: string
                               description: Name with the folder path
                             folder_id:
+                              description: Folder of the workflow, `null` at the root
                               type: [integer, 'null']
                             portable_id:
+                              description: Portable ID, kept across export and import
                               type: [string, 'null']
                             published_status:
+                              description: Whether a revision is published
                               type: string
                               enum:
                                 - published
@@ -194,9 +212,11 @@ paths:
                               type: [integer, string]
                               description: '`-` when there is no whiteboard'
                             last_modification:
+                              description: Last update of the workflow
                               type: string
                               format: date-time
                             comments:
+                              description: Comments of the workflow
                               type: [string, 'null']
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -206,6 +226,7 @@ paths:
     get:
       operationId: workflows_status
       summary: Running status of workflows
+      description: Tells, for each workflow or for one workflow, whether work orders are running.
       tags:
         - Workflows
       parameters:
@@ -221,29 +242,37 @@ paths:
           content:
             application/json:
               schema:
+                description: Running status of the workflows
                 type: object
                 properties:
                   workflows:
+                    description: Wrapper of the list
                     type: object
                     properties:
                       time:
                         type: string
                         description: UTC time
                       action:
+                        description: Name of the call
                         type: string
                         const: status
                       id:
+                        description: Always `0` for this call
                         type: integer
                       workflow:
+                        description: Workflows
                         type: array
                         items:
                           type: object
                           properties:
                             id:
+                              description: Workflow ID
                               type: integer
                             name:
+                              description: Workflow name
                               type: string
                             status:
+                              description: '`running` when the workflow has running work orders'
                               type: string
                               enum:
                                 - running
@@ -259,6 +288,7 @@ paths:
     get:
       operationId: workflow_details
       summary: Number of work orders of a workflow, by status
+      description: Counts the work orders of a workflow by status, optionally in a date range.
       tags:
         - Workflows
       parameters:
@@ -285,39 +315,51 @@ paths:
           content:
             application/json:
               schema:
+                description: Work order counts of the workflow
                 type: object
                 properties:
                   workflows:
+                    description: Wrapper of the result
                     type: object
                     properties:
                       time:
                         type: string
                         description: UTC time
                       action:
+                        description: Name of the call
                         type: string
                         const: status
                       id:
+                        description: Workflow ID
                         type: integer
                       workflow:
+                        description: The workflow and its counts
                         type: object
                         properties:
                           name:
+                            description: Workflow name
                             type: string
                           id:
+                            description: Workflow ID
                             type: integer
                           statuses:
+                            description: One entry per work order status
                             type: array
                             items:
                               type: object
                               properties:
                                 count:
+                                  description: Number of work orders with this status
                                   type: integer
                                 last_activity:
+                                  description: Last update of these work orders
                                   type: string
                                   format: date-time
                                 workflow_name:
+                                  description: Workflow name
                                   type: string
                                 status:
+                                  description: Work order status
                                   type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -327,6 +369,7 @@ paths:
     get:
       operationId: workflow_inputs_spec
       summary: Runtime parameters of a workflow
+      description: Lists the runtime parameters of the published revision, to give in `external_parameters` of `initiate`.
       tags:
         - Workflows
       parameters:
@@ -353,33 +396,43 @@ paths:
           content:
             application/json:
               schema:
+                description: Runtime parameters of the workflow
                 type: object
                 properties:
                   workflow_inputs_spec:
+                    description: Wrapper of the result
                     type: object
                     properties:
                       time:
                         type: string
                         description: UTC time
                       action:
+                        description: Name of the call
                         type: string
                         const: inputs_spec
                       workflow_name:
+                        description: Workflow name
                         type: string
                       workflow_id:
+                        description: Workflow ID
                         type: integer
                       parameter:
+                        description: Runtime parameters
                         type: array
                         items:
                           type: object
                           properties:
                             id:
+                              description: Parameter ID
                               type: integer
                             name:
+                              description: Parameter name, the key in `external_parameters`
                               type: string
                             value_type:
+                              description: Value type, e.g. `string`, `int`, `pwd`
                               type: string
                             optional:
+                              description: '`true` when the parameter can be omitted'
                               type: [boolean, 'null']
                             value:
                               type: string
@@ -392,6 +445,7 @@ paths:
     get:
       operationId: workflow_outputs_spec
       summary: Outputs of the steps of a workflow
+      description: Lists the outputs of the steps of the published revision, as used by `explicit_output` of `initiate` and by `work_order_output`.
       tags:
         - Workflows
       parameters:
@@ -413,36 +467,46 @@ paths:
           content:
             application/json:
               schema:
+                description: Outputs of the workflow
                 type: object
                 properties:
                   workflow_outputs_spec:
+                    description: Wrapper of the result
                     type: object
                     properties:
                       time:
                         type: string
                         description: UTC time
                       action:
+                        description: Name of the call
                         type: string
                         const: outputs_spec
                       output:
+                        description: Outputs
                         type: array
                         items:
                           type: object
                           properties:
                             context_id:
+                              description: ID of the step that produces the output
                               type: integer
                             name:
                               type: string
                               description: '`<step name>:<output name>`'
                             workflow_id:
+                              description: Workflow ID
                               type: integer
                             step_name:
+                              description: Step name
                               type: string
                             variable_name:
+                              description: Output name
                               type: string
                             value_type:
+                              description: Value type, e.g. `string`, `int`
                               type: string
                             variable_type:
+                              description: Variable type
                               type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -460,6 +524,7 @@ paths:
         content:
           multipart/form-data:
             schema:
+              description: Workflow file and import options
               type: object
               required:
                 - import_file
@@ -471,7 +536,7 @@ paths:
                   description: The workflow file to import (.wkf or .yml)
                 import_file_name:
                   type: string
-                  pattern: (wkf|yml)$
+                  pattern: ^.*(wkf|yml)$
                   description: File name ending with `wkf` or `yml`. The file is saved under this name in the import folder of the server.
                   examples:
                     - my_workflow.wkf
@@ -485,6 +550,7 @@ paths:
                   type: string
                   description: '`true` or `1` to publish the workflow after import. Default: server option `publish_api_imported_workflow`.'
                 format:
+                  description: Format of the error responses (the result is JSON in both formats)
                   type: string
                   enum:
                     - xml
@@ -506,11 +572,14 @@ paths:
           content:
             application/json:
               schema:
+                description: Import error
                 type: object
                 properties:
                   error:
+                    description: Error type
                     type: string
                   message:
+                    description: Error summary
                     type: string
                   details:
                     type: string
@@ -540,6 +609,7 @@ paths:
           content:
             application/json:
               schema:
+                description: The six objects of the body of `import_with_constraints`, with the choices
                 type: array
                 minItems: 6
                 maxItems: 6
@@ -717,6 +787,7 @@ paths:
         content:
           application/json:
             schema:
+              description: Workflow to publish, instead of the query parameter
               type: object
               properties:
                 id:
@@ -728,6 +799,7 @@ paths:
           content:
             application/json:
               schema:
+                description: '`true` when published'
                 type: boolean
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -758,6 +830,7 @@ paths:
           content:
             application/octet-stream:
               schema:
+                description: Content of the `.yml` file, or of the `.wkf` package
                 type: string
                 format: binary
         '401':
@@ -768,6 +841,7 @@ paths:
     get:
       operationId: list_by_subworkflow
       summary: Published workflows that use a sub-workflow
+      description: Lists the published workflows that call a sub-workflow, e.g. before changing or deleting it.
       tags:
         - Workflows
       parameters:
@@ -789,9 +863,11 @@ paths:
           content:
             application/json:
               schema:
+                description: Parent workflows
                 type: object
                 properties:
                   parent_workflows:
+                    description: IDs of the published workflows that use the sub-workflow
                     type: array
                     items:
                       type: string
@@ -803,6 +879,7 @@ paths:
     get:
       operationId: retrieve_steps
       summary: Steps of a type in published workflows, with their work orders
+      description: Finds the steps of a plugin type in the workflow revisions used by work orders, with the ID and status of each work order.
       tags:
         - Workflows
       parameters:
@@ -820,22 +897,28 @@ paths:
           content:
             application/json:
               schema:
+                description: Matching steps, one entry per step and work order
                 type: array
                 items:
                   type: object
                   properties:
                     step_id:
+                      description: Step ID in the workflow revision
                       type: string
                     step_name:
+                      description: Step name
                       type: string
                     step_status:
                       type: [string, 'null']
                       description: Status of the first prerequisite of the step
                     wf_id:
+                      description: Workflow ID, from the revision
                       type: string
                     wo_id:
+                      description: Work order ID
                       type: integer
                     wo_status:
+                      description: Status of the work order
                       type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -845,6 +928,7 @@ paths:
     get:
       operationId: work_orders_list
       summary: List work orders of a workflow
+      description: Lists the work orders of one workflow or of all workflows, filtered by status, priority, date range and tags.
       tags:
         - Work Orders
       parameters:
@@ -909,9 +993,11 @@ paths:
           content:
             application/json:
               schema:
+                description: Work orders found
                 type: object
                 properties:
                   work_orders:
+                    description: Work orders
                     type: array
                     items:
                       $ref: '#/components/schemas/WorkOrder'
@@ -943,6 +1029,7 @@ paths:
           content:
             application/json:
               schema:
+                description: Work order and its work steps
                 type: object
                 properties:
                   work_order:
@@ -950,6 +1037,7 @@ paths:
                       - $ref: '#/components/schemas/WorkOrder'
                     properties:
                       percent_complete:
+                        description: Progress of the work order, from the weights of its steps
                         type: integer
                         minimum: 0
                         maximum: 100
@@ -1035,6 +1123,7 @@ paths:
     get:
       operationId: work_order_cancel
       summary: Cancel a work order
+      description: Cancels a running work order and its steps. Use `force` for a work order that does not stop.
       tags:
         - Work Orders
       parameters:
@@ -1065,6 +1154,7 @@ paths:
     get:
       operationId: work_order_reset
       summary: Reset a work order
+      description: Resets all the steps of the work order to `Inactive`, to run it again from the start.
       tags:
         - Work Orders
       parameters:
@@ -1116,6 +1206,7 @@ paths:
     get:
       operationId: work_order_destroy
       summary: Delete a work order and its dependents
+      description: Deletes the work order and its dependent records.
       tags:
         - Work Orders
       parameters:
@@ -1132,6 +1223,7 @@ paths:
           content:
             application/json:
               schema:
+                description: Confirmation message, as a JSON string
                 type: string
                 examples:
                   - " Work order '123' was deleted"
@@ -1219,6 +1311,7 @@ paths:
         content:
           application/json:
             schema:
+              description: Workflow to start and its runtime parameters
               type: object
               required:
                 - workflow_id
@@ -1238,6 +1331,7 @@ paths:
           content:
             application/json:
               schema:
+                description: The new work order, or an output value
                 anyOf:
                   - title: Work order
                     allOf:
@@ -1254,6 +1348,7 @@ paths:
           content:
             application/json:
               schema:
+                description: Error, or the work order that was not started
                 oneOf:
                   - $ref: '#/components/schemas/Error'
                   - title: Missing parameters
@@ -1267,10 +1362,13 @@ paths:
                           - $ref: '#/components/schemas/WorkOrder'
                         properties:
                           status:
+                            description: Status of the work order that was not started
                             const: Not started
                           status_details:
+                            description: Reason
                             const: Missing required parameters
                       missing_parameters:
+                        description: Names of the required parameters not given
                         type: array
                         items:
                           type: string
@@ -1346,6 +1444,7 @@ paths:
           content:
             application/json:
               schema:
+                description: Work step, new status, or output value
                 anyOf:
                   - title: Work step
                     type: object
@@ -1353,10 +1452,12 @@ paths:
                       work_step:
                         $ref: '#/components/schemas/WorkStep'
                       outputs:
+                        description: Outputs of the work step
                         type: array
                         items:
                           $ref: '#/components/schemas/StepVariable'
                       inputs:
+                        description: Inputs of the work step
                         type: array
                         items:
                           $ref: '#/components/schemas/StepVariable'
@@ -1370,12 +1471,16 @@ paths:
                     type: object
                     properties:
                       Work_step_id:
+                        description: Work step ID
                         type: integer
                       Work_step_status:
+                        description: New status
                         type: string
                       Work_step_status_details:
+                        description: New status details
                         type: [string, 'null']
                       Work_step_percent_complete:
+                        description: New percentage of completion
                         type: [integer, 'null']
                   - title: Output value
                     description: With `output_name`
@@ -1391,6 +1496,7 @@ paths:
     get:
       operationId: work_step_cancel
       summary: Cancel a work step
+      description: Cancels a running work step.
       tags:
         - Work Steps
       parameters:
@@ -1416,6 +1522,7 @@ paths:
     get:
       operationId: workstep_reset
       summary: Restart work orders from work steps
+      description: Restarts the work order of each work step from that step.
       tags:
         - Work Steps
       parameters:
@@ -1434,6 +1541,7 @@ paths:
           content:
             application/json:
               schema:
+                description: Restarted work order, or a list for several work steps
                 oneOf:
                   - $ref: '#/components/schemas/WorkstepReset'
                   - type: array
@@ -1448,6 +1556,7 @@ paths:
     get:
       operationId: queues_list
       summary: List all queues
+      description: Lists the managed queues (queue headers, without their items).
       tags:
         - Queues
       parameters:
@@ -1458,26 +1567,34 @@ paths:
           content:
             application/json:
               schema:
+                description: Managed queues
                 type: object
                 properties:
                   Queues:
+                    description: Wrapper of the list
                     type: object
                     properties:
                       queue:
+                        description: Queues
                         type: array
                         items:
                           type: object
                           properties:
                             id:
+                              description: ID of the queue header
                               type: integer
                             name:
+                              description: Queue name, used by the other queue calls
                               type: string
                             displayed_name:
+                              description: Name shown in the web interface
                               type: [string, 'null']
                             update_at:
+                              description: Last update of the queue (spelled `update_at`)
                               type: string
                               format: date-time
                             created_at:
+                              description: Creation of the queue
                               type: string
                               format: date-time
         '401':
@@ -1488,6 +1605,7 @@ paths:
     get:
       operationId: queued_items
       summary: Items of a queue
+      description: Lists the items of a queue in queue order, with the queue attributes.
       tags:
         - Queues
       parameters:
@@ -1513,6 +1631,7 @@ paths:
     get:
       operationId: queue_item
       summary: Add an item to a queue
+      description: Adds an item at the position given by its priority. The queue must exist.
       tags:
         - Queues
       parameters:
@@ -1559,20 +1678,26 @@ paths:
           content:
             application/json:
               schema:
+                description: The new item
                 type: object
                 properties:
                   item:
                     type: string
                     description: The queued item, as given in `queued_item`
                   description:
+                    description: Description of the item
                     type: string
                   rank:
+                    description: Position in the queue, from 0
                     type: integer
                   priority:
+                    description: Priority of the item
                     type: integer
                   weight:
+                    description: Weight of the item
                     type: integer
                   id:
+                    description: ID of the queued item
                     type: integer
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -1622,6 +1747,7 @@ paths:
     get:
       operationId: reorder_queued_item
       summary: Move a queued item
+      description: Moves one item up, down, first or last in its queue.
       tags:
         - Queues
       parameters:
@@ -1667,6 +1793,7 @@ paths:
     get:
       operationId: bulk_reorder_queue
       summary: Move several queued items
+      description: Moves several items of a queue up, down, first or last.
       tags:
         - Queues
       parameters:
@@ -1698,9 +1825,11 @@ paths:
           content:
             application/json:
               schema:
+                description: Moved items
                 type: object
                 properties:
                   queued_items:
+                    description: Each moved item with its queue
                     type: array
                     items:
                       type: object
@@ -1717,6 +1846,7 @@ paths:
     get:
       operationId: delete_queued_item
       summary: Delete a queued item
+      description: Deletes one item from a queue.
       tags:
         - Queues
       parameters:
@@ -1751,6 +1881,7 @@ paths:
     get:
       operationId: monitor_snapshot
       summary: Status of the monitors
+      description: Returns the state of the monitors, by type, as shown on the Monitors page.
       tags:
         - Monitors
       parameters:
@@ -1772,9 +1903,11 @@ paths:
           content:
             application/json:
               schema:
+                description: Monitors by type
                 type: object
                 properties:
                   monitor:
+                    description: Monitors by type, each type empty when there is no monitor of this type
                     type: object
                     properties:
                       monitor_workflows:
@@ -1782,20 +1915,25 @@ paths:
                         description: Empty when there is no monitor
                         properties:
                           monitor_workflow:
+                            description: Workflow monitors
                             type: array
                             items:
                               type: object
                               properties:
                                 id:
+                                  description: Monitor ID
                                   type: integer
                                 workflow_id:
+                                  description: Monitored workflow
                                   type: integer
                                 workflow_name:
+                                  description: Name of the monitored workflow
                                   type: string
                                 last_activity:
                                   type: string
                                   description: Last activity of the workflow or work order (`YYYY-MM-DD HH:MM:SS`), `-` if none. Only when active.
                                 active:
+                                  description: '`true` when the monitor is on'
                                   type: boolean
                                 status:
                                   type: string
@@ -1814,20 +1952,25 @@ paths:
                         description: Empty when there is no monitor
                         properties:
                           monitor_workorder:
+                            description: Work order monitors
                             type: array
                             items:
                               type: object
                               properties:
                                 id:
+                                  description: Monitor ID
                                   type: integer
                                 workflow_id:
+                                  description: Workflow of the monitored work orders
                                   type: integer
                                 workflow_name:
+                                  description: Name of that workflow
                                   type: string
                                 last_activity:
                                   type: string
                                   description: Last activity of the workflow or work order (`YYYY-MM-DD HH:MM:SS`), `-` if none. Only when active.
                                 active:
+                                  description: '`true` when the monitor is on'
                                   type: boolean
                                 status:
                                   type: string
@@ -1846,16 +1989,19 @@ paths:
                         description: Empty when there is no monitor
                         properties:
                           monitor_folder:
+                            description: Folder monitors
                             type: array
                             items:
                               type: object
                               properties:
                                 id:
+                                  description: Monitor ID
                                   type: integer
                                 folder:
                                   type: string
                                   description: Description of the monitor
                                 path:
+                                  description: Monitored folder
                                   type: string
                                 content:
                                   type: string
@@ -1864,6 +2010,7 @@ paths:
                                   type: string
                                   description: Age of the youngest and oldest entries, with the aging unit of the monitor, or `-`. Only when active.
                                 active:
+                                  description: '`true` when the monitor is on'
                                   type: boolean
                                 status:
                                   type: string
@@ -1882,17 +2029,22 @@ paths:
                         description: Empty when there is no monitor
                         properties:
                           monitor_node:
+                            description: Remote node monitors
                             type: array
                             items:
                               type: object
                               properties:
                                 id:
+                                  description: Monitor ID
                                   type: integer
                                 name:
+                                  description: Monitor name
                                   type: string
                                 remote_node:
+                                  description: Name of the monitored remote node
                                   type: string
                                 active:
+                                  description: '`true` when the monitor is on'
                                   type: boolean
                                 status:
                                   type: string
@@ -1911,20 +2063,25 @@ paths:
                         description: Empty when there is no monitor
                         properties:
                           monitor_script:
+                            description: Remote script monitors
                             type: array
                             items:
                               type: object
                               properties:
                                 id:
+                                  description: Monitor ID
                                   type: integer
                                 script:
                                   type: string
                                   description: Description of the monitor
                                 node:
+                                  description: Remote node that runs the script
                                   type: string
                                 path:
+                                  description: Path of the script on the remote node
                                   type: string
                                 active:
+                                  description: '`true` when the monitor is on'
                                   type: boolean
                                 status:
                                   type: string
@@ -1946,6 +2103,7 @@ paths:
     get:
       operationId: list_monitors
       summary: List the monitors of a type
+      description: Lists the monitors of one type with all their attributes.
       tags:
         - Monitors
       parameters:
@@ -1972,6 +2130,7 @@ paths:
     get:
       operationId: activate_monitor
       summary: Activate a monitor
+      description: Turns a monitor on.
       tags:
         - Monitors
       parameters:
@@ -1981,12 +2140,12 @@ paths:
           schema:
             type: string
           description: Monitor ID or portable ID
+        - $ref: '#/components/parameters/MonitorType'
         - name: portable_id
           in: query
           schema:
             type: string
           description: Portable ID of the monitor, used when the `id` segment is empty
-        - $ref: '#/components/parameters/MonitorType'
         - $ref: '#/components/parameters/Format'
       responses:
         '200':
@@ -2003,6 +2162,7 @@ paths:
     get:
       operationId: deactivate_monitor
       summary: Deactivate a monitor
+      description: Turns a monitor off.
       tags:
         - Monitors
       parameters:
@@ -2012,12 +2172,12 @@ paths:
           schema:
             type: string
           description: Monitor ID or portable ID
+        - $ref: '#/components/parameters/MonitorType'
         - name: portable_id
           in: query
           schema:
             type: string
           description: Portable ID of the monitor, used when the `id` segment is empty
-        - $ref: '#/components/parameters/MonitorType'
         - $ref: '#/components/parameters/Format'
       responses:
         '200':
@@ -2034,6 +2194,7 @@ paths:
     get:
       operationId: list_tasks
       summary: Tasks (user inputs) waiting for a user
+      description: Lists the active user input tasks assigned to a user, completed by the user, or assigned to a group of the user, with the inputs they request.
       tags:
         - Tasks
       parameters:
@@ -2050,18 +2211,21 @@ paths:
           content:
             application/json:
               schema:
+                description: Tasks of the user
                 type: object
                 properties:
                   user:
                     type: string
                     description: Login of the user
                   tasks:
+                    description: Tasks
                     type: array
                     items:
                       allOf:
                         - $ref: '#/components/schemas/Task'
                       properties:
                         event:
+                          description: Event description of the user input step, with its variables expanded
                           type: string
                         group:
                           type: string
@@ -2070,15 +2234,19 @@ paths:
                           type: string
                           description: User the task is assigned to
                         requested_user_inputs:
+                          description: Inputs to give in `submit_task`
                           type: array
                           items:
                             type: object
                             properties:
                               name:
+                                description: Input name, the key in `outputs` of `submit_task`
                                 type: string
                               required:
+                                description: '`true` when the input must be given'
                                 type: boolean
                               value_type:
+                                description: Value type, see `TaskUserInputs`
                                 type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -2088,6 +2256,7 @@ paths:
     get:
       operationId: task_details
       summary: Details of a task
+      description: Returns a task with the parameters it received and its user inputs.
       tags:
         - Tasks
       parameters:
@@ -2115,6 +2284,7 @@ paths:
           content:
             application/json:
               schema:
+                description: Task, its parameters and its user inputs
                 type: object
                 properties:
                   task:
@@ -2124,6 +2294,7 @@ paths:
                     description: Parameters received by the task (name to value)
                     additionalProperties: true
                   user_inputs:
+                    description: Inputs to give in `submit_task`
                     type: array
                     items:
                       $ref: '#/components/schemas/UserInput'
@@ -2135,6 +2306,7 @@ paths:
     get:
       operationId: submit_task
       summary: Complete a task with the user inputs
+      description: Gives the values of the user inputs and completes the task, so the work order continues.
       tags:
         - Tasks
       parameters:
@@ -2163,6 +2335,7 @@ paths:
           content:
             application/json:
               schema:
+                description: Completed task and the values given
                 type: object
                 properties:
                   task:
@@ -2172,6 +2345,7 @@ paths:
                     description: Values of the user inputs (name to value)
                     additionalProperties: true
                   input_provider:
+                    description: Login of the user recorded as provider of the inputs
                     type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -2181,6 +2355,7 @@ paths:
     get:
       operationId: search_tasks
       summary: Search the tasks of the current user
+      description: Searches the tasks of the current user by a search key.
       tags:
         - Tasks
       parameters:
@@ -2198,6 +2373,7 @@ paths:
           content:
             application/json:
               schema:
+                description: Tasks found
                 type: array
                 items:
                   anyOf:
@@ -2205,6 +2381,7 @@ paths:
                       type: object
                       properties:
                         id:
+                          description: Task ID
                           type: integer
                         task:
                           $ref: '#/components/schemas/Task'
@@ -2213,6 +2390,7 @@ paths:
                           description: Parameters received by the task (name to value)
                           additionalProperties: true
                         user_inputs:
+                          description: Inputs to give in `submit_task`
                           type: array
                           items:
                             $ref: '#/components/schemas/UserInput'
@@ -2220,8 +2398,10 @@ paths:
                       type: object
                       properties:
                         id:
+                          description: Task ID
                           type: integer
                         error:
+                          description: Why the task is not returned
                           type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -2231,6 +2411,7 @@ paths:
     get:
       operationId: plugin_version
       summary: Versions of the plugins
+      description: Lists the installed plugins and their versions, or the version of one plugin.
       tags:
         - Plugins
       parameters:
@@ -2246,16 +2427,20 @@ paths:
           content:
             application/json:
               schema:
+                description: Plugin versions
                 type: object
                 properties:
                   Plugin:
+                    description: Plugins
                     type: array
                     items:
                       type: object
                       properties:
                         name:
+                          description: Plugin name
                           type: string
                         version:
+                          description: Plugin version
                           type: string
                           examples:
                             - 1.2.3
@@ -2267,6 +2452,7 @@ paths:
     get:
       operationId: reload_plugin
       summary: Reload a plugin, or all enabled plugins
+      description: Reloads the code of a plugin, or of all enabled plugins, without restarting Orchestrator.
       tags:
         - Plugins
       parameters:
@@ -2301,6 +2487,7 @@ paths:
         content:
           application/json:
             schema:
+              description: Plugins to reload
               type: object
               required:
                 - plugin_set
@@ -2315,6 +2502,7 @@ paths:
                       - AdiParser
           application/xml:
             schema:
+              description: Plugins to reload, as XML
               type: string
               examples:
                 - <plugin_set><action_type>Adi3Parser</action_type></plugin_set>
@@ -2333,6 +2521,7 @@ paths:
     get:
       operationId: enable_plugin
       summary: Enable a plugin, or all plugins
+      description: Enables a plugin. Without `action_type`, loads all the available plugins.
       tags:
         - Plugins
       parameters:
@@ -2349,6 +2538,7 @@ paths:
           content:
             application/json:
               schema:
+                description: Installation of the plugin
                 type: object
                 properties:
                   install_id:
@@ -2362,6 +2552,7 @@ paths:
     get:
       operationId: import_plugin
       summary: Import a plugin from a file on the Orchestrator host
+      description: Installs a plugin from an archive already present on the Orchestrator host.
       tags:
         - Plugins
       parameters:
@@ -2379,9 +2570,11 @@ paths:
           content:
             application/json:
               schema:
+                description: Imported plugin
                 type: object
                 properties:
                   action_type:
+                    description: Plugin class name
                     type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -2391,6 +2584,7 @@ paths:
     get:
       operationId: portlet_version
       summary: Versions of the portlets
+      description: Lists the portlets and their versions, or the version of one portlet.
       tags:
         - Portlets
       parameters:
@@ -2406,16 +2600,20 @@ paths:
           content:
             application/json:
               schema:
+                description: Portlet versions
                 type: object
                 properties:
                   Portlet:
+                    description: Portlets
                     type: array
                     items:
                       type: object
                       properties:
                         name:
+                          description: Portlet name
                           type: string
                         version:
+                          description: Portlet version
                           type: string
                           examples:
                             - 1.2.3
@@ -2427,6 +2625,7 @@ paths:
     get:
       operationId: processes_status
       summary: Status of the processes (engine, monitor, workers)
+      description: Returns the processes (engine, monitor, workers) of each Orchestrator node and whether they run.
       tags:
         - System
       parameters:
@@ -2441,14 +2640,18 @@ paths:
                 description: Conversion of the XML, so all values are strings
                 properties:
                   processes:
+                    description: Wrapper of the result
                     type: object
                     properties:
                       time:
+                        description: Time of the call
                         type: string
                       action:
+                        description: Name of the call
                         type: string
                         const: status
                       engine_id:
+                        description: ID of the engine that answers
                         type: string
                       node:
                         description: A node, or a list when there are several
@@ -2506,24 +2709,31 @@ paths:
           content:
             application/json:
               schema:
+                description: Status of the processes after the command
                 type: object
                 properties:
                   processes:
+                    description: Wrapper of the result
                     type: object
                     properties:
                       time:
+                        description: Time of the call
                         type: string
                       action:
+                        description: Name of the call
                         type: string
                         const: status
                       engine_id:
+                        description: ID of the engine that answers
                         type: integer
                       process:
+                        description: Processes
                         type: array
                         items:
                           type: object
                           properties:
                             class:
+                              description: Process type
                               type: string
                               enum:
                                 - engine
@@ -2537,6 +2747,7 @@ paths:
                               type: [integer, string]
                               description: '`-` when not running'
                             status:
+                              description: Whether the process runs
                               type: string
                               enum:
                                 - running
@@ -2560,17 +2771,17 @@ paths:
       tags:
         - System
       parameters:
-        - name: identifier
-          in: query
-          schema:
-            type: string
-          description: 'Aggregate type of the shared state (default: `custom_api_call`)'
         - name: uniq_id
           in: query
           required: true
           schema:
             type: integer
           description: Aggregate ID of the shared state, an integer
+        - name: identifier
+          in: query
+          schema:
+            type: string
+          description: 'Aggregate type of the shared state (default: `custom_api_call`)'
         - name: object
           in: query
           schema:
@@ -2587,6 +2798,7 @@ paths:
     get:
       operationId: execution_queue_stats
       summary: Statistics of the execution queue of the engine
+      description: Counts the items of the execution queue of the engine (steps waiting for or run by workers) and the running work orders, by status.
       tags:
         - System
       parameters:
@@ -2598,37 +2810,50 @@ paths:
           content:
             application/json:
               schema:
+                description: Execution queue and work order counts
                 type: object
                 properties:
                   next_polling_due:
                     type: [integer, string]
                     description: Seconds until the next polling, or `-`
                   completed_items:
+                    description: Execution queue items with status `Complete`
                     type: integer
                   unassigned_items:
+                    description: Execution queue items not assigned to a worker yet
                     type: integer
                   error_items:
+                    description: Execution queue items with status `Error`
                     type: integer
                   inprogress_synch_count:
+                    description: Synchronous items in progress
                     type: integer
                   inprogress_asynch_count:
+                    description: Asynchronous items in progress
                     type: integer
                   created:
                     type: integer
                     description: Number of work orders with this status
                   ready:
+                    description: Number of work orders with status `Ready`
                     type: integer
                   initializing:
+                    description: Number of work orders with status `Initializing`
                     type: integer
                   initialized:
+                    description: Number of work orders with status `Initialized`
                     type: integer
                   in_progress:
+                    description: Number of work orders with status `In Progress`
                     type: integer
                   paused:
+                    description: Number of work orders with status `Paused`
                     type: integer
                   time_executed:
+                    description: Time of the statistics (`YYYY-MM-DD HH:MM:SS`)
                     type: string
                   engine_id:
+                    description: ID of the engine
                     type: integer
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -2638,6 +2863,7 @@ paths:
     get:
       operationId: alerts
       summary: Alerts of the categories the user is subscribed to
+      description: Returns the alerts of the categories the user is subscribed to, or their number.
       tags:
         - System
       parameters:
@@ -2668,12 +2894,14 @@ paths:
           content:
             application/json:
               schema:
+                description: Alerts, or their number
                 oneOf:
                   - title: Count
                     description: With `count_only=true`
                     type: object
                     properties:
                       count:
+                        description: Number of alerts
                         type: integer
                   - type: array
                     items:
@@ -2686,6 +2914,7 @@ paths:
     get:
       operationId: remote_node_ping
       summary: Version and platform of this Orchestrator
+      description: Returns the version and platform of this Orchestrator. Used by another Orchestrator to check a federation link.
       tags:
         - Remote Nodes
       parameters:
@@ -2696,16 +2925,21 @@ paths:
           content:
             application/json:
               schema:
+                description: Information on this Orchestrator
                 type: object
                 properties:
                   remote_orchestrator_info:
+                    description: Wrapper of the result
                     type: object
                     properties:
                       orchestrator-version:
+                        description: Orchestrator version
                         type: string
                       platform:
+                        description: Platform of the Ruby runtime, e.g. `x86_64-pc-linux-gnu`
                         type: string
                       engine_id:
+                        description: ID of the engine
                         type: integer
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -2835,40 +3069,57 @@ paths:
                   type: object
                   properties:
                     Date:
+                      description: Day of the statistics
                       type: string
                     Last_hour:
+                      description: Hour of the statistics, for the statistics of a day
                       type: string
                       format: date-time
                     Complete_Work_Orders:
+                      description: Work orders with status `Complete`
                       type: [string, integer]
                     Failed_Work_Orders:
+                      description: Work orders with status `Failed`
                       type: [string, integer]
                     Errored_Work_Orders:
+                      description: Work orders with status `Error`
                       type: [string, integer]
                     Canceled_Work_Orders:
+                      description: Work orders with status `Canceled`
                       type: [string, integer]
                     Rolled_Back_Work_Orders:
+                      description: Work orders with status `Rolled-back`
                       type: [string, integer]
                     Destroyed_Work_Orders:
+                      description: Work orders with status `Destroyed`
                       type: [string, integer]
                     Cleared_Work_Orders:
+                      description: Work orders with status `Cleared`
                       type: [string, integer]
                     Flagged_Work_Orders:
+                      description: Work orders with status `Flagged`
                       type: [string, integer]
                     Initializing_Work_Orders:
+                      description: Work orders with status `Initializing`
                       type: [string, integer]
                     Initialized_Work_Orders:
+                      description: Work orders with status `Initialized`
                       type: [string, integer]
                     Created_Work_Orders:
+                      description: Work orders with status `Created`
                       type: [string, integer]
                     Ready_Work_Orders:
+                      description: Work orders with status `Ready`
                       type: [string, integer]
                     In_Progress_Work_Orders:
+                      description: Work orders with status `In Progress`
                       type: [string, integer]
                     Unknown_Work_Orders:
+                      description: Work orders with status `Unknown`
                       type: [string, integer]
             text/plain:
               schema:
+                description: Message when there is no statistic
                 type: string
                 const: No Statistics found. Change the filter and try again.
         '401':
@@ -2930,36 +3181,51 @@ paths:
                   type: object
                   properties:
                     Date:
+                      description: Day of the statistics
                       type: string
                     Last_hour:
+                      description: Hour of the statistics, for the statistics of a day
                       type: string
                       format: date-time
                     Completed_Steps:
+                      description: Work steps with status `Complete`
                       type: [string, integer]
                     Failed_Steps:
+                      description: Work steps with status `Failed`
                       type: [string, integer]
                     Errored_steps:
+                      description: Work steps with status `Error`
                       type: [string, integer]
                     Obsolete_Steps:
+                      description: Work steps with status `Obsolete`
                       type: [string, integer]
                     Activating_Steps:
+                      description: Work steps with status `Activating`
                       type: [string, integer]
                     In_Progress_Steps:
+                      description: Work steps with status `In Progress`
                       type: [string, integer]
                     Paused_Steps:
+                      description: Work steps with status `Paused`
                       type: [string, integer]
                     Pausing_Steps:
+                      description: Work steps with status `Pausing`
                       type: [string, integer]
                     Canceling_Steps:
+                      description: Work steps with status `Canceling`
                       type: [string, integer]
                     Resuming_Steps:
+                      description: Work steps with status `Resuming`
                       type: [string, integer]
                     Rolling_Back_Steps:
+                      description: Work steps with status `Rolling Back`
                       type: [string, integer]
                     Undefined_Steps:
+                      description: Work steps with status `Undefined`
                       type: [string, integer]
             text/plain:
               schema:
+                description: Message when there is no statistic
                 type: string
                 const: No Statistics found. Change the filter and try again.
         '401':
@@ -2970,6 +3236,7 @@ paths:
     get:
       operationId: journal_files
       summary: Files recorded in a journal book
+      description: Lists the files recorded in a journal book, grouped by package, with the steps that processed each file.
       tags:
         - Journals
       parameters:
@@ -3030,18 +3297,24 @@ paths:
           content:
             application/json:
               schema:
+                description: Journal book and its files
                 type: object
                 properties:
                   Journal:
+                    description: The journal book
                     type: object
                     properties:
                       name:
+                        description: Journal book name
                         type: string
                       id:
+                        description: Journal book ID
                         type: integer
                       description:
+                        description: Description of the journal book
                         type: [string, 'null']
                       active:
+                        description: '`true` when the journal book records files'
                         type: [boolean, 'null']
                   Packages:
                     type: array
@@ -3050,10 +3323,13 @@ paths:
                       type: object
                       properties:
                         name:
+                          description: Package name
                           type: string
                         id:
+                          description: Package ID
                           type: integer
                         files:
+                          description: Files of the package
                           type: array
                           items:
                             $ref: '#/components/schemas/JournalFile'
@@ -3070,6 +3346,7 @@ paths:
     get:
       operationId: add_resource
       summary: Add a resource to a resource pool
+      description: Adds a resource to a resource pool.
       tags:
         - Resources
       parameters:
@@ -3098,6 +3375,7 @@ paths:
           content:
             application/json:
               schema:
+                description: The new resource
                 type: object
                 properties:
                   ManagedResource:
@@ -3110,6 +3388,7 @@ paths:
     get:
       operationId: edit_resource_capacity
       summary: Change the capacity of a resource
+      description: Sets the capacity of one resource of a pool.
       tags:
         - Resources
       parameters:
@@ -3129,6 +3408,7 @@ paths:
           content:
             application/json:
               schema:
+                description: The resource
                 type: object
                 properties:
                   ManagedResource:
@@ -3141,6 +3421,7 @@ paths:
     get:
       operationId: edit_pool_capacity
       summary: Change the capacity of a resource pool
+      description: Sets the capacity of all the resources of a pool.
       tags:
         - Resources
       parameters:
@@ -3159,9 +3440,11 @@ paths:
           content:
             application/json:
               schema:
+                description: The resources of the pool
                 type: object
                 properties:
                   ManagedResource:
+                    description: Resources of the pool
                     type: array
                     items:
                       $ref: '#/components/schemas/ManagedResource'
@@ -3173,6 +3456,7 @@ paths:
     get:
       operationId: resource_online
       summary: Take a resource online
+      description: Puts a resource back in use.
       tags:
         - Resources
       parameters:
@@ -3186,6 +3470,7 @@ paths:
           content:
             application/json:
               schema:
+                description: New status of the resource
                 type: object
                 properties:
                   ManagedResource:
@@ -3201,6 +3486,7 @@ paths:
     get:
       operationId: resource_offline
       summary: Take a resource offline
+      description: Takes a resource out of use. Steps do not get it until it is online again.
       tags:
         - Resources
       parameters:
@@ -3214,6 +3500,7 @@ paths:
           content:
             application/json:
               schema:
+                description: New status of the resource
                 type: object
                 properties:
                   ManagedResource:
@@ -3229,6 +3516,7 @@ paths:
     get:
       operationId: pool_status
       summary: Resources of a resource pool and their status
+      description: Lists the resources of a pool with their use and capacity.
       tags:
         - Resources
       parameters:
@@ -3246,9 +3534,11 @@ paths:
           content:
             application/json:
               schema:
+                description: Resources of the pool
                 type: object
                 properties:
                   ManagedResource:
+                    description: Resources
                     type: array
                     items:
                       type: object
@@ -3257,10 +3547,13 @@ paths:
                           type: string
                           description: Resource name
                         taken:
+                          description: Units in use (sum of the reservations)
                           type: integer
                         capacity:
+                          description: Capacity of the resource
                           type: integer
                         status:
+                          description: '`online` or `offline`'
                           type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -3281,6 +3574,7 @@ paths:
         content:
           application/json:
             schema:
+              description: The new user
               type: object
               required:
                 - login
@@ -3291,27 +3585,35 @@ paths:
                   type: string
                   description: Login of the user
                 password:
+                  description: Password of the user
                   type: string
                   format: password
                 first_name:
+                  description: First name
                   type: string
                 last_name:
+                  description: Last name
                   type: string
                 email:
                   type: string
                   format: email
                   description: Email of the user, unique
                 phone:
+                  description: Phone number
                   type: string
                 SMS:
+                  description: Number for SMS notifications
                   type: string
                 is_active:
+                  description: '`true` to let the user log in'
                   type: boolean
                   default: false
                 require_password_change_on_login:
+                  description: '`true` to make the user change the password at the first login'
                   type: boolean
                   default: false
                 alternate_emails:
+                  description: Other email addresses of the user
                   type: array
                   items:
                     type: string
@@ -3327,12 +3629,15 @@ paths:
           content:
             application/json:
               schema:
+                description: Result
                 type: object
                 properties:
                   create_user:
+                    description: Wrapper of the result
                     type: object
                     properties:
                       success:
+                        description: Confirmation message
                         type: string
                         examples:
                           - User 'jdoe' was successfully created.
@@ -3383,7 +3688,8 @@ components:
       required: true
       schema:
         type: string
-        default: '0'
+        examples:
+          - "0"
       description: Not used by the endpoint, but required by the route (any value, e.g. `0`)
     MonitorType:
       name: monitor_type
@@ -3420,6 +3726,7 @@ components:
         - error
       properties:
         error:
+          description: Details of the error
           type: object
           required:
             - action
@@ -3446,15 +3753,19 @@ components:
       description: Workflow (database record)
       properties:
         id:
+          description: Workflow ID
           type: integer
         name:
+          description: Workflow name
           type: string
         portable_id:
+          description: Portable ID, kept across export and import
           type: [string, 'null']
         created_by:
           type: [integer, 'null']
           description: User ID
         folder_id:
+          description: Folder of the workflow, `null` at the root
           type: [integer, 'null']
         generated_from:
           type: [integer, 'null']
@@ -3463,33 +3774,47 @@ components:
           type: [integer, 'null']
           description: Published revision
         label:
+          description: Label of the workflow
           type: [string, 'null']
         run_as:
+          description: 'User the work orders run as: `OPERATOR` (the user who starts them), `CREATOR` (the creator of the workflow), `SYSTEM`, or a user login'
           type: [string, 'null']
         source_revision:
+          description: '`<name>|<revision ID>` of the published revision, used to match a workflow at import'
           type: [string, 'null']
         comments:
+          description: Comments of the workflow
           type: [string, 'null']
         description:
+          description: Description of the workflow
           type: [string, 'null']
         tags:
+          description: Tags of the workflow
           type: [string, 'null']
         templates:
+          description: Templates of the workflow (serialized hash)
           type: [string, 'null']
         max_running:
+          description: 'Maximum number of work orders running at the same time, `0` or `null`: no limit'
           type: [integer, 'null']
         cleanup_after_days:
+          description: Days after which the work orders are cleaned up, copied to each work order
           type: [integer, 'null']
         purge_after_days:
+          description: Days after which the work orders are purged, copied to each work order
           type: [integer, 'null']
         user_lock:
+          description: '`true` when a user has locked the workflow for editing'
           type: [boolean, 'null']
         locked_by:
+          description: User ID of the user who locked the workflow
           type: [integer, 'null']
         created_at:
+          description: Creation time
           type: string
           format: date-time
         updated_at:
+          description: Last update
           type: string
           format: date-time
     WorkOrder:
@@ -3497,16 +3822,22 @@ components:
       description: Work order (database record)
       properties:
         id:
+          description: Work order ID
           type: integer
         name:
+          description: Work order name
           type: [string, 'null']
         monitor_id:
+          description: Workflow monitor that started the work order, if any
           type: [integer, 'null']
         workflow_id:
+          description: Workflow ID
           type: [integer, 'null']
         workflow_revision_id:
+          description: Revision of the workflow that runs
           type: [integer, 'null']
         workflow_name:
+          description: Workflow name
           type: [string, 'null']
         branched_from_order:
           type: [integer, 'null']
@@ -3515,10 +3846,13 @@ components:
           type: [integer, 'null']
           description: Parent work step, for a sub-workflow
         forked_at:
+          description: For a work order restarted from a step, the step ID it restarted from
           type: [integer, 'null']
         derived_from:
+          description: For a work order restarted from a step, the original work order
           type: [integer, 'null']
         master_id:
+          description: First work order of the group of restarts (its own ID when not restarted)
           type: [integer, 'null']
         launched_by:
           type: [integer, 'null']
@@ -3527,42 +3861,57 @@ components:
           type: [integer, 'null']
           description: User ID
         running_as:
+          description: User ID the work order runs as (see `run_as` of the workflow)
           type: [integer, 'null']
         priority:
+          description: 'Priority: 1 low, 2 medium (default), 3 high'
           type: [integer, 'null']
         exec_priority:
+          description: Order of execution in the queue of the engine, computed from `priority` (lower runs first)
           type: [number, 'null']
         higher_priority:
+          description: '`true` when the work order runs on a dedicated worker'
           type: [boolean, 'null']
         label:
+          description: Label of the work order, used as a filter by `work_order_stats`
           type: [string, 'null']
         status:
+          description: Status of the work order
           type: [string, 'null']
           examples:
             - In Progress
         status_details:
+          description: Details of the status
           type: [string, 'null']
         comments:
+          description: Comments of the work order
           type: [string, 'null']
         tags:
           type: [string, 'null']
           description: Tags separated by `|`, e.g. `|tag1|tag2|`
         initiate_date:
+          description: Start time
           type: [string, 'null']
           format: date-time
         completion_date:
+          description: End time
           type: [string, 'null']
           format: date-time
         max_running:
+          description: Maximum number of running work orders of the workflow (parameter `WORK_ORDER_MAX_RUNNING`, or the value of the workflow)
           type: [integer, 'null']
         cleanup_after_days:
+          description: Days after which the work order is cleaned up
           type: [integer, 'null']
         purge_after_days:
+          description: Days after which the work order is purged
           type: [integer, 'null']
         created_at:
+          description: Creation time
           type: string
           format: date-time
         updated_at:
+          description: Last update
           type: string
           format: date-time
     WorkStepBase:
@@ -3570,70 +3919,99 @@ components:
       description: Work step (database record), common columns
       properties:
         id:
+          description: Work step ID
           type: integer
         action_id:
+          description: Template (action) used by the step
           type: [integer, 'null']
         step_id:
+          description: Step ID in the workflow revision
           type: [integer, 'null']
         step_type:
           type: [string, 'null']
           description: Plugin class name, e.g. `CustomRuby`
         step_name:
+          description: Step name
           type: [string, 'null']
         work_step_name:
+          description: Step name, as shown in the work order
           type: [string, 'null']
         attempt:
+          description: Number of executions, retries included
           type: [integer, 'null']
         execution_timeout:
+          description: Timeout of the current execution, in seconds (the step timeout, else the template timeout, else the default)
           type: [integer, 'null']
         group:
+          description: Work order the step belongs to, or the original work order for a restarted one
           type: [integer, 'null']
         percent_complete:
+          description: Progress of the step, 0 to 100
           type: [integer, 'null']
         rank:
+          description: Display order of the step
           type: [integer, 'null']
         running_as:
+          description: For a step of a sub-workflow, the work step of the parent work order that called it
           type: [integer, 'null']
         synch_filter:
+          description: Number of incoming links that must be complete before the step starts
           type: [integer, 'null']
         timeout:
+          description: Timeout of the step, in seconds, as set in the workflow
           type: [integer, 'null']
         weight:
+          description: Percentage of the work order completed when this step ends, for `percent_complete` of the work order
           type: [integer, 'null']
         activation_time:
+          description: Start time, in seconds since the epoch
           type: [number, 'null']
         on_timeout:
+          description: 'Status set when the timeout is reached: `Pass` (Complete), `Fail` (Failed, the default), `Error`, or `Raise` (Error, and the timeout action of the work order)'
           type: [string, 'null']
         status:
+          description: 'Status: `Inactive`, `Activating`, `In Progress`, `Paused`, `Pausing`, `Resuming`, `Canceling`, `Rolling Back`, `Complete`, `Failed`, `Error`, `Obsolete`, `Undefined`; `False` for the end step'
           type: [string, 'null']
         status_details:
+          description: Details of the status
           type: [string, 'null']
         prerequisites:
+          description: Links from the previous steps (YAML)
           type: [string, 'null']
         episteps:
+          description: Links to the next steps (YAML)
           type: [string, 'null']
         journaling:
+          description: Journal settings of the step
           type: [string, 'null']
         work_inputs:
+          description: Inputs (YAML)
           type: [string, 'null']
         work_outputs:
+          description: Outputs (YAML)
           type: [string, 'null']
         activable_date:
+          description: Time the step was made ready to run, `null` when not ready
           type: [string, 'null']
           format: date-time
         activation_date:
+          description: Start of the current execution
           type: [string, 'null']
           format: date-time
         original_activation_date:
+          description: Start of the first execution, kept on retries
           type: [string, 'null']
           format: date-time
         completion_date:
+          description: End time
           type: [string, 'null']
           format: date-time
         created_at:
+          description: Creation time
           type: string
           format: date-time
         updated_at:
+          description: Last update
           type: string
           format: date-time
     WorkStep:
@@ -3642,12 +4020,16 @@ components:
         - $ref: '#/components/schemas/WorkStepBase'
       properties:
         work_order_id:
+          description: Work order ID
           type: [integer, 'null']
         workflow_id:
+          description: Workflow ID
           type: [integer, 'null']
         pre_processing:
+          description: Ruby code run before the step, as set in the workflow
           type: [string, 'null']
         post_processing:
+          description: Ruby code run after the step, as set in the workflow
           type: [string, 'null']
     WorkStepStatus:
       description: Work step in `work_order_status`, without `workflow_id`, `pre_processing` and `post_processing`
@@ -3670,11 +4052,13 @@ components:
           type: string
           description: 'Only for `FederatedWorkflow`: execution address, or `-`'
     WorkOrderWithSteps:
+      description: Work order and its work steps
       type: object
       properties:
         work_order:
           $ref: '#/components/schemas/WorkOrder'
         work_steps:
+          description: Work steps of the work order
           type: array
           items:
             $ref: '#/components/schemas/WorkStep'
@@ -3683,6 +4067,7 @@ components:
         - $ref: '#/components/schemas/WorkOrderWithSteps'
       properties:
         workstep_reset:
+          description: Always `true`
           const: true
     StepVariable:
       type: object
@@ -3692,8 +4077,10 @@ components:
           type: [string, integer, number, boolean, array, object, 'null']
           description: 'Value, of the type given by `type`: integer for `int`, number for `float`, boolean for `flag`, array for `array`, object for `hash`, string for the others'
         name:
+          description: Variable name
           type: string
         id:
+          description: Variable ID
           type: integer
         type:
           type: string
@@ -3703,34 +4090,45 @@ components:
       description: Item of a queue (database record, without the columns of the queue)
       properties:
         id:
+          description: ID of the queued item
           type: integer
         queued_item:
           type: [string, integer, number, boolean, array, object, 'null']
           description: The queued item, decoded from YAML. A string for an item added with `queue_item`, any type for an item added by a workflow.
         item_description:
+          description: Description of the item
           type: [string, 'null']
         priority:
+          description: Priority of the item
           type: [integer, 'null']
         weight:
+          description: Weight of the item
           type: [integer, 'null']
         position:
+          description: Sort key of the item in the queue
           type: [integer, 'null']
         rank:
           type: [integer, 'null']
           description: Position in the queue, from 0
         originator_type:
+          description: Not used for items
           type: [string, 'null']
         originator_id:
+          description: Not used
           type: [integer, 'null']
         tags:
+          description: Tags of the item
           type: [string, 'null']
         created_at:
+          description: Time the item was queued
           type: string
           format: date-time
         updated_at:
+          description: Last update
           type: string
           format: date-time
     QueueMetadata:
+      description: Attributes of the queue
       type: object
       properties:
         id:
@@ -3740,24 +4138,31 @@ components:
           type: string
           description: Displayed name of the queue
         comments:
+          description: Comments of the queue
           type: [string, 'null']
         administrators:
+          description: Users and groups who administer the queue
           type: object
           properties:
             groups:
+              description: Group IDs
               type: array
               items:
                 type: integer
             users:
+              description: User IDs
               type: array
               items:
                 type: integer
         paused:
+          description: '`true` when the queue is paused: no item is taken'
           type: [boolean, 'null']
     QueuedItems:
+      description: Items of a queue and the queue attributes
       type: object
       properties:
         queued_items:
+          description: Items, in queue order
           type: array
           items:
             $ref: '#/components/schemas/QueuedItem'
@@ -3768,32 +4173,39 @@ components:
       description: Task, i.e. a user input waiting for a user (database record)
       properties:
         id:
+          description: Task ID
           type: integer
         state_id:
           type: [integer, 'null']
           description: Work step ID
         user_input_id:
+          description: User input template of the step
           type: [integer, 'null']
         role_id:
           type: [integer, 'null']
           description: Group ID
         user_id:
+          description: User the task is assigned to
           type: [integer, 'null']
         status:
+          description: Status of the task
           type: [string, 'null']
         completed_by:
           type: [integer, 'null']
           description: User ID
         created_at:
+          description: Creation time
           type: string
           format: date-time
         updated_at:
+          description: Last update
           type: string
           format: date-time
     UserInput:
       type: object
       properties:
         name:
+          description: Input name, the key in `outputs` of `submit_task`
           type: string
         type:
           type: string
@@ -3803,6 +4215,7 @@ components:
           type: [string, integer, number, boolean, array, object, 'null']
           description: 'Current value, of the type given by `type`: integer for `int`, number for `float`, boolean for `flag`, array for `array`, object for `hash`, string for the others'
         required:
+          description: '`true` when the input must be given'
           type: boolean
     TaskUserInputs:
       type: object
@@ -3827,9 +4240,11 @@ components:
           Metadata: 'title: Tron'
           Secret: <SECRET>
     MonitorChange:
+      description: Result of the activation or deactivation
       type: object
       properties:
         action:
+          description: Name of the call
           type: string
           enum:
             - activate_monitor
@@ -3841,6 +4256,7 @@ components:
           type: string
           description: Monitor ID
         description:
+          description: New state of the monitor
           type: string
           enum:
             - activated
@@ -3854,20 +4270,25 @@ components:
       type: object
       properties:
         id:
+          description: Node ID
           type: string
         name:
+          description: Node name
           type: string
         current:
+          description: '`true` for the node that answers the call'
           type: string
           enum:
             - 'true'
             - 'false'
         process:
+          description: Processes of the node
           type: array
           items:
             type: object
             properties:
               class:
+                description: Process type
                 type: string
                 enum:
                   - engine
@@ -3882,6 +4303,7 @@ components:
                 type: string
                 description: '`-` when not running'
               status:
+                description: Whether the process runs
                 type: string
               type:
                 type: string
@@ -3894,29 +4316,38 @@ components:
       type: object
       properties:
         id:
+          description: Alert ID
           type: integer
         category_id:
           type: [integer, 'null']
           description: 'Category: 1 `WorkflowAlerts`, 2 `UserAlerts`, 3 `WorkorderAlerts`, 4 `MonitorAlerts`, 5 `PluginAlerts`'
         alert_header:
+          description: Title of the alert
           type: [string, 'null']
         alert_description:
+          description: Text of the alert
           type: [string, 'null']
         created_at:
+          description: Time of the alert
           type: string
           format: date-time
         updated_at:
+          description: Last update
           type: string
           format: date-time
     TestRun:
+      description: Test run and, when finished, its results
       type: object
       properties:
         Test_run_id:
+          description: ID of the test run, for `test_step_status`
           type: string
           format: uuid
         Workflow_id:
+          description: Tested workflow
           type: [integer, 'null']
         Test_cases_launched:
+          description: Number of test cases started
           type: integer
         Steps:
           type: array
@@ -3925,25 +4356,34 @@ components:
             type: object
             properties:
               Step_name:
+                description: Tested step
                 type: string
               Result:
+                description: '`true` when all the test cases of the step passed'
                 type: boolean
               Test_cases:
+                description: Test cases of the step
                 type: array
                 items:
                   type: object
                   properties:
                     Id:
+                      description: Test case ID
                       type: integer
                     Name:
+                      description: Test case name
                       type: string
                     status:
+                      description: Status of the test execution
                       type: string
                     Status_details:
+                      description: Details of the status
                       type: [string, 'null']
                     Result_message:
+                      description: Explanation of the result
                       type: [string, 'null']
                     Last_update:
+                      description: Last update
                       type: string
                       format: date-time
                     Inputs:
@@ -3955,6 +4395,7 @@ components:
                       description: Outputs of the test case (name to value), `null` values until the test case has run
                       additionalProperties: true
                     Result:
+                      description: '`true` when the test case passed, `null` until it has run'
                       type: [boolean, 'null']
         Result:
           type: boolean
@@ -3963,17 +4404,23 @@ components:
       type: object
       properties:
         file_id:
+          description: File ID in the journal
           type: integer
         file:
+          description: Path of the file
           type: string
         status:
+          description: Status of the file, e.g. `In Progress`, `Processing complete`
           type: [string, 'null']
         status_details:
+          description: Details of the status
           type: [string, 'null']
         created_at:
+          description: Time the file was recorded
           type: string
           format: date-time
         updated_at:
+          description: Last update
           type: string
           format: date-time
         states:
@@ -3983,24 +4430,34 @@ components:
             type: object
             properties:
               path:
+                description: Path of the file in this step
                 type: [string, 'null']
               status:
+                description: Status of the file in this step
                 type: [string, 'null']
               status_details:
+                description: Details of the status
                 type: [string, 'null']
               progress:
+                description: Progress, 0 to 100
                 type: [integer, 'null']
               work_step_id:
+                description: Work step ID
                 type: [integer, 'null']
               work_order_id:
+                description: Work order ID
                 type: [integer, 'null']
               step_name:
+                description: Step name
                 type: [string, 'null']
               workflow_id:
+                description: Workflow ID
                 type: [integer, 'null']
               workflow_name:
+                description: Workflow name
                 type: [string, 'null']
               created_at:
+                description: Time of the state
                 type: string
                 format: date-time
     ManagedResource:
@@ -4008,27 +4465,35 @@ components:
       description: Resource of a resource pool (database record)
       properties:
         id:
+          description: Record ID
           type: integer
         resource_id:
+          description: Resource name (`resource_name` of the calls)
           type: string
         resource_name:
           type: string
           description: Pool name, with the suffix `__a`
         status:
+          description: '`online` or `offline`, `null` for online'
           type: [string, 'null']
         max:
           type: [integer, 'null']
           description: Capacity
         reserved:
+          description: Units reserved by running steps
           type: [integer, 'null']
         properties:
+          description: Properties of the resource (serialized)
           type: [string, 'null']
         tags:
+          description: Tags of the resource
           type: [string, 'null']
         created_at:
+          description: Creation time
           type: string
           format: date-time
         updated_at:
+          description: Last update
           type: string
           format: date-time
   responses:
@@ -4037,11 +4502,13 @@ components:
       content:
         application/json:
           schema:
+            description: JWT error, or the error body of the API
             anyOf:
               - title: JWT authentication
                 type: object
                 properties:
                   error:
+                    description: Error message
                     type: string
                     examples:
                       - Unauthorized
