@@ -26,8 +26,9 @@ endif()
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
 find_package(gRPC CONFIG REQUIRED)
 message(STATUS "Using gRPC ${gRPC_VERSION}")
-find_package(openssl CONFIG REQUIRED)
-message(STATUS "Using openssl ${openssl_VERSION}")
+# Conan generates OpenSSLConfig.cmake: the package name is case-sensitive on Linux (not on macOS)
+find_package(OpenSSL CONFIG REQUIRED)
+message(STATUS "Using OpenSSL ${OpenSSL_VERSION}")
 
 # Create the source directory where files will be gen_out
 set(gen_src_dir "${CMAKE_CURRENT_BINARY_DIR}/grpc_gen_src")
@@ -66,7 +67,8 @@ foreach(_target ${test_cases})
     aspera_client
     ${yaml-cpp_LIBRARIES}
     ${magic_enum_LIBRARIES}
-    ${openssl_LIBRARIES}
+    OpenSSL::SSL
+    OpenSSL::Crypto
     ${Boost_LIBRARIES}
     )
 endforeach()
