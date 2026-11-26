@@ -15,19 +15,23 @@ import java.io.InputStream;
 import java.io.FileWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.logging.Level;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
@@ -38,16 +42,14 @@ public class TransferClient {
     private static final String ASCP_LOG_FILE = "aspera-scp-transfer.log";
     // default port of transferd if not specified in URL
     private static final int TRANSFERD_DEFAULT_PORT = 55002;
-    // max wait time for the daemon to log its listening port
+    // max wait time for the daemon to write its port file
     private static final int STARTUP_TIMEOUT_SEC = 10;
     // max wait time for the connection to the daemon
     private static final int CONNECT_TIMEOUT_SEC = 5;
     // max wait time for the daemon to stop gracefully
     private static final int SHUTDOWN_TIMEOUT_SEC = 10;
-    // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on
-    // 127.0.0.1:55002 ...`
-    private static final Pattern LISTENING_PORT_REGEX =
-            Pattern.compile("API Server: Listening on [^\\s\"]+:(\\d+)");
+    // extension of the port file, written in `runtime_dir` with port 0: `transferd.<port>.optport`
+    private static final String PORT_FILE_EXTENSION = ".optport";
     /** Configuration of the samples. */
     public final Configuration config;
     private final String serverAddress;
@@ -57,7 +59,11 @@ public class TransferClient {
     /** Client of the daemon API (synchronous). */
     public TransferServiceGrpc.TransferServiceBlockingStub transferService;
     private final String daemonName;
-    private final String daemonLog;
+    // folder of the configuration, output and logs of the daemon: a new one for each start
+    private Path daemonFolder;
+    private String daemonLog;
+    // `runtime_dir` of the daemon, where it writes its port file: only with port 0
+    private Path runtimeDir;
     // several transfer session may be started but for the example we use only one
     private String transferId;
 
@@ -79,7 +85,9 @@ public class TransferClient {
             throw new Error("Invalid URL: " + config.getParamStr("trsdk", "url"));
         }
         daemonName = Paths.get(config.getPath("sdk_daemon")).getFileName().toString();
-        daemonLog = config.getLogFolder() + File.separator + daemonName + ".log";
+        daemonFolder = null;
+        daemonLog = null;
+        runtimeDir = null;
         transferId = null;
     }
 
@@ -106,14 +114,17 @@ public class TransferClient {
         JSONObject sdk_config = new JSONObject() //
                 .put("address", serverAddress) //
                 .put("port", serverPort) //
-                .put("log_directory", config.getLogFolder()) //
+                .put("log_directory", daemonFolder.toString()) //
                 .put("log_level", config.getParamStr("trsdk", "level")) //
                 .put("fasp_runtime", new JSONObject() //
                         .put("use_embedded", true) //
                         .put("log", new JSONObject() //
-                                .put("dir", config.getLogFolder()) //
+                                .put("dir", daemonFolder.toString()) //
                                 .put("level",
                                         ascpLevel(config.getParamStr("trsdk", "ascp_level")))));
+        if (runtimeDir != null) {
+            sdk_config.put("runtime_dir", runtimeDir.toString());
+        }
         // Write the JSON to a file
         try (final FileWriter fileWriter = new FileWriter(confFile)) {
             fileWriter.write(sdk_config.toString());
@@ -156,35 +167,39 @@ public class TransferClient {
     }
 
     /**
-     * Start the daemon, with output and logs in the log folder, if not already started.
+     * Start the daemon, with its configuration, output and logs in a new folder of the log folder, if not already started.
      */
     public void daemon_startup() {
         if (daemonProcess != null && daemonProcess.isAlive()) {
             return;
         }
-        // Define the paths
-        final String file_base = config.getLogFolder() + File.separator + daemonName;
-        String sdk_conf_path = file_base + ".conf";
-        final String out_file = file_base + ".out";
-        final String err_file = file_base + ".err";
-        createConfFile(sdk_conf_path);
-        // the log file may contain lines of previous executions: only read new lines
-        final long logOffset = new File(daemonLog).length();
         try {
+            // samples run at the same time do not share files
+            daemonFolder = Files.createTempDirectory(Paths.get(config.getLogFolder()), daemonName + ".");
+            final String file_base = daemonFolder.resolve(daemonName).toString();
+            String sdk_conf_path = file_base + ".conf";
+            final String out_file = file_base + ".out";
+            final String err_file = file_base + ".err";
+            daemonLog = file_base + ".log";
+            if (serverPort == 0) {
+                // the daemon writes its port file in this folder: of this daemon only, readable only by the user
+                runtimeDir = createPrivateFolder(daemonFolder.resolve("run"));
+            }
+            createConfFile(sdk_conf_path);
             String[] command =
                     new String[] {config.getPath("sdk_daemon"), "--config", sdk_conf_path};
             Configuration.logDump("Daemon command", String.join(" ", command));
             Configuration.logDump("Daemon out", out_file);
             Configuration.logDump("Daemon err", err_file);
             Configuration.logDump("Daemon log", daemonLog);
-            Configuration.logDump("Ascp log", config.getLogFolder() + File.separator + ASCP_LOG_FILE);
+            Configuration.logDump("Ascp log", daemonFolder.resolve(ASCP_LOG_FILE).toString());
             LOGGER.log(Level.INFO, "Starting daemon");
             // redirect output to files, else the daemon may block when the pipe buffer is full
             daemonProcess = new ProcessBuilder(command) //
                     .redirectOutput(new File(out_file)) //
                     .redirectError(new File(err_file)) //
                     .start();
-            waitDaemonListening(logOffset);
+            waitDaemonListening();
         } catch (final IOException e) {
             throw new Error("Failed to start daemon: " + e.getMessage());
         } catch (final InterruptedException e) {
@@ -194,12 +209,10 @@ public class TransferClient {
 
     /**
      * Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
-     * The port is read from the daemon log: requires log level {@code info} or more verbose.
-     *
-     * @param logOffset only read the daemon log after this offset
+     * With port 0, the daemon writes its port in a file of its {@code runtime_dir} once it listens.
+     * This requires transferd 1.1.7 or later.
      */
-    private void waitDaemonListening(final long logOffset)
-            throws IOException, InterruptedException {
+    private void waitDaemonListening() throws IOException, InterruptedException {
         final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(STARTUP_TIMEOUT_SEC);
         while (true) {
             if (!daemonProcess.isAlive()) {
@@ -212,39 +225,59 @@ public class TransferClient {
             if (serverPort != 0) {
                 return;
             }
-            final Integer port = findListeningPort(daemonLog, logOffset);
+            final Integer port = readPortFile(runtimeDir);
             if (port != null) {
                 serverPort = port;
                 return;
             }
             if (System.nanoTime() > deadline) {
-                throw new RuntimeException("Listening port not found in daemon log: " + daemonLog);
+                throw new RuntimeException("Port file not found in " + runtimeDir
+                        + ": transferd 1.1.7 or later is required");
             }
             Thread.sleep(200);
         }
     }
 
     /**
-     * Find the API listening port in the daemon log, after the given offset.
+     * Read the port of the daemon in its port file {@code transferd.<port>.optport}, in its {@code runtime_dir}.
+     * The daemon creates the file, then writes the port: an empty file is not ready yet.
      *
-     * @param logFile path of the daemon log
-     * @param offset only read the daemon log after this offset
-     * @return port, or null if not found (yet)
+     * @param runtimeDir {@code runtime_dir} of the daemon
+     * @return port, or null if not written (yet)
      */
-    private static Integer findListeningPort(final String logFile, long offset)
-            throws IOException {
-        final Path logPath = Paths.get(logFile);
-        if (!Files.exists(logPath)) {
+    private static Integer readPortFile(final Path runtimeDir) throws IOException {
+        final List<Path> portFiles = new ArrayList<>();
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(runtimeDir, "*" + PORT_FILE_EXTENSION)) {
+            files.forEach(portFiles::add);
+        }
+        if (portFiles.isEmpty()) {
             return null;
         }
-        final byte[] content = Files.readAllBytes(logPath);
-        // log file was truncated
-        if (content.length < offset) {
-            offset = 0;
+        if (portFiles.size() > 1) {
+            throw new RuntimeException("Several port files in " + runtimeDir);
         }
-        final Matcher matcher = LISTENING_PORT_REGEX.matcher(new String(content, (int) offset,
-                content.length - (int) offset, StandardCharsets.UTF_8));
-        return matcher.find() ? Integer.valueOf(matcher.group(1)) : null;
+        final String content = Files.readString(portFiles.get(0));
+        if (content.isEmpty()) {
+            return null;
+        }
+        if (!content.matches("[0-9]+")) {
+            throw new RuntimeException("No port in file " + portFiles.get(0));
+        }
+        return Integer.valueOf(content);
+    }
+
+    /**
+     * Create a folder readable only by the user, where the OS supports it.
+     *
+     * @param folder path of the folder
+     * @return path of the folder
+     */
+    private static Path createPrivateFolder(final Path folder) throws IOException {
+        if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+            return Files.createDirectory(folder,
+                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
+        }
+        return Files.createDirectory(folder);
     }
 
     /**
@@ -275,6 +308,7 @@ public class TransferClient {
 
     /**
      * Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+     * Then delete its {@code runtime_dir}: a killed daemon does not delete its port file.
      */
     public void shutdown() {
         transferService = null;
@@ -286,6 +320,15 @@ public class TransferClient {
             LOGGER.log(Level.INFO, "Stopping daemon");
             stopProcess(daemonProcess);
             daemonProcess = null;
+        }
+        if (runtimeDir != null) {
+            // delete the files, then the folder
+            try (Stream<Path> files = Files.walk(runtimeDir)) {
+                files.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            } catch (final IOException e) {
+                // already deleted
+            }
+            runtimeDir = null;
         }
     }
 

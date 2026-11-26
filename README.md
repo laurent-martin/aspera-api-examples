@@ -31,7 +31,7 @@ AI agents: read [AGENTS.md](AGENTS.md) first.
 Samples are provided in several programming languages.
 
 > [!NOTE]
-> This repository uses Aspera `transferd` v1.1.5+.
+> This repository uses Aspera `transferd` v1.1.7+.
 
 ## Other resources
 
@@ -217,8 +217,9 @@ and `debug` also shows data: HTTP requests and responses, transfer spec.
 Secrets (passwords, tokens) are hidden in logs, unless `misc.show_secrets` is `true`.
 
 The parameter `trsdk.url` is the address of the Transfer Daemon, for example `grpc://127.0.0.1:55002`.
-If the port is zero (`0`), as in the template, the daemon chooses a free port, and the samples read it from the daemon log:
-this requires `trsdk.level` set to `info` or a more verbose level.
+If the port is zero (`0`), as in the template, the daemon chooses a free port.
+Once it listens, it writes the port in the file `transferd.<port>.optport` of its `runtime_dir`.
+The samples read the port in this file.
 
 Sections `web` and `httpgw` are used by the `web` example only.
 
@@ -317,6 +318,15 @@ The following log levels can be set:
 
 The samples generate the configuration file `transferd.conf` of the Transfer Daemon:
 its log levels are taken from the YAML configuration file.
+Each daemon started by the samples has its own folder `transferd.*` in the system temporary folder, with:
+
+- `transferd.conf`: its configuration
+- `transferd.out`, `transferd.err`: its output
+- `transferd.log`, `aspera-scp-transfer.log`: the logs of `transferd` and `ascp`
+- `run`: its `runtime_dir`, only with port `0`, deleted when the daemon stops
+
+With `misc.level: debug`, the samples display the paths of these files.
+`make clean` deletes these folders.
 
 ## Transfer Daemon
 

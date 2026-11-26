@@ -483,6 +483,12 @@ The JSON Schema [transferd-config.schema.json](../openapi/transferd-config.schem
 and the SDK has a sample with more keys: `etc/transferd-sample.json`.
 To listen on an address other than loopback, consider enabling `tls` and `authentication` in the configuration.
 
+With `port` set to `0`, the daemon selects a free port.
+Once it listens, `transferd` 1.1.7 and later writes this port in the file `transferd.<port>.optport` of `runtime_dir`.
+A process that starts the daemon reads the port in this file.
+The daemon deletes this file when it stops on `SIGINT`, but not when it is killed.
+The helper `TransferClient` of the samples gives each daemon its own `runtime_dir`, and deletes it after the stop.
+
 The sample `minimal` stops the daemon with the signal `SIGINT` (on Windows: terminate the process).
 
 #### gRPC API
@@ -1759,8 +1765,8 @@ Increase the log level, in this order:
 |---|---|
 | REST calls of the samples | `misc.level: debug` in the configuration file: shows each request and response (secrets are masked, unless `misc.show_secrets: true`) |
 | Transfer spec | Same: displayed at `debug` level |
-| `transferd` | `trsdk.level: debug`, and the `.out` and `.err` files of the daemon |
-| `ascp` | `trsdk.ascp_level: debug` (or `trace`), or `ascp -DDL-` on the command line |
+| `transferd` | `trsdk.level: debug`, and the files `transferd.log`, `.out` and `.err` of the daemon: the samples create them in a new folder `transferd.*` of the system temporary folder (paths displayed at `debug` level) |
+| `ascp` | `trsdk.ascp_level: debug` (or `trace`), or `ascp -DDL-` on the command line. The samples write the log `aspera-scp-transfer.log` in the same folder as the files of the daemon |
 | The same transfer spec, outside of your code | `ascli`, for example `ascli -N server --url=ssh://hsts1.example.com:33001 ...` (see [S1](#s1--the-simplest-integration-start-a-transfer-with-a-script-and-ascp)) |
 
 If a transfer works with `ascp` or `ascli` and not in your code, compare the two transfer specs.

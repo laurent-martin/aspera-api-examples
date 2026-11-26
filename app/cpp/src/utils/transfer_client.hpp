@@ -6,16 +6,19 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>
+#include <algorithm>
 #include <boost/process.hpp>
-#include <boost/regex.hpp>
 #include <boost/url/parse.hpp>
+#include <cctype>
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <magic_enum.hpp>
 #include <sstream>
 #include <thread>
+#include <vector>
 
 #include "configuration.hpp"
 #include "transferd.grpc.pb.h"
@@ -31,12 +34,12 @@ inline constexpr const char* ASCP_LOG_FILE = "aspera-scp-transfer.log";
 inline constexpr const int MAX_CONNECTION_WAIT_SEC = 10;
 // default port of transferd if not specified in URL
 inline constexpr const uint16_t TRANSFERD_DEFAULT_PORT = 55002;
-// max wait time for the daemon to log its listening port
+// max wait time for the daemon to write its port file
 inline constexpr const std::chrono::seconds STARTUP_TIMEOUT{10};
 // max wait time for the daemon to stop gracefully
 inline constexpr const std::chrono::seconds SHUTDOWN_TIMEOUT{10};
-// API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
-inline const boost::regex LISTENING_PORT_REGEX("API Server: Listening on [^\\s\"]+:([0-9]+)");
+// extension of the port file, written in `runtime_dir` with port 0: `transferd.<port>.optport`
+inline constexpr const char* PORT_FILE_EXTENSION = ".optport";
 
 /// @brief Client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
 class TransferClient {
@@ -48,7 +51,11 @@ class TransferClient {
     std::unique_ptr<bp2::process> _transfer_daemon_process;
     std::unique_ptr<trapi::TransferService::Stub> _transfer_service;
     const std::string _daemon_name;
-    const std::string _daemon_log;
+    // folder of the configuration, output and logs of the daemon: a new one for each start
+    std::filesystem::path _daemon_folder;
+    std::string _daemon_log;
+    // `runtime_dir` of the daemon, where it writes its port file: only with port 0
+    std::filesystem::path _runtime_dir;
 
    public:
     /// @brief Create a transfer client.
@@ -57,8 +64,7 @@ class TransferClient {
         : _config(config),
           _transfer_daemon_process(nullptr),
           _transfer_service(nullptr),
-          _daemon_name(std::filesystem::path(_config.get_path("sdk_daemon")).filename().string()),
-          _daemon_log(_config.log_folder_path() / (_daemon_name + ".log")) {
+          _daemon_name(std::filesystem::path(_config.get_path("sdk_daemon")).filename().string()) {
         auto sdk_url = _config.param_str({"trsdk", "url"});
         auto sdk_uri = boost::urls::parse_uri(sdk_url);
         if (!sdk_uri) {
@@ -73,22 +79,27 @@ class TransferClient {
         daemon_shutdown();
     }
 
-    /// @brief Start the daemon, with output and logs in the log folder.
+    /// @brief Start the daemon, with its configuration, output and logs in a new folder of the log folder.
     void daemon_start() {
-        const std::string file_base = _config.log_folder_path() / _daemon_name;
+        // samples run at the same time do not share files
+        _daemon_folder = _config.log_folder_path() / (_daemon_name + "." + uuid_random());
+        create_private_folder(_daemon_folder);
+        const std::string file_base = _daemon_folder / _daemon_name;
         const std::string conf_file = file_base + ".conf";
         const std::string out_file = file_base + ".out";
         const std::string err_file = file_base + ".err";
+        _daemon_log = file_base + ".log";
+        if (_server_port == 0) {
+            // the daemon writes its port file in this folder: of this daemon only, readable only by the user
+            _runtime_dir = _daemon_folder / "run";
+            create_private_folder(_runtime_dir);
+        }
         log_dump("Daemon command", _config.get_path("sdk_daemon").string() + " --config " + conf_file);
         log_dump("Daemon out", out_file);
         log_dump("Daemon err", err_file);
         log_dump("Daemon log", _daemon_log);
-        log_dump("Ascp log", (_config.log_folder_path() / ASCP_LOG_FILE).string());
+        log_dump("Ascp log", (_daemon_folder / ASCP_LOG_FILE).string());
         daemon_create_config_file(conf_file);
-        // the log file may contain lines of previous executions: only read new lines
-        std::error_code size_error;
-        const std::uintmax_t log_size = std::filesystem::file_size(_daemon_log, size_error);
-        const std::uintmax_t log_offset = size_error ? 0 : log_size;
         LOGGER(info) << "Starting daemon";
 
         // Open stdout/stderr redirect files (FILE* is accepted cross-platform by process_stdio)
@@ -105,13 +116,13 @@ class TransferClient {
         std::fclose(out_fp);
         std::fclose(err_fp);
 
-        wait_daemon_listening(log_offset);
+        wait_daemon_listening();
     }
 
     /// @brief Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
-    /// The port is read from the daemon log: requires log level `info` or more verbose.
-    /// @param log_offset only read the daemon log after this offset
-    void wait_daemon_listening(const std::uintmax_t log_offset) {
+    /// With port 0, the daemon writes its port in a file of its `runtime_dir` once it listens.
+    /// This requires transferd 1.1.7 or later.
+    void wait_daemon_listening() {
         const auto deadline = std::chrono::steady_clock::now() + STARTUP_TIMEOUT;
         while (true) {
             // check if the daemon has already exited
@@ -124,13 +135,13 @@ class TransferClient {
             if (_server_port != 0) {
                 return;
             }
-            const int port = find_listening_port(_daemon_log, log_offset);
+            const int port = read_port_file(_runtime_dir);
             if (port != 0) {
                 _server_port = port;
                 return;
             }
             if (std::chrono::steady_clock::now() > deadline) {
-                throw std::runtime_error("Listening port not found in daemon log: " + _daemon_log);
+                throw std::runtime_error("Port file not found in " + _runtime_dir.string() + ": transferd 1.1.7 or later is required");
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
@@ -158,6 +169,7 @@ class TransferClient {
     }
 
     /// @brief Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+    /// Then delete its `runtime_dir`: a killed daemon does not delete its port file.
     /// transferd stops cleanly on SIGINT (not on SIGTERM).
     void daemon_shutdown() {
         if (_transfer_service != nullptr) {
@@ -178,6 +190,11 @@ class TransferClient {
             }
             _transfer_daemon_process->wait(ec);
             _transfer_daemon_process = nullptr;
+        }
+        if (!_runtime_dir.empty()) {
+            std::error_code remove_error;
+            std::filesystem::remove_all(_runtime_dir, remove_error);
+            _runtime_dir.clear();
         }
     }
 
@@ -249,26 +266,39 @@ class TransferClient {
     }
 
    private:
-    /// @brief Find the API listening port in the daemon log, after the given offset.
-    /// @param log_file path of the daemon log
-    /// @param offset only read the daemon log after this offset
-    /// @return port, or 0 if not found (yet)
-    static int find_listening_port(const std::string& log_file, std::uintmax_t offset) {
-        std::ifstream log_stream(log_file, std::ios::binary);
-        if (!log_stream) {
+    /// @brief Read the port of the daemon in its port file `transferd.<port>.optport`, in its `runtime_dir`.
+    /// The daemon creates the file, then writes the port: an empty file is not ready yet.
+    /// @param runtime_dir `runtime_dir` of the daemon
+    /// @return port, or 0 if not written (yet)
+    static int read_port_file(const std::filesystem::path& runtime_dir) {
+        std::vector<std::filesystem::path> port_files;
+        for (const auto& entry : std::filesystem::directory_iterator(runtime_dir)) {
+            if (entry.path().extension() == PORT_FILE_EXTENSION) {
+                port_files.push_back(entry.path());
+            }
+        }
+        if (port_files.empty()) {
             return 0;
         }
-        const std::string content((std::istreambuf_iterator<char>(log_stream)), std::istreambuf_iterator<char>());
-        // log file was truncated
-        if (content.size() < offset) {
-            offset = 0;
+        if (port_files.size() > 1) {
+            throw std::runtime_error("Several port files in " + runtime_dir.string());
         }
-        const std::string new_lines = content.substr(offset);
-        boost::smatch match;
-        if (!boost::regex_search(new_lines, match, LISTENING_PORT_REGEX)) {
+        std::ifstream port_stream(port_files.front(), std::ios::binary);
+        const std::string content((std::istreambuf_iterator<char>(port_stream)), std::istreambuf_iterator<char>());
+        if (content.empty()) {
             return 0;
         }
-        return std::stoi(match[1]);
+        if (!std::all_of(content.begin(), content.end(), [](const unsigned char c) { return std::isdigit(c); })) {
+            throw std::runtime_error("No port in file " + port_files.front().string());
+        }
+        return std::stoi(content);
+    }
+
+    /// @brief Create a folder readable only by the user, where the OS supports it.
+    /// @param folder path of the folder
+    static void create_private_folder(const std::filesystem::path& folder) {
+        std::filesystem::create_directory(folder);
+        std::filesystem::permissions(folder, std::filesystem::perms::owner_all);
     }
 
     /// @brief Convert the log level of ascp from name to number.
@@ -291,16 +321,19 @@ class TransferClient {
     /// @param conf_file path of the configuration file
     void daemon_create_config_file(const std::string& conf_file) {
         // Prepare daemon configuration file
-        const json::object config_info = {
+        json::object config_info = {
             {"address", _server_address},
             {"port", _server_port},
-            {"log_directory", _config.log_folder_path().string()},
+            {"log_directory", _daemon_folder.string()},
             {"log_level", _config.param_str({"trsdk", "level"})},
             {"fasp_runtime",
              {{"use_embedded", true},
               {"log",
-               {{"dir", _config.log_folder_path().string()},
+               {{"dir", _daemon_folder.string()},
                 {"level", ascp_level(_config.param_str({"trsdk", "ascp_level"}))}}}}}};
+        if (!_runtime_dir.empty()) {
+            config_info["runtime_dir"] = _runtime_dir.string();
+        }
         const std::string config_data = json::serialize(config_info);
         std::ofstream conf_stream(conf_file);
         conf_stream << config_data;

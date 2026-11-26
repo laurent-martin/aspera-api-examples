@@ -28,14 +28,13 @@ const (
 	TRANSFERD_DEFAULT_PORT = 55002
 	// max wait time for the connection to the daemon
 	CONNECT_TIMEOUT = 5 * time.Second
-	// max wait time for the daemon to log its listening port
+	// max wait time for the daemon to write its port file
 	STARTUP_TIMEOUT = 10 * time.Second
 	// max wait time for the daemon to stop gracefully
 	SHUTDOWN_TIMEOUT = 10 * time.Second
+	// extension of the port file, written in `runtime_dir` with port 0: `transferd.<port>.optport`
+	PORT_FILE_EXTENSION = ".optport"
 )
-
-// API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
-var listeningPortRegex = regexp.MustCompile(`API Server: Listening on [^\s"]+:(\d+)`)
 
 // TransferClient is a client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
 type TransferClient struct {
@@ -48,7 +47,11 @@ type TransferClient struct {
 	channel         *grpc.ClientConn
 	transferService pb.TransferServiceClient
 	daemonName      string
-	daemonLog       string
+	// folder of the configuration, output and logs of the daemon: a new one for each start
+	daemonFolder string
+	daemonLog    string
+	// `runtime_dir` of the daemon, where it writes its port file: only with port 0
+	runtimeDir string
 }
 
 // NewTransferClient creates a transfer client.
@@ -65,7 +68,6 @@ func NewTransferClient(config *Configuration) *TransferClient {
 	return &TransferClient{
 		config:        config,
 		daemonName:    filepath.Base(config.GetPath("sdk_daemon")),
-		daemonLog:     filepath.Join(config.LogFolder, filepath.Base(config.GetPath("sdk_daemon"))+".log"),
 		serverAddress: sdkURL.Hostname(),
 		serverPort:    GetPortOrDefault(sdkURL, TRANSFERD_DEFAULT_PORT),
 	}
@@ -93,15 +95,18 @@ func (tc *TransferClient) CreateConfigFile(confFile string) error {
 	configInfo := map[string]interface{}{
 		"address":       tc.serverAddress,
 		"port":          tc.serverPort,
-		"log_directory": tc.config.LogFolder,
+		"log_directory": tc.daemonFolder,
 		"log_level":     tc.config.ParamStr("trsdk", "level"),
 		"fasp_runtime": map[string]interface{}{
 			"use_embedded": true,
 			"log": map[string]interface{}{
-				"dir":   tc.config.LogFolder,
+				"dir":   tc.daemonFolder,
 				"level": ascpIntLevel,
 			},
 		},
+	}
+	if tc.runtimeDir != "" {
+		configInfo["runtime_dir"] = tc.runtimeDir
 	}
 
 	configData, err := json.Marshal(configInfo)
@@ -112,11 +117,26 @@ func (tc *TransferClient) CreateConfigFile(confFile string) error {
 	return os.WriteFile(confFile, configData, 0644)
 }
 
-// StartDaemon starts the daemon, with output and logs in the log folder.
+// StartDaemon starts the daemon, with its configuration, output and logs in a new folder of the log folder.
 func (tc *TransferClient) StartDaemon() error {
-	confFile := filepath.Join(tc.config.LogFolder, tc.daemonName+".conf")
-	outFile := filepath.Join(tc.config.LogFolder, tc.daemonName+".out")
-	errFile := filepath.Join(tc.config.LogFolder, tc.daemonName+".err")
+	// samples run at the same time do not share files
+	daemonFolder, err := os.MkdirTemp(tc.config.LogFolder, tc.daemonName+".")
+	if err != nil {
+		return err
+	}
+	tc.daemonFolder = daemonFolder
+	fileBase := filepath.Join(daemonFolder, tc.daemonName)
+	confFile := fileBase + ".conf"
+	outFile := fileBase + ".out"
+	errFile := fileBase + ".err"
+	tc.daemonLog = fileBase + ".log"
+	if tc.serverPort == 0 {
+		// the daemon writes its port file in this folder: of this daemon only, readable only by the user
+		tc.runtimeDir = filepath.Join(daemonFolder, "run")
+		if err := os.Mkdir(tc.runtimeDir, 0700); err != nil {
+			return err
+		}
+	}
 	cmd := exec.Command(
 		tc.config.GetPath("sdk_daemon"),
 		"--config", confFile,
@@ -130,11 +150,8 @@ func (tc *TransferClient) StartDaemon() error {
 	LogDump("Daemon out", outFile)
 	LogDump("Daemon err", errFile)
 	LogDump("Daemon log", tc.daemonLog)
-	LogDump("Ascp log", filepath.Join(tc.config.LogFolder, ASCP_LOG_FILE))
+	LogDump("Ascp log", filepath.Join(daemonFolder, ASCP_LOG_FILE))
 	tc.config.Log.Info("Starting daemon")
-
-	// the log file may contain lines of previous executions: only read new lines
-	logOffset := fileSize(tc.daemonLog)
 
 	// Redirect daemon output to files
 	stdout := tc.openFile(outFile)
@@ -142,7 +159,7 @@ func (tc *TransferClient) StartDaemon() error {
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 
-	err := cmd.Start()
+	err = cmd.Start()
 	// the child process has its own copy of the file descriptors
 	stdout.Close()
 	stderr.Close()
@@ -154,15 +171,13 @@ func (tc *TransferClient) StartDaemon() error {
 	tc.daemonExited = make(chan error, 1)
 	go func() { tc.daemonExited <- cmd.Wait() }()
 
-	return tc.waitDaemonListening(logOffset)
+	return tc.waitDaemonListening()
 }
 
 // waitDaemonListening waits for the daemon to listen, and gets the port if dynamically allocated (port 0).
-// The port is read from the daemon log: requires log level `info` or more verbose.
-//
-// Parameters:
-//   - logOffset: only read the daemon log after this offset
-func (tc *TransferClient) waitDaemonListening(logOffset int64) error {
+// With port 0, the daemon writes its port in a file of its `runtime_dir` once it listens.
+// This requires transferd 1.1.7 or later.
+func (tc *TransferClient) waitDaemonListening() error {
 	deadline := time.Now().Add(STARTUP_TIMEOUT)
 	for {
 		if err := tc.checkDaemonRunning(); err != nil {
@@ -172,7 +187,7 @@ func (tc *TransferClient) waitDaemonListening(logOffset int64) error {
 		if tc.serverPort != 0 {
 			return nil
 		}
-		port, err := findListeningPort(tc.daemonLog, logOffset)
+		port, err := readPortFile(tc.runtimeDir)
 		if err != nil {
 			return err
 		}
@@ -181,7 +196,7 @@ func (tc *TransferClient) waitDaemonListening(logOffset int64) error {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf("Listening port not found in daemon log: %s", tc.daemonLog)
+			return fmt.Errorf("Port file not found in %s: transferd 1.1.7 or later is required", tc.runtimeDir)
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
@@ -201,43 +216,41 @@ func (tc *TransferClient) checkDaemonRunning() error {
 	}
 }
 
-// findListeningPort finds the API listening port in the daemon log, after the given offset.
+// readPortFile reads the port of the daemon in its port file `transferd.<port>.optport`, in its `runtime_dir`.
+// The daemon creates the file, then writes the port: an empty file is not ready yet.
 //
 // Parameters:
-//   - logFile: path of the daemon log
-//   - offset: only read the daemon log after this offset
+//   - runtimeDir: `runtime_dir` of the daemon
 //
-// Returns: port, or 0 if not found (yet)
-func findListeningPort(logFile string, offset int64) (int, error) {
-	content, err := os.ReadFile(logFile)
-	if os.IsNotExist(err) {
-		return 0, nil
-	}
+// Returns: port, or 0 if not written (yet)
+func readPortFile(runtimeDir string) (int, error) {
+	entries, err := os.ReadDir(runtimeDir)
 	if err != nil {
 		return 0, err
 	}
-	// log file was truncated
-	if int64(len(content)) < offset {
-		offset = 0
+	var portFiles []string
+	for _, entry := range entries {
+		if strings.HasSuffix(entry.Name(), PORT_FILE_EXTENSION) {
+			portFiles = append(portFiles, filepath.Join(runtimeDir, entry.Name()))
+		}
 	}
-	match := listeningPortRegex.FindSubmatch(content[offset:])
-	if match == nil {
+	if len(portFiles) == 0 {
 		return 0, nil
 	}
-	return strconv.Atoi(string(match[1]))
-}
-
-// fileSize gets the size of a file.
-//
-// Parameters:
-//   - path: path of the file
-//
-// Returns: size of the file, or 0 if it does not exist
-func fileSize(path string) int64 {
-	if info, err := os.Stat(path); err == nil {
-		return info.Size()
+	if len(portFiles) > 1 {
+		return 0, fmt.Errorf("Several port files in %s", runtimeDir)
 	}
-	return 0
+	content, err := os.ReadFile(portFiles[0])
+	if err != nil {
+		return 0, err
+	}
+	if len(content) == 0 {
+		return 0, nil
+	}
+	if !regexp.MustCompile(`^[0-9]+$`).Match(content) {
+		return 0, fmt.Errorf("No port in file %s", portFiles[0])
+	}
+	return strconv.Atoi(string(content))
 }
 
 // ConnectToDaemon connects to the daemon.
@@ -280,6 +293,7 @@ func (tc *TransferClient) Startup() error {
 }
 
 // Shutdown stops the daemon, if it was started: sends SIGINT, and kills it if it does not stop in time.
+// Then deletes its `runtime_dir`: a killed daemon does not delete its port file.
 // transferd stops cleanly on SIGINT (not on SIGTERM).
 // Windows has no SIGINT for child processes: the process is terminated.
 func (tc *TransferClient) Shutdown() error {
@@ -288,6 +302,13 @@ func (tc *TransferClient) Shutdown() error {
 		tc.channel.Close()
 		tc.channel = nil
 	}
+	// once the daemon is stopped
+	defer func() {
+		if tc.runtimeDir != "" {
+			os.RemoveAll(tc.runtimeDir)
+			tc.runtimeDir = ""
+		}
+	}()
 	if tc.transferDaemonProc == nil {
 		return nil
 	}

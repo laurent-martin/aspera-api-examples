@@ -12,14 +12,14 @@ import { logger, logDump } from './configuration.js';
 const ASCP_LOG_FILE = "aspera-scp-transfer.log";
 // default port of transferd if not specified in URL
 const TRANSFERD_DEFAULT_PORT = 55002;
-// max wait time for the daemon to log its listening port
+// max wait time for the daemon to write its port file
 const STARTUP_TIMEOUT_MS = 10000;
 // max wait time for the connection to the daemon
 const CONNECT_TIMEOUT_MS = 5000;
 // max wait time for the daemon to stop gracefully
 const SHUTDOWN_TIMEOUT_MS = 10000;
-// API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
-const LISTENING_PORT_REGEX = /API Server: Listening on [^\s"]+:(\d+)/;
+// extension of the port file, written in `runtime_dir` with port 0: `transferd.<port>.optport`
+const PORT_FILE_EXTENSION = '.optport';
 
 /**
  * Client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
@@ -47,7 +47,11 @@ export class TransferClient {
 		this.abortTransfer = null;
 		this.transferService = null;
 		this.daemonName = path.basename(config.getPath("sdk_daemon"));
-		this.daemonLog = path.resolve(this.config.logFolder, this.daemonName + ".log");
+		// folder of the configuration, output and logs of the daemon: a new one for each start
+		this.daemonFolder = null;
+		this.daemonLog = null;
+		// `runtime_dir` of the daemon, where it writes its port file: only with port 0
+		this.runtimeDir = null;
 	}
 
 	/**
@@ -68,15 +72,23 @@ export class TransferClient {
 	}
 
 	/**
-	 * Start the daemon, with output and logs in the log folder.
+	 * Start the daemon, with its configuration, output and logs in a new folder of the log folder.
 	 * @returns {Promise<void>}
 	 */
 	async startDaemon() {
-		const ASCP_LOG = path.resolve(this.config.logFolder, ASCP_LOG_FILE);
-		const FILE_BASE = path.resolve(this.config.logFolder, this.daemonName);
+		// samples run at the same time do not share files
+		this.daemonFolder = fs.mkdtempSync(path.resolve(this.config.logFolder, `${this.daemonName}.`));
+		const ASCP_LOG = path.resolve(this.daemonFolder, ASCP_LOG_FILE);
+		const FILE_BASE = path.resolve(this.daemonFolder, this.daemonName);
 		const DAEMON_CONF_FILE = `${FILE_BASE}.conf`;
 		const outFile = `${FILE_BASE}.out`;
 		const errFile = `${FILE_BASE}.err`;
+		this.daemonLog = `${FILE_BASE}.log`;
+		if (this.serverPort === 0) {
+			// the daemon writes its port file in this folder: of this daemon only, readable only by the user
+			this.runtimeDir = path.resolve(this.daemonFolder, 'run');
+			fs.mkdirSync(this.runtimeDir, { mode: 0o700 });
+		}
 		const DAEMON_EXE = this.config.getPath('sdk_daemon');
 		const args = ['--config', DAEMON_CONF_FILE];
 		logDump('Daemon command', `${DAEMON_EXE} ${args.join(' ')}`);
@@ -85,8 +97,6 @@ export class TransferClient {
 		logDump('Daemon log', this.daemonLog);
 		logDump('Ascp log', ASCP_LOG);
 		this.createConfigFile(DAEMON_CONF_FILE);
-		// the log file may contain lines of previous executions: only read new lines
-		const logOffset = fs.existsSync(this.daemonLog) ? fs.statSync(this.daemonLog).size : 0;
 		logger.info('Starting daemon');
 		this.stopping = false;
 		this.daemonError = null;
@@ -110,7 +120,7 @@ export class TransferClient {
 				resolve();
 			});
 		});
-		await this.waitDaemonListening(logOffset);
+		await this.waitDaemonListening();
 	}
 
 	/**
@@ -124,39 +134,42 @@ export class TransferClient {
 
 	/**
 	 * Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
-	 * The port is read from the daemon log: requires log level `info` or more verbose.
-	 * @param {number} logOffset only read the daemon log after this offset
+	 * With port 0, the daemon writes its port in a file of its `runtime_dir` once it listens.
+	 * This requires transferd 1.1.7 or later.
 	 * @returns {Promise<void>}
 	 */
-	async waitDaemonListening(logOffset) {
+	async waitDaemonListening() {
 		const deadline = Date.now() + STARTUP_TIMEOUT_MS;
 		while (true) {
 			if (this.daemonError) throw this.daemonError;
 			// fixed port: readiness is checked on connection
 			if (this.serverPort !== 0) return;
-			const port = TransferClient.findListeningPort(this.daemonLog, logOffset);
+			const port = TransferClient.readPortFile(this.runtimeDir);
 			if (port !== null) {
 				this.serverPort = port;
 				return;
 			}
-			if (Date.now() > deadline) throw new Error(`Listening port not found in daemon log: ${this.daemonLog}`);
+			if (Date.now() > deadline) throw new Error(`Port file not found in ${this.runtimeDir}: transferd 1.1.7 or later is required`);
 			await new Promise(resolve => setTimeout(resolve, 200));
 		}
 	}
 
 	/**
-	 * Find the API listening port in the daemon log, after the given offset.
-	 * @param {string} logFile path of the daemon log
-	 * @param {number} offset only read the daemon log after this offset
-	 * @returns {number|null} port, or none if not found (yet)
+	 * Read the port of the daemon in its port file `transferd.<port>.optport`, in its `runtime_dir`.
+	 * The daemon creates the file, then writes the port: an empty file is not ready yet.
+	 * @param {string} runtimeDir `runtime_dir` of the daemon
+	 * @returns {number|null} port, or none if not written (yet)
 	 */
-	static findListeningPort(logFile, offset) {
-		if (!fs.existsSync(logFile)) return null;
-		const content = fs.readFileSync(logFile);
-		// log file was truncated
-		if (content.length < offset) offset = 0;
-		const match = LISTENING_PORT_REGEX.exec(content.subarray(offset).toString('utf8'));
-		return match ? parseInt(match[1], 10) : null;
+	static readPortFile(runtimeDir) {
+		const portFiles = fs.readdirSync(runtimeDir)
+			.filter((name) => name.endsWith(PORT_FILE_EXTENSION))
+			.map((name) => path.join(runtimeDir, name));
+		if (portFiles.length === 0) return null;
+		if (portFiles.length > 1) throw new Error(`Several port files in ${runtimeDir}`);
+		const content = fs.readFileSync(portFiles[0], 'utf8');
+		if (content === '') return null;
+		if (!/^[0-9]+$/.test(content)) throw new Error(`No port in file ${portFiles[0]}`);
+		return parseInt(content, 10);
 	}
 
 	/**
@@ -182,16 +195,17 @@ export class TransferClient {
 		var daemonConf = {
 			address: this.serverAddress,
 			port: this.serverPort,
-			log_directory: this.config.logFolder,
+			log_directory: this.daemonFolder,
 			log_level: this.config.getParam('trsdk', 'level'),
 			fasp_runtime: {
 				use_embedded: true,
 				log: {
-					dir: this.config.logFolder,
+					dir: this.daemonFolder,
 					level: TransferClient.getAscpLogLevel(this.config.getParam('trsdk', 'ascp_level')),
 				},
 			},
 		};
+		if (this.runtimeDir !== null) daemonConf.runtime_dir = this.runtimeDir;
 		fs.writeFileSync(target_file, JSON.stringify(daemonConf));
 	}
 
@@ -225,6 +239,7 @@ export class TransferClient {
 
 	/**
 	 * Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+	 * Then delete its `runtime_dir`: a killed daemon does not delete its port file.
 	 * transferd stops cleanly on SIGINT (not on SIGTERM).
 	 * Windows has no SIGINT for child processes: the process is terminated.
 	 * @returns {Promise<void>}
@@ -248,6 +263,10 @@ export class TransferClient {
 		}
 		await this.daemonExited;
 		this.daemonExited = null;
+		if (this.runtimeDir !== null) {
+			fs.rmSync(this.runtimeDir, { recursive: true, force: true });
+			this.runtimeDir = null;
+		}
 	}
 
 	/**

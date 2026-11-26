@@ -1,11 +1,10 @@
 use super::configuration::{Configuration, log_dump};
 use log::Level::Debug;
-use regex::Regex;
 use serde_json::json;
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Arc;
 use std::thread;
@@ -26,14 +25,14 @@ use transfer::TransferType;
 const ASCP_LOG_FILE: &str = "aspera-scp-transfer.log";
 /// default port of transferd if not specified in URL
 const TRANSFERD_DEFAULT_PORT: u16 = 55002;
-/// max wait time for the daemon to log its listening port
+/// max wait time for the daemon to write its port file
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(10);
 /// max wait time for the connection to the daemon
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 /// max wait time for the daemon to stop gracefully
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
-/// API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
-const PORT_REGEX: &str = r#"API Server: Listening on [^\s"]+:([0-9]+)"#;
+/// extension of the port file, written in `runtime_dir` with port 0: `transferd.<port>.optport`
+const PORT_FILE_EXTENSION: &str = ".optport";
 
 /// Client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
 pub struct TransferClient {
@@ -43,7 +42,11 @@ pub struct TransferClient {
     daemon_process: Option<Child>,
     transfer_service: Option<Box<TransferServiceClient<Channel>>>,
     daemon_name: String,
+    /// folder of the configuration, output and logs of the daemon: a new one for each start
+    daemon_folder: PathBuf,
     daemon_log: PathBuf,
+    /// `runtime_dir` of the daemon, where it writes its port file: only with port 0
+    runtime_dir: Option<PathBuf>,
 }
 
 impl TransferClient {
@@ -60,13 +63,14 @@ impl TransferClient {
         let server_address = sdk_uri.host().unwrap_or_else(|| panic!("Invalid URL: {sdk_url}")).to_string();
         let server_port = sdk_uri.port().unwrap_or(TRANSFERD_DEFAULT_PORT);
         let daemon_name = config.get_path("sdk_daemon").unwrap_or_default().file_name().unwrap_or_default().to_string_lossy().to_string();
-        let daemon_log = config.log_folder_path().join(format!("{}.log",daemon_name));
         TransferClient {
             config,
             server_address,
             server_port,
             daemon_name,
-            daemon_log,
+            daemon_folder: PathBuf::new(),
+            daemon_log: PathBuf::new(),
+            runtime_dir: None,
             transfer_service: None,
             daemon_process: None,
         }
@@ -85,19 +89,22 @@ impl TransferClient {
             _ => return Err(format!("Invalid ascp_level: {}", ascp_level).into()),
         };
 
-        let config_info = json!({
+        let mut config_info = json!({
             "address": self.server_address,
             "port": self.server_port,
-            "log_directory": self.config.log_folder_path().to_string_lossy(),
+            "log_directory": self.daemon_folder.to_string_lossy(),
             "log_level": self.config.param_str("trsdk","level")?,
             "fasp_runtime": {
                 "use_embedded": true,
                 "log": {
-                    "dir": self.config.log_folder_path().to_string_lossy(),
+                    "dir": self.daemon_folder.to_string_lossy(),
                     "level": ascp_int_level,
                 }
             }
         });
+        if let Some(runtime_dir) = &self.runtime_dir {
+            config_info["runtime_dir"] = json!(runtime_dir.to_string_lossy());
+        }
         let config_data = serde_json::to_string(&config_info).map_err(|e| e.to_string())?;
         let mut conf_stream = File::create(conf_file).map_err(|e| e.to_string())?;
         conf_stream
@@ -106,25 +113,48 @@ impl TransferClient {
         Ok(())
     }
 
-    /// Get the path of a file of the daemon, in the log folder.
+    /// Get the path of a file of the daemon, in its folder.
     ///
     /// # Arguments
-    /// * `file_ext` - extension of the file: `conf`, `out` or `err`
+    /// * `file_ext` - extension of the file: `conf`, `out`, `err` or `log`
     ///
     /// # Returns
     /// Path of the file
     fn daemon_file_path(&self, file_ext: &str) -> PathBuf {
-        self.config
-            .log_folder_path()
+        self.daemon_folder
             .join(format!("{}.{}", self.daemon_name, file_ext))
     }
 
-    /// Start the daemon, with output and logs in the log folder.
+    /// Create a folder readable only by the user, where the OS supports it.
+    ///
+    /// # Arguments
+    /// * `folder` - path of the folder
+    fn create_private_folder(folder: &Path) -> std::io::Result<()> {
+        let mut builder = std::fs::DirBuilder::new();
+        #[cfg(unix)]
+        std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
+        builder.create(folder)
+    }
+
+    /// Start the daemon, with its configuration, output and logs in a new folder of the log folder.
     pub fn daemon_start(&mut self) -> Result<(), Box<dyn Error>> {
+        // samples run at the same time do not share files
+        self.daemon_folder = self
+            .config
+            .log_folder_path()
+            .join(format!("{}.{}", self.daemon_name, uuid::Uuid::new_v4()));
+        Self::create_private_folder(&self.daemon_folder)?;
         let conf_path = self.daemon_file_path("conf");
         let out_path = self.daemon_file_path("out");
         let err_path = self.daemon_file_path("err");
-        let ascp_log_path = self.config.log_folder_path().join(ASCP_LOG_FILE);
+        self.daemon_log = self.daemon_file_path("log");
+        if self.server_port == 0 {
+            // the daemon writes its port file in this folder: of this daemon only, readable only by the user
+            let runtime_dir = self.daemon_folder.join("run");
+            Self::create_private_folder(&runtime_dir)?;
+            self.runtime_dir = Some(runtime_dir);
+        }
+        let ascp_log_path = self.daemon_folder.join(ASCP_LOG_FILE);
         self.daemon_create_config_file(&conf_path)?;
         let stdout_file = File::create(out_path.clone())?;
         let stderr_file = File::create(err_path.clone())?;
@@ -137,10 +167,6 @@ impl TransferClient {
         log_dump("Ascp log", ascp_log_path.display(), Debug);
         log::info!("Starting daemon");
 
-        // the log file may contain lines of previous executions: only read new lines
-        let log_offset = std::fs::metadata(&self.daemon_log)
-            .map(|m| m.len())
-            .unwrap_or(0);
         // Start the subprocess in the background
         let daemon_process: Child = Command::new(daemon_path)
             .args(&args)
@@ -148,15 +174,12 @@ impl TransferClient {
             .stderr(Stdio::from(stderr_file))
             .spawn()?;
         self.daemon_process = Some(daemon_process);
-        self.wait_daemon_listening(log_offset)
+        self.wait_daemon_listening()
     }
     /// Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
-    /// The port is read from the daemon log: requires log level `info` or more verbose.
-    ///
-    /// # Arguments
-    /// * `log_offset` - only read the daemon log after this offset
-    fn wait_daemon_listening(&mut self, log_offset: u64) -> Result<(), Box<dyn Error>> {
-        let re: Regex = Regex::new(PORT_REGEX)?;
+    /// With port 0, the daemon writes its port in a file of its `runtime_dir` once it listens.
+    /// This requires transferd 1.1.7 or later.
+    fn wait_daemon_listening(&mut self) -> Result<(), Box<dyn Error>> {
         let deadline = Instant::now() + STARTUP_TIMEOUT;
         loop {
             if let Some(daemon_process) = self.daemon_process.as_mut() {
@@ -171,53 +194,52 @@ impl TransferClient {
                 }
             }
             // fixed port: readiness is checked on connection
-            if self.server_port != 0 {
+            let Some(runtime_dir) = &self.runtime_dir else {
                 return Ok(());
-            }
-            if let Some(port) = Self::find_listening_port(&re, &self.daemon_log, log_offset)? {
+            };
+            if let Some(port) = Self::read_port_file(runtime_dir)? {
                 self.server_port = port;
                 return Ok(());
             }
             if Instant::now() > deadline {
                 return Err(format!(
-                    "Listening port not found in daemon log: {}",
-                    self.daemon_log.display()
+                    "Port file not found in {}: transferd 1.1.7 or later is required",
+                    runtime_dir.display()
                 )
                 .into());
             }
             thread::sleep(Duration::from_millis(200));
         }
     }
-    /// Find the API listening port in the daemon log, after the given offset.
+    /// Read the port of the daemon in its port file `transferd.<port>.optport`, in its `runtime_dir`.
+    /// The daemon creates the file, then writes the port: an empty file is not ready yet.
     ///
     /// # Arguments
-    /// * `re` - regular expression of the listening port
-    /// * `log_file` - path of the daemon log
-    /// * `log_offset` - only read the daemon log after this offset
+    /// * `runtime_dir` - `runtime_dir` of the daemon
     ///
     /// # Returns
-    /// Port, or none if not found (yet)
-    fn find_listening_port(
-        re: &Regex,
-        log_file: &PathBuf,
-        log_offset: u64,
-    ) -> Result<Option<u16>, Box<dyn Error>> {
-        let content = match std::fs::read(log_file) {
-            Ok(content) => content,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-            Err(e) => return Err(e.into()),
-        };
-        // log file was truncated
-        let offset = if (content.len() as u64) < log_offset {
-            0
-        } else {
-            log_offset as usize
-        };
-        let text = String::from_utf8_lossy(&content[offset..]);
-        match re.captures(&text) {
-            Some(captures) => Ok(Some(captures[1].parse::<u16>()?)),
-            None => Ok(None),
+    /// Port, or none if not written (yet)
+    fn read_port_file(runtime_dir: &Path) -> Result<Option<u16>, Box<dyn Error>> {
+        let mut port_files = Vec::new();
+        for entry in std::fs::read_dir(runtime_dir)? {
+            let entry = entry?;
+            if entry.file_name().to_string_lossy().ends_with(PORT_FILE_EXTENSION) {
+                port_files.push(entry.path());
+            }
         }
+        let port_file = match port_files.as_slice() {
+            [] => return Ok(None),
+            [port_file] => port_file,
+            _ => return Err(format!("Several port files in {}", runtime_dir.display()).into()),
+        };
+        let content = std::fs::read_to_string(port_file)?;
+        if content.is_empty() {
+            return Ok(None);
+        }
+        if !content.bytes().all(|byte| byte.is_ascii_digit()) {
+            return Err(format!("No port in file {}", port_file.display()).into());
+        }
+        Ok(Some(content.parse::<u16>()?))
     }
     /// Start the daemon and connect to it, if not already done.
     pub async fn daemon_startup(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -303,6 +325,7 @@ impl TransferClient {
         Err("Transfer monitoring ended before transfer completion".into())
     }
     /// Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+    /// Then delete its `runtime_dir`: a killed daemon does not delete its port file.
     pub fn daemon_shutdown(&mut self) -> Result<(), String> {
         self.transfer_service = None;
         if let Some(mut daemon_process) = self.daemon_process.take() {
@@ -318,6 +341,9 @@ impl TransferClient {
                 }
                 thread::sleep(Duration::from_millis(100));
             }
+        }
+        if let Some(runtime_dir) = self.runtime_dir.take() {
+            let _ = std::fs::remove_dir_all(runtime_dir);
         }
         Ok(())
     }

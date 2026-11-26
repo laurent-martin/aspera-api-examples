@@ -5,6 +5,8 @@ export DIR_TOP
 # recipes use bash syntax (e.g. `source`), /bin/sh may be another shell (e.g. dash on Debian/Ubuntu)
 SHELL := /bin/bash
 GBL_FILE_PATHS=$(DIR_TOP)config/paths.yaml
+# system temp folder, with a trailing slash: where the samples create the files of the daemon
+SYS_DIR_TMP=$(patsubst %/,%,$(or $(TMPDIR),/tmp))/
 # main folder for generated/downloaded files/temporary files
 GBL_DIR_TMP=$(DIR_TOP)$(shell sed -n -e 's/^temp: //p' $(GBL_FILE_PATHS))/
 # user's config file path
@@ -41,9 +43,9 @@ list:
 # clean flags indicating test was run: force re-run of tests only
 clean_flags::
 	rm -f $(TEST_FLAGS)
-# simple clean
+# simple clean: also the folders of the daemons started by the samples (configuration, output, logs)
 clean:: clean_flags clean_daemon
-	rm -f $(TMPDIR)$(SDK_NAME_DAEMON).* $(TMPDIR)aspera-scp-transfer*.log
+	rm -fr $(SYS_DIR_TMP)$(SDK_NAME_DAEMON).* $(SYS_DIR_TMP)aspera-scp-transfer*.log
 	rm -fr $(DIR_TESTED_FLAG)
 # clean all generated and compiled files
 clobber:: clean

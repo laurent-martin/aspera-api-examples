@@ -4,7 +4,6 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Globalization;
 using System.IO;
-using System.Text.RegularExpressions;
 /// <summary>
 /// Client of the Aspera Transfer Daemon (transferd): start the daemon, start transfers and wait for their end.
 /// </summary>
@@ -13,7 +12,7 @@ public class TransferClient
     private const string ASCP_LOG_FILE = "aspera-scp-transfer.log";
     // default port of transferd if not specified in URL
     private const int TRANSFERD_DEFAULT_PORT = 55002;
-    // max wait time for the daemon to log its listening port
+    // max wait time for the daemon to write its port file
     private static readonly TimeSpan STARTUP_TIMEOUT = TimeSpan.FromSeconds(10);
     // max wait time for the connection to the daemon
     private static readonly TimeSpan CONNECT_TIMEOUT = TimeSpan.FromSeconds(5);
@@ -28,8 +27,8 @@ public class TransferClient
     /// <returns>0 on success</returns>
     [System.Runtime.InteropServices.DllImport("libc", SetLastError = true)]
     private static extern int kill(int pid, int sig);
-    // API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
-    private static readonly Regex LISTENING_PORT_REGEX = new Regex(@"API Server: Listening on [^\s""]+:(\d+)");
+    // extension of the port file, written in `runtime_dir` with port 0: `transferd.<port>.optport`
+    private const string PORT_FILE_EXTENSION = ".optport";
     private Configuration _config;
     private string _serverAddress;
     private int _serverPort;
@@ -37,7 +36,11 @@ public class TransferClient
     private List<StreamWriter> _daemonStreams = new List<StreamWriter>();
     private Transferd.Api.TransferService.TransferServiceClient? _daemonService = null;
     private string _daemonName;
-    private string _daemonLog;
+    // folder of the configuration, output and logs of the daemon: a new one for each start
+    private string _daemonFolder = "";
+    private string _daemonLog = "";
+    // `runtime_dir` of the daemon, where it writes its port file: only with port 0
+    private string? _runtimeDir = null;
 
 
     /// <summary>
@@ -51,7 +54,6 @@ public class TransferClient
         _serverAddress = confUrl.Host;
         _serverPort = confUrl.Port == -1 ? TRANSFERD_DEFAULT_PORT : confUrl.Port;
         _daemonName = Path.GetFileName(_config.GetPath("sdk_daemon"));
-        _daemonLog = Path.Combine(_config.LogFolder(), _daemonName + ".log");
     }
 
     /// <summary>
@@ -61,44 +63,56 @@ public class TransferClient
     /// <param name="confFile">path of the configuration file</param>
     public void CreateConfigFile(string confFile)
     {
-        var configInfo = new
+        var configInfo = JObject.FromObject(new
         {
             address = _serverAddress,
             port = _serverPort,
-            log_directory = _config.LogFolder(),
+            log_directory = _daemonFolder,
             log_level = _config.GetParam("trsdk", "level"),
             fasp_runtime = new
             {
                 use_embedded = true,
                 log = new
                 {
-                    dir = _config.LogFolder(),
+                    dir = _daemonFolder,
                     level = AscpLevel(_config.GetParam("trsdk", "ascp_level")),
                 },
             },
-        };
+        });
+        if (_runtimeDir != null)
+        {
+            configInfo["runtime_dir"] = _runtimeDir;
+        }
         File.WriteAllText(confFile, Newtonsoft.Json.JsonConvert.SerializeObject(configInfo));
     }
 
     /// <summary>
-    /// Start the daemon, with output and logs in the log folder.
+    /// Start the daemon, with its configuration, output and logs in a new folder of the log folder.
     /// </summary>
     public void StartDaemon()
     {
         var daemonPath = _config.GetPath("sdk_daemon");
-        var fileBase = Path.Combine(_config.LogFolder(), _daemonName);
+        // samples run at the same time do not share files
+        _daemonFolder = Path.Combine(_config.LogFolder(), _daemonName + "." + Guid.NewGuid());
+        CreatePrivateFolder(_daemonFolder);
+        var fileBase = Path.Combine(_daemonFolder, _daemonName);
         var confFile = fileBase + ".conf";
         var outFile = fileBase + ".out";
         var errFile = fileBase + ".err";
+        _daemonLog = fileBase + ".log";
+        if (_serverPort == 0)
+        {
+            // the daemon writes its port file in this folder: of this daemon only, readable only by the user
+            _runtimeDir = Path.Combine(_daemonFolder, "run");
+            CreatePrivateFolder(_runtimeDir);
+        }
         var exec_args = $"--config {confFile}";
         Log.Dump("Daemon command", $"{daemonPath} {exec_args}");
         Log.Dump("Daemon out", outFile);
         Log.Dump("Daemon err", errFile);
         Log.Dump("Daemon log", _daemonLog);
-        Log.Dump("Ascp log", Path.Combine(_config.LogFolder(), ASCP_LOG_FILE));
+        Log.Dump("Ascp log", Path.Combine(_daemonFolder, ASCP_LOG_FILE));
         CreateConfigFile(confFile);
-        // the log file may contain lines of previous executions: only read new lines
-        long logOffset = File.Exists(_daemonLog) ? new FileInfo(_daemonLog).Length : 0;
         Log.log.Info("Starting daemon");
         _daemonProcess = new System.Diagnostics.Process
         {
@@ -118,15 +132,15 @@ public class TransferClient
         _daemonProcess.Start();
         _daemonProcess.BeginOutputReadLine();
         _daemonProcess.BeginErrorReadLine();
-        WaitDaemonListening(logOffset);
+        WaitDaemonListening();
     }
 
     /// <summary>
     /// Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
-    /// The port is read from the daemon log: requires log level <c>info</c> or more verbose.
+    /// With port 0, the daemon writes its port in a file of its <c>runtime_dir</c> once it listens.
+    /// This requires transferd 1.1.7 or later.
     /// </summary>
-    /// <param name="logOffset">only read the daemon log after this offset</param>
-    private void WaitDaemonListening(long logOffset)
+    private void WaitDaemonListening()
     {
         var daemonProcess = _daemonProcess ?? throw new InvalidOperationException("Daemon not started");
         var deadline = DateTime.UtcNow + STARTUP_TIMEOUT;
@@ -139,11 +153,11 @@ public class TransferClient
                 throw new Exception($"Daemon exited with code {daemonProcess.ExitCode}, see log: {_daemonLog}");
             }
             // fixed port: readiness is checked on connection
-            if (_serverPort != 0)
+            if (_runtimeDir == null)
             {
                 return;
             }
-            int? port = FindListeningPort(_daemonLog, logOffset);
+            int? port = ReadPortFile(_runtimeDir);
             if (port.HasValue)
             {
                 _serverPort = port.Value;
@@ -151,40 +165,60 @@ public class TransferClient
             }
             if (DateTime.UtcNow > deadline)
             {
-                throw new Exception($"Listening port not found in daemon log: {_daemonLog}");
+                throw new Exception($"Port file not found in {_runtimeDir}: transferd 1.1.7 or later is required");
             }
             Thread.Sleep(200);
         }
     }
 
     /// <summary>
-    /// Find the API listening port in the daemon log, after the given offset.
+    /// Read the port of the daemon in its port file <c>transferd.&lt;port&gt;.optport</c>, in its <c>runtime_dir</c>.
+    /// The daemon creates the file, then writes the port: an empty file is not ready yet.
     /// </summary>
-    /// <param name="logFile">path of the daemon log</param>
-    /// <param name="offset">only read the daemon log after this offset</param>
-    /// <returns>port, or null if not found (yet)</returns>
-    private static int? FindListeningPort(string logFile, long offset)
+    /// <param name="runtimeDir"><c>runtime_dir</c> of the daemon</param>
+    /// <returns>port, or null if not written (yet)</returns>
+    private static int? ReadPortFile(string runtimeDir)
     {
-        if (!File.Exists(logFile))
+        var portFiles = Directory.GetFiles(runtimeDir, "*" + PORT_FILE_EXTENSION);
+        if (portFiles.Length == 0)
         {
             return null;
         }
-        byte[] content;
+        if (portFiles.Length > 1)
+        {
+            throw new Exception($"Several port files in {runtimeDir}");
+        }
+        string content;
         // the file is written by the daemon
-        using (var file = new FileStream(logFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        using (var memory = new MemoryStream())
+        using (var reader = new StreamReader(new FileStream(portFiles[0], FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
         {
-            file.CopyTo(memory);
-            content = memory.ToArray();
+            content = reader.ReadToEnd();
         }
-        // log file was truncated
-        if (content.Length < offset)
+        if (content.Length == 0)
         {
-            offset = 0;
+            return null;
         }
-        var text = System.Text.Encoding.UTF8.GetString(content, (int)offset, content.Length - (int)offset);
-        Match portMatch = LISTENING_PORT_REGEX.Match(text);
-        return portMatch.Success ? int.Parse(portMatch.Groups[1].Value) : null;
+        if (!content.All(char.IsAsciiDigit))
+        {
+            throw new Exception($"No port in file {portFiles[0]}");
+        }
+        return int.Parse(content, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Create a folder readable only by the user, where the OS supports it.
+    /// </summary>
+    /// <param name="folder">path of the folder</param>
+    private static void CreatePrivateFolder(string folder)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Directory.CreateDirectory(folder);
+        }
+        else
+        {
+            Directory.CreateDirectory(folder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 
     /// <summary>
@@ -237,6 +271,7 @@ public class TransferClient
     }
     /// <summary>
     /// Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+    /// Then delete its <c>runtime_dir</c>: a killed daemon does not delete its port file.
     /// transferd stops cleanly on SIGINT (not on SIGTERM).
     /// Windows has no SIGINT for child processes: the process is terminated.
     /// </summary>
@@ -267,6 +302,14 @@ public class TransferClient
             {
                 stream.Close();
             }
+        }
+        if (_runtimeDir != null)
+        {
+            if (Directory.Exists(_runtimeDir))
+            {
+                Directory.Delete(_runtimeDir, true);
+            }
+            _runtimeDir = null;
         }
     }
 

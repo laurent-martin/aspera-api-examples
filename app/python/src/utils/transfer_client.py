@@ -8,8 +8,10 @@ import re
 import json
 import time
 import grpc
+import shutil
 import logging
 import signal
+import tempfile
 import subprocess
 from utils.configuration import log_dump
 from urllib.parse import urlparse
@@ -27,10 +29,10 @@ DEBUG_HTTP = False
 TRANSFERD_DEFAULT_PORT = 55002
 # max wait time for the daemon to stop gracefully
 SHUTDOWN_TIMEOUT_SEC = 10
-# max wait time for the daemon to log its listening port
+# max wait time for the daemon to write its port file
 STARTUP_TIMEOUT_SEC = 10
-# API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
-LISTENING_PORT_REGEX = re.compile(r'API Server: Listening on [^\s"]+:(\d+)')
+# extension of the port file, written in `runtime_dir` with port 0: `transferd.<port>.optport`
+PORT_FILE_EXTENSION = '.optport'
 
 
 class TransferClient:
@@ -50,7 +52,11 @@ class TransferClient:
         self._channel = None
         self._transfer_service = None
         self._daemon_name = os.path.basename(self._config.get_path('sdk_daemon'))
-        self._daemon_log = os.path.join(self._config._log_folder, f"{self._daemon_name}.log")
+        # folder of the configuration, output and logs of the daemon: a new one for each start
+        self._daemon_folder = None
+        self._daemon_log = None
+        # `runtime_dir` of the daemon, where it writes its port file: only with port 0
+        self._runtime_dir = None
 
     def create_config_file(self, conf_file):
         '''
@@ -63,26 +69,35 @@ class TransferClient:
         config_info = {
             'address': self._server_address,
             'port': self._server_port,
-            'log_directory': self._config._log_folder,
+            'log_directory': self._daemon_folder,
             'log_level': self._config.param('trsdk', 'level'),
             'fasp_runtime': {
                 'use_embedded': True,
                 'log': {
-                    'dir': self._config._log_folder,
+                    'dir': self._daemon_folder,
                     'level': ascp_level(self._config.param('trsdk', 'ascp_level')),
                 },
             },
         }
+        if self._runtime_dir is not None:
+            config_info['runtime_dir'] = self._runtime_dir
         config_data = json.dumps(config_info)
         with open(conf_file, 'w') as the_file:
             the_file.write(config_data)
 
     def start_daemon(self):
-        '''Start the daemon, with output and logs in the log folder.'''
-        file_base = os.path.join(self._config._log_folder, self._daemon_name)
+        '''Start the daemon, with its configuration, output and logs in a new folder of the log folder.'''
+        # samples run at the same time do not share files
+        self._daemon_folder = tempfile.mkdtemp(prefix=f'{self._daemon_name}.', dir=self._config._log_folder)
+        file_base = os.path.join(self._daemon_folder, self._daemon_name)
         conf_file = f'{file_base}.conf'
         out_file = f'{file_base}.out'
         err_file = f'{file_base}.err'
+        self._daemon_log = f'{file_base}.log'
+        if self._server_port == 0:
+            # the daemon writes its port file in this folder: of this daemon only, readable only by the user
+            self._runtime_dir = os.path.join(self._daemon_folder, 'run')
+            os.mkdir(self._runtime_dir, 0o700)
         command = [
             self._config.get_path('sdk_daemon'),
             '--config',
@@ -92,23 +107,20 @@ class TransferClient:
         log_dump('Daemon out', out_file)
         log_dump('Daemon err', err_file)
         log_dump('Daemon log', self._daemon_log)
-        log_dump('Ascp log', os.path.join(self._config._log_folder, ASCP_LOG_FILE))
+        log_dump('Ascp log', os.path.join(self._daemon_folder, ASCP_LOG_FILE))
         self.create_config_file(conf_file)
-        # the log file may contain lines of previous executions: only read new lines
-        log_offset = os.path.getsize(self._daemon_log) if os.path.exists(self._daemon_log) else 0
         logging.info('Starting daemon')
         # the child process has its own copy of the file descriptors
         with open(out_file, 'w') as out, open(err_file, 'w') as err:
             self._transfer_daemon_process = subprocess.Popen(command, stdout=out, stderr=err)
-        self.wait_daemon_listening(log_offset)
+        self.wait_daemon_listening()
 
-    def wait_daemon_listening(self, log_offset):
+    def wait_daemon_listening(self):
         '''
         Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
 
-        The port is read from the daemon log: requires log level `info` or more verbose.
-
-        :param log_offset: only read the daemon log after this offset
+        With port 0, the daemon writes its port in a file of its `runtime_dir` once it listens.
+        This requires transferd 1.1.7 or later.
         '''
         deadline = time.monotonic() + STARTUP_TIMEOUT_SEC
         while True:
@@ -119,12 +131,12 @@ class TransferClient:
             # fixed port: readiness is checked on connection
             if self._server_port != 0:
                 return
-            port = find_listening_port(self._daemon_log, log_offset)
+            port = read_port_file(self._runtime_dir)
             if port is not None:
                 self._server_port = port
                 return
             if time.monotonic() > deadline:
-                raise Exception(f'Listening port not found in daemon log: {self._daemon_log}')
+                raise Exception(f'Port file not found in {self._runtime_dir}: transferd 1.1.7 or later is required')
             time.sleep(0.2)
 
     def connect_to_daemon(self):
@@ -159,7 +171,11 @@ class TransferClient:
         return self
 
     def shutdown(self):
-        '''Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.'''
+        '''
+        Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+
+        Then delete its `runtime_dir`: a killed daemon does not delete its port file.
+        '''
         self._transfer_service = None
         if self._channel is not None:
             self._channel.close()
@@ -168,6 +184,9 @@ class TransferClient:
             logging.info('Stopping daemon')
             stop_process(self._transfer_daemon_process)
             self._transfer_daemon_process = None
+        if self._runtime_dir is not None:
+            shutil.rmtree(self._runtime_dir, ignore_errors=True)
+            self._runtime_dir = None
 
     def start_transfer_and_wait(self, transfer_spec):
         '''
@@ -275,24 +294,28 @@ def transfer_spec_from_setup(response_data):
     return result['transfer_spec']
 
 
-def find_listening_port(log_file, offset):
+def read_port_file(runtime_dir):
     '''
-    Find the API listening port in the daemon log, after the given offset.
+    Read the port of the daemon in its port file `transferd.<port>.optport`, in its `runtime_dir`.
 
-    :param log_file: path of the daemon log
-    :param offset: only read the daemon log after this offset
-    :return: port, or none if not found (yet)
+    The daemon creates the file, then writes the port: an empty file is not ready yet.
+
+    :param runtime_dir: `runtime_dir` of the daemon
+    :return: port, or none if not written (yet)
     '''
-    try:
-        with open(log_file, 'rb') as file:
-            content = file.read()
-    except FileNotFoundError:
+    port_files = [os.path.join(runtime_dir, name) for name in os.listdir(runtime_dir)
+                  if name.endswith(PORT_FILE_EXTENSION)]
+    if not port_files:
         return None
-    # log file was truncated
-    if len(content) < offset:
-        offset = 0
-    match = LISTENING_PORT_REGEX.search(content[offset:].decode('utf-8', errors='replace'))
-    return int(match.group(1)) if match else None
+    if len(port_files) > 1:
+        raise Exception(f'Several port files in {runtime_dir}')
+    with open(port_files[0]) as file:
+        content = file.read()
+    if content == '':
+        return None
+    if not re.fullmatch(r'[0-9]+', content):
+        raise Exception(f'No port in file {port_files[0]}')
+    return int(content)
 
 
 def ascp_level(level_string):

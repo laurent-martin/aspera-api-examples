@@ -4,6 +4,7 @@ require 'json'
 require 'logger'
 require 'fileutils'
 require 'securerandom'
+require 'tmpdir'
 require 'open3'
 require 'grpc'
 require 'uri'
@@ -16,14 +17,14 @@ module Utils
     DEBUG_HTTP = false
     # default port of transferd if not specified in URL
     TRANSFERD_DEFAULT_PORT = 55_002
-    # max wait time for the daemon to log its listening port
+    # max wait time for the daemon to write its port file
     STARTUP_TIMEOUT_SEC = 10
     # max wait time for the connection to the daemon
     CONNECT_TIMEOUT_SEC = 5
     # max wait time for the daemon to stop gracefully
     SHUTDOWN_TIMEOUT_SEC = 10
-    # API port in daemon log (text or JSON log format), e.g. `API Server: Listening on 127.0.0.1:55002 ...`
-    LISTENING_PORT_REGEX = /API Server: Listening on [^\s"]+:(\d+)/.freeze
+    # extension of the port file, written in `runtime_dir` with port 0: `transferd.<port>.optport`
+    PORT_FILE_EXTENSION = '.optport'
 
     # Create a transfer client.
     # @param config [Configuration] configuration of the samples
@@ -35,7 +36,11 @@ module Utils
       @transfer_daemon_process = nil
       @transfer_service = nil
       @daemon_name = File.basename(@config.get_path('sdk_daemon'))
-      @daemon_log = File.join(@config.log_folder, "#{@daemon_name}.log")
+      # folder of the configuration, output and logs of the daemon: a new one for each start
+      @daemon_folder = nil
+      @daemon_log = nil
+      # `runtime_dir` of the daemon, where it writes its port file: only with port 0
+      @runtime_dir = nil
       @logger = config.logger
     end
 
@@ -47,54 +52,56 @@ module Utils
       config_info = {
         'address' => @server_address,
         'port' => @server_port,
-        'log_directory' => @config.log_folder,
+        'log_directory' => @daemon_folder,
         'log_level' => @config.param('trsdk', 'level'),
         'fasp_runtime' => {
           'use_embedded' => true,
           'log' => {
-            'dir' => @config.log_folder,
+            'dir' => @daemon_folder,
             'level' => ascp_level(@config.param('trsdk', 'ascp_level'))
           }
         }
       }
+      config_info['runtime_dir'] = @runtime_dir unless @runtime_dir.nil?
       File.write(conf_file, JSON.pretty_generate(config_info))
     end
 
-    # Start the daemon, with output and logs in the log folder.
+    # Start the daemon, with its configuration, output and logs in a new folder of the log folder.
     # @return [void]
     def start_daemon
-      file_base = File.join(@config.log_folder, @daemon_name)
+      # samples run at the same time do not share files
+      @daemon_folder = Dir.mktmpdir("#{@daemon_name}.", @config.log_folder)
+      file_base = File.join(@daemon_folder, @daemon_name)
       conf_file = "#{file_base}.conf"
       out_file  = "#{file_base}.out"
       err_file  = "#{file_base}.err"
+      @daemon_log = "#{file_base}.log"
+      if @server_port.zero?
+        # the daemon writes its port file in this folder: of this daemon only, readable only by the user
+        @runtime_dir = File.join(@daemon_folder, 'run')
+        Dir.mkdir(@runtime_dir, 0o700)
+      end
 
-      command = [
-        @config.get_path('sdk_daemon'),
-        '--config', conf_file
-      ]
+      command = [@config.get_path('sdk_daemon'), '--config', conf_file]
 
       Configuration.log_dump('Daemon command', command.join(' '))
       Configuration.log_dump('Daemon out', out_file)
       Configuration.log_dump('Daemon err', err_file)
       Configuration.log_dump('Daemon log', @daemon_log)
-      Configuration.log_dump('Ascp log', File.join(@config.log_folder, ASCP_LOG_FILE))
+      Configuration.log_dump('Ascp log', File.join(@daemon_folder, ASCP_LOG_FILE))
 
       create_config_file(conf_file)
-      # the log file may contain lines of previous executions: only read new lines
-      log_offset = File.exist?(@daemon_log) ? File.size(@daemon_log) : 0
       @logger.info('Starting daemon')
 
-      @transfer_daemon_process = Process.spawn(*command,
-                                               out: out_file,
-                                               err: err_file)
-      wait_daemon_listening(log_offset)
+      @transfer_daemon_process = Process.spawn(*command, out: out_file, err: err_file)
+      wait_daemon_listening
     end
 
     # Wait for the daemon to listen, and get the port if dynamically allocated (port 0).
-    # The port is read from the daemon log: requires log level `info` or more verbose.
-    # @param log_offset [Integer] only read the daemon log after this offset
+    # With port 0, the daemon writes its port in a file of its `runtime_dir` once it listens.
+    # This requires transferd 1.1.7 or later.
     # @return [void]
-    def wait_daemon_listening(log_offset)
+    def wait_daemon_listening
       deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + STARTUP_TIMEOUT_SEC
       loop do
         _, status = Process.wait2(@transfer_daemon_process, Process::WNOHANG)
@@ -105,30 +112,34 @@ module Utils
         # fixed port: readiness is checked on connection
         return unless @server_port.zero?
 
-        port = find_listening_port(log_offset)
+        port = read_port_file(@runtime_dir)
         if port
           @server_port = port
           return
         end
         if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
-          raise "Listening port not found in daemon log: #{@daemon_log}"
+          raise "Port file not found in #{@runtime_dir}: transferd 1.1.7 or later is required"
         end
 
         sleep 0.2
       end
     end
 
-    # Find the API listening port in the daemon log, after the given offset.
-    # @param log_offset [Integer] only read the daemon log after this offset
-    # @return [Integer, nil] port, or none if not found (yet)
-    def find_listening_port(log_offset)
-      return nil unless File.exist?(@daemon_log)
+    # Read the port of the daemon in its port file `transferd.<port>.optport`, in its `runtime_dir`.
+    # The daemon creates the file, then writes the port: an empty file is not ready yet.
+    # @param runtime_dir [String] `runtime_dir` of the daemon
+    # @return [Integer, nil] port, or none if not written (yet)
+    def read_port_file(runtime_dir)
+      port_files = Dir.children(runtime_dir).select { |name| name.end_with?(PORT_FILE_EXTENSION) }
+                      .map { |name| File.join(runtime_dir, name) }
+      return nil if port_files.empty?
+      raise "Several port files in #{runtime_dir}" if port_files.length > 1
 
-      content = File.binread(@daemon_log)
-      # log file was truncated
-      log_offset = 0 if content.bytesize < log_offset
-      match = content.byteslice(log_offset..).match(LISTENING_PORT_REGEX)
-      match && match[1].to_i
+      content = File.read(port_files.first)
+      return nil if content.empty?
+      raise "No port in file #{port_files.first}" unless content.match?(/\A[0-9]+\z/)
+
+      content.to_i
     end
 
     # Connect to the daemon.
@@ -170,6 +181,7 @@ module Utils
     end
 
     # Stop the daemon, if it was started: send SIGINT, and kill it if it does not stop in time.
+    # Then delete its `runtime_dir`: a killed daemon does not delete its port file.
     # @return [void]
     def shutdown
       if @transfer_daemon_process
@@ -178,6 +190,8 @@ module Utils
         @transfer_daemon_process = nil
       end
       @transfer_service = nil
+      FileUtils.rm_rf(@runtime_dir) unless @runtime_dir.nil?
+      @runtime_dir = nil
     end
 
     # Start the daemon if needed, start a transfer, and wait for its end.
