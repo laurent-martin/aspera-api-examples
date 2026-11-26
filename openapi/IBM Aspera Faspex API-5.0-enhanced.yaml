@@ -231,6 +231,7 @@ paths:
               default: /aspera/faspex
             version_path:
               default: /auth
+      security: []
       tags:
         - Authorization
   /authenticate:
@@ -500,6 +501,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security: []
       tags:
         - Server configuration
     put:
@@ -1007,6 +1009,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - user
       tags:
         - Distribution lists
     delete:
@@ -1953,6 +1958,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Jobs
   /jobs/{id}:
@@ -2011,6 +2020,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Jobs
     put:
@@ -2073,6 +2086,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Jobs
     delete:
@@ -2126,6 +2143,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Jobs
   /jobs/retry:
@@ -2182,6 +2203,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Jobs
   /configuration/metadata_profiles/{metadata_profile_id}/fields/{id}:
@@ -2232,6 +2257,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - Metadata fields
   /configuration/metadata_profiles:
@@ -2284,6 +2312,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - user
       tags:
         - Metadata profiles
     post:
@@ -2321,6 +2352,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - Metadata profiles
   /configuration/metadata_profiles/{id}:
@@ -2416,6 +2450,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - Metadata profiles
     delete:
@@ -2457,6 +2494,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - Metadata profiles
   /configuration/metadata_profiles/default:
@@ -2476,6 +2516,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - user
+        - PasscodeAuth: []
       tags:
         - Metadata profiles
   /mfa/send_code:
@@ -6480,6 +6524,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - SAML
   /saml_configs:
@@ -6515,6 +6562,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
+            - manager
       tags:
         - SAML
     post:
@@ -7156,6 +7207,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - Shared folders custom access
     post:
@@ -7219,6 +7273,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - Shared folders custom access
   /nodes/{node_id}/shared_folders/{shared_folder_id}/custom_access_users/{id}:
@@ -7277,6 +7334,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - Shared folders custom access
   /nodes/{node_id}/shared_folders/{shared_folder_id}/custom_access_groups:
@@ -7351,6 +7411,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - Shared folders custom access
     post:
@@ -7416,6 +7479,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - Shared folders custom access
   /nodes/{node_id}/shared_folders/{shared_folder_id}/custom_access_groups/{id}:
@@ -7474,6 +7540,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
       tags:
         - Shared folders custom access
   /shared_folders:
@@ -10200,6 +10269,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2: []
       tags:
         - Transfers
     put:
@@ -10238,7 +10309,7 @@ paths:
                   type: integer
                 rate_policy:
                   description: The new rate policy to apply to the transfer.
-                  type: integer
+                  type: string
                   enum:
                     - fixed
                     - high
@@ -10269,6 +10340,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2: []
       tags:
         - Transfers
   /configuration/alternate_addresses:
@@ -10822,6 +10895,7 @@ paths:
       responses:
         '200':
           description: ' - OK - Successful response'
+      security: []
       tags:
         - Server configuration
   /events_purge_policies:
@@ -12058,6 +12132,7 @@ paths:
               default: /aspera/faspex
             version_path:
               default: /auth
+      security: []
       tags:
         - Authorization
     delete:
@@ -12081,6 +12156,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IncorrectCredentials'
+      security:
+        - OAuth2: []
       tags:
         - Authorization
   /accounts:
@@ -14834,7 +14911,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/deliver_failed_uploads:
@@ -14868,7 +14947,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/mark_expired:
@@ -14902,7 +14983,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/mark_as_deleted:
@@ -14946,7 +15029,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/pending_deletion:
@@ -14980,7 +15065,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/expire:
@@ -15014,7 +15101,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/post_process:
@@ -15048,7 +15137,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/{id}/relay_status:
@@ -15080,7 +15171,9 @@ paths:
         '500':
           description: ' - Internal Error'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/monitor_relays:
@@ -15114,7 +15207,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/clean_deleted:
@@ -15152,7 +15247,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/data_collection_watcher:
@@ -15202,7 +15299,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /internal/packages/poller_watcher:
@@ -15234,7 +15333,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Packages (Internal)
   /transfers:
@@ -15347,6 +15448,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2: []
       tags:
         - Transfers
   /internal/accounts:
@@ -15386,7 +15489,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/IncorrectCredentials'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Accounts (Internal)
   /accounts/deactivate:
@@ -15452,6 +15557,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalError'
+      security:
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Jobs (Internal)
   /internal/jobs/purge:
@@ -15483,7 +15592,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalError'
       security:
-        - BearerToken: []
+        - OAuth2:
+            - admin
+            - client_only
       tags:
         - Jobs (Internal)
 components:
