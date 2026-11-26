@@ -41,6 +41,12 @@ async function showSelectDialog(options: SelectDialogOptions = {}): Promise<Data
 /** A transfer as reported by the SDK. */
 type TransferInfo = TransferResponse['transfers'][number];
 
+/** Values of the configuration sent by the server (`GET /api/config`): no secret. */
+interface ClientConfig {
+    httpgw: { url?: string };
+    server: { url?: string; username?: string; file_download?: string; folder_upload?: string };
+}
+
 /** Formatter for human-readable file sizes. */
 const bytesFormatter = new Intl.NumberFormat('en', {
     style: 'unit',
@@ -99,27 +105,25 @@ class ClientApp {
      */
     private transfers = new Map<string, TransferInfo>();
 
-    constructor(private config: any) { }
+    constructor(private config: ClientConfig) { }
 
     async initialize(): Promise<void> {
         // Prevent default browser behavior for dropped files globally
         ['drop', 'dragover'].forEach(name =>
             window.addEventListener(name, e => e.preventDefault())
         );
-        // Pre-fill fields from config
-        const fields: Record<string, string> = {
+        // Pre-fill fields from config.
+        // No secret field: the user types the SSH password, the access key and its secret (test modes only).
+        const fields: Record<string, string | undefined> = {
             'httpgw_url': this.config.httpgw.url,
             'server_url': this.config.server.url,
             'server_user': this.config.server.username,
-            'server_pass': this.config.server.password,
             'file_to_download': this.config.server.file_download,
-            'folder_for_upload': this.config.server.folder_upload,
-            'basic_access_key': this.config.node.username,
-            'basic_secret': this.config.node.password
+            'folder_for_upload': this.config.server.folder_upload
         };
         Object.entries(fields).forEach(([id, val]) => {
             const element = document.getElementById(id) as HTMLInputElement;
-            if (element) element.value = val;
+            if (element && val) element.value = val;
         });
 
         // Restore selected client from sessionStorage if available
@@ -522,7 +526,7 @@ class ClientApp {
     try {
         const response = await fetch("/api/config");
         if (!response.ok) throw new Error("Config not found");
-        const config = await response.json();
+        const config: ClientConfig = await response.json();
         const app = new ClientApp(config);
         await app.initialize();
     } catch (err) {

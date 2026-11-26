@@ -3,6 +3,7 @@ package utils
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -153,7 +154,6 @@ func (r *Rest) getBearer(scope string) (string, error) {
 		data["scope"] = scope
 	}
 	auth_api := NewRest(r.AuthData["token_url"])
-	//auth_api := NewRest("http://localhost:12345")
 	auth_api.SetVerify(r.Verify)
 	auth_api.SetHeaders(map[string]string{
 		"Content-Type": MIME_WWW,
@@ -188,6 +188,12 @@ func (r *Rest) Call(
 ) (map[string]interface{}, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
+	}
+	if !r.Verify {
+		// for development servers with a self-signed certificate only: do not verify the server certificate
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		client.Transport = transport
 	}
 
 	// Marshal the body if body is provided

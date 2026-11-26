@@ -16,9 +16,7 @@ mod transferd {
     tonic::include_proto!("transferd.api");
 }
 use transferd::transfer_service_client::TransferServiceClient;
-use transferd::{
-    RegistrationFilter, RegistrationRequest, TransferRequest, TransferStatus, TransferType,
-};
+use transferd::{TransferRequest, TransferStatus, TransferType};
 
 /// address of the gRPC API, set in the default configuration file of the SDK: etc/transferd.json
 const DAEMON_ADDRESS: &str = "127.0.0.1:55002";
@@ -39,7 +37,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let result = transfer(&config, &daemon_out).await;
 
-    // 6. Stop the daemon: transferd stops cleanly on SIGINT (Windows: killed)
+    // 5. Stop the daemon: transferd stops cleanly on SIGINT (Windows: killed)
     log::info!("Stopping daemon");
     #[cfg(unix)]
     // SAFETY: sends a signal to our own child process
@@ -94,32 +92,13 @@ async fn transfer(config: &Configuration, daemon_out: &Path) -> Result<(), Box<d
         "paths": paths,
     });
 
-    // 4. Start the transfer: the daemon returns a transfer id
+    // 4. Start the transfer and follow it: the daemon sends an event on each change, until the end of the transfer
     log::info!("Uploading files");
-    let response = client
-        .start_transfer(TransferRequest {
+    let mut events = client
+        .start_transfer_with_monitor(TransferRequest {
             transfer_type: TransferType::FileRegular.into(),
             transfer_spec: transfer_spec.to_string(),
             config: None,
-        })
-        .await?
-        .into_inner();
-    if response.status() == TransferStatus::Failed {
-        let description = response
-            .error
-            .map(|error| error.description)
-            .unwrap_or_default();
-        return Err(format!("Transfer failed: {description}").into());
-    }
-
-    // 5. Follow the transfer: the daemon sends an event on each change, until the end
-    let mut events = client
-        .monitor_transfers(RegistrationRequest {
-            filters: vec![RegistrationFilter {
-                transfer_id: vec![response.transfer_id],
-                ..Default::default()
-            }],
-            ..Default::default()
         })
         .await?
         .into_inner();
@@ -131,19 +110,24 @@ async fn transfer(config: &Configuration, daemon_out: &Path) -> Result<(), Box<d
             status.as_str_name(),
             info.bytes_transferred
         );
+        // the cause of an error is in error, or else in transferInfo
+        let description = event
+            .error
+            .map(|error| error.description)
+            .filter(|text| !text.is_empty())
+            .unwrap_or(info.error_description);
+        let description = description.trim();
         match status {
             TransferStatus::Failed | TransferStatus::Canceled => {
-                // the cause is in error, or else in transferInfo
-                let description = event
-                    .error
-                    .map(|error| error.description)
-                    .filter(|text| !text.is_empty())
-                    .unwrap_or(info.error_description);
-                return Err(format!("Transfer failed: {}", description.trim()).into());
+                return Err(format!("Transfer failed: {description}").into());
             }
-            TransferStatus::Completed => break,
+            TransferStatus::UnknownStatus => {
+                return Err(format!("Transfer status unknown: {description}").into());
+            }
+            TransferStatus::Completed => return Ok(()),
             _ => {}
         }
     }
-    Ok(())
+    // the stream ended before the end of the transfer
+    Err("Transfer monitoring ended before transfer completion".into())
 }

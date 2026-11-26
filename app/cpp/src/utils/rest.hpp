@@ -152,7 +152,7 @@ class Rest {
     /// @param body request data
     /// @param body_type format of the request data
     /// @param query query parameters
-    /// @return response data, or an empty object if no JSON response is expected
+    /// @return response data, or an empty object if no JSON response is expected or the response is empty
     json::value call(
         const http::verb method,
         const std::string& endpoint = "",
@@ -257,7 +257,7 @@ class Rest {
         if (!response.body().empty()) {
             log_dump("Response body", response.body());
         }
-        if (result_json) {
+        if (result_json && !response.body().empty()) {
             return json::parse(response.body());
         }
         return empty_value;

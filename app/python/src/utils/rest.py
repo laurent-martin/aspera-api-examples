@@ -90,7 +90,6 @@ class Rest:
         :param scope: OAuth scope of the token, or none
         :return: value of the Authorization header: `Bearer <token>`
         '''
-        # self.authData['token_url'] = 'http://localhost:12345'
         with open(self.authData['key_pem_path']) as key_file:
             private_key_pem = key_file.read()
 
@@ -165,7 +164,7 @@ class Rest:
             json=body,
             params=query,
         )
-        if method == 'PUT' or method == 'DELETE':
+        if method == 'PUT' or method == 'DELETE' or not response.text:
             return None
         return response.json()
 

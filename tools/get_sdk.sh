@@ -10,11 +10,14 @@ TMP_DIR=$2
 SDK_DIR=$3
 DAEMON=$4
 SDK_LOCATION_URL=https://ibm.biz/sdk_location
-# latest version for the platform (entries: url, version, ..., platform)
-SDK_URL=$(curl -sL $SDK_LOCATION_URL | awk -v platform="$PLATFORM" '
-  /^- url:/ {url = $3}
-  /^ +version:/ {version = $2}
-  /^ +platform:/ && $2 == platform {print version, url}
+# latest version for the platform: YAML list of entries with keys version, platform, url (in any order)
+SDK_URL=$(curl -fsSL $SDK_LOCATION_URL | awk -v platform="$PLATFORM" '
+  function flush() { if (pf == platform && url != "") print version, url; version = ""; url = ""; pf = "" }
+  /^- / {flush(); sub(/^- /, "  ")}
+  $1 == "version:" {version = $2}
+  $1 == "platform:" {pf = $2}
+  $1 == "url:" {url = $2}
+  END {flush()}
 ' | sort -V | tail -n1 | cut -d' ' -f2)
 if test -z "$SDK_URL"; then
 	echo "No SDK found for platform: $PLATFORM"
@@ -22,7 +25,7 @@ if test -z "$SDK_URL"; then
 fi
 SDK_ARCHIVE=${TMP_DIR}${SDK_URL##*/}
 echo "Downloading Aspera Transfer Daemon archive for $PLATFORM from $SDK_URL"
-curl -sLo $SDK_ARCHIVE $SDK_URL
+curl -fsSLo $SDK_ARCHIVE $SDK_URL
 case $SDK_ARCHIVE in
 	*.zip) unzip -qu $SDK_ARCHIVE -d $SDK_DIR;;
 	*.tar.gz) tar -xzf $SDK_ARCHIVE -C $SDK_DIR;;

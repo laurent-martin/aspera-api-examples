@@ -79,47 +79,45 @@ class Minimal : SampleInterface
                 {"paths", new JArray(args.Select(file => new JObject { { "source", file } }))},
             };
 
-            // 4. Start the transfer: the daemon returns a transfer id
+            // 4. Start the transfer and follow it: the daemon sends an event on each change, until the end of the transfer
             Log.log.Info("Uploading files");
-            var response = client.StartTransfer(new Transferd.Api.TransferRequest
+            using var call = client.StartTransferWithMonitor(new Transferd.Api.TransferRequest
             {
                 TransferType = Transferd.Api.TransferType.FileRegular,
                 Config = new Transferd.Api.TransferConfig(),
                 TransferSpec = transferSpec.ToString(Newtonsoft.Json.Formatting.None),
             });
-            if (response.Status == Transferd.Api.TransferStatus.Failed)
-            {
-                throw new Exception($"Transfer failed: {response.Error?.Description}");
-            }
-
-            // 5. Follow the transfer: the daemon sends an event on each change, until the end
-            var registration = new Transferd.Api.RegistrationRequest();
-            registration.Filters.Add(new Transferd.Api.RegistrationFilter { TransferId = { response.TransferId } });
-            using var call = client.MonitorTransfers(registration);
             foreach (var transferEvent in call.ResponseStream.ReadAllAsync().ToBlockingEnumerable())
             {
                 // same name as in proto file, e.g. RUNNING
                 var status = transferEvent.Status;
                 Log.log.Info($"Transfer: {status.ToString().ToUpperInvariant()} {transferEvent.TransferInfo?.BytesTransferred ?? 0} bytes");
+                // the cause of an error is in error, or else in transferInfo
+                var description = transferEvent.Error?.Description;
+                if (string.IsNullOrEmpty(description))
+                {
+                    description = transferEvent.TransferInfo?.ErrorDescription ?? "";
+                }
+                description = description.Trim();
                 if (status == Transferd.Api.TransferStatus.Failed || status == Transferd.Api.TransferStatus.Canceled)
                 {
-                    // the cause is in error, or else in transferInfo
-                    var description = transferEvent.Error?.Description;
-                    if (string.IsNullOrEmpty(description))
-                    {
-                        description = transferEvent.TransferInfo?.ErrorDescription ?? "";
-                    }
-                    throw new Exception($"Transfer failed: {description.Trim()}");
+                    throw new Exception($"Transfer failed: {description}");
+                }
+                if (status == Transferd.Api.TransferStatus.UnknownStatus)
+                {
+                    throw new Exception($"Transfer status unknown: {description}");
                 }
                 if (status == Transferd.Api.TransferStatus.Completed)
                 {
-                    break;
+                    return;
                 }
             }
+            // the stream ended before the end of the transfer
+            throw new Exception("Transfer monitoring ended before transfer completion");
         }
         finally
         {
-            // 6. Stop the daemon: transferd stops cleanly on SIGINT (Windows: killed)
+            // 5. Stop the daemon: transferd stops cleanly on SIGINT (Windows: killed)
             Log.log.Info("Stopping daemon");
             if (OperatingSystem.IsWindows())
             {

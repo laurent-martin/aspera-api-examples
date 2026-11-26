@@ -180,59 +180,45 @@ module Utils
       @transfer_service = nil
     end
 
-    # Start a transfer.
+    # Start the daemon if needed, start a transfer, and wait for its end.
     # @param transfer_spec [Hash] transfer spec
-    # @return [String] transfer id
-    def start_transfer(transfer_spec)
+    # @return [void]
+    def start_transfer_and_wait(transfer_spec)
+      startup
       ts_json = JSON.dump(transfer_spec)
       Configuration.log_dump('Transfer spec', ts_json)
-
       transfer_request = ::Transferd::Api::TransferRequest.new(
         transferType: ::Transferd::Api::TransferType::FILE_REGULAR,
         config: ::Transferd::Api::TransferConfig.new,
         transferSpec: ts_json
       )
-
-      transfer_response = @transfer_service.start_transfer(transfer_request)
-      throw_on_error(transfer_response.status, error_description(transfer_response.error&.description))
-      transfer_response.transferId
-    end
-
-    # Wait for the end of a transfer, and log its status.
-    # @param transfer_id [String] transfer id
-    # @return [void]
-    def wait_transfer(transfer_id)
-      registration_request = ::Transferd::Api::RegistrationRequest.new(
-        filters: [::Transferd::Api::RegistrationFilter.new(transferId: [transfer_id])]
-      )
-      @transfer_service.monitor_transfers(registration_request).each do |transfer_response|
-        status = transfer_response.status
-        log_status(status, transfer_response.transferInfo&.averageRateKbps.to_i)
+      # start the transfer: the daemon sends an event on each change, until the end of the transfer
+      # leaving the block closes the call: stop monitoring, if the stream is still open
+      completed = false
+      @transfer_service.start_transfer_with_monitor(transfer_request).each do |event|
+        status = event.status
+        log_status(status, event.transferInfo&.averageRateKbps.to_i)
         # `error` is empty on session errors: the cause is in session or transfer information
-        throw_on_error(status, error_description(transfer_response.error&.description,
-                                                 transfer_response.sessionInfo&.errorDesc,
-                                                 transfer_response.transferInfo&.errorDescription))
-        break if status == :COMPLETED
+        throw_on_error(status, error_description(event.error&.description,
+                                                 event.sessionInfo&.errorDesc,
+                                                 event.transferInfo&.errorDescription))
+        next unless status == :COMPLETED
+
+        completed = true
+        break
       end
+      raise 'Transfer monitoring ended before transfer completion' unless completed
     end
 
-    # Start the daemon if needed, start a transfer, and wait for its end.
-    # @param t_spec [Hash] transfer spec
-    # @return [void]
-    def start_transfer_and_wait(t_spec)
-      startup
-      wait_transfer(start_transfer(t_spec))
-    end
-
-    # Raise an exception if the transfer status is failed or unknown.
+    # Raise an exception if the transfer status is failed, canceled or unknown.
     # @param status [Symbol] transfer status
     # @param description [String] error description
     # @return [void]
     def throw_on_error(status, description)
-      if status == :FAILED
+      if %i[FAILED CANCELED].include?(status)
         raise "Transfer failed: #{description}"
       elsif status == :UNKNOWN_STATUS
-        raise "Unknown transfer id: #{description}"
+        raise "Transfer status unknown: #{description}"
       end
     end
 
@@ -250,6 +236,22 @@ module Utils
     # @return [String] error description, or `unknown error`
     def error_description(*texts)
       texts.map { |text| text.to_s.strip }.find { |text| !text.empty? } || 'unknown error'
+    end
+
+    # Get the transfer spec from the response of Node API `upload_setup` or `download_setup`,
+    # and raise an exception on error.
+    #
+    # The Node API may return an error in the response data, or an empty object, instead of an HTTP error.
+    # @param response_data [Hash, nil] response data, for a single transfer request
+    # @return [Hash] transfer spec
+    def self.transfer_spec_from_setup(response_data)
+      response_data ||= {}
+      result = (response_data['transfer_specs'] || []).first || {}
+      error = response_data['error'] || result['error']
+      raise "Node API error: #{error['user_message']}" if error
+      raise 'No transfer spec in Node API response' unless result['transfer_spec']
+
+      result['transfer_spec']
     end
 
     private

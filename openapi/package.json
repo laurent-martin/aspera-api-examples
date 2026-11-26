@@ -11,7 +11,7 @@
     "js-yaml": "^4.1.0"
   },
   "author": "",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@ibm-cloud/openapi-ruleset": "^1.33.17",
     "ibm-openapi-validator": "^1.38.8"

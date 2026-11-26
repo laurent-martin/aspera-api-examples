@@ -25,7 +25,6 @@ try:
     remote_pass = config.param('server', 'password')
 
     # Example 1: download
-    # Instead of using the soon deprecated FaspManager1 Python lib, let's use the transfer spec
     # direction is relative to us, client, i.e. receive = download
     log.info('Downloading file')
     t_spec_download = {

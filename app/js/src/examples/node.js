@@ -21,8 +21,8 @@ const response = await node_api.create('files/upload_setup', {
 	]
 });
 
-// Extract the single transfer spec from the response data
-const tSpec = response.transfer_specs[0].transfer_spec;
+// Extract the single transfer spec from the response data, or throw the error of the Node API
+const tSpec = TransferClient.transferSpecFromSetup(response);
 
 // Add file list to the transfer spec
 config.addSources(tSpec, 'paths');

@@ -20,7 +20,7 @@ $(DIR_TESTED_FLAG)%: $(INSTALL_FLAG) $(GBL_FILE_SAMPLE)
 	make run&
 	sleep 5
 	@echo "Shutting down server for test."
-	curl -X POST http://localhost:9080/api/shutdown
+	curl -X POST http://127.0.0.1:9080/api/shutdown
 	@mkdir -p $(DIR_TESTED_FLAG)
 	@touch $@
 # install dependencies

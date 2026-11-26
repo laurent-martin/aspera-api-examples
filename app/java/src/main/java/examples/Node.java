@@ -45,10 +45,9 @@ public class Node {
                                     new org.json.JSONArray().put(new JSONObject().put("destination",
                                             config.getParamStr("node", "folder_upload")))))));
 
-            final JSONObject response =
-                    (JSONObject) nodeAPI.create("files/upload_setup", uploadSetupRequest);
-            final JSONObject transferSpec = response.getJSONArray("transfer_specs").getJSONObject(0)
-                    .getJSONObject("transfer_spec");
+            final Object response = nodeAPI.create("files/upload_setup", uploadSetupRequest);
+            // extract the single transfer spec, or throw the error of the Node API
+            final JSONObject transferSpec = TransferClient.transferSpecFromSetup(response);
 
             /*
              * Add local file paths to transfer spec

@@ -181,60 +181,71 @@ class TransferClient {
         }
     }
 
-    /// @brief Start a transfer.
-    /// @param transfer_spec transfer spec
-    /// @return transfer id
-    std::string transfer_start(const json::object& transfer_spec) {
-        const std::string ts_json = json::serialize(transfer_spec);
-        log_dump("Transfer spec", ts_json);
-        // create a transfer request
-        auto* transfer_config = new trapi::TransferConfig;
-        transfer_config->set_loglevel(2);  // ascp levels: 0 1 2
-        trapi::TransferRequest transfer_request;
-        transfer_request.set_transfertype(trapi::TransferType::FILE_REGULAR);
-        transfer_request.set_allocated_config(transfer_config);
-        transfer_request.set_transferspec(ts_json);
-        // send start transfer request to the transfer daemon
-        grpc::ClientContext start_transfer_context;
-        trapi::StartTransferResponse start_transfer_response;
-        check_rpc_status(
-            "StartTransfer",
-            _transfer_service->StartTransfer(&start_transfer_context, transfer_request, &start_transfer_response));
-        transfer_check_failed_status(start_transfer_response.status(), error_description({start_transfer_response.error().description()}));
-        return start_transfer_response.transferid();
-    }
-
-    /// @brief Wait for the end of a transfer, and log its status.
-    /// @param transfer_id transfer id
-    void wait_transfer(const std::string& transfer_id) {
-        trapi::RegistrationRequest registration_request;
-        registration_request.add_filters()->add_transferid(transfer_id);
-        // monitor transfer status: the daemon sends an event on each change
-        grpc::ClientContext monitor_context;
-        const auto events = _transfer_service->MonitorTransfers(&monitor_context, registration_request);
-        trapi::TransferResponse event;
-        while (events->Read(&event)) {
-            const trapi::TransferStatus status = event.status();
-            log_status(status, event.transferinfo().averageratekbps());
-            // `error` is empty on session errors: the cause is in session or transfer information
-            transfer_check_failed_status(
-                status,
-                error_description({event.error().description(), event.sessioninfo().errordesc(), event.transferinfo().errordescription()}));
-            if (status == trapi::TransferStatus::COMPLETED) {
-                // stop monitoring
-                monitor_context.TryCancel();
-                return;
-            }
-        }
-        throw std::runtime_error("Transfer monitoring ended before transfer completion");
-    }
-
     /// @brief Start the daemon if needed, start a transfer, and wait for its end.
     /// @param transfer_spec transfer spec
     void transfer_start_and_wait(const json::object& transfer_spec) {
         // ensure daemon is started and we are connected
         daemon_startup();
-        wait_transfer(transfer_start(transfer_spec));
+        const std::string ts_json = json::serialize(transfer_spec);
+        log_dump("Transfer spec", ts_json);
+        // create a transfer request
+        auto* transfer_config = new trapi::TransferConfig;
+        trapi::TransferRequest transfer_request;
+        transfer_request.set_transfertype(trapi::TransferType::FILE_REGULAR);
+        transfer_request.set_allocated_config(transfer_config);
+        transfer_request.set_transferspec(ts_json);
+        // start the transfer: the daemon sends an event on each change, until the end of the transfer
+        grpc::ClientContext monitor_context;
+        const auto events = _transfer_service->StartTransferWithMonitor(&monitor_context, transfer_request);
+        trapi::TransferResponse event;
+        while (events->Read(&event)) {
+            const trapi::TransferStatus status = event.status();
+            log_status(status, event.transferinfo().averageratekbps());
+            try {
+                // `error` is empty on session errors: the cause is in session or transfer information
+                transfer_check_failed_status(
+                    status,
+                    error_description({event.error().description(), event.sessioninfo().errordesc(), event.transferinfo().errordescription()}));
+            } catch (const std::exception&) {
+                // stop monitoring, if the stream is still open
+                monitor_context.TryCancel();
+                throw;
+            }
+            if (status == trapi::TransferStatus::COMPLETED) {
+                // stop monitoring, if the stream is still open
+                monitor_context.TryCancel();
+                return;
+            }
+        }
+        // the stream ended before the end of the transfer: the cause is in the status of the call
+        check_rpc_status("StartTransferWithMonitor", events->Finish());
+        throw std::runtime_error("Transfer monitoring ended before transfer completion");
+    }
+
+    /// @brief Get the transfer spec from the response of Node API `upload_setup` or `download_setup`, and throw an exception on error.
+    /// The Node API may return an error in the response data, or an empty object, instead of an HTTP error.
+    /// @param response_data response data, for a single transfer request
+    /// @return transfer spec
+    static json::object transfer_spec_from_setup(const json::value& response_data) {
+        static const json::object empty_object;
+        const json::object& data = response_data.is_object() ? response_data.as_object() : empty_object;
+        const json::object* result = &empty_object;
+        const json::value* transfer_specs = data.if_contains("transfer_specs");
+        if (transfer_specs && !transfer_specs->as_array().empty()) {
+            result = &transfer_specs->as_array()[0].as_object();
+        }
+        const json::value* error = data.if_contains("error");
+        if (!error) {
+            error = result->if_contains("error");
+        }
+        if (error) {
+            throw std::runtime_error("Node API error: " + std::string(error->as_object().at("user_message").as_string()));
+        }
+        const json::value* transfer_spec = result->if_contains("transfer_spec");
+        if (!transfer_spec) {
+            throw std::runtime_error("No transfer spec in Node API response");
+        }
+        return transfer_spec->as_object();
     }
 
    private:
@@ -332,15 +343,15 @@ class TransferClient {
         LOGGER(info) << message.str();
     }
 
-    /// @brief Throw an exception if the transfer status is failed or unknown.
+    /// @brief Throw an exception if the transfer status is failed, canceled or unknown.
     /// @param status transfer status
     /// @param description error description
     static void transfer_check_failed_status(const trapi::TransferStatus& status, const std::string& description) {
-        if (status == trapi::TransferStatus::FAILED) {
+        if (status == trapi::TransferStatus::FAILED || status == trapi::TransferStatus::CANCELED) {
             throw std::runtime_error("Transfer failed: " + description);
         }
         if (status == trapi::TransferStatus::UNKNOWN_STATUS) {
-            throw std::runtime_error("Unknown transfer id: " + description);
+            throw std::runtime_error("Transfer status unknown: " + description);
         }
     }
 };

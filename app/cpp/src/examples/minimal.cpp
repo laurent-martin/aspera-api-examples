@@ -53,45 +53,42 @@ void transfer(utils::Configuration& config, const std::vector<std::string>& file
         {"destination_root", config.param_str({"server", "folder_upload"})},
         {"paths", paths}};
 
-    // 4. Start the transfer: the daemon returns a transfer id
+    // 4. Start the transfer and follow it: the daemon sends an event on each change, until the end of the transfer
     LOGGER(info) << "Uploading files";
     trapi::TransferRequest request;
     request.set_transfertype(trapi::TransferType::FILE_REGULAR);
     request.mutable_config();
     request.set_transferspec(json::serialize(transfer_spec));
-    trapi::StartTransferResponse response;
-    grpc::ClientContext start_context;
-    const grpc::Status start_status = client->StartTransfer(&start_context, request, &response);
-    if (!start_status.ok()) {
-        throw std::runtime_error("Failed to start transfer: " + start_status.error_message());
-    }
-    if (response.status() == trapi::TransferStatus::FAILED) {
-        throw std::runtime_error("Transfer failed: " + response.error().description());
-    }
-
-    // 5. Follow the transfer: the daemon sends an event on each change, until the end
-    trapi::RegistrationRequest registration;
-    registration.add_filters()->add_transferid(response.transferid());
-    grpc::ClientContext monitor_context;
-    const auto events = client->MonitorTransfers(&monitor_context, registration);
+    grpc::ClientContext context;
+    const auto events = client->StartTransferWithMonitor(&context, request);
     trapi::TransferResponse event;
     while (events->Read(&event)) {
         LOGGER(info) << "Transfer: " << trapi::TransferStatus_Name(event.status()) << " "
                      << event.transferinfo().bytestransferred() << " bytes";
+        // the cause of an error is in error, or else in transferInfo
+        std::string description =
+            event.error().description().empty() ? event.transferinfo().errordescription() : event.error().description();
+        boost::algorithm::trim(description);
         if (event.status() == trapi::TransferStatus::FAILED || event.status() == trapi::TransferStatus::CANCELED) {
-            // the cause is in error, or else in transferInfo
-            std::string description = event.error().description().empty() ? event.transferinfo().errordescription()
-                                                                           : event.error().description();
-            boost::algorithm::trim(description);
-            monitor_context.TryCancel();
+            context.TryCancel();
             throw std::runtime_error("Transfer failed: " + description);
+        }
+        if (event.status() == trapi::TransferStatus::UNKNOWN_STATUS) {
+            context.TryCancel();
+            throw std::runtime_error("Transfer status unknown: " + description);
         }
         if (event.status() == trapi::TransferStatus::COMPLETED) {
             // stop following the transfer
-            monitor_context.TryCancel();
-            break;
+            context.TryCancel();
+            return;
         }
     }
+    // the stream ended before the end of the transfer: the cause is in the status of the call
+    const grpc::Status status = events->Finish();
+    if (!status.ok()) {
+        throw std::runtime_error("Transfer monitoring failed: " + status.error_message());
+    }
+    throw std::runtime_error("Transfer monitoring ended before transfer completion");
 }
 
 int main(int argc, char* argv[]) {
@@ -120,7 +117,7 @@ int main(int argc, char* argv[]) {
         exit_code = 1;
     }
 
-    // 6. Stop the daemon: transferd stops cleanly on SIGINT
+    // 5. Stop the daemon: transferd stops cleanly on SIGINT
     LOGGER(info) << "Stopping daemon";
     boost::system::error_code ec;
     daemon.interrupt(ec);

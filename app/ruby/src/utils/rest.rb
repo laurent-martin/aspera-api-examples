@@ -190,7 +190,7 @@ module Utils
       }
       params[:payload] = body.to_json if body
       response = execute(**params)
-      return nil if %w[PUT DELETE].include?(method.to_s.upcase)
+      return nil if %w[PUT DELETE].include?(method.to_s.upcase) || response.body.empty?
 
       JSON.parse(response.body)
     end

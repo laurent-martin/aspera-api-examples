@@ -22,8 +22,8 @@ try:
         ]
     })
 
-    # extract the single transfer spec (we sent a single transfer request)
-    t_spec = response_data['transfer_specs'][0]['transfer_spec']
+    # extract the single transfer spec (we sent a single transfer request), or raise the error of the Node API
+    t_spec = utils.transfer_client.transfer_spec_from_setup(response_data)
 
     # add file list in transfer spec
     config.add_sources(t_spec, 'paths')

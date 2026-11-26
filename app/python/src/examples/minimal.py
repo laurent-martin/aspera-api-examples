@@ -52,28 +52,28 @@ try:
             'paths': [{'source': file} for file in sys.argv[1:]],
         }
 
-        # 4. Start the transfer: the daemon returns a transfer id
+        # 4. Start the transfer and follow it: the daemon sends an event on each change, until the end of the transfer
         log.info('Uploading files')
-        response = client.StartTransfer(transferd.TransferRequest(
+        events = client.StartTransferWithMonitor(transferd.TransferRequest(
             transferType=transferd.FILE_REGULAR,
             config=transferd.TransferConfig(),
             transferSpec=json.dumps(transfer_spec),
         ))
-        if response.status == transferd.FAILED:
-            raise Exception(f'Transfer failed: {response.error.description}')
-
-        # 5. Follow the transfer: the daemon sends an event on each change, until the end
-        events = client.MonitorTransfers(transferd.RegistrationRequest(
-            filters=[transferd.RegistrationFilter(transferId=[response.transferId])]))
         for event in events:
             log.info('Transfer: %s %d bytes', transferd.TransferStatus.Name(event.status), event.transferInfo.bytesTransferred)
+            # the cause of an error is in error, or else in transferInfo
+            description = (event.error.description or event.transferInfo.errorDescription).strip()
             if event.status in (transferd.FAILED, transferd.CANCELED):
-                # the cause is in error, or else in transferInfo
-                raise Exception(f'Transfer failed: {(event.error.description or event.transferInfo.errorDescription).strip()}')
+                raise Exception(f'Transfer failed: {description}')
+            if event.status == transferd.UNKNOWN_STATUS:
+                raise Exception(f'Transfer status unknown: {description}')
             if event.status == transferd.COMPLETED:
                 break
+        else:
+            # no break: the stream ended before the end of the transfer
+            raise Exception('Transfer monitoring ended before transfer completion')
 finally:
-    # 6. Stop the daemon: transferd stops cleanly on SIGINT (Windows: terminate)
+    # 5. Stop the daemon: transferd stops cleanly on SIGINT (Windows: terminate)
     log.info('Stopping daemon')
     if os.name == 'nt':
         daemon.terminate()

@@ -19,8 +19,6 @@ pub mod transfer {
 
 use transfer::transfer_service_client::TransferServiceClient;
 use transfer::InstanceInfoRequest;
-use transfer::RegistrationFilter;
-use transfer::RegistrationRequest;
 use transfer::TransferRequest;
 use transfer::TransferStatus;
 use transfer::TransferType;
@@ -262,70 +260,27 @@ impl TransferClient {
         Ok(())
     }
 
-    /// Start a transfer.
+    /// Start the daemon if needed, start a transfer, and wait for its end.
     ///
     /// # Arguments
     /// * `transfer_spec` - transfer spec
-    ///
-    /// # Returns
-    /// Transfer id
-    pub async fn transfer_start(
+    pub async fn transfer_start_and_wait(
         &mut self,
         transfer_spec: &serde_json::Value,
-    ) -> Result<String, Box<dyn Error>> {
+    ) -> Result<(), Box<dyn Error>> {
+        self.daemon_startup().await?;
         // display transfer spec in log
         log_dump("Transfer spec", transfer_spec, Debug);
-        // start the daemon if needed
-        self.daemon_startup().await?;
         let request = TransferRequest {
             transfer_type: TransferType::FileRegular.into(),
             transfer_spec: transfer_spec.to_string(),
             config: None,
         };
-        // get the actual transfer_service from the Option, and return Error if it's None
-        let response = self
-            .get_transfer_service()?
-            .start_transfer(request)
-            .await?
-            .into_inner();
-        let status = TransferStatus::try_from(response.status).unwrap_or(TransferStatus::UnknownStatus);
-        Self::throw_on_error(status, &[response.error.as_ref().map(|err| err.description.as_str())])?;
-        Ok(response.transfer_id)
-    }
-    /// Start the daemon if needed, start a transfer, and wait for its end.
-    ///
-    /// # Arguments
-    /// * `transfer_spec` - transfer spec
-    ///
-    /// # Returns
-    /// Transfer id
-    pub async fn transfer_start_and_wait(
-        &mut self,
-        transfer_spec: &serde_json::Value,
-    ) -> Result<String, Box<dyn Error>> {
-        let transfer_id = self.transfer_start(transfer_spec).await?;
-        self.transfer_wait(&transfer_id).await?;
-        Ok(transfer_id)
-    }
-    /// Wait for the end of a transfer, and log its status.
-    ///
-    /// # Arguments
-    /// * `transfer_id` - transfer id
-    pub async fn transfer_wait(
-        &mut self,
-        transfer_id: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let registration_request = RegistrationRequest {
-            filters: vec![RegistrationFilter {
-                transfer_id: vec![transfer_id.to_string()],
-                ..Default::default()
-            }],
-            ..Default::default()
-        };
-        // monitor transfer status: the daemon sends an event on each change
+        // start the transfer: the daemon sends an event on each change, until the end of the transfer
+        // dropping the stream on return stops monitoring, if the stream is still open
         let mut events = self
             .get_transfer_service()?
-            .monitor_transfers(registration_request)
+            .start_transfer_with_monitor(request)
             .await?
             .into_inner();
         while let Some(event) = events.message().await? {
@@ -399,7 +354,7 @@ impl TransferClient {
             log::info!("Transfer: {}", status.as_str_name());
         }
     }
-    /// Return an error if the transfer status is failed or unknown.
+    /// Return an error if the transfer status is failed, canceled or unknown.
     ///
     /// # Arguments
     /// * `status` - transfer status
@@ -412,8 +367,8 @@ impl TransferClient {
             .find(|text| !text.is_empty())
             .unwrap_or("unknown error");
         match status {
-            TransferStatus::Failed => Err(format!("Transfer failed: {description}").into()),
-            TransferStatus::UnknownStatus => Err(format!("Unknown transfer id: {description}").into()),
+            TransferStatus::Failed | TransferStatus::Canceled => Err(format!("Transfer failed: {description}").into()),
+            TransferStatus::UnknownStatus => Err(format!("Transfer status unknown: {description}").into()),
             _ => Ok(()),
         }
     }

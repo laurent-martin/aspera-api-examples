@@ -51,32 +51,29 @@ begin
     'paths' => ARGV.map { |file| { 'source' => file } }
   }
 
-  # 4. Start the transfer: the daemon returns a transfer id
+  # 4. Start the transfer and follow it: the daemon sends an event on each change, until the end of the transfer
   config.logger.info('Uploading files')
   request = Transferd::Api::TransferRequest.new(
     transferType: :FILE_REGULAR,
     config: Transferd::Api::TransferConfig.new,
     transferSpec: JSON.generate(transfer_spec)
   )
-  response = client.start_transfer(request)
-  raise "Transfer failed: #{response.error&.description}" if response.status == :FAILED
-
-  # 5. Follow the transfer: the daemon sends an event on each change, until the end
-  registration = Transferd::Api::RegistrationRequest.new(
-    filters: [Transferd::Api::RegistrationFilter.new(transferId: [response.transferId])]
-  )
-  client.monitor_transfers(registration).each do |event|
+  completed = false
+  client.start_transfer_with_monitor(request).each do |event|
     config.logger.info("Transfer: #{event.status} #{event.transferInfo&.bytesTransferred.to_i} bytes")
-    if %i[FAILED CANCELED].include?(event.status)
-      # the cause is in error, or else in transferInfo
-      description = event.error&.description.to_s
-      description = event.transferInfo&.errorDescription.to_s if description.empty?
-      raise "Transfer failed: #{description.strip}"
-    end
-    break if event.status == :COMPLETED
+    # the cause of an error is in error, or else in transferInfo
+    description = event.error&.description.to_s
+    description = event.transferInfo&.errorDescription.to_s if description.empty?
+    raise "Transfer failed: #{description.strip}" if %i[FAILED CANCELED].include?(event.status)
+    raise "Transfer status unknown: #{description.strip}" if event.status == :UNKNOWN_STATUS
+
+    completed = event.status == :COMPLETED
+    break if completed
   end
+  # the stream ended before the end of the transfer
+  raise 'Transfer monitoring ended before transfer completion' unless completed
 ensure
-  # 6. Stop the daemon: transferd stops cleanly on SIGINT (Windows: killed)
+  # 5. Stop the daemon: transferd stops cleanly on SIGINT (Windows: killed)
   config.logger.info('Stopping daemon')
   Process.kill(Gem.win_platform? ? 'KILL' : 'INT', daemon)
   Process.wait(daemon)

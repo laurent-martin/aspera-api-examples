@@ -27,8 +27,8 @@ const (
 // logger of the package, set by NewConfiguration
 var logger *zap.SugaredLogger
 
-// secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
-var secretsRegex = regexp.MustCompile(`("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+`)
+// secrets in logs, case-insensitive: value of JSON keys ending with one of those words, value of "key"/"value" pairs (headers in transfer spec v2) with a key containing one of those words, and JWT assertion in form parameters
+var secretsRegex = regexp.MustCompile(`(?i)("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|("key"\s*:\s*"[^"]*(?:assertion|authorization|password|private_key|secret|token)[^"]*"\s*,\s*"value"\s*:\s*")[^"]+|(assertion=)[^&]+|("value"\s*:\s*")[^"]+("\s*,\s*"key"\s*:\s*"[^"]*(?:assertion|authorization|password|private_key|secret|token)[^"]*")`)
 
 // set from configuration file (misc.show_secrets)
 var showSecrets = false
@@ -43,7 +43,7 @@ func MaskSecrets(text string) string {
 	if showSecrets {
 		return text
 	}
-	return secretsRegex.ReplaceAllString(text, "${1}${2}***")
+	return secretsRegex.ReplaceAllString(text, "${1}${2}${3}${4}***${5}")
 }
 
 // LogDump logs a named value: objects are displayed in JSON, and secrets are hidden.

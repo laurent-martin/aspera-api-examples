@@ -24,7 +24,7 @@ interface TSpecRequestBody {
 }
 
 /**
- * Configuration file.
+ * Configuration file: the values that this app uses.
  */
 interface ServerConfig {
   web: {
@@ -35,6 +35,30 @@ interface ServerConfig {
     username: string;
     password: string;
     verify: boolean;
+  };
+  server?: {
+    url?: string;
+    username?: string;
+    file_download?: string;
+    folder_upload?: string;
+  };
+  httpgw?: {
+    url?: string;
+  };
+}
+
+/**
+ * Values of the configuration that the browser needs: no secret.
+ */
+interface ClientConfig {
+  httpgw: {
+    url?: string;
+  };
+  server: {
+    url?: string;
+    username?: string;
+    file_download?: string;
+    folder_upload?: string;
   };
 }
 
@@ -95,6 +119,23 @@ const config = yaml.load(
   fs.readFileSync(getPath("main_config"), "utf8")
 ) as ServerConfig;
 
+/**
+ * Allow-list of the values sent to the browser by `GET /api/config`.
+ * Add a value only if the client uses it, and never a secret:
+ * the Node API credentials stay in the server, and the user types the secrets of the test modes.
+ */
+const clientConfig: ClientConfig = {
+  httpgw: {
+    url: config.httpgw?.url,
+  },
+  server: {
+    url: config.server?.url,
+    username: config.server?.username,
+    file_download: config.server?.file_download,
+    folder_upload: config.server?.folder_upload,
+  },
+};
+
 // --------------------------------------------------
 // TLS override (test only)
 // --------------------------------------------------
@@ -119,8 +160,7 @@ app.use(express.json());
 app.get(
   "/api/config",
   (req, res) => {
-    res.type("application/json");
-    res.send(JSON.stringify(config));
+    res.json(clientConfig);
   }
 );
 
@@ -150,8 +190,22 @@ app.post(
         return res.status(400).json({ error: `Invalid operation: ${operation}` });
       }
 
-      const nodeUser = basic_token && basic_access_key ? basic_access_key : config.node.username;
-      const nodePass = basic_token && basic_secret ? basic_secret : config.node.password;
+      // Access control (step 3 of flow A2 in the guide): a real broker authenticates the user (session, OAuth, SSO),
+      // checks that this user may download these `sources` or upload to this `destination`,
+      // and rejects the request otherwise.
+      // This demo has no user: it accepts any path, within the limits of the node user or access key.
+
+      let nodeUser = config.node.username;
+      let nodePass = config.node.password;
+      if (basic_token) {
+        // Basic token (test only): the user types the access key and its secret, and they return in the token.
+        // Never use the node credentials of the configuration here: the browser would receive them.
+        if (!basic_access_key || !basic_secret) {
+          return res.status(400).json({ error: "Missing access key or secret" });
+        }
+        nodeUser = basic_access_key;
+        nodePass = basic_secret;
+      }
       const basicAuth =
         "Basic " +
         Buffer.from(`${nodeUser}:${nodePass}`).toString("base64");
@@ -232,6 +286,8 @@ app.get("/", (req, res) => {
 </html>`);
 });
 
+// Stop the server (used by the test in the Makefile).
+// No authentication: the server listens on the local address only.
 app.post("/api/shutdown", (req, res) => {
   res.json({ message: "Server shutting down" });
   setTimeout(() => {
@@ -247,6 +303,9 @@ app.use(express.static(publicFolder));
 // Start server
 // --------------------------------------------------
 
-server = app.listen(config.web.port, "0.0.0.0", () => {
-  console.log(`API server listening on HTTP port ${config.web.port}`);
+// Local address only: this demo API has no user authentication.
+// The Vite dev server proxies `/api` to this address.
+const listenAddress = "127.0.0.1";
+server = app.listen(config.web.port, listenAddress, () => {
+  console.log(`API server listening on http://${listenAddress}:${config.web.port}`);
 });

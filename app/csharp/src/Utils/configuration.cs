@@ -7,8 +7,8 @@ using System.Text.RegularExpressions;
 class Log
 {
     public static readonly log4net.ILog log = log4net.LogManager.GetLogger(typeof(Log));
-    // secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
-    private static readonly Regex SECRETS_REGEX = new Regex(@"(""[^""]*(?:assertion|authorization|password|private_key|secret|token)""\s*:\s*"")[^""]+|(assertion=)[^&]+");
+    // secrets in logs, case-insensitive: value of JSON keys ending with one of those words, value of "key"/"value" pairs (headers in transfer spec v2) with a key containing one of those words, and JWT assertion in form parameters
+    private static readonly Regex SECRETS_REGEX = new Regex(@"(""[^""]*(?:assertion|authorization|password|private_key|secret|token)""\s*:\s*"")[^""]+|(""key""\s*:\s*""[^""]*(?:assertion|authorization|password|private_key|secret|token)[^""]*""\s*,\s*""value""\s*:\s*"")[^""]+|(assertion=)[^&]+|(""value""\s*:\s*"")[^""]+(""\s*,\s*""key""\s*:\s*""[^""]*(?:assertion|authorization|password|private_key|secret|token)[^""]*"")", RegexOptions.IgnoreCase);
     // set from configuration file (misc.show_secrets)
     public static bool ShowSecrets = false;
     /// <summary>
@@ -18,7 +18,7 @@ class Log
     /// <returns>text with hidden secrets</returns>
     public static string MaskSecrets(string text)
     {
-        return ShowSecrets ? text : SECRETS_REGEX.Replace(text, "$1$2***");
+        return ShowSecrets ? text : SECRETS_REGEX.Replace(text, "$1$2$3$4***$5");
     }
     /// <summary>
     /// Log a named value: objects are displayed in JSON, and secrets are hidden.

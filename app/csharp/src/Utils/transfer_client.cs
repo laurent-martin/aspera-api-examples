@@ -1,3 +1,4 @@
+using Grpc.Core;
 using Grpc.Net.Client;
 using Newtonsoft.Json.Linq;
 using System;
@@ -270,53 +271,6 @@ public class TransferClient
     }
 
     /// <summary>
-    /// Start a transfer.
-    /// </summary>
-    /// <param name="aSpecObj">transfer spec</param>
-    /// <returns>transfer id</returns>
-    public string StartTransfer(JObject aSpecObj)
-    {
-        var tsJson = Newtonsoft.Json.JsonConvert.SerializeObject(aSpecObj);
-        Log.Dump("Transfer spec", tsJson);
-        // Start a transfer and return transfer id
-        var transferRequest = new Transferd.Api.TransferRequest
-        {
-            TransferType = Transferd.Api.TransferType.FileRegular,
-            Config = new Transferd.Api.TransferConfig { LogLevel = 2 },
-            TransferSpec = tsJson,
-        };
-        var transferResponse = DaemonService().StartTransfer(transferRequest);
-        // exception: the caller shuts down the daemon
-        ThrowOnError(transferResponse.Status, transferResponse.Error?.Description);
-        return transferResponse.TransferId;
-    }
-
-    /// <summary>
-    /// Wait for the end of a transfer, and log its status.
-    /// </summary>
-    /// <param name="aTransferId">transfer id</param>
-    void WaitTransfer(string aTransferId)
-    {
-        while (true)
-        {
-            // check the current state of the transfer
-            var queryTransferResponse = DaemonService().QueryTransfer(new Transferd.Api.TransferInfoRequest() { TransferId = aTransferId });
-            // check transfer status in response, and exit if it's done
-            Transferd.Api.TransferStatus status = queryTransferResponse.Status;
-            LogStatus(status, queryTransferResponse.TransferInfo?.AverageRateKbps ?? 0);
-            // `error` is empty on session errors: the cause is in transfer information
-            ThrowOnError(status, queryTransferResponse.Error?.Description, queryTransferResponse.TransferInfo?.ErrorDescription);
-            if (status == Transferd.Api.TransferStatus.Completed)
-            {
-                break;
-            }
-            // wait a second before checking again
-            System.Threading.Thread.Sleep(1000);
-        }
-    }
-
-
-    /// <summary>
     /// Log the transfer status, and the rate when running.
     /// </summary>
     /// <param name="status">transfer status</param>
@@ -336,20 +290,20 @@ public class TransferClient
     }
 
     /// <summary>
-    /// Throw an exception if the transfer status is failed or unknown.
+    /// Throw an exception if the transfer status is failed, canceled or unknown.
     /// </summary>
     /// <param name="status">transfer status</param>
     /// <param name="descriptions">error descriptions: the first non-empty one is used</param>
     private static void ThrowOnError(Transferd.Api.TransferStatus status, params string?[] descriptions)
     {
         var description = descriptions.Select(text => text?.Trim()).FirstOrDefault(text => !string.IsNullOrEmpty(text)) ?? "unknown error";
-        if (status == Transferd.Api.TransferStatus.Failed)
+        if (status == Transferd.Api.TransferStatus.Failed || status == Transferd.Api.TransferStatus.Canceled)
         {
             throw new Exception($"Transfer failed: {description}");
         }
         if (status == Transferd.Api.TransferStatus.UnknownStatus)
         {
-            throw new Exception($"Unknown transfer id: {description}");
+            throw new Exception($"Transfer status unknown: {description}");
         }
     }
 
@@ -360,7 +314,29 @@ public class TransferClient
     public void StartTransferAndWait(JObject aSpecObj)
     {
         Startup();
-        WaitTransfer(StartTransfer(aSpecObj));
+        var tsJson = Newtonsoft.Json.JsonConvert.SerializeObject(aSpecObj);
+        Log.Dump("Transfer spec", tsJson);
+        var transferRequest = new Transferd.Api.TransferRequest
+        {
+            TransferType = Transferd.Api.TransferType.FileRegular,
+            Config = new Transferd.Api.TransferConfig(),
+            TransferSpec = tsJson,
+        };
+        // start the transfer: the daemon sends an event on each change, until the end of the transfer
+        // disposing the call stops monitoring, if the stream is still open
+        using var call = DaemonService().StartTransferWithMonitor(transferRequest);
+        foreach (var transferEvent in call.ResponseStream.ReadAllAsync().ToBlockingEnumerable())
+        {
+            var status = transferEvent.Status;
+            LogStatus(status, transferEvent.TransferInfo?.AverageRateKbps ?? 0);
+            // `error` is empty on session errors: the cause is in session or transfer information
+            ThrowOnError(status, transferEvent.Error?.Description, transferEvent.SessionInfo?.ErrorDesc, transferEvent.TransferInfo?.ErrorDescription);
+            if (status == Transferd.Api.TransferStatus.Completed)
+            {
+                return;
+            }
+        }
+        throw new Exception("Transfer monitoring ended before transfer completion");
     }
     /// <summary>
     /// Capture an output of the daemon to a file.

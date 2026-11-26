@@ -4,10 +4,11 @@ import path from 'path';
 export default defineConfig({
   server: {
     port: 5173,
-    host: true,
+    // local address only: the proxied API has no user authentication
+    host: '127.0.0.1',
     proxy: {
-      // server.ts runs on 9080, proxy API calls to avoid CORS issues
-      '/api': 'http://localhost:9080',
+      // server.ts listens on 127.0.0.1:9080, proxy API calls to avoid CORS issues
+      '/api': 'http://127.0.0.1:9080',
     },
   },
   build: {

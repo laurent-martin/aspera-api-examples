@@ -50,9 +50,11 @@ In this example, the transfer spec is built either:
 
 - Using a broker app (server) which in turn calls the HSTS node API
   - it generates an Aspera Transfer token: this is the recommended way, or
-  - it uses a Basic token (for testing purposes only, do not use this in web apps)
+  - it uses a Basic token (for testing purposes only, do not use this in web apps):
+    the user types the access key and its secret in the page.
 - Using SSH credentials (do not do that: for testing purposes only): in that case, the HSTS Node API is not used,
   but the SSH user's credentials must be known, and that transfer user must be authorized on the HSTS server without a token.
+  The user types the SSH password in the page.
   For example, this is not possible on AoC/ATS SaaS Aspera transfer servers.
 
 ![Architecture](doc/web_arch.png)
@@ -69,7 +71,8 @@ The web application is split into two parts:
 The whole transfer flow, in the order it happens
 (function names are in [`client.ts`](src/client/client.ts) unless noted):
 
-1. **Load config**: the page fetches `/api/config` from the server, then `ClientApp.initialize()` runs.
+1. **Load config**: the page fetches `/api/config` from the server (the few values it needs, no secret),
+   then `ClientApp.initialize()` runs.
 2. **Initialize the SDK**: `reinitSdk()` calls `initSession()` with the settings of the selected transfer agent
    (Desktop, Connect or HTTP Gateway), after registering `registerStatusCallback()` and `registerActivityCallback()`.
 3. **Wait for status `RUNNING`**: `handleStatusEvents()` receives SDK status changes.
@@ -81,6 +84,9 @@ The whole transfer flow, in the order it happens
    which calls `POST /api/tspec`.
    The server ([`server.ts`](src/server/server.ts)) calls the HSTS Node API `files/<operation>_setup`
    and returns the transfer spec.
+   Before that call, a real broker checks that the authenticated user may transfer these files
+   (step 3 of [A2](../guide/README.md#a2--aspera-transfer-token-authorization)):
+   this demo has no user, and a comment in `/api/tspec` marks the place.
    (With SSH credentials, `getTransferSpecSSH()` builds the spec in the browser instead.)
 6. **Start the transfer**: `startClientTransfer()` calls `startTransfer(spec, settings)`.
    The second argument holds IBM Aspera settings that are not part of the transfer spec,
@@ -113,25 +119,35 @@ node:
 server:
   url: ssh://eudemo.asperademo.com:33001
   username: <SERVER_USER>
-  password: <SERVER_PASSWORD>
   file_download: /aspera-test-dir-small/10MB.1
   folder_upload: /Upload
 httpgw:
   url: https://mygw.example.com/aspera/http-gwy
 ```
 
+The server reads the configuration file, and the browser gets only the values it needs.
+
+- `web` and `node` stay in the server: it calls the Node API with the node credentials.
+- `GET /api/config` returns an allow-list of values (`clientConfig` in [`server.ts`](src/server/server.ts)),
+  used to pre-fill the form: `httpgw.url`, `server.url`, `server.username`, `server.file_download` and `server.folder_upload`.
+- No password, secret or other section of the configuration file goes to the browser.
+  `server.password` is not used: in SSH mode, the user types the password.
+
 > [!NOTE]
 > Node credentials can be either a node user or an access key.
 > As the use of SSH credentials is not recommended,
-> you may leave `server.url`, `server.username` and `server.password` empty:
+> you may leave `server.url` and `server.username` empty:
 > `server.file_download` and `server.folder_upload` pre-fill the file to download and the upload folder.
 > The `httpgw` section can also be ignored if you do not want to use HTTP Gateway.
 
 <!-- separate alerts -->
 
 > [!CAUTION]
-> This sample app shares the full configuration with the client, including credentials.
-> This is for demonstration only: in a real app, such secrets shall not be exposed.
+> The test modes (Basic token and SSH credentials) put a secret in the browser:
+> the user types it, and the transfer spec contains it.
+> Do not use them in a real app.
+> The API of this demo has no user authentication, and `POST /api/shutdown` stops the server:
+> the server and `vite` listen on `127.0.0.1` only, so they are not reachable from the network.
 
 ## Environment Setup
 
@@ -174,11 +190,11 @@ To run only the API server (compiled with `tsc`, without `vite`, so no UI), do:
 make server
 ```
 
-It listens on `web.port` (`9080`) and is also what `make run` starts, next to `vite`.
+It listens on `127.0.0.1`, port `web.port` (`9080`), and is also what `make run` starts, next to `vite`.
 This is useful to test the broker API alone, for example:
 
 ```bash
-curl -X POST http://localhost:9080/api/tspec -H 'Content-Type: application/json' \
+curl -X POST http://127.0.0.1:9080/api/tspec -H 'Content-Type: application/json' \
   -d '{"operation":"download","sources":["<FILE_PATH>"]}'
 ```
 
@@ -186,10 +202,10 @@ curl -X POST http://localhost:9080/api/tspec -H 'Content-Type: application/json'
 
 Once the runtime is started:
 
-- `express` serves the API on port `9080` (`web.port` in `private/config.yaml`;
+- `express` serves the API on `127.0.0.1`, port `9080` (`web.port` in `private/config.yaml`;
   if you change it, also update the `/api` proxy target in `vite.config.ts`)
 - `vite` serves the client app and works as a reverse proxy for the server API,
-  on port `5173` (`server.port` in `vite.config.ts`)
+  on `127.0.0.1`, port `5173` (`server.host` and `server.port` in `vite.config.ts`)
 
 Use `vite`'s URL in the browser: <http://localhost:5173>
 

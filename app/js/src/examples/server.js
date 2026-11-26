@@ -23,7 +23,6 @@ var t_spec1_generic = {
 }
 
 // Example 1: download
-// Instead of using the soon deprecated FaspManager1 Python lib, let's use the transfer spec
 // direction is relative to us, client, i.e. receive = download
 const test1 = () => {
 	logger.info('Downloading file');
@@ -44,7 +43,6 @@ const test2 = () => {
 	t_spec1_generic.tags = { my_sample_tag: 'hello' };
 	return transferClient.startTransferAndWait(t_spec1_generic);
 }
-// check file is uploaded by connecting to: http://demo.asperasoft.com/aspera/user/ with same creds
 
 // Example 3: upload: single file upload to non-existing folder
 // if there is only one source file and destination does not exist, then "FASP" assumes it is destination filename

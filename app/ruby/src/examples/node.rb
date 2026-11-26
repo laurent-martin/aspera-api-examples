@@ -16,12 +16,13 @@ config = Utils::Configuration.instance
 transfer_client = Utils::TransferClient.new(config).startup
 
 begin
-  destination_folder = config.param('server', 'folder_upload')
+  destination_folder = config.param('node', 'folder_upload')
 
   ##############################################################
   # Upload with node authorization
-  # create rest client for Node API on a public demo system, using public demo credentials
+  # create rest client for Node API
   node_api = Utils::Rest.new(config.param('node', 'url'))
+  node_api.verify = config.param('node', 'verify', true)
   node_api.auth_basic(
     config.param('node', 'username'),
     config.param('node', 'password')
@@ -32,8 +33,8 @@ begin
     'files/upload_setup',
     { transfer_requests: [{ transfer_request: { paths: [{ destination: destination_folder }] } }] }
   )
-  # we normally have only one transfer spec in list, so just get the first transfer_spec
-  transfer_spec = send_result['transfer_specs'].first['transfer_spec']
+  # extract the single transfer spec (we sent a single transfer request), or raise the error of the Node API
+  transfer_spec = Utils::TransferClient.transfer_spec_from_setup(send_result)
   # Add list of files to upload
   config.add_sources(transfer_spec, 'paths')
   # Start transfer

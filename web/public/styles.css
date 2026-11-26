@@ -98,6 +98,12 @@ fieldset p {
   margin: 0.5rem 0;
 }
 
+/* Warning about a test-only mode */
+fieldset p.hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 /* ---------- Form controls ---------- */
 
 input[type="text"],

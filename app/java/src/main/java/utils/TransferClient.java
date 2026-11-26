@@ -4,6 +4,7 @@ import com.ibm.software.aspera.transferd.api.Transferd;
 import com.ibm.software.aspera.transferd.api.TransferServiceGrpc;
 import io.grpc.okhttp.OkHttpChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import io.grpc.Context;
 import io.grpc.ManagedChannel;
 import io.grpc.StatusRuntimeException;
 import com.google.protobuf.ByteString;
@@ -22,6 +23,7 @@ import java.net.URI;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
@@ -321,15 +323,22 @@ public class TransferClient {
         daemon_startup();
         daemon_connect();
         if (config.getParamBool("misc", "transfer_regular")) {
-            session_start(transferSpec, Transferd.TransferType.FILE_REGULAR);
+            Configuration.logDump("Transfer spec", transferSpec);
+            final Transferd.TransferRequest transferRequest = Transferd.TransferRequest.newBuilder()
+                    .setTransferType(Transferd.TransferType.FILE_REGULAR)
+                    .setConfig(Transferd.TransferConfig.newBuilder().build())
+                    .setTransferSpec(transferSpec.toString()).build();
+            // start the transfer: the daemon sends an event on each change, until the end of the transfer
+            waitTransferEvents(() -> transferService.startTransferWithMonitor(transferRequest));
         } else {
+            // streaming needs the transfer id before the end of the transfer: start, then monitor
             session_start_streaming(transferSpec);
+            session_wait_for_completion();
         }
-        session_wait_for_completion();
     }
 
     /**
-     * Start a transfer.
+     * Start a transfer, and keep its id: for transfers that need the id before their end.
      *
      * @param transferSpec transfer spec
      * @param aTransferType type of transfer
@@ -349,18 +358,18 @@ public class TransferClient {
     }
 
     /**
-     * Throw an exception if the transfer status is failed or unknown.
+     * Throw an exception if the transfer status is failed, canceled or unknown.
      *
      * @param status transfer status
      * @param description error description
      */
     private static void throwOnError(final Transferd.TransferStatus status,
             final String description) {
-        if (status == Transferd.TransferStatus.FAILED) {
+        if (status == Transferd.TransferStatus.FAILED || status == Transferd.TransferStatus.CANCELED) {
             throw new RuntimeException("Transfer failed: " + description);
         }
         if (status == Transferd.TransferStatus.UNKNOWN_STATUS) {
-            throw new RuntimeException("Unknown transfer id: " + description);
+            throw new RuntimeException("Transfer status unknown: " + description);
         }
     }
 
@@ -485,26 +494,67 @@ public class TransferClient {
      * Wait for the end of the current transfer, and log its status.
      */
     public void session_wait_for_completion() {
-        final Iterator<Transferd.TransferResponse> monitorTransferResponse =
-                transferService.monitorTransfers(Transferd.RegistrationRequest.newBuilder()
-                        .addFilters(Transferd.RegistrationFilter.newBuilder()
-                                .setOperator(Transferd.RegistrationFilterOperator.OR)
-                                .addTransferId(transferId).build())
-                        .build());
-        // monitor transfer until it finishes
-        while (monitorTransferResponse.hasNext()) {
-            final Transferd.TransferResponse response = monitorTransferResponse.next();
-            final Transferd.TransferStatus status = response.getStatus();
-            logStatus(status, response.getTransferInfo().getAverageRateKbps());
-            // `error` is empty on session errors: the cause is in session or transfer information
-            throwOnError(status,
-                    errorDescription(response.getError().getDescription(),
-                            response.getSessionInfo().getErrorDesc(),
-                            response.getTransferInfo().getErrorDescription()));
-            if (status == Transferd.TransferStatus.COMPLETED) {
-                return;
-            }
+        final Transferd.RegistrationRequest registrationRequest = Transferd.RegistrationRequest.newBuilder()
+                .addFilters(Transferd.RegistrationFilter.newBuilder()
+                        .setOperator(Transferd.RegistrationFilterOperator.OR)
+                        .addTransferId(transferId).build())
+                .build();
+        waitTransferEvents(() -> transferService.monitorTransfers(registrationRequest));
+    }
+
+    /**
+     * Wait for the end of a transfer, and log its status.
+     *
+     * @param startCall starts the call that streams the events of the transfer
+     */
+    private void waitTransferEvents(final Supplier<Iterator<Transferd.TransferResponse>> startCall) {
+        // closing the context cancels the call started in it: stop monitoring, if the stream is still open
+        try (Context.CancellableContext context = Context.current().withCancellation()) {
+            context.run(() -> {
+                final Iterator<Transferd.TransferResponse> events = startCall.get();
+                while (events.hasNext()) {
+                    final Transferd.TransferResponse event = events.next();
+                    final Transferd.TransferStatus status = event.getStatus();
+                    logStatus(status, event.getTransferInfo().getAverageRateKbps());
+                    // `error` is empty on session errors: the cause is in session or transfer information
+                    throwOnError(status,
+                            errorDescription(event.getError().getDescription(),
+                                    event.getSessionInfo().getErrorDesc(),
+                                    event.getTransferInfo().getErrorDescription()));
+                    if (status == Transferd.TransferStatus.COMPLETED) {
+                        return;
+                    }
+                }
+                throw new RuntimeException("Transfer monitoring ended before transfer completion");
+            });
         }
-        throw new RuntimeException("Transfer monitoring ended before transfer completion");
+    }
+
+    /**
+     * Get the transfer spec from the response of Node API {@code upload_setup} or {@code download_setup}, and throw an exception on error.
+     *
+     * The Node API may return an error in the response data, or an empty object, instead of an HTTP error.
+     *
+     * @param responseData response data, for a single transfer request
+     * @return transfer spec
+     */
+    public static JSONObject transferSpecFromSetup(final Object responseData) {
+        final JSONObject data = responseData instanceof JSONObject ? (JSONObject) responseData : new JSONObject();
+        final JSONArray transferSpecs = data.optJSONArray("transfer_specs");
+        JSONObject result = transferSpecs == null ? null : transferSpecs.optJSONObject(0);
+        if (result == null) {
+            result = new JSONObject();
+        }
+        JSONObject error = data.optJSONObject("error");
+        if (error == null) {
+            error = result.optJSONObject("error");
+        }
+        if (error != null) {
+            throw new RuntimeException("Node API error: " + error.optString("user_message"));
+        }
+        if (!result.has("transfer_spec")) {
+            throw new RuntimeException("No transfer spec in Node API response");
+        }
+        return result.getJSONObject("transfer_spec");
     }
 }

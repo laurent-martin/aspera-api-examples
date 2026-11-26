@@ -7,7 +7,9 @@ import (
 	"aspera_examples/src/utils"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/url"
 	"os"
@@ -58,7 +60,7 @@ func run() error {
 		return err
 	}
 	defer func() {
-		// 6. Stop the daemon: transferd stops cleanly on SIGINT (Windows: killed)
+		// 5. Stop the daemon: transferd stops cleanly on SIGINT (Windows: killed)
 		config.Log.Info("Stopping daemon")
 		if daemon.Process.Signal(os.Interrupt) != nil {
 			daemon.Process.Kill()
@@ -105,9 +107,9 @@ func run() error {
 		return err
 	}
 
-	// 4. Start the transfer: the daemon returns a transfer id
+	// 4. Start the transfer and follow it: the daemon sends an event on each change, until the end of the transfer
 	config.Log.Info("Uploading files")
-	response, err := client.StartTransfer(context.Background(), &pb.TransferRequest{
+	events, err := client.StartTransferWithMonitor(context.Background(), &pb.TransferRequest{
 		TransferType: pb.TransferType_FILE_REGULAR,
 		Config:       &pb.TransferConfig{},
 		TransferSpec: string(transferSpec),
@@ -115,31 +117,27 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if response.Status == pb.TransferStatus_FAILED {
-		return fmt.Errorf("Transfer failed: %s", response.GetError().GetDescription())
-	}
-
-	// 5. Follow the transfer: the daemon sends an event on each change, until the end
-	events, err := client.MonitorTransfers(context.Background(), &pb.RegistrationRequest{
-		Filters: []*pb.RegistrationFilter{{TransferId: []string{response.TransferId}}},
-	})
-	if err != nil {
-		return err
-	}
 	for {
 		event, err := events.Recv()
+		if err == io.EOF {
+			// the stream ended before the end of the transfer
+			return errors.New("Transfer monitoring ended before transfer completion")
+		}
 		if err != nil {
 			return err
 		}
 		config.Log.Infof("Transfer: %s %d bytes", event.Status, event.GetTransferInfo().GetBytesTransferred())
+		// the cause of an error is in error, or else in transferInfo
+		description := event.GetError().GetDescription()
+		if description == "" {
+			description = event.GetTransferInfo().GetErrorDescription()
+		}
+		description = strings.TrimSpace(description)
 		switch event.Status {
 		case pb.TransferStatus_FAILED, pb.TransferStatus_CANCELED:
-			// the cause is in error, or else in transferInfo
-			description := event.GetError().GetDescription()
-			if description == "" {
-				description = event.GetTransferInfo().GetErrorDescription()
-			}
-			return fmt.Errorf("Transfer failed: %s", strings.TrimSpace(description))
+			return fmt.Errorf("Transfer failed: %s", description)
+		case pb.TransferStatus_UNKNOWN_STATUS:
+			return fmt.Errorf("Transfer status unknown: %s", description)
 		case pb.TransferStatus_COMPLETED:
 			return nil
 		}

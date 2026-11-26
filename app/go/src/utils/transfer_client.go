@@ -309,16 +309,18 @@ func (tc *TransferClient) Shutdown() error {
 	return nil
 }
 
-// StartTransfer starts a transfer.
+// StartTransferAndWait starts the daemon if needed, starts a transfer, and waits for its end.
 //
 // Parameters:
 //   - transferSpec: transfer spec
-//
-// Returns: transfer id
-func (tc *TransferClient) StartTransfer(transferSpec map[string]interface{}) (string, error) {
+func (tc *TransferClient) StartTransferAndWait(transferSpec map[string]interface{}) error {
+	if err := tc.Startup(); err != nil {
+		return err
+	}
+
 	tsJSON, err := json.Marshal(transferSpec)
 	if err != nil {
-		return "", fmt.Errorf("Failed to marshal transfer spec: %w", err)
+		return fmt.Errorf("Failed to marshal transfer spec: %w", err)
 	}
 
 	LogDump("Transfer spec", string(tsJSON))
@@ -329,36 +331,18 @@ func (tc *TransferClient) StartTransfer(transferSpec map[string]interface{}) (st
 		TransferSpec: string(tsJSON),
 	}
 
-	resp, err := tc.transferService.StartTransfer(context.TODO(), req)
+	// on return, stop monitoring, if the stream is still open
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// start the transfer: the daemon sends an event on each change, until the end of the transfer
+	events, err := tc.transferService.StartTransferWithMonitor(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("Failed to start transfer: %w", err)
-	}
-
-	if err := tc.throwOnError(resp.Status, errorDescription(resp.GetError().GetDescription())); err != nil {
-		return "", err
-	}
-
-	return resp.TransferId, nil
-}
-
-// WaitTransfer waits for the end of a transfer, and logs its status.
-//
-// Parameters:
-//   - transferID: transfer id
-func (tc *TransferClient) WaitTransfer(transferID string) error {
-	req := &pb.RegistrationRequest{
-		Filters: []*pb.RegistrationFilter{
-			{TransferId: []string{transferID}},
-		},
-	}
-
-	stream, err := tc.transferService.MonitorTransfers(context.Background(), req)
-	if err != nil {
-		return fmt.Errorf("Failed to monitor transfer: %w", err)
+		return fmt.Errorf("Failed to start transfer: %w", err)
 	}
 
 	for {
-		info, err := stream.Recv()
+		event, err := events.Recv()
 		if err == io.EOF {
 			return errors.New("Transfer monitoring ended before transfer completion")
 		}
@@ -366,50 +350,31 @@ func (tc *TransferClient) WaitTransfer(transferID string) error {
 			return fmt.Errorf("Transfer monitoring failed: %w", err)
 		}
 
-		tc.logStatus(info.Status, info.GetTransferInfo().GetAverageRateKbps())
+		tc.logStatus(event.Status, event.GetTransferInfo().GetAverageRateKbps())
 
 		// `error` is empty on session errors: the cause is in session or transfer information
-		description := errorDescription(info.GetError().GetDescription(), info.GetSessionInfo().GetErrorDesc(), info.GetTransferInfo().GetErrorDescription())
-		if err := tc.throwOnError(info.Status, description); err != nil {
+		description := errorDescription(event.GetError().GetDescription(), event.GetSessionInfo().GetErrorDesc(), event.GetTransferInfo().GetErrorDescription())
+		if err := tc.throwOnError(event.Status, description); err != nil {
 			return err
 		}
 
-		if info.Status == pb.TransferStatus_COMPLETED {
-			break
+		if event.Status == pb.TransferStatus_COMPLETED {
+			return nil
 		}
 	}
-
-	return nil
 }
 
-// StartTransferAndWait starts the daemon if needed, starts a transfer, and waits for its end.
-//
-// Parameters:
-//   - transferSpec: transfer spec
-func (tc *TransferClient) StartTransferAndWait(transferSpec map[string]interface{}) error {
-	if err := tc.Startup(); err != nil {
-		return err
-	}
-
-	transferID, err := tc.StartTransfer(transferSpec)
-	if err != nil {
-		return err
-	}
-
-	return tc.WaitTransfer(transferID)
-}
-
-// throwOnError returns an error if the transfer status is failed or unknown.
+// throwOnError returns an error if the transfer status is failed, canceled or unknown.
 //
 // Parameters:
 //   - status: transfer status
 //   - description: error description
 func (tc *TransferClient) throwOnError(status pb.TransferStatus, description string) error {
 	switch status {
-	case pb.TransferStatus_FAILED:
+	case pb.TransferStatus_FAILED, pb.TransferStatus_CANCELED:
 		return fmt.Errorf("Transfer failed: %s", description)
 	case pb.TransferStatus_UNKNOWN_STATUS:
-		return fmt.Errorf("Unknown transfer id: %s", description)
+		return fmt.Errorf("Transfer status unknown: %s", description)
 	default:
 		return nil
 	}

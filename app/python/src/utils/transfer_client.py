@@ -169,66 +169,46 @@ class TransferClient:
             stop_process(self._transfer_daemon_process)
             self._transfer_daemon_process = None
 
-    def start_transfer(self, transfer_spec):
+    def start_transfer_and_wait(self, transfer_spec):
         '''
-        Start a transfer.
+        Start the daemon if needed, start a transfer, and wait for its end.
 
         :param transfer_spec: transfer spec
-        :return: transfer id
         '''
+        # TODO: remove when transfer sdk bug fixed
+        # transfer_spec['http_fallback'] = False
+        self.startup()
         ts_json = json.dumps(transfer_spec)
         log_dump('Transfer spec', ts_json)
-        # create a transfer request
         transfer_request = transfer_manager.TransferRequest(
             transferType=transfer_manager.FILE_REGULAR,
             config=transfer_manager.TransferConfig(),
             transferSpec=ts_json,
         )
-        # send start transfer request to transfer manager daemon
-        transfer_response = self._transfer_service.StartTransfer(transfer_request)
-        self.throw_on_error(transfer_response)
-        return transfer_response.transferId
+        # start the transfer: the daemon sends an event on each change, until the end of the transfer
+        events = self._transfer_service.StartTransferWithMonitor(transfer_request)
+        try:
+            for event in events:
+                status = event.status
+                log_status(status, event.transferInfo.averageRateKbps)
+                self.throw_on_error(event)
+                if status == transfer_manager.COMPLETED:
+                    return
+        finally:
+            # stop monitoring, if the stream is still open
+            events.cancel()
+        raise Exception('Transfer monitoring ended before transfer completion')
 
-    def wait_transfer(self, transfer_id):
+    def throw_on_error(self, event):
         '''
-        Wait for the end of a transfer, and log its status.
+        Raise an exception if the transfer status is failed, canceled or unknown.
 
-        :param transfer_id: transfer id
+        :param event: event of the transfer
         '''
-        # monitor transfer status
-        for transfer_info in self._transfer_service.MonitorTransfers(
-                transfer_manager.RegistrationRequest(
-                    filters=[transfer_manager.RegistrationFilter(
-                        transferId=[transfer_id])]
-                )):
-            # check transfer status in response, and exit if it's done
-            status = transfer_info.status
-            log_status(status, transfer_info.transferInfo.averageRateKbps)
-            self.throw_on_error(transfer_info)
-            if status == transfer_manager.COMPLETED:
-                break
-
-    def start_transfer_and_wait(self, t_spec):
-        '''
-        Start the daemon if needed, start a transfer, and wait for its end.
-
-        :param t_spec: transfer spec
-        '''
-        # TODO: remove when transfer sdk bug fixed
-        # t_spec['http_fallback'] = False
-        self.startup()
-        self.wait_transfer(self.start_transfer(t_spec))
-
-    def throw_on_error(self, response):
-        '''
-        Raise an exception if the transfer status is failed or unknown.
-
-        :param response: response of the daemon: start or monitor
-        '''
-        if response.status == transfer_manager.TransferStatus.FAILED:
-            raise Exception("Transfer failed: " + error_description(response))
-        if response.status == transfer_manager.TransferStatus.UNKNOWN_STATUS:
-            raise Exception("Unknown transfer id: " + error_description(response))
+        if event.status in (transfer_manager.TransferStatus.FAILED, transfer_manager.TransferStatus.CANCELED):
+            raise Exception("Transfer failed: " + error_description(event))
+        if event.status == transfer_manager.TransferStatus.UNKNOWN_STATUS:
+            raise Exception("Transfer status unknown: " + error_description(event))
 
 
 def stop_process(process):
@@ -263,20 +243,36 @@ def log_status(status, average_rate_kbps):
     logging.info('Transfer: %s%s', transfer_manager.TransferStatus.Name(status), rate)
 
 
-def error_description(response):
+def error_description(event):
     '''
-    Get the first non-empty error description in a response.
+    Get the first non-empty error description in an event.
 
     `error` is empty on session errors: the cause is in session or transfer information.
 
-    :param response: response of the daemon: start or monitor
+    :param event: event of the transfer
     :return: error description, or `unknown error`
     '''
-    texts = [response.error.description]
-    for field, attribute in (('sessionInfo', 'errorDesc'), ('transferInfo', 'errorDescription')):
-        if field in response.DESCRIPTOR.fields_by_name and response.HasField(field):
-            texts.append(getattr(getattr(response, field), attribute))
+    texts = (event.error.description, event.sessionInfo.errorDesc, event.transferInfo.errorDescription)
     return next((text.strip() for text in texts if text.strip()), 'unknown error')
+
+
+def transfer_spec_from_setup(response_data):
+    '''
+    Get the transfer spec from the response of Node API `upload_setup` or `download_setup`, and raise an exception on error.
+
+    The Node API may return an error in the response data, or an empty object, instead of an HTTP error.
+
+    :param response_data: response data, for a single transfer request
+    :return: transfer spec
+    '''
+    response_data = response_data or {}
+    result = (response_data.get('transfer_specs') or [{}])[0]
+    error = response_data.get('error') or result.get('error')
+    if error:
+        raise Exception(f"Node API error: {error.get('user_message')}")
+    if 'transfer_spec' not in result:
+        raise Exception('No transfer spec in Node API response')
+    return result['transfer_spec']
 
 
 def find_listening_port(log_file, offset):

@@ -12,9 +12,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 const PATHS_FILE_REL: &str = "config/paths.yaml";
 const DIR_TOP_VAR: &str = "DIR_TOP";
-/// secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
+/// secrets in logs, case-insensitive: value of JSON keys ending with one of those words, value of "key"/"value" pairs (headers in transfer spec v2) with a key containing one of those words, and JWT assertion in form parameters
 static SECRETS_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+"#)
+    Regex::new(r#"(?i)("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|("key"\s*:\s*"[^"]*(?:assertion|authorization|password|private_key|secret|token)[^"]*"\s*,\s*"value"\s*:\s*")[^"]+|(assertion=)[^&]+|("value"\s*:\s*")[^"]+("\s*,\s*"key"\s*:\s*"[^"]*(?:assertion|authorization|password|private_key|secret|token)[^"]*")"#)
         .unwrap()
 });
 /// set from configuration file (misc.show_secrets)
@@ -31,7 +31,7 @@ pub fn mask_secrets(text: &str) -> String {
     if SHOW_SECRETS.load(Ordering::Relaxed) {
         return text.to_string();
     }
-    SECRETS_REGEX.replace_all(text, "${1}${2}***").into_owned()
+    SECRETS_REGEX.replace_all(text, "${1}${2}${3}${4}***${5}").into_owned()
 }
 
 /// Log a named value: objects are displayed in JSON, and secrets are hidden.

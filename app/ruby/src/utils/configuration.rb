@@ -20,8 +20,8 @@ module Utils
     PATHS_FILE_REL = 'config/paths.yaml'
     DIR_TOP_VAR    = 'DIR_TOP'
     DEBUG_HTTP     = false
-    # secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
-    SECRETS_REGEX = /("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+/.freeze
+    # secrets in logs, case-insensitive: value of JSON keys ending with one of those words, value of "key"/"value" pairs (headers in transfer spec v2) with a key containing one of those words, and JWT assertion in form parameters
+    SECRETS_REGEX = /("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|("key"\s*:\s*"[^"]*(?:assertion|authorization|password|private_key|secret|token)[^"]*"\s*,\s*"value"\s*:\s*")[^"]+|(assertion=)[^&]+|("value"\s*:\s*")[^"]+("\s*,\s*"key"\s*:\s*"[^"]*(?:assertion|authorization|password|private_key|secret|token)[^"]*")/i.freeze
     class << self
       # @return [Boolean] true to show secrets in logs, set from configuration file (misc.show_secrets)
       attr_accessor :show_secrets
@@ -34,7 +34,7 @@ module Utils
       def mask_secrets(text)
         return text if show_secrets
 
-        text.gsub(SECRETS_REGEX, '\1\2***')
+        text.gsub(SECRETS_REGEX, '\1\2\3\4***\5')
       end
 
       # Log a named value: objects are displayed in JSON, and secrets are hidden.

@@ -266,6 +266,7 @@ export class TransferClient {
 		};
 
 		return new Promise((resolve, reject) => {
+			// start the transfer: the daemon sends an event on each change, until the end of the transfer
 			// server streaming call: events and errors are received on the stream
 			const eventStream = this.transferService.startTransferWithMonitor(startTransferRequest);
 			let finished = false;
@@ -273,7 +274,7 @@ export class TransferClient {
 				if (finished) return;
 				finished = true;
 				this.abortTransfer = null;
-				// stop monitoring: the resulting `error` event (cancelled) is ignored
+				// stop monitoring, if the stream is still open: the resulting `error` event (cancelled) is ignored
 				eventStream.cancel();
 				if (error) reject(error); else resolve();
 			};
@@ -283,17 +284,38 @@ export class TransferClient {
 			eventStream.on('data', (data) => {
 				const rate = data.status === 'RUNNING' ? ` ${(Number(data.transferInfo?.averageRateKbps ?? 0) / 1000).toFixed(1)} Mbps` : '';
 				logger.info(`Transfer: ${data.status}${rate}`);
-				if (data.status === 'FAILED') {
-					// `error` is empty on session errors: the cause is in transfer or session information
-					const description = [data.error?.description, data.sessionInfo?.errorDesc, data.transferInfo?.errorDescription]
-						.map((text) => text?.trim()).find(Boolean) ?? 'unknown error';
-					finish(new Error(`Transfer failed: ${description}`));
-				} else if (data.transferEvent === 'SESSION_STOP' && data.status === 'COMPLETED') {
+				// `error` is empty on session errors: the cause is in session or transfer information
+				const description = () => [data.error?.description, data.sessionInfo?.errorDesc, data.transferInfo?.errorDescription]
+					.map((text) => text?.trim()).find(Boolean) ?? 'unknown error';
+				if (['FAILED', 'CANCELED'].includes(data.status)) {
+					finish(new Error(`Transfer failed: ${description()}`));
+				} else if (data.status === 'UNKNOWN_STATUS') {
+					finish(new Error(`Transfer status unknown: ${description()}`));
+				} else if (data.status === 'COMPLETED') {
 					finish();
 				}
 			});
 			eventStream.on('error', (error) => finish(new Error(`Transfer monitoring failed: ${error.message}`)));
 			eventStream.on('end', () => finish(new Error('Transfer monitoring ended before transfer completion')));
 		});
+	}
+
+	/**
+	 * Get the transfer spec from the response of Node API `upload_setup` or `download_setup`, and throw an exception on error.
+	 *
+	 * The Node API may return an error in the response data, or an empty object, instead of an HTTP error.
+	 * @param {object|null} responseData response data, for a single transfer request
+	 * @returns {object} transfer spec
+	 */
+	static transferSpecFromSetup(responseData) {
+		const result = responseData?.transfer_specs?.[0] ?? {};
+		const error = responseData?.error ?? result.error;
+		if (error) {
+			throw new Error(`Node API error: ${error.user_message}`);
+		}
+		if (!result.transfer_spec) {
+			throw new Error('No transfer spec in Node API response');
+		}
+		return result.transfer_spec;
 	}
 }

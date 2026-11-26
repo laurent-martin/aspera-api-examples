@@ -153,7 +153,7 @@ impl Rest {
         }
         let request_builder = self
             .client
-            .post(auth.token_url) // "http://localhost:12345")//
+            .post(auth.token_url)
             .basic_auth(
                 auth.client_id.to_owned(),
                 Some(auth.client_secret.to_owned()),
@@ -206,7 +206,10 @@ impl Rest {
             request_builder = request_builder.json(value);
         }
         let body = self.send(request_builder).await?;
-        Ok(serde_json::from_str(&body).ok())
+        if body.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(serde_json::from_str(&body)?))
     }
     /// Send an HTTP request, log request and response bodies, and return an error on failure.
     ///
@@ -243,7 +246,7 @@ impl Rest {
     /// * `query` - query parameters
     ///
     /// # Returns
-    /// Response data
+    /// Response data, or null if the response is empty
     pub async fn create(
         &self,
         endpoint: &str,
@@ -253,7 +256,7 @@ impl Rest {
         Ok(self
             .call(reqwest::Method::POST, endpoint, Some(value), query)
             .await?
-            .unwrap())
+            .unwrap_or(Value::Null))
     }
     /// Read a resource (HTTP GET).
     ///
@@ -262,7 +265,7 @@ impl Rest {
     /// * `query` - query parameters
     ///
     /// # Returns
-    /// Response data
+    /// Response data, or null if the response is empty
     pub async fn read(
         &self,
         endpoint: &str,
@@ -271,7 +274,7 @@ impl Rest {
         Ok(self
             .call(reqwest::Method::GET, endpoint, None, query)
             .await?
-            .unwrap())
+            .unwrap_or(Value::Null))
     }
     /// Update a resource (HTTP PUT).
     ///

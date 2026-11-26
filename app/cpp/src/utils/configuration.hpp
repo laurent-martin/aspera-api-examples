@@ -37,9 +37,10 @@ inline constexpr const char* DIR_TOP_VAR = "DIR_TOP";
 // logger
 inline boost::log::sources::severity_logger<boost::log::trivial::severity_level> global_logger;
 #define LOGGER(level) BOOST_LOG_SEV(utils::global_logger, boost::log::trivial::level)
-// secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters
+// secrets in logs, case-insensitive: value of JSON keys ending with one of those words, value of "key"/"value" pairs (headers in transfer spec v2) with a key containing one of those words, and JWT assertion in form parameters
 inline const boost::regex SECRETS_REGEX(
-    R"re(("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+)re");
+    R"re(("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|("key"\s*:\s*"[^"]*(?:assertion|authorization|password|private_key|secret|token)[^"]*"\s*,\s*"value"\s*:\s*")[^"]+|(assertion=)[^&]+|("value"\s*:\s*")[^"]+("\s*,\s*"key"\s*:\s*"[^"]*(?:assertion|authorization|password|private_key|secret|token)[^"]*"))re",
+    boost::regex::perl | boost::regex::icase);
 // set from configuration file (misc.show_secrets)
 inline bool show_secrets = false;
 
@@ -50,7 +51,7 @@ inline std::string mask_secrets(const std::string& text) {
     if (show_secrets) {
         return text;
     }
-    return boost::regex_replace(text, SECRETS_REGEX, "$1$2***");
+    return boost::regex_replace(text, SECRETS_REGEX, "$1$2$3$4***$5");
 }
 
 /// @brief Log a named value: JSON values are displayed in JSON, and secrets are hidden.

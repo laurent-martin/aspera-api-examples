@@ -1,5 +1,6 @@
 // Laurent Martin IBM Aspera 2018
-// Sample to call Aspera On Cloud (AoC) API using .NET
+// Aspera on Cloud
+// Send a package to shared inbox (name in config file) in given workspace (name in config file)
 using Newtonsoft.Json.Linq;
 using StringDict = System.Collections.Generic.Dictionary<string, string>;
 
@@ -8,10 +9,28 @@ using StringDict = System.Collections.Generic.Dictionary<string, string>;
 /// </summary>
 class Aoc : SampleInterface
 {
+    // AoC API base URL: https://developer.ibm.com/apis/catalog?search=%22aspera%20on%20cloud%20api%22
     const string AOC_API_V1_BASE_URL = "https://api.ibmaspera.com/api/v1";
     const string AOC_OAUTH_AUDIENCE = "https://api.asperafiles.com/api/v1/oauth2/token";
+    // name of package to send
     const string package_name = "sample package C#";
+    // number of parallel transfer sessions (typically, 1)
     int transfer_sessions = 1;
+
+    /// <summary>
+    /// Generate the transfer cookie of AoC, that identifies the application and the user.
+    /// </summary>
+    /// <param name="app">AoC application, e.g. <c>packages</c></param>
+    /// <param name="user_name">name of the user</param>
+    /// <param name="user_id">identifier of the user: email</param>
+    /// <returns>cookie</returns>
+    static string generate_cookie(string app, string user_name, string user_id)
+    {
+        string encoded_app = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(app));
+        string encoded_user_name = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(user_name));
+        string encoded_user_id = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(user_id));
+        return $"aspera.aoc:{encoded_app}:{encoded_user_name}:{encoded_user_id}";
+    }
 
     /// <summary>
     /// Execute the sample.
@@ -25,7 +44,7 @@ class Aoc : SampleInterface
         {
             var aoc_api = new Rest(AOC_API_V1_BASE_URL);
             aoc_api.setAuthBearer(new StringDict{
-                {"token_url",$"https://api.ibmaspera.com/api/v1/oauth2/{config.GetParam("aoc","org")}/token"},
+                {"token_url",$"{AOC_API_V1_BASE_URL}/oauth2/{config.GetParam("aoc","org")}/token"},
                 {"key_pem_path",config.GetParam("aoc","private_key")},
                 {"client_id",config.GetParam("aoc","client_id")},
                 {"client_secret",config.GetParam("aoc","client_secret")},
@@ -35,48 +54,55 @@ class Aoc : SampleInterface
                 {"org",config.GetParam("aoc","org")},
             });
             aoc_api.setDefaultScope("user:all");
-            // REST call
+
+            // get my user information (get my name, etc...)
             Log.log.Info("Getting user information");
             var user_info = aoc_api.read("self");
-            // we use the default workspace of the user
-            string default_workspace_id = (string?)user_info["default_workspace_id"] ?? throw new Exception("User has no default workspace");
-            Log.log.Info("Getting default workspace");
-            var workspace_info = aoc_api.read($"workspaces/{default_workspace_id}");
-            // this user must be registered, else different code is needed
-            string recipient_email = config.GetParam("aoc", "user_email");
-            // find recipient information
-            Log.log.Info($"Getting recipient: {recipient_email}");
-            JArray user_lookup = (JArray)aoc_api.read("contacts", new JObject{
-                {"current_workspace_id",workspace_info["id"]},
-                {"q",recipient_email},
+
+            // get workspace information
+            string workspace_name = config.GetParam("aoc", "workspace");
+            Log.log.Info($"Getting workspace: {workspace_name}");
+            var response_data = (JArray)aoc_api.read("workspaces", new JObject{
+                {"q",workspace_name},
             });
-            if (user_lookup.Count != 1)
+            if (response_data.Count != 1)
             {
-                throw new Exception($"Found {user_lookup.Count} recipients for {recipient_email}");
+                throw new Exception($"Found {response_data.Count} workspaces for {workspace_name}");
             }
-            var recipient_user_id = user_lookup[0];
-            // build list of recipient (list of hash)
-            var recipient_list = new JArray{new JObject{
-                {"id",recipient_user_id["source_id"]},
-                {"type",recipient_user_id["source_type"]},
-            }};
-            // create package container
+            var workspace_info = response_data[0];
+
+            // Get dropbox information (shared inbox name in config file)
+            string shared_inbox_name = config.GetParam("aoc", "shared_inbox");
+            Log.log.Info($"Getting shared inbox: {shared_inbox_name}");
+            response_data = (JArray)aoc_api.read("dropboxes", new JObject{
+                {"current_workspace_id",workspace_info["id"]},
+                {"q",shared_inbox_name},
+            });
+            if (response_data.Count != 1)
+            {
+                throw new Exception($"Found {response_data.Count} shared inboxes for {shared_inbox_name}");
+            }
+            var dropbox_info = response_data[0];
+
+            // Create a new package (this allocates a reception folder on package storage)
+            // `sent` and `transfers_expected` could also be added on a later call with PUT packages/{package_info["id"]}
             Log.log.Info("Creating package");
             var package_info = aoc_api.create("packages", new JObject{
                 {"workspace_id",workspace_info["id"]},
-                {"name","my package"},
-                {"file_names",new JArray{"/file"}},
-                {"note","my note"},
-                {"recipients",recipient_list},
+                {"recipients",new JArray{new JObject{
+                    {"id",dropbox_info["id"]},
+                    {"type","dropbox"},
+                }}},
+                {"name",package_name},
+                {"note","My package note"},
+                {"sent",true},
+                {"transfers_expected",transfer_sessions},
             });
+
+            // get node information for the node on which package must be created
             Log.log.Info("Getting node information");
             var node_info = aoc_api.read($"nodes/{package_info["node_id"]}");
-            // validate package once files have been put inside. This triggers email emission
-            Log.log.Info("Setting expected transfers");
-            aoc_api.update($"packages/{package_info["id"]}", new JObject{
-                { "sent",true},
-                { "transfers_expected",0}
-            });
+
             // Note: generate a bearer token for the node on which package was created
             // tags of the transfer spec:
             // - `node`: mandatory, HSTS authorizes the bearer token for this access key and folder
@@ -84,8 +110,7 @@ class Aoc : SampleInterface
             // - `usage_id`, `xfer_retry`: optional
             var t_spec = new JObject{
                 {"direction", "send"},
-                {"paths", new JArray()},
-                {"token", aoc_api.get_bearer_token($"node.{node_info["access_key"]}:user:all" )},
+                {"token", aoc_api.get_bearer_token($"node.{node_info["access_key"]}:user:all")},
                 {"tags", new JObject{
                     {"aspera", new JObject{
                         {"app", "packages"},
@@ -101,23 +126,26 @@ class Aoc : SampleInterface
                             {"access_key", node_info["access_key"]},
                             {"file_id", package_info["contents_file_id"]}}},
                         {"usage_id", $"aspera.files.workspace.{workspace_info["id"]}"},
-                        {"xfer_id", System.Guid.NewGuid().ToString()},
                         {"xfer_retry", 3600}}}}},
+                {"remote_host", node_info["host"]},
                 {"remote_user", "xfer"},
                 {"ssh_port", 33001},
                 {"fasp_port", 33001},
-                {"remote_host", node_info["host"]},
-                // 'cookie': 'aspera.aoc:cGFja2FnZXM=:TGF1cmVudCBNYXJ0aW4=:bGF1cmVudC5tYXJ0aW4uYXNwZXJhQGZyLmlibS5jb20=',
+                {"cookie", generate_cookie("packages", (string?)user_info["name"] ?? "", (string?)user_info["email"] ?? "")},
                 {"create_dir", true},
                 {"target_rate_kbps", 100000},
+                {"paths", new JArray()},
             };
+
             if (transfer_sessions != 1)
             {
                 t_spec["multi_session"] = transfer_sessions;
                 t_spec["multi_session_threshold"] = 500000;
             }
+
             // add file list in transfer spec
             config.AddSources(t_spec, "paths");
+
             // Finally send files to package folder on server
             Log.log.Info("Uploading files");
             transfer_client.StartTransferAndWait(t_spec);

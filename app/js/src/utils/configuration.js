@@ -10,8 +10,8 @@ import winston from 'winston';
 const PATHS_FILE_REL = 'config/paths.yaml';
 /** Environment variable for the top directory */
 const DIR_TOP_VAR = 'DIR_TOP';
-/** secrets in logs: value of JSON keys ending with one of those words, and JWT assertion in form parameters */
-const SECRETS_REGEX = /("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|(assertion=)[^&]+/g;
+/** secrets in logs, case-insensitive: value of JSON keys ending with one of those words, value of "key"/"value" pairs (headers in transfer spec v2) with a key containing one of those words, and JWT assertion in form parameters */
+const SECRETS_REGEX = /("[^"]*(?:assertion|authorization|password|private_key|secret|token)"\s*:\s*")[^"]+|("key"\s*:\s*"[^"]*(?:assertion|authorization|password|private_key|secret|token)[^"]*"\s*,\s*"value"\s*:\s*")[^"]+|(assertion=)[^&]+|("value"\s*:\s*")[^"]+("\s*,\s*"key"\s*:\s*"[^"]*(?:assertion|authorization|password|private_key|secret|token)[^"]*")/gi;
 /** set from configuration file (misc.show_secrets) */
 let showSecrets = false;
 
@@ -21,7 +21,7 @@ let showSecrets = false;
  * @returns {string} text with hidden secrets
  */
 export function maskSecrets(text) {
-	return showSecrets ? text : text.replace(SECRETS_REGEX, '$1$2***');
+	return showSecrets ? text : text.replace(SECRETS_REGEX, '$1$2$3$4***$5');
 }
 
 /** Logger of the samples */

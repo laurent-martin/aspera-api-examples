@@ -163,7 +163,6 @@ public class Rest {
         if (endpoint != null) {
             url = url + "/" + endpoint;
         }
-        // final String url = "http://localhost:12345";
         final var request = Unirest//
                 .request(method, url) //
                 .header("Content-Type", MIME_JSON)//

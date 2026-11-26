@@ -49,23 +49,27 @@
     </div>
     <div>
       <input type="radio" id="basic_token_radio" name="transfer_auth" value="basic_token">
-      <label for="basic_token_radio">Token: Basic (Access Key only)</label>
+      <label for="basic_token_radio">Token: Basic (Access Key only, testing only)</label>
     </div>
     <div id="div_ssh_creds_selector">
       <input type="radio" id="ssh_creds_radio" name="transfer_auth" value="ssh_creds">
-      <label for="ssh_creds_radio">SSH Credentials</label>
+      <label for="ssh_creds_radio">SSH Credentials (testing only)</label>
     </div>
   </fieldset>
   <fieldset id="hsts_basic_info">
-    <legend>Basic token credentials</legend>
-    <p>Access Key: <input type="text" id="basic_access_key" /></p>
-    <p>Secret: <input type="password" id="basic_secret" /></p>
+    <legend>Basic token credentials (testing only)</legend>
+    <p class="hint">Type the access key and its secret.
+      The token in the transfer spec contains them, so the browser has them: never do this in a real application.</p>
+    <p>Access Key: <input type="text" id="basic_access_key" autocomplete="off" /></p>
+    <p>Secret: <input type="password" id="basic_secret" autocomplete="off" /></p>
   </fieldset>
   <fieldset id="hsts_ssh_info">
-    <legend>HSTS SSH credentials</legend>
+    <legend>HSTS SSH credentials (testing only)</legend>
+    <p class="hint">Type the SSH password.
+      The transfer spec contains it, so the browser has it: never do this in a real application.</p>
     <p>URL: <input type="text" id="server_url" /></p>
     <p>User: <input type="text" id="server_user" /></p>
-    <p>Pass: <input type="password" id="server_pass" /></p>
+    <p>Pass: <input type="password" id="server_pass" autocomplete="off" /></p>
   </fieldset>
   <fieldset>
     <legend>Select transfer operation</legend>

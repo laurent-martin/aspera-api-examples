@@ -244,8 +244,8 @@ web:
 httpgw:
   url: https://1.2.3.4/aspera/http-gwy
 server:
-  url: ssh://demo.asperasoft.com:33001
-  username: aspera
+  url: ssh://hsts1.example.com:33001
+  username: <SERVER_USER>
   password: <PASSWORD>
   file_download: /aspera-test-dir-small/10MB.1
   folder_upload: /Upload

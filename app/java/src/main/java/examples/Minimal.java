@@ -70,37 +70,34 @@ public class Minimal {
                     .put("destination_root", config.getParamStr("server", "folder_upload"))
                     .put("paths", paths);
 
-            // 4. Start the transfer: the daemon returns a transfer id
+            // 4. Start the transfer and follow it: the daemon sends an event on each change, until the end of the transfer
             LOGGER.info("Uploading files");
-            final Transferd.StartTransferResponse response = client.startTransfer(Transferd.TransferRequest.newBuilder()
+            final Iterator<Transferd.TransferResponse> events = client.startTransferWithMonitor(Transferd.TransferRequest.newBuilder()
                     .setTransferType(Transferd.TransferType.FILE_REGULAR)
                     .setConfig(Transferd.TransferConfig.newBuilder().build())
                     .setTransferSpec(transferSpec.toString())
                     .build());
-            if (response.getStatus() == Transferd.TransferStatus.FAILED) {
-                throw new RuntimeException("Transfer failed: " + response.getError().getDescription());
-            }
-
-            // 5. Follow the transfer: the daemon sends an event on each change, until the end
-            final Iterator<Transferd.TransferResponse> events = client.monitorTransfers(Transferd.RegistrationRequest.newBuilder()
-                    .addFilters(Transferd.RegistrationFilter.newBuilder().addTransferId(response.getTransferId()))
-                    .build());
             while (events.hasNext()) {
                 final Transferd.TransferResponse event = events.next();
                 LOGGER.info(String.format("Transfer: %s %d bytes", event.getStatus(), event.getTransferInfo().getBytesTransferred()));
+                // the cause of an error is in error, or else in transferInfo
+                final String description = (event.getError().getDescription().isEmpty()
+                        ? event.getTransferInfo().getErrorDescription()
+                        : event.getError().getDescription()).strip();
                 if (event.getStatus() == Transferd.TransferStatus.FAILED || event.getStatus() == Transferd.TransferStatus.CANCELED) {
-                    // the cause is in error, or else in transferInfo
-                    final String description = event.getError().getDescription().isEmpty()
-                            ? event.getTransferInfo().getErrorDescription()
-                            : event.getError().getDescription();
-                    throw new RuntimeException("Transfer failed: " + description.strip());
+                    throw new RuntimeException("Transfer failed: " + description);
+                }
+                if (event.getStatus() == Transferd.TransferStatus.UNKNOWN_STATUS) {
+                    throw new RuntimeException("Transfer status unknown: " + description);
                 }
                 if (event.getStatus() == Transferd.TransferStatus.COMPLETED) {
-                    break;
+                    return;
                 }
             }
+            // the stream ended before the end of the transfer
+            throw new RuntimeException("Transfer monitoring ended before transfer completion");
         } finally {
-            // 6. Stop the daemon: transferd stops cleanly on SIGINT (Windows: terminated)
+            // 5. Stop the daemon: transferd stops cleanly on SIGINT (Windows: terminated)
             //    Java has no API to send SIGINT: the command kill is used.
             channel.shutdownNow();
             LOGGER.info("Stopping daemon");
