@@ -6667,9 +6667,10 @@ paths:
       operationId: create_kms_profile
       summary: Create a KMS Profile
       description: >-
-        Create a KMS profile. AoC checks the access to the root key with the KMS before it creates the profile. The API
-        key is given to the KMS service of AoC, it is not in the response. Requires a token with admin scope, for an
-        organization administrator.
+        Create a KMS profile. AoC records the profile, then gives it to its KMS service, which checks the access to the
+        root key and keeps the API key (not in the response). When the KMS service refuses the profile (400), the
+        profile stays recorded, and deleting it can then fail. Requires a token with admin scope, for an organization
+        administrator.
       requestBody:
         required: true
         content:
@@ -6685,8 +6686,8 @@ paths:
                 $ref: '#/components/schemas/kms_profiles_response'
         '400':
           description: >-
-            Bad Request: refused by the KMS (e.g. wrong API key, instance or root key), or invalid profile (name missing
-            or already used)
+            Bad Request: refused by the KMS service (e.g. wrong API key, instance or root key: the profile is recorded),
+            or invalid profile (name missing or already used: not recorded)
           content:
             application/json:
               schema:
@@ -6836,7 +6837,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/kms_profiles_response'
         '400':
-          description: Bad Request (refused by the KMS service)
+          description: Bad Request (refused by the KMS service, the profile is not deleted)
           content:
             application/json:
               schema:
