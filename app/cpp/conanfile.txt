@@ -6,7 +6,8 @@ openssl/3.3.2
 
 [options]
 # Build only the compiled Boost libraries that the samples use:
-# json, log, process, url, filesystem, regex, and their dependencies (atomic, chrono, container, context, date_time, exception, thread).
+# json, log, process, url, filesystem, regex, and their dependencies (atomic, chrono, container, context, date_time, exception, thread,
+# and serialization: b2 builds it for log, through property_tree).
 # Header-only libraries (asio, beast, uuid, algorithm...) are always installed.
 boost/*:without_charconv=True
 boost/*:without_cobalt=True
@@ -23,7 +24,6 @@ boost/*:without_nowide=True
 boost/*:without_program_options=True
 boost/*:without_python=True
 boost/*:without_random=True
-boost/*:without_serialization=True
 boost/*:without_stacktrace=True
 boost/*:without_test=True
 boost/*:without_timer=True
