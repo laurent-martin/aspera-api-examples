@@ -3175,6 +3175,329 @@ paths:
                 $ref: '#/components/schemas/InternalServerError'
       tags:
         - Dropboxes
+  /dropboxes/{id}/dropbox_join_requests:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the shared inbox.
+        schema:
+          type: string
+    get:
+      operationId: get_dropbox_join_requests
+      summary: Get a Listing of the Join Requests of a Shared Inbox
+      description: >-
+        Get a listing of the join requests of a shared inbox: people who used its self registration link and wait for
+        approval to submit packages (`approval_required_for_self_registration`). A join request is created by the self
+        registration pages of the web app, not by the API. Requires a token for an organization administrator, a manager
+        of the workspace of the shared inbox, or a manager of the shared inbox when
+        `can_dropbox_managers_approve_self_registration`.
+      parameters:
+        - name: page
+          in: query
+          description: Page number, starting at 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: Number of items per page (at most 1000).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: sort
+          in: query
+          description: >-
+            Comma-separated list of fields (at most 5), prefixed with `-` for descending order. Fields: `name`, `email`,
+            `first_name`, `last_name`, `created_at`, `updated_at`. An unknown field is refused (`unknown_sort_field`).
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: >-
+            Search (case-insensitive substring) in `email`, `first_name`, `last_name` and `name`. A token
+            `<field>:<value>`, with `<field>` one of the filter parameters, keeps requests whose field starts with
+            `<value>`.
+          schema:
+            type: string
+        - name: email
+          in: query
+          description: Filter by email (exact).
+          schema:
+            type: string
+        - name: first_name
+          in: query
+          description: Filter by first name (exact).
+          schema:
+            type: string
+        - name: last_name
+          in: query
+          description: Filter by last name (exact).
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: Filter by name (exact).
+          schema:
+            type: string
+        - name: created_at
+          in: query
+          description: Filter by created at (exact date and time).
+          schema:
+            type: string
+            format: date-time
+        - name: updated_at
+          in: query
+          description: Filter by updated at (exact date and time).
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              description: Total number of join requests matching the query (all pages).
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/dropbox_join_requests_response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found (no such shared inbox in the organization)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '422':
+          description: Unprocessable Entity (e.g. unknown sort field)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Dropboxes
+  /dropboxes/{id}/dropbox_join_requests/{join_request_id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the shared inbox.
+        schema:
+          type: string
+      - name: join_request_id
+        in: path
+        required: true
+        description: ID of the join request.
+        schema:
+          type: string
+    get:
+      operationId: get_dropbox_join_request
+      summary: Get a Join Request of a Shared Inbox
+      description: >-
+        Get a join request of a shared inbox. Requires a token for an organization administrator, a manager of the
+        workspace of the shared inbox, or a manager of the shared inbox when
+        `can_dropbox_managers_approve_self_registration`.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dropbox_join_requests_response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Dropboxes
+    delete:
+      operationId: delete_dropbox_join_request
+      summary: Reject a Join Request of a Shared Inbox
+      description: >-
+        Reject a join request: it is deleted, and an email tells the person that the request was not approved. Requires
+        a token for an organization administrator, a manager of the workspace of the shared inbox, or a manager of the
+        shared inbox when `can_dropbox_managers_approve_self_registration`.
+      responses:
+        '204':
+          description: No Content (rejected)
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Dropboxes
+  /dropboxes/{id}/dropbox_join_requests/{join_request_id}/approve:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the shared inbox.
+        schema:
+          type: string
+      - name: join_request_id
+        in: path
+        required: true
+        description: ID of the join request.
+        schema:
+          type: string
+    post:
+      operationId: approve_dropbox_join_request
+      summary: Approve a Join Request of a Shared Inbox
+      description: >-
+        Approve a join request (no body): the user with this email (or IBMid) is found, or created, and can submit
+        packages to the shared inbox. Emails are sent to the user and to the approvers. The join requests of the same
+        person on the shared inbox are deleted. Requires a token for an organization administrator, a manager of the
+        workspace of the shared inbox, or a manager of the shared inbox when
+        `can_dropbox_managers_approve_self_registration`.
+      responses:
+        '204':
+          description: No Content (approved)
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Dropboxes
+  /dropboxes/{id}/update_self_registration_link:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the shared inbox.
+        schema:
+          type: string
+    post:
+      operationId: update_dropbox_self_registration_link
+      summary: Renew the Self Registration Link of a Shared Inbox
+      description: >-
+        Renew the self registration link of a shared inbox (no body): a new `self_register_url_id`, so the links with
+        the old one no longer work (short links of purpose `self_registration_link` keep working). Does not enable self
+        registration (`self_registration_enabled`). Requires a token with admin scope, for an organization
+        administrator, or a workspace manager who manages the workspace of the shared inbox or is a member of the shared
+        inbox.
+      responses:
+        '201':
+          description: Created (the shared inbox)
+          headers:
+            Location:
+              description: Path of the shared inbox, `/api/v1/dropboxes/{id}`.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dropboxes_response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Dropboxes
   /group_memberships:
     get:
       operationId: get_group_memberships
@@ -4835,6 +5158,84 @@ paths:
                 $ref: '#/components/schemas/InternalServerError'
       tags:
         - Packages
+  /packages/{id}/download_counts:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the package.
+        schema:
+          type: string
+    get:
+      operationId: get_package_download_counts
+      summary: Get the Downloads of a Package by User
+      description: >-
+        Get the downloads of a package, one row per user who started a download: complete, partial, failed and in
+        progress. The sender, an organization administrator and a workspace manager see all rows; a recipient sees the
+        rows of the recipients who are not in BCC, and their own.
+      parameters:
+        - name: page
+          in: query
+          description: Page number, starting at 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: Number of items per page (at most 1000).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: embed[]
+          in: query
+          description: embed[]=user (user object from user_id). Repeat the parameter for several values.
+          schema:
+            type: string
+            enum:
+              - user
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              description: Total number of rows matching the query (all pages).
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/package_download_counts_response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Packages
   /usage_reports:
     get:
       operationId: get_usage_reports
@@ -5249,6 +5650,63 @@ paths:
           description: Unprocessable Entity
         '500':
           description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Users
+  /users/{id}/invitations:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the user (for the invitation to the organization, `user_id` is also required in the body).
+        schema:
+          type: string
+    post:
+      operationId: create_user_invitation
+      summary: Send an Invitation (Path of a User)
+      description: >-
+        Same as `POST /invitations`. For the invitation to the organization, `user_id` is still required in the body;
+        for the other types, the user of the path is not used.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/invitations_params'
+      responses:
+        '204':
+          description: No Content (sent)
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (not allowed for this type, or URL token, workspace or shared inbox not allowed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found (user, group, shared inbox or workspace)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '422':
+          description: >-
+            Unprocessable Entity: parameter error (missing body, field required by the type missing, other field:
+            `unpermitted_parameters`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal Server Error (also for an `addressee_type` other than `email`, `user` or `group`)
           content:
             application/json:
               schema:
@@ -7831,6 +8289,71 @@ paths:
                 $ref: '#/components/schemas/InternalServerError'
       tags:
         - File Upload Notifications
+  /invitations:
+    post:
+      operationId: create_invitation
+      summary: Send an Invitation
+      description: >
+        Send an invitation by email (and message in the web app), according to `type`:
+
+        - no `type` (or another value): send again the invitation of a user to the organization (`user_id`), with a new
+        link to set the password, or to register with IBMid. Requires a token with admin scope, for an organization
+        administrator or a workspace manager.
+
+        - `dropbox`: invite a user, a group or an email address to submit packages to a shared inbox (`dropbox_id`,
+        optional `url_token_id` or `short_link_id` of a link). Allowed to an organization administrator, a manager of
+        the workspace, or a member of the shared inbox.
+
+        - `send_to_me`: invite to send a package to the user, with a public link (`url_token_id`, `workspace_id`).
+
+        - `file_shared`, `send_file`, `send_folder`: tell that a file or folder is shared (`node_id`, `file_id`,
+        `file_name`, `file_type`, `workspace_id`, optional link).
+
+        The emails are sent in the background, according to the email settings of the organization, workspace or shared
+        inbox, and to the preferences of the users: the response is 204 even when no email is sent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/invitations_params'
+      responses:
+        '204':
+          description: No Content (sent)
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (not allowed for this type, or URL token, workspace or shared inbox not allowed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found (user, group, shared inbox or workspace)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '422':
+          description: >-
+            Unprocessable Entity: parameter error (missing body, field required by the type missing, other field:
+            `unpermitted_parameters`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal Server Error (also for an `addressee_type` other than `email`, `user` or `group`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Users
   /integrations:
     get:
       operationId: get_integrations
@@ -9501,6 +10024,134 @@ paths:
                 $ref: '#/components/schemas/InternalServerError'
       tags:
         - Servers
+  /shared_folders_memberships:
+    get:
+      operationId: get_shared_folders_memberships
+      summary: Get the Shared Folders of a User or a Group
+      description: >
+        Get the shared folders of workspaces that a user or a group can access, on all the nodes of the organization,
+        directly or through groups: one entry per folder, with the union of the access levels (`agg_access_levels`).
+
+        With a token with admin scope (organization administrator, or workspace manager for the workspaces they manage):
+        the member given by `member_type` and `member_id` (required). With a token with user scope: only the user.
+
+        AoC reads the permissions of every node of the organization (slow with many nodes) and keeps a copy: at the
+        first call for a node, `access_levels` is `null`.
+      parameters:
+        - name: page
+          in: query
+          description: Page number, starting at 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: Number of items per page (at most 1000).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: member_type
+          in: query
+          description: Kind of member.
+          schema:
+            type: string
+            enum:
+              - user
+              - group
+        - name: member_id
+          in: query
+          description: ID of the user or group (according to `member_type`).
+          schema:
+            type: string
+        - name: inherited
+          in: query
+          description: >-
+            `true`: only the folders reached through a group (or through several permissions); `false`: only the
+            permissions of the member itself.
+          schema:
+            type: boolean
+        - name: sort
+          in: query
+          description: >-
+            Comma-separated list of fields (at most 5), prefixed with `-` for descending order. Fields: `file_id`,
+            `share_as`, `node_name`, `created_at` (other values are ignored). An unknown field is refused
+            (`unknown_sort_field`).
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: Search (case-insensitive substring) in `file_id`, `share_as` and the name of the node.
+          schema:
+            type: string
+        - name: node_id
+          in: query
+          description: Filter by node id (exact).
+          schema:
+            type: string
+        - name: node_name
+          in: query
+          description: Filter by node name (exact).
+          schema:
+            type: string
+        - name: workspace_id
+          in: query
+          description: Filter by workspace id (exact).
+          schema:
+            type: string
+        - name: file_id
+          in: query
+          description: Filter by file id (exact).
+          schema:
+            type: string
+        - name: share_as
+          in: query
+          description: Filter by share as (exact).
+          schema:
+            type: string
+        - name: embed[]
+          in: query
+          description: embed[]=workspace (workspace object from workspace_id). Repeat the parameter for several values.
+          schema:
+            type: string
+            enum:
+              - workspace
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              description: Total number of folders matching the query (all pages).
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/shared_folder_memberships_response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (token with user scope asking for another member)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Internal Server Error (also with admin scope and no member)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Workspaces
   /short_links:
     get:
       operationId: get_short_links
@@ -10942,11 +11593,59 @@ paths:
   /network_policies:
     get:
       operationId: get_network_policies
-      summary: List Network Policies
-      description: Get a listing of network policies for your organization.
+      summary: Get a Listing of Network Policies
+      description: >-
+        Get a listing of the network policies of the organization: which node initiates a transfer between two nodes,
+        and which nodes a node can transfer with. A node uses a policy with its field `network_policy_id`. The rules are
+        not in the listing (see `GET /network_policies/{id}`). Requires a token with admin scope, for an organization
+        administrator.
+      parameters:
+        - name: page
+          in: query
+          description: Page number, starting at 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: Number of items per page (at most 1000).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: sort
+          in: query
+          description: >-
+            Comma-separated list of fields (at most 5), prefixed with `-` for descending order. Fields: `name`,
+            `created_at`. An unknown field is refused (`unknown_sort_field`).
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: Search (case-insensitive substring) in `name`.
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: Filter by name (exact).
+          schema:
+            type: string
+        - name: created_at
+          in: query
+          description: Filter by created at (exact date and time).
+          schema:
+            type: string
+            format: date-time
       responses:
         '200':
           description: OK
+          headers:
+            X-Total-Count:
+              description: Total number of policies matching the query (all pages).
+              schema:
+                type: integer
           content:
             application/json:
               schema:
@@ -10959,6 +11658,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (token without admin scope, user not organization administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '422':
+          description: Unprocessable Entity (e.g. unknown sort field)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
         '500':
           description: Internal Server Error
           content:
@@ -10970,7 +11681,8 @@ paths:
     post:
       operationId: create_network_policy
       summary: Create a Network Policy
-      description: Create a new network policy for your organization.
+      description: >-
+        Create a network policy, without rules. Requires a token with admin scope, for an organization administrator.
       requestBody:
         required: true
         content:
@@ -10980,20 +11692,37 @@ paths:
       responses:
         '201':
           description: Created
+          headers:
+            Location:
+              description: URL of the object, `https://api.ibmaspera.com/api/v1/network_policies/{id}`.
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/network_policy_response'
-        '400':
-          description: Bad Request
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (token without admin scope, user not organization administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '422':
-          description: Unprocessable Entity
+          description: >-
+            Unprocessable Entity: errors of fields (`name` missing, or already used: error `unique_error`, type not
+            allowed), or parameter error (missing body, other field: `unpermitted_parameters`)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/FieldValidationError'
+                  - $ref: '#/components/schemas/ValidationError'
         '500':
           description: Internal Server Error
           content:
@@ -11003,51 +11732,19 @@ paths:
       tags:
         - Network Policies
   /network_policies/{id}:
-    delete:
-      operationId: delete_network_policy
-      summary: Delete a Network Policy
-      description: Delete a specific network policy by ID.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Unique identifier of the resource.
-      responses:
-        '204':
-          description: No Content
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedError'
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotFoundError'
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerError'
-      tags:
-        - Network Policies
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the network policy.
+        schema:
+          type: string
     get:
       operationId: get_network_policy
-      summary: Get a Network Policy
-      description: Get a specific network policy by ID.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Unique identifier of the resource.
+      summary: Get a Network Policy and its Rules
+      description: >-
+        Get a network policy, with its rules (`initiation_policies`, `access_control_policies`): the only way to read
+        the rules. Requires a token with admin scope, for an organization administrator.
       responses:
         '200':
           description: OK
@@ -11061,6 +11758,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (token without admin scope, user not organization administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '404':
           description: Not Found
           content:
@@ -11077,15 +11780,10 @@ paths:
         - Network Policies
     put:
       operationId: update_network_policy
-      summary: Update a Network Policy
-      description: Update a specific network policy by ID.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Unique identifier of the resource.
+      summary: Modify a Network Policy
+      description: >-
+        Modify a network policy (`name` is required). The rules do not change: rules whose kind does not match the new
+        types are ignored. Requires a token with admin scope, for an organization administrator.
       requestBody:
         required: true
         content:
@@ -11093,20 +11791,20 @@ paths:
             schema:
               $ref: '#/components/schemas/network_policy_params'
       responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/network_policy_response'
-        '400':
-          description: Bad Request
+        '204':
+          description: No Content (modified)
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (token without admin scope, user not organization administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
         '404':
           description: Not Found
           content:
@@ -11114,7 +11812,272 @@ paths:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
         '422':
-          description: Unprocessable Entity
+          description: >-
+            Unprocessable Entity: errors of fields, or parameter error (`name` missing, other field:
+            `unpermitted_parameters`)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/FieldValidationError'
+                  - $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Network Policies
+    delete:
+      operationId: delete_network_policy
+      summary: Delete a Network Policy
+      description: >-
+        Delete a network policy, with its rules: its nodes no longer use a policy. Requires a token with admin scope,
+        for an organization administrator.
+      responses:
+        '204':
+          description: No Content (deleted)
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (token without admin scope, user not organization administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Network Policies
+  /network_policies/{id}/initiation_policies:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the network policy.
+        schema:
+          type: string
+    post:
+      operationId: create_initiation_policy
+      summary: Add a Node to Initiate With
+      description: >-
+        Add an initiation rule to a network policy of type `listed` (`initiation_policy_type`): the nodes of the policy
+        initiate the transfers with this node. Requires a token with admin scope, for an organization administrator.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/initiation_policy_params'
+      responses:
+        '201':
+          description: Created (no `Location` header)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/initiation_policy_response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (token without admin scope, user not organization administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found (no such network policy)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '422':
+          description: >-
+            Unprocessable Entity: errors of fields (node not in the organization), or parameter error (`target_node_id`
+            missing, other field: `unpermitted_parameters`)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/FieldValidationError'
+                  - $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal Server Error (also when the node already has a rule in the policy)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Network Policies
+  /network_policies/{id}/initiation_policies/{rule_id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the network policy.
+        schema:
+          type: string
+      - name: rule_id
+        in: path
+        required: true
+        description: ID of the initiation rule (a rule of any policy of the organization).
+        schema:
+          type: string
+    delete:
+      operationId: delete_initiation_policy
+      summary: Remove a Node to Initiate With
+      description: Delete an initiation rule. Requires a token with admin scope, for an organization administrator.
+      responses:
+        '204':
+          description: No Content (deleted)
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (token without admin scope, user not organization administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Network Policies
+  /network_policies/{id}/access_control_policies:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the network policy.
+        schema:
+          type: string
+    post:
+      operationId: create_access_control_policy
+      summary: Allow or Disallow a Node
+      description: >-
+        Add an access control rule to a network policy: with `access_control_type` `allow_following`, the nodes of the
+        policy can transfer only with the nodes of the rules `allow`; with `disallow_following`, not with the nodes of
+        the rules `disallow`. A rule that does not match the type is ignored. A policy `allow_following` without rules
+        blocks the transfers with all nodes. Requires a token with admin scope, for an organization administrator.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/access_control_policy_params'
+      responses:
+        '201':
+          description: Created (no `Location` header)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/access_control_policy_response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (token without admin scope, user not organization administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found (no such network policy)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '422':
+          description: >-
+            Unprocessable Entity: errors of fields (`policy_setting` not `allow` or `disallow`, node not in the
+            organization), or parameter error (field missing, other field: `unpermitted_parameters`)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/FieldValidationError'
+                  - $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal Server Error (also when the node already has a rule of this setting in the policy)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+      tags:
+        - Network Policies
+  /network_policies/{id}/access_control_policies/{rule_id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the network policy.
+        schema:
+          type: string
+      - name: rule_id
+        in: path
+        required: true
+        description: ID of the access control rule (a rule of any policy of the organization).
+        schema:
+          type: string
+    delete:
+      operationId: delete_access_control_policy
+      summary: Remove an Access Control Rule
+      description: Delete an access control rule. Requires a token with admin scope, for an organization administrator.
+      responses:
+        '204':
+          description: No Content (deleted)
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Forbidden (token without admin scope, user not organization administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '500':
           description: Internal Server Error
           content:
@@ -12847,6 +13810,39 @@ components:
           type: string
           examples:
             - '123'
+        self_registration_enabled:
+          description: Whether people can ask to submit packages with the self registration link of the shared inbox.
+          type: boolean
+          default: false
+        approval_required_for_self_registration:
+          description: >-
+            Whether a self registration must be approved (join requests, `/dropboxes/{id}/dropbox_join_requests`), else
+            the person can submit at once.
+          type: boolean
+          default: true
+        can_dropbox_managers_approve_self_registration:
+          description: Whether the managers of the shared inbox can approve the join requests (else the administrators and the managers of the workspace).
+          type: boolean
+          default: false
+        included_domains:
+          description: Email domains of the people who can register (empty for all).
+          type: array
+          items:
+            type: string
+        excluded_domains:
+          description: Email domains of the people who cannot register.
+          type: array
+          items:
+            type: string
+        default_notify_users:
+          description: Whether all the approvers get an email for a join request, else those of `notify_users`.
+          type: boolean
+          default: true
+        notify_users:
+          description: IDs of the approvers who get an email for a join request, when `default_notify_users` is `false`.
+          type: array
+          items:
+            type: string
       required:
         - name
         - description
@@ -13069,6 +14065,44 @@ components:
           type: string
           examples:
             - '123'
+        self_registration_enabled:
+          description: Whether people can ask to submit packages with the self registration link of the shared inbox.
+          type: boolean
+          default: false
+        approval_required_for_self_registration:
+          description: >-
+            Whether a self registration must be approved (join requests, `/dropboxes/{id}/dropbox_join_requests`), else
+            the person can submit at once.
+          type: boolean
+          default: true
+        can_dropbox_managers_approve_self_registration:
+          description: Whether the managers of the shared inbox can approve the join requests (else the administrators and the managers of the workspace).
+          type: boolean
+          default: false
+        included_domains:
+          description: Email domains of the people who can register (empty for all).
+          type: array
+          items:
+            type: string
+        excluded_domains:
+          description: Email domains of the people who cannot register.
+          type: array
+          items:
+            type: string
+        default_notify_users:
+          description: Whether all the approvers get an email for a join request, else those of `notify_users`.
+          type: boolean
+          default: true
+        notify_users:
+          description: IDs of the approvers who get an email for a join request, when `default_notify_users` is `false`.
+          type: array
+          items:
+            type: string
+        self_register_url_id:
+          description: ID in the self registration link (with a token with admin scope only).
+          type:
+            - string
+            - 'null'
     email_notification_settings:
       type: object
       properties:
@@ -16794,10 +17828,11 @@ components:
           examples:
             - false
     network_policy_response:
+      description: Network policy, assigned to nodes (`network_policy_id` of a node).
       type: object
       properties:
         id:
-          description: Unique identifier of the network policy.
+          description: ID of the network policy.
           type: string
           examples:
             - '35'
@@ -16807,66 +17842,77 @@ components:
           examples:
             - Receive server initiates
         organization_id:
-          description: ID of the organization this policy belongs to.
+          description: ID of the organization.
           type: string
-          examples:
-            - '28453'
         initiation_policy_type:
-          description: Defines which side initiates the transfer connection.
+          description: >-
+            Which nodes the nodes of the policy initiate the transfers with: `none`, `all`, or `listed` (the nodes of the
+            initiation rules).
           type: string
           enum:
-            - all
             - none
+            - all
             - listed
-          examples:
-            - all
+          default: none
         access_control_type:
-          description: Defines the access control behaviour for this network policy.
+          description: >-
+            Which nodes the nodes of the policy can transfer with: `none` (all), `allow_following` (only the nodes of the
+            rules `allow`: none without rules), `disallow_following` (all but the nodes of the rules `disallow`).
           type: string
           enum:
-            - allow_following
             - none
-          examples:
             - allow_following
+            - disallow_following
+          default: none
+        initiation_policies:
+          description: Initiation rules (`GET /network_policies/{id}` only).
+          type: array
+          items:
+            $ref: '#/components/schemas/initiation_policy_response'
+        access_control_policies:
+          description: Access control rules (`GET /network_policies/{id}` only).
+          type: array
+          items:
+            $ref: '#/components/schemas/access_control_policy_response'
         created_at:
-          description: Date at which the network policy was created.
+          description: Date and time of creation.
           type: string
           format: date-time
-          examples:
-            - '2018-05-03T16:07:03.000Z'
         updated_at:
-          description: Date at which the network policy was last updated.
+          description: Date and time of the last change.
           type: string
           format: date-time
-          examples:
-            - '2018-05-03T16:07:03.000Z'
     network_policy_params:
+      description: Network policy to create or modify (`name` is always required).
       type: object
       required:
         - name
       properties:
         name:
-          description: Name of the network policy.
+          description: Name of the network policy, unique in the organization.
           type: string
           examples:
             - Receive server initiates
         initiation_policy_type:
-          description: Defines which side initiates the transfer connection.
+          description: >-
+            Which nodes the nodes of the policy initiate the transfers with: `none`, `all`, or `listed` (the nodes of the
+            initiation rules).
           type: string
           enum:
-            - all
             - none
+            - all
             - listed
-          examples:
-            - all
+          default: none
         access_control_type:
-          description: Defines the access control behaviour for this network policy.
+          description: >-
+            Which nodes the nodes of the policy can transfer with: `none` (all), `allow_following` (only the nodes of the
+            rules `allow`: none without rules), `disallow_following` (all but the nodes of the rules `disallow`).
           type: string
           enum:
-            - allow_following
             - none
-          examples:
             - allow_following
+            - disallow_following
+          default: none
     kms_profiles_response:
       description: KMS profile (bring your own key).
       type: object
@@ -18556,6 +19602,276 @@ components:
           type: boolean
           default: true
       additionalProperties: false
+    dropbox_join_requests_response:
+      description: Request of a person to submit packages to a shared inbox, through its self registration link.
+      type: object
+      properties:
+        id:
+          description: ID of the join request.
+          type: string
+        dropbox_id:
+          description: ID of the shared inbox.
+          type: string
+        workspace_id:
+          description: ID of the workspace of the shared inbox.
+          type: string
+        organization_id:
+          description: ID of the organization.
+          type: string
+        user_id:
+          description: ID of the user, when known.
+          type:
+            - string
+            - 'null'
+        email:
+          description: Email of the person.
+          type: string
+        first_name:
+          description: First name of the person.
+          type:
+            - string
+            - 'null'
+        last_name:
+          description: Last name of the person.
+          type:
+            - string
+            - 'null'
+        name:
+          description: First and last names, else the email.
+          type: string
+        ibm_uid:
+          description: IBMid of the person (with a token with admin scope only).
+          type:
+            - string
+            - 'null'
+    initiation_policy_params:
+      description: Initiation rule to add to a network policy.
+      type: object
+      properties:
+        target_node_id:
+          description: ID of a node of the organization, that the nodes of the policy initiate the transfers with.
+          type: string
+      required:
+        - target_node_id
+    initiation_policy_response:
+      description: Initiation rule of a network policy.
+      type: object
+      properties:
+        id:
+          description: ID of the rule.
+          type: string
+        target_node_id:
+          description: ID of the node that the nodes of the policy initiate the transfers with.
+          type: string
+        target_node_name:
+          description: Name of the node.
+          type: string
+    access_control_policy_params:
+      description: Access control rule to add to a network policy.
+      type: object
+      properties:
+        target_node_id:
+          description: ID of a node of the organization.
+          type: string
+        policy_setting:
+          description: >-
+            `allow` for a policy `allow_following`, `disallow` for a policy `disallow_following` (a rule that does not
+            match the type of the policy is ignored).
+          type: string
+          enum:
+            - allow
+            - disallow
+      required:
+        - target_node_id
+        - policy_setting
+    access_control_policy_response:
+      description: Access control rule of a network policy.
+      type: object
+      properties:
+        id:
+          description: ID of the rule.
+          type: string
+        target_node_id:
+          description: ID of the node.
+          type: string
+        target_node_name:
+          description: Name of the node.
+          type: string
+        policy_setting:
+          description: Whether the nodes of the policy can (`allow`) or cannot (`disallow`) transfer with the node.
+          type: string
+          enum:
+            - allow
+            - disallow
+    invitations_params:
+      description: Invitation to send, according to `type` (see the operation).
+      type: object
+      properties:
+        type:
+          description: Kind of invitation; absent (or another value) for the invitation of a user to the organization.
+          type: string
+          enum:
+            - dropbox
+            - send_to_me
+            - file_shared
+            - send_file
+            - send_folder
+        user_id:
+          description: Invitation to the organization, required. ID of the user to invite again.
+          type: string
+        addressee_type:
+          description: Other types, required. Kind of recipient.
+          type: string
+          enum:
+            - email
+            - user
+            - group
+        addressee_id:
+          description: ID of the user or group (according to `addressee_type`).
+          type: string
+        addressee_email:
+          description: Email address (`addressee_type` `email`).
+          type: string
+          format: email
+        body:
+          description: Personal message.
+          type: string
+        dropbox_id:
+          description: Type `dropbox`, required. ID of the shared inbox.
+          type: string
+        url_token_id:
+          description: ID of the URL token of a public link (required for `send_to_me`).
+          type: string
+        short_link_id:
+          description: ID of a short link (types `dropbox` and `file_shared`).
+          type: string
+        workspace_id:
+          description: Types `send_to_me` and `file_shared`, required. ID of the workspace.
+          type: string
+        subject:
+          description: Type `send_to_me`. Subject of the email.
+          type: string
+        node_id:
+          description: Type `file_shared`, required. ID of the node of the file.
+          type: string
+        file_id:
+          description: Type `file_shared`, required. ID of the file or folder.
+          type: string
+        file_name:
+          description: Type `file_shared`, required. Name of the file or folder.
+          type: string
+        file_type:
+          description: Type `file_shared`, required. `file` or `folder`.
+          type: string
+    package_download_counts_response:
+      description: Downloads of a package by a user.
+      type: object
+      properties:
+        id:
+          description: ID of the row.
+          type: string
+        package_id:
+          description: ID of the package.
+          type: string
+        user_id:
+          description: ID of the user.
+          type: string
+        full:
+          description: Number of complete downloads.
+          type: integer
+        partial:
+          description: Number of partial downloads.
+          type: integer
+        failed:
+          description: Number of failed downloads.
+          type: integer
+        active:
+          description: Number of downloads in progress.
+          type: integer
+        user:
+          description: With `embed[]=user`, the user.
+          allOf:
+            - $ref: '#/components/schemas/users_response'
+    shared_folder_memberships_response:
+      description: Shared folder of a workspace that a user or a group can access.
+      type: object
+      properties:
+        id:
+          description: ID of the entry.
+          type: string
+        permission_id:
+          description: ID of the permission on the node (kept permission, see `shared_folder_membership_through_group_list`).
+          type: string
+        node_id:
+          description: ID of the node.
+          type: string
+        node_name:
+          description: Name of the node.
+          type: string
+        file_id:
+          description: ID of the folder on the node.
+          type: string
+        share_as:
+          description: Name of the shared folder.
+          type: string
+        workspace_id:
+          description: ID of the workspace.
+          type: string
+        organization_id:
+          description: ID of the organization.
+          type: string
+        member_type:
+          description: Kind of member of the kept permission.
+          type: string
+          enum:
+            - User
+            - Group
+        member_id:
+          description: ID of the user or group of the kept permission.
+          type: string
+        shared_by_id:
+          description: ID of the user who shared the folder.
+          type:
+            - string
+            - 'null'
+        access_levels:
+          description: Access levels of the kept permission, `null` when not yet read from the node.
+          type:
+            - array
+            - 'null'
+          items:
+            type: string
+        agg_access_levels:
+          description: Union of the access levels of all the permissions of the member on the folder.
+          type: array
+          items:
+            type: string
+        shared_folder_membership_through_group_list:
+          description: All the permissions that give access to the folder (directly or through groups).
+          type: array
+          items:
+            type: object
+            properties:
+              permission_id:
+                description: ID of the permission on the node.
+                type: string
+              member_type:
+                description: Kind of member.
+                type: string
+              member_id:
+                description: ID of the user or group.
+                type: string
+        is_workspace_member:
+          description: Whether the member is a member of the workspace of the folder.
+          type: boolean
+        created_at:
+          description: Date and time of creation.
+          type: string
+          format: date-time
+        updated_at:
+          description: Date and time of the last change.
+          type: string
+          format: date-time
   requestBodies:
     clients_params:
       content:
