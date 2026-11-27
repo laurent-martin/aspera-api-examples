@@ -1308,7 +1308,9 @@ paths:
                   - $ref: '#/components/schemas/FieldValidationError'
                   - $ref: '#/components/schemas/ValidationError'
         '500':
-          description: Internal Server Error (also for a `collaborator_type` in upper case)
+          description: >-
+            Internal Server Error (also for a `collaborator_type` in upper case, or that is not the name of a model,
+            e.g. `foo`)
           content:
             application/json:
               schema:
@@ -1769,7 +1771,7 @@ paths:
                   - $ref: '#/components/schemas/FieldValidationError'
                   - $ref: '#/components/schemas/ValidationError'
         '500':
-          description: Internal Server Error
+          description: Internal Server Error (also for an `entity_type` that is not the name of a model, e.g. `foo`)
           content:
             application/json:
               schema:
@@ -2561,8 +2563,9 @@ paths:
                   - $ref: '#/components/schemas/ValidationError'
         '500':
           description: >-
-            Internal Server Error (also when `distribution_list_id` is missing or not found, or the group does not
-            exist: the member is then added)
+            Internal Server Error (also when `distribution_list_id` is missing or not found, when `member_type` is in
+            upper case or not the name of a model, e.g. `foo`, or when the group does not exist: the member is then
+            added)
           content:
             application/json:
               schema:
@@ -5171,9 +5174,29 @@ paths:
       summary: Get the Downloads of a Package by User
       description: >-
         Get the downloads of a package, one row per user who started a download: complete, partial, failed and in
-        progress. The sender, an organization administrator and a workspace manager see all rows; a recipient sees the
-        rows of the recipients who are not in BCC, and their own.
+        progress. All rows with a token with admin scope and no `user_id` (organization administrator, or workspace
+        manager for a package of a workspace they manage), or with `include_all_sent_packages`. Else the rows that the
+        user sees: all for the sender; for a recipient, those of the recipients who are not in BCC, and their own.
       parameters:
+        - name: user_id
+          in: query
+          description: >-
+            With a token with admin scope, ID of a user of the organization: the rows as this user sees them (the
+            package must be visible to the user). With a token with user scope, only the ID of the current user.
+          schema:
+            type: string
+        - name: include_all_sent_packages
+          in: query
+          description: >-
+            `true` with `workspace_id`: package sent in a workspace whose members can see all the packages sent
+            (option of the workspace), all rows, BCC included.
+          schema:
+            type: boolean
+        - name: workspace_id
+          in: query
+          description: ID of a workspace of the current user, required with `include_all_sent_packages`.
+          schema:
+            type: string
         - name: page
           in: query
           description: Page number, starting at 1.
@@ -5196,6 +5219,7 @@ paths:
             type: string
             enum:
               - user
+              - package
       responses:
         '200':
           description: OK
@@ -5228,6 +5252,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
+        '422':
+          description: Unprocessable Entity (`include_all_sent_packages` without `workspace_id`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
         '500':
           description: Internal Server Error
           content:
@@ -5661,15 +5691,16 @@ paths:
       - name: id
         in: path
         required: true
-        description: ID of the user (for the invitation to the organization, `user_id` is also required in the body).
+        description: ID of the user, invited again to the organization (no `type`).
         schema:
           type: string
     post:
       operationId: create_user_invitation
       summary: Send an Invitation (Path of a User)
       description: >-
-        Same as `POST /invitations`. For the invitation to the organization, `user_id` is still required in the body;
-        for the other types, the user of the path is not used.
+        Same as `POST /invitations`, except for the invitation to the organization (no `type`): the user invited is the
+        user of the path, and `user_id` must still be in the body, with any value. For the other types, the user of the
+        path is not used.
       requestBody:
         required: true
         content:
@@ -5686,13 +5717,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
-          description: Forbidden (not allowed for this type, or URL token, workspace or shared inbox not allowed)
+          description: >-
+            Forbidden (not allowed for this type, or URL token, workspace or shared inbox not found or not allowed)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
         '404':
-          description: Not Found (user, group, shared inbox or workspace)
+          description: Not Found (user or group, of `user_id` or `addressee_id`)
           content:
             application/json:
               schema:
@@ -5700,7 +5732,7 @@ paths:
         '422':
           description: >-
             Unprocessable Entity: parameter error (missing body, field required by the type missing, other field:
-            `unpermitted_parameters`)
+            `unpermitted_parameters`, except for the invitation to the organization, which ignores the other fields)
           content:
             application/json:
               schema:
@@ -7408,7 +7440,8 @@ paths:
         Get a listing of email templates: the global templates of AoC (`source_type` `null`), and those of the
         organization, of its workspaces and of its shared inboxes. Requires a token with admin scope, for an
         organization administrator (global templates and all templates of the organization) or a workspace manager
-        (global templates, templates of their workspaces and shared inboxes, not those of the organization).
+        (global templates, templates of the workspaces they are a member of, and of the shared inboxes of the
+        workspaces they manage or that they are a member of; not those of the organization).
 
         No sort field (any `sort` is refused, `unknown_sort_field`). Parameter `q` is not supported (500).
       parameters:
@@ -7606,9 +7639,9 @@ paths:
         source. Not paginated.
 
         Without `source_type`: the global templates, paginated, with filters `source_id` and `email_type`. Requires a
-        token with admin scope, for an organization administrator (global templates and all templates of the
-        organization) or a workspace manager (global templates, templates of their workspaces and shared inboxes, not
-        those of the organization).
+        token with admin scope, for an organization administrator or a workspace manager. The source is only checked
+        to be in the organization: a workspace manager also gets the templates of the organization, and of any
+        workspace or shared inbox.
       parameters:
         - name: page
           in: query
@@ -8327,13 +8360,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
         '403':
-          description: Forbidden (not allowed for this type, or URL token, workspace or shared inbox not allowed)
+          description: >-
+            Forbidden (not allowed for this type, or URL token, workspace or shared inbox not found or not allowed)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
         '404':
-          description: Not Found (user, group, shared inbox or workspace)
+          description: Not Found (user or group, of `user_id` or `addressee_id`)
           content:
             application/json:
               schema:
@@ -8341,7 +8375,7 @@ paths:
         '422':
           description: >-
             Unprocessable Entity: parameter error (missing body, field required by the type missing, other field:
-            `unpermitted_parameters`)
+            `unpermitted_parameters`, except for the invitation to the organization, which ignores the other fields)
           content:
             application/json:
               schema:
@@ -8424,7 +8458,8 @@ paths:
           description: >-
             Comma-separated list of fields (at most 5), prefixed with `-` for descending order. Fields: `name`,
             `provider`, `created_at`, `updated_at`. Or `associated_nodes` alone (number of nodes that use the
-            profile, `too_many_sort_fields` with other fields). An unknown field is refused (`unknown_sort_field`).
+            profile, ascending only, also with `-`; `too_many_sort_fields` with other fields). An unknown field is
+            refused (`unknown_sort_field`).
           schema:
             type: string
           example: name
@@ -8574,7 +8609,8 @@ paths:
       description: >-
         Change the name or the API key of a KMS profile (the KMS, instance and root key cannot change). Requires a token
         with admin scope, for an organization administrator. With `config.api_key`, AoC gives the new key to its KMS
-        service, and the response is the profile. Without it, the response is 204.
+        service, and the response is the profile. Without it, the response is 204. Change the name and the API key in
+        two calls: with `config.api_key`, a new `name` is not kept (the response shows the previous name).
       requestBody:
         required: true
         content:
@@ -9397,11 +9433,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
         '500':
-          description: Internal Server Error (also when the watermarking service fails)
+          description: >-
+            Internal Server Error (also when the watermarking service fails: `ErrorList` with code
+            `internal_server_error`)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalServerError'
+                oneOf:
+                  - $ref: '#/components/schemas/InternalServerError'
+                  - $ref: '#/components/schemas/ErrorList'
       tags:
         - Watermark Profiles
   /operations:
@@ -9808,7 +9848,7 @@ paths:
                 $ref: '#/components/schemas/ForbiddenError'
         '422':
           description: >-
-            Unprocessable Entity: errors of fields (`name`, `sso_target_url` or `attribute_mapping` missing, neither
+            Unprocessable Entity: errors of fields (`sso_target_url` or `attribute_mapping` missing, neither
             `fingerprint` nor `certificate`, invalid certificate, fingerprint that does not match the certificate,
             mapping missing for an attribute, both `included_domains` and `excluded_domains`), or parameter error
             (missing body, other field: `unpermitted_parameters`)
@@ -9819,7 +9859,7 @@ paths:
                   - $ref: '#/components/schemas/FieldValidationError'
                   - $ref: '#/components/schemas/ValidationError'
         '500':
-          description: Internal Server Error
+          description: Internal Server Error (also for `name` missing or empty, checked by the model only)
           content:
             application/json:
               schema:
@@ -9921,7 +9961,7 @@ paths:
                   - $ref: '#/components/schemas/FieldValidationError'
                   - $ref: '#/components/schemas/ValidationError'
         '500':
-          description: Internal Server Error
+          description: Internal Server Error (also for an empty `name`, checked by the model only)
           content:
             application/json:
               schema:
@@ -10076,9 +10116,8 @@ paths:
         - name: sort
           in: query
           description: >-
-            Comma-separated list of fields (at most 5), prefixed with `-` for descending order. Fields: `file_id`,
-            `share_as`, `node_name`, `created_at` (other values are ignored). An unknown field is refused
-            (`unknown_sort_field`).
+            One field, prefixed with `-` for descending order: `file_id`, `share_as`, `node_name`, `created_at`. Another
+            value, or a list of fields, is ignored (not sorted, no error).
           schema:
             type: string
         - name: q
@@ -10113,11 +10152,14 @@ paths:
             type: string
         - name: embed[]
           in: query
-          description: embed[]=workspace (workspace object from workspace_id). Repeat the parameter for several values.
+          description: >-
+            embed[]=workspace (workspace object from workspace_id), embed[]=node (node object from node_id). Repeat the
+            parameter for several values.
           schema:
             type: string
             enum:
               - workspace
+              - node
       responses:
         '200':
           description: OK
@@ -10600,8 +10642,9 @@ paths:
         - With a token with user scope: the URL tokens that the user created.
 
         - With a token with admin scope: all URL tokens of the organization for an organization administrator, those of
-          the workspaces they manage (`data.workspace_id`) for a workspace manager. `creator_id` keeps those that a user
-          created.
+          the workspaces they manage (`data.workspace_id`) for a workspace manager, only when the workspace ID is stored
+          as a number (in practice `view_received_package`: the others store it as a string, and are not listed).
+          `creator_id` keeps those that a user created.
 
         - With the access token of a URL token: only this URL token.
 
@@ -11081,7 +11124,8 @@ paths:
                   - $ref: '#/components/schemas/ValidationError'
         '500':
           description: >-
-            Internal Server Error (also when the member does not exist, or `member_type` or `member_id` is missing)
+            Internal Server Error (also when the member does not exist, or `member_type` or `member_id` is missing, or
+            `member_type` is in upper case or not the name of a model, e.g. `foo`)
           content:
             application/json:
               schema:
@@ -11715,8 +11759,9 @@ paths:
                 $ref: '#/components/schemas/ForbiddenError'
         '422':
           description: >-
-            Unprocessable Entity: errors of fields (`name` missing, or already used: error `unique_error`, type not
-            allowed), or parameter error (missing body, other field: `unpermitted_parameters`)
+            Unprocessable Entity: errors of fields (`name` already used: error `unique_error`, type not allowed), or
+            parameter error (missing body, `name` missing or empty: `parameter_missing`, other field:
+            `unpermitted_parameters`)
           content:
             application/json:
               schema:
@@ -13839,10 +13884,12 @@ components:
           type: boolean
           default: true
         notify_users:
-          description: IDs of the approvers who get an email for a join request, when `default_notify_users` is `false`.
+          description: >-
+            IDs of the approvers who get an email for a join request, when `default_notify_users` is `false`. IDs as
+            numbers, as the web app sends them: an ID as a string never matches an approver (no email).
           type: array
           items:
-            type: string
+            type: integer
       required:
         - name
         - description
@@ -14094,10 +14141,12 @@ components:
           type: boolean
           default: true
         notify_users:
-          description: IDs of the approvers who get an email for a join request, when `default_notify_users` is `false`.
+          description: >-
+            IDs of the approvers who get an email for a join request, when `default_notify_users` is `false`, as they
+            were sent (numbers).
           type: array
           items:
-            type: string
+            type: integer
         self_register_url_id:
           description: ID in the self registration link (with a token with admin scope only).
           type:
@@ -14920,8 +14969,8 @@ components:
           type: boolean
         local_oauth_enabled:
           description: >-
-            Whether users can log in with a password of AoC (local auth provider). At least one login method must stay
-            enabled.
+            Whether users can log in with a password of AoC (local auth provider). The check that a login method stays
+            enabled reads the methods enabled before the change: a request that disables the last ones is accepted.
           type: boolean
         google_oauth_enabled:
           description: Whether users can log in with Google (Google auth provider).
@@ -14973,8 +15022,8 @@ components:
         user_deactivation_policy:
           description: >-
             Deactivation of inactive users: `user_timeout` (since the last login) and `pending_user_timeout` (never
-            logged in), in seconds, 86400 (1 day) to 315360000 (10 years), or `null`. Only the keys given change. A
-            change deactivates at once the users concerned (not the administrators).
+            logged in), in seconds, 86400 (1 day) to 315569520 (10 years of 365.2425 days), or `null`. Only the keys
+            given change. A change deactivates at once the users concerned (not the administrators).
           type: object
         connect_suppressed_scope:
           description: >-
@@ -18289,8 +18338,8 @@ components:
           type: string
         link_name:
           description: >-
-            Name of the folder shown to the user or group, if different from `share_as` (tag
-            `aspera.files.workspace.share_as` of the permission).
+            Name of the folder shown to the user or group, used only when the permission has no tag
+            `aspera.files.workspace.share_as`. Without both, the name of the folder on the node.
           type: string
         data:
           description: >-
@@ -19279,6 +19328,7 @@ components:
             - Organization
             - Workspace
             - Dropbox
+            - null
         source_id:
           description: ID of the organization, workspace or shared inbox, `null` for a global template.
           type:
@@ -19287,67 +19337,95 @@ components:
         subject:
           description: >-
             Other templates: subject of the email (required), with substitutions (`template_substitutions`).
-          type: string
+          type:
+            - string
+            - 'null'
         body:
           description: >-
             Other templates: body of the email, with substitutions.
-          type: string
+          type:
+            - string
+            - 'null'
         button_text:
           description: >-
             Other templates: text of the button of the email.
-          type: string
+          type:
+            - string
+            - 'null'
         subject_prefix:
           description: >-
             Base templates: prefix of the subject of all emails.
-          type: string
+          type:
+            - string
+            - 'null'
         from_display:
           description: >-
             Base templates: name of the sender.
-          type: string
+          type:
+            - string
+            - 'null'
         from_email:
           description: >-
             Base templates: email of the sender.
-          type: string
+          type:
+            - string
+            - 'null'
           format: email
         header_color:
           description: >-
             Base templates: color of the header.
-          type: string
+          type:
+            - string
+            - 'null'
           enum:
             - '#000000'
             - '#ffffff'
+            - null
         logo_source:
           description: >-
             Base templates: logo to use: of the organization, the workspace or the shared inbox (a workspace template
             cannot use `dropbox`, an organization template only `organization`), `null` for the default.
-          type: string
+          type:
+            - string
+            - 'null'
           enum:
             - organization
             - workspace
             - dropbox
+            - null
         logo_image_data:
           description: >-
             Base templates: image of the logo, base64 (at most 512 KB decoded), with `logo_image_type`.
-          type: string
+          type:
+            - string
+            - 'null'
           format: byte
         logo_image_type:
           description: >-
             Base templates: media type of the logo image.
-          type: string
+          type:
+            - string
+            - 'null'
           examples:
             - image/png
         logo_name:
           description: >-
             Base templates: name of the logo.
-          type: string
+          type:
+            - string
+            - 'null'
         logo_display_title:
           description: >-
             Base templates: title shown with the logo.
-          type: string
+          type:
+            - string
+            - 'null'
         footer:
           description: >-
             Base templates: footer of the emails.
-          type: string
+          type:
+            - string
+            - 'null'
         logo_source_url:
           description: URL of the logo of `logo_source`.
           type:
@@ -19448,14 +19526,23 @@ components:
             parent folder).
           type: boolean
         workspace_id:
-          description: ID of the workspace of the folder (not checked).
-          type: string
+          description: ID of the workspace of the folder (not checked), `null` when not given.
+          type:
+            - string
+            - 'null'
         link_node_id:
-          description: ID of the node of the shared folder (link) used to reach the folder, if any (not checked).
-          type: string
+          description: >-
+            ID of the node of the shared folder (link) used to reach the folder, if any (not checked), `null` when not
+            given.
+          type:
+            - string
+            - 'null'
         link_file_id:
-          description: ID of the shared folder (link) used to reach the folder, if any (not checked).
-          type: string
+          description: >-
+            ID of the shared folder (link) used to reach the folder, if any (not checked), `null` when not given.
+          type:
+            - string
+            - 'null'
         created_at:
           description: Date and time of creation.
           type: string
@@ -19853,14 +19940,32 @@ components:
             type: object
             properties:
               permission_id:
-                description: ID of the permission on the node.
-                type: string
+                description: ID of the permission on the node (a number, unlike the other IDs).
+                type: integer
               member_type:
                 description: Kind of member.
                 type: string
+                enum:
+                  - User
+                  - Group
               member_id:
-                description: ID of the user or group.
+                description: ID of the user or group (a number).
+                type: integer
+              file_id:
+                description: ID of the folder on the node.
                 type: string
+              share_as:
+                description: Name of the shared folder.
+                type: string
+              workspace_id:
+                description: ID of the workspace (a number).
+                type: integer
+              organization_id:
+                description: ID of the organization (a number).
+                type: integer
+              node_id:
+                description: ID of the node (a number).
+                type: integer
         is_workspace_member:
           description: Whether the member is a member of the workspace of the folder.
           type: boolean
